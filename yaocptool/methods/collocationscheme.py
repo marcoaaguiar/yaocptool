@@ -56,7 +56,7 @@ class CollocationScheme():
 
             return V, X, Y, U, eta, vars_lb, vars_ub
 
-        def splitXYandU(self, V, all_subinterval = False):
+        def splitXYandU(self, V, all_subinterval=False):
             '''
             :param V:  solution of NLP
             :param all_subinterval = False: Returns all elements of the subinterval (or only the first one)
@@ -79,6 +79,7 @@ class CollocationScheme():
                 else:
                     X.append(X_k[0])
             X.append(X_k[-1])
+
             for k in xrange(self.finite_elements):
                 Y_k = []
                 for i in xrange(self.degree):
@@ -89,16 +90,15 @@ class CollocationScheme():
                 else:
                     Y.append(Y_k[0])
 
-
             for k in xrange(self.finite_elements):
-                U_k = V[v_offset:v_offset + self.model.Nu*self.degree_control]
-                v_offset += self.model.Nu*self.degree_control
+                U_k = V[v_offset:v_offset + self.model.Nu * self.degree_control]
+                v_offset += self.model.Nu * self.degree_control
                 U.append(U_k)
             assert v_offset == V.numel()
 
             return X, Y, U
 
-        def splitXandU(self, V, all_subinterval = False):
+        def splitXandU(self, V, all_subinterval=False):
             '''
             :param V:  solution of NLP
             :param all_subinterval = False: Returns all elements of the subinterval (or only the first one)
@@ -182,7 +182,7 @@ class CollocationScheme():
 
                     p_i = vertcat(p, theta[n_element], U[n_element])
 
-                    arg = [ tau_list[c_point + 1], X[n_element][c_point + 1], YZ[n_element][c_point], p_i ]
+                    arg = [tau_list[c_point + 1], X[n_element][c_point + 1], YZ[n_element][c_point], p_i]
                     # f_x_arg = [micro_t_k[i + 1], vec(horzcat(*X[n_element]))]
 
                     d_x_d_tau = sum([f_dL_list(tau_list[c_point + 1])[k] * X[n_element][k] for k in range(degree + 1)])
@@ -194,8 +194,7 @@ class CollocationScheme():
                 XF = X[n_element][-1]
 
             G.append(F_h_final(XF, eta))
-            for item in G:
-                print item
+
             if self.solution_class == 'direct':
                 cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(XF, p)
             else:
@@ -218,8 +217,8 @@ class CollocationScheme():
             base_x0 = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
             base_x0 = vertcat(base_x0,
                               DM.zeros((
-                                       self.model.Nyz * self.degree * self.finite_elements + self.model.Nu * self.degree_control * self.finite_elements),
-                                       1))
+                                  self.model.Nyz * self.degree * self.finite_elements + self.model.Nu * self.degree_control * self.finite_elements),
+                                  1))
 
             base_x0 = vertcat(base_x0, DM.zeros(self.problem.N_eta))
             return base_x0

@@ -52,6 +52,16 @@ class SolutionMethodsBase:
     @property
     def model(self):
         return self.problem.model
+    @property
+    def delta_t(self):
+        return float(self.problem.t_f - self.problem.t_0) / self.finite_elements
+
+    @property
+    def time_break_points(self):
+        return [self.delta_t*k for k in xrange(self.finite_elements+1)]
+
+    def collocation_points(self, degree, cp = 'radau', with_zero = False):
+        return [0] + collocation_points(degree, cp)  # All collocation time points
 
     def defineDiscretizationMethods(self):
         if self.discretization_method == 'multiple-shooting':
@@ -66,10 +76,10 @@ class SolutionMethodsBase:
                 setattr(self, method_name, types.MethodType(method, self))
 
     def createLagrangianPolynomialBasis(self, degree, starting_index=0, tau=None):
-        cp = "radau"  # Radau collocation points
         if tau == None:
             tau = self.model.tau_sym  # Collocation point
-        tau_root = [0] + collocation_points(degree, cp)  # All collocation time points
+
+        tau_root = self.collocation_points(degree, with_zero= True)  # All collocation time points
 
         # For all collocation points: eq 10.4 or 10.17 in Biegler's book
         # Construct Lagrange polynomials to get the polynomial basis at the collocation point
@@ -380,7 +390,7 @@ class SolutionMethodsBase:
             if time_division == 'linear':
                 micro_t_k = list(linspace(t_list[k], t_list[k + 1], sub_elements + 1).full())
             else:
-                tau_list = [0] + collocation_points(sub_elements)
+                tau_list = self.collocation_points(sub_elements, with_zero = True)
                 dt = t_list[k + 1] - t_list[k]
                 mapping = lambda tau: (t_list[k] + tau * dt)
                 micro_t_k = map(mapping, tau_list)

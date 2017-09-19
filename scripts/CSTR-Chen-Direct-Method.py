@@ -16,19 +16,19 @@ problem = create_CSTR_OCP()
 #                           discretization_method = 'collocation',
 #                           )
 solution_method = AugmentedLagrange(problem, DirectMethod, \
-                        {'degree': 3, 'degree_control':1,
-                         'discretization_method': 'collocation'
+                        {'degree': 3, 'degree_control':3,
+                         # 'discretization_method': 'collocation'
                         },
-                        max_iter=1,
+                        max_iter=3,
                         mu_0=1.,
                         beta=10.,
                         # relax_state_bounds=True,
-                        finite_elements=40, degree=3,
+                        finite_elements=40,
                         integrator_type='implicit'
                                     )
 
 x_sol, u_sol, V_sol = solution_method.solve()
-# x, y, u, t= solution_method.plotSimulate(x_sol, u_sol, [{'x':[0,1]},{'x':[2,3]},{'u':[0]},{'u':[1]}], 1, integrator_type='explicit')
+x, y, u, t= solution_method.plotSimulate(x_sol, u_sol, [{'x':[0,1]},{'x':[2,3]},{'u':[0]},{'u':[1]}], 1, integrator_type='explicit')
 # u = problem.u_ref
 # u = [25, -4000]
 # u[0] *=3600
