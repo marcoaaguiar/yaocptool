@@ -16,6 +16,7 @@ import types
 from yaocptool.methods.multipleshooting import MultipleShootingScheme
 from yaocptool.methods.collocationscheme import CollocationScheme
 from yaocptool.modelling_classes.model_classes import SystemModel
+from yaocptool.modelling_classes.ocp import OptimalControlProblem
 from .optimizationresult import OptimizationResult
 # from CONFIG import SOLVER_OPTIONS
 
@@ -34,6 +35,7 @@ class SolutionMethodsBase:
     def __init__(self, **kwargs):
         self.solver = None
         # self.model  #type: SystemModel
+        # self.problem  #type: OptimalControlProblem
         self.integrator_type = 'implicit'
         self.solution_method = 'multiple_shooting'
         self.degree = 4
@@ -42,15 +44,19 @@ class SolutionMethodsBase:
         self.prepared = False
         self.discretization_method = 'multiple-shooting'
         # self.discretization_method = 'collocation'
+        self.discretizer = None
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-        self.defineDiscretizationMethods()
-
+        if self.discretization_method == 'multiple-shooting':
+            self.discretizer = MultipleShootingScheme(self)
+        elif self.discretization_method == 'collocation':
+            self.discretizer = CollocationScheme(self)
     @property
     def model(self):
         return self.problem.model
+
     @property
     def delta_t(self):
         return float(self.problem.t_f - self.problem.t_0) / self.finite_elements
@@ -59,20 +65,12 @@ class SolutionMethodsBase:
     def time_breakpoints(self):
         return [self.delta_t*k for k in xrange(self.finite_elements+1)]
 
+    @property
+    def splitXandU(self):
+        return self.discretizer.splitXandU
+
     def collocation_points(self, degree, cp = 'radau', with_zero = False):
         return [0] + collocation_points(degree, cp)  # All collocation time points
-
-    def defineDiscretizationMethods(self):
-        if self.discretization_method == 'multiple-shooting':
-            methods_dict = MultipleShootingScheme().getMethods()
-            for method_name in methods_dict:
-                method = methods_dict[method_name]
-                setattr(self, method_name, types.MethodType(method, self))
-        if self.discretization_method == 'collocation':
-            methods_dict = CollocationScheme().getMethods()
-            for method_name in methods_dict:
-                method = methods_dict[method_name]
-                setattr(self, method_name, types.MethodType(method, self))
 
     def createLagrangianPolynomialBasis(self, degree, starting_index=0, tau=None):
         if tau == None:
@@ -265,12 +263,12 @@ class SolutionMethodsBase:
                 else:
                     p_mx_x_0 = None
 
-                nlp_prob, nlp_call = self.discretize(p=p_mx, x_0=p_mx_x_0, theta=theta)
+                nlp_prob, nlp_call = self.discretizer.discretize(p=p_mx, x_0=p_mx_x_0, theta=theta)
 
                 nlp_prob['p'] = all_mx
 
             else:
-                nlp_prob, nlp_call = self.discretize()
+                nlp_prob, nlp_call = self.discretizer.discretize()
 
             self.nlp_prob = nlp_prob
             self.nlp_call = nlp_call
@@ -280,7 +278,7 @@ class SolutionMethodsBase:
 
     def callSolver(self, initial_guess=None, p=[], theta=None, x_0=[]):
         if initial_guess == None:
-            initial_guess = self.createInitialGuess()
+            initial_guess = self.discretizer.create_initial_guess()
 
         if theta != None:
             par = vertcat(p, *theta.values())
@@ -308,7 +306,7 @@ class SolutionMethodsBase:
     def solve(self, initial_guess=None, p=[]):
         V_sol = self.solve_raw(initial_guess, p)
 
-        # X, U = self.splitXandU(V_sol)
+        X, U = self.splitXandU(V_sol)
         # return OptimizationResult(V_sol, solution_method=self)
         return X, U, V_sol
 

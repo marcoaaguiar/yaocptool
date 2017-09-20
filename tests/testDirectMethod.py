@@ -10,7 +10,9 @@ sys.path.append(abspath(dirname(dirname(__file__))))
 
 from yaocptool.problems.cartpendulum import *
 from yaocptool.methods import DirectMethod
+from yaocptool import config
 
+config.SOLVER_OPTIONS['ipopt.print_level'] = 0
 model = PendulumCart() 
 
 #control_constraints = True

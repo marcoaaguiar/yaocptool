@@ -13,10 +13,10 @@ from yaocptool.methods import DirectMethod, IndirectMethod, InteriorPoint
 
 
 
-solve_indirect = False
+# solve_indirect = False
 solve_indirect = True
-solve_direct = False
-#solve_direct = True
+# solve_direct = False
+solve_direct = True
 
 ###########
 # Indirect 
@@ -40,7 +40,7 @@ if solve_indirect:
             mu_min = 1e-3)
     x_sol, u_sol =intp.solve()
     
-    x, u, t= intp.ocp_solver.plotSimulate(x_sol, u_sol, [{'x':[0,2]},{'u':[0]}], 1, p = intp.mu)
+    x, y, u, t= intp.ocp_solver.plotSimulate(x_sol, u_sol, [{'x':[0,2]},{'u':[0]}], 1, p = intp.mu)
 
 
 #################3
@@ -57,4 +57,4 @@ if solve_direct:
         {'degree': 1, 'finite_elements': 40, 'integrator_type': 'implicit'},
             relax_control_bounds = True, max_iter = 4, mu_0 = 10)
     x_sol, u_sol =intp.solve()
-    x, u, t= intp.ocp_solver.plotSimulate(x_sol, u_sol, [{'x':[0,2]},{'x':[4]},{'u':[0]}], 5)
+    x, y, u, t= intp.ocp_solver.plotSimulate(x_sol, u_sol, [{'x':[0,2]},{'x':[4]},{'u':[0]}], 5)

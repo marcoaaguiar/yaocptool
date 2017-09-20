@@ -9,5 +9,8 @@ from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 from yaocptool import *
 
-import testDirectMethod, testIndirectMethod, testInteriorPointMethod, testAugmentedLagrange
+import testDirectMethod
+import testIndirectMethod
+# import testInteriorPointMethod
+import testAugmentedLagrange
 

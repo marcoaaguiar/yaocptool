@@ -34,10 +34,10 @@ if solve_indirect:
 #    problem.x_min[2] = -2
     
     aug = AugmentedLagrange(problem, IndirectMethod, \
-        {'degree': 1,},
+        {'degree': 5,},
             max_iter = 5, mu_0 = 10, beta= 10., 
             relax_state_bounds = True,
-            finite_elements = 40, degree = 5, integrator_type = 'explicit')
+            finite_elements = 40,  integrator_type = 'explicit')
     
 #    aug.createCalculateNewNu()
 

@@ -333,7 +333,7 @@ class AugmentedLagrange(SolutionMethodsBase):
         while True:
             theta_k = self.joinNuToTheta(theta, self.nu)
             V_sol = solver(V_sol, p=vertcat(p, self.mu), theta=theta_k, x_0=x_0)
-            X, U = self.ocp_solver.splitXandU(V_sol)
+            X, U = self.splitXandU(V_sol)
             it += 1
 
             if it == self.max_iter:
