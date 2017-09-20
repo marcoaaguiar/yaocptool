@@ -22,7 +22,7 @@ class OptimalControlProblem:
             self.x_0 = []        
         
         self.model = SystemModel()
-        self._model = model
+        self._model = model  # type: SystemModel
         self.resetWorkingModel()
         
         self.x_max = repmat(inf,self.model.Nx)

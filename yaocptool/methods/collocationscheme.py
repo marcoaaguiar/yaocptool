@@ -55,23 +55,25 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         return V, X, Y, U, eta, vars_lb, vars_ub
 
-    def splitXYandU(self, V, all_subinterval=False):
+    def splitXYandU(self, results_vector, all_subinterval=False):
         '''
-        :param V:  solution of NLP
+        :type results_vector: DM
         :param all_subinterval = False: Returns all elements of the subinterval (or only the first one)
         :return: X, Y, and U -> list with a DM for each element
         '''
+        print results_vector
+        assert (results_vector.__class__ == DM)
         X = []
         Y = []
         U = []
         v_offset = 0
         if self.problem.N_eta > 0:
-            V = V[:-self.problem.N_eta]
+            results_vector = results_vector[:-self.problem.N_eta]
 
         for k in xrange(self.finite_elements):
             X_k = []
             for i in xrange(self.degree + 1):
-                X_k.append(V[v_offset:v_offset + self.model.Nx])
+                X_k.append(results_vector[v_offset:v_offset + self.model.Nx])
                 v_offset += self.model.Nx
             if all_subinterval:
                 X.append(X_k)
@@ -82,7 +84,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         for k in xrange(self.finite_elements):
             Y_k = []
             for i in xrange(self.degree):
-                Y_k.append(V[v_offset:v_offset + self.model.Nyz])
+                Y_k.append(results_vector[v_offset:v_offset + self.model.Nyz])
                 v_offset += self.model.Nyz
             if all_subinterval:
                 Y.append(Y_k)
@@ -90,21 +92,12 @@ class CollocationScheme(DiscretizationSchemeBase):
                 Y.append(Y_k[0])
 
         for k in xrange(self.finite_elements):
-            U_k = V[v_offset:v_offset + self.model.Nu * self.degree_control]
+            U_k = results_vector[v_offset:v_offset + self.model.Nu * self.degree_control]
             v_offset += self.model.Nu * self.degree_control
             U.append(U_k)
-        assert v_offset == V.numel()
+        assert v_offset == results_vector.numel()
 
         return X, Y, U
-
-    def splitXandU(self, V, all_subinterval=False):
-        '''
-        :param V:  solution of NLP
-        :param all_subinterval = False: Returns all elements of the subinterval (or only the first one)
-        :return:
-        '''
-        X, Y, U = self.splitXYandU(V)
-        return X, U
 
     def discretize(self, finite_elements=None, degree=None, x_0=None, p=[], theta=None):
         if finite_elements == None:
@@ -130,9 +123,6 @@ class CollocationScheme(DiscretizationSchemeBase):
         ###
         u_pol, u_par = self.solution_method.createVariablePolynomialApproximation(self.model.Nu, self.degree_control, name='u_col',
                                                                   point_at_t0=False)
-        # self.model.control_function = u_pol
-        # self.model.u_par = u_par
-        # self.u_pol = u_pol
 
         tau, L_list = self.solution_method.createLagrangianPolynomialBasis(self.degree, starting_index=0)
         dL_list = [jacobian(l, tau) for l in L_list]

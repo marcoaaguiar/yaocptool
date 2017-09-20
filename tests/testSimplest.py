@@ -19,7 +19,7 @@ problem.u_max[0] = 1
 problem.x_min[0] = 0.6
 
 solution_method = DirectMethod(problem, degree_control=3,
-                                                              discretization_method = 'collocation',
+                               discretization_scheme = 'collocation',
                                degree=3, finite_elements=5, integrator_type='implicit')
 
 x_sol, u_sol, V_sol = solution_method.solve()

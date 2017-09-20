@@ -37,20 +37,22 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         eta = V[NV - self.problem.N_eta:]
         return V, X, U, eta, vars_lb, vars_ub
 
-    def splitXandU(self, V):
+    def splitXYandU(self, results_vector,  all_subinterval=False):
         X = []
+        Y = []
         U = []
         v_offset = 0
         if self.problem.N_eta > 0:
-            V = V[:-self.problem.N_eta]
+            results_vector = results_vector[:-self.problem.N_eta]
 
         for k in range(self.finite_elements + 1):
-            X.append(V[v_offset:v_offset + self.model.Nx])
+            X.append(results_vector[v_offset:v_offset + self.model.Nx])
             v_offset = v_offset + self.model.Nx
             if k != self.finite_elements:
-                U.append(V[v_offset:v_offset + self.model.Nu * self.degree_control])
+                U.append(results_vector[v_offset:v_offset + self.model.Nu * self.degree_control])
+                Y.append(DM([]))
                 v_offset = v_offset + self.model.Nu * self.degree_control
-        return X, U
+        return X, Y, U
 
     def discretize(self, finite_elements=None, x_0=None, p=[], theta=None):
         finite_elements = self.finite_elements

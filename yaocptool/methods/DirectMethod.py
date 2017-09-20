@@ -24,9 +24,8 @@ class DirectMethod(solutionmethods.SolutionMethodsBase):
 
         :type problem: OptimalControlProblem
         """
-        solutionmethods.SolutionMethodsBase.__init__(self, **kwargs)
+        solutionmethods.SolutionMethodsBase.__init__(self, problem, **kwargs)
 
-        self.problem = problem
         self.solution_class = 'direct'
 
         self.parametrized_control = False

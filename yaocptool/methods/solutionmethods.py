@@ -5,19 +5,18 @@ Created on Fri Oct 21 12:27:29 2016
 @author: marco
 """
 
-from yaocptool import config
-from casadi import SX, MX, DM, inf, repmat, vertcat, collocation_points, \
-    substitute, pi, diag, integrator, vec, nlpsol, \
+import matplotlib.pyplot as plt
+from casadi import SX, MX, DM, vertcat, collocation_points, \
+    substitute, integrator, vec, nlpsol, \
     Function, linspace, horzcat, dot, gradient, jacobian, mtimes, \
     reshape
-import matplotlib.pyplot as plt
-import types
 
-from yaocptool.methods.multipleshooting import MultipleShootingScheme
+from yaocptool import config
 from yaocptool.methods.collocationscheme import CollocationScheme
+from yaocptool.methods.multipleshooting import MultipleShootingScheme
+from .optimizationresult import OptimizationResult
 from yaocptool.modelling_classes.model_classes import SystemModel
 from yaocptool.modelling_classes.ocp import OptimalControlProblem
-from .optimizationresult import OptimizationResult
 # from CONFIG import SOLVER_OPTIONS
 
 solver = "nlpsol"
@@ -32,27 +31,28 @@ obj_scaling_factor = 1
 #    }
 
 class SolutionMethodsBase:
-    def __init__(self, **kwargs):
+    def __init__(self, problem, **kwargs):
         self.solver = None
-        # self.model  #type: SystemModel
-        # self.problem  #type: OptimalControlProblem
+        self.problem = problem  # type: OptimalControlProblem
+        self.model = self.problem.model  # type: SystemModel
         self.integrator_type = 'implicit'
         self.solution_method = 'multiple_shooting'
         self.degree = 4
         self.degree_control = 1
         self.finite_elements = 10
         self.prepared = False
-        self.discretization_method = 'multiple-shooting'
-        # self.discretization_method = 'collocation'
+        self.discretization_scheme = 'multiple-shooting'
+        # self.discretization_scheme = 'collocation'
         self.discretizer = None
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-        if self.discretization_method == 'multiple-shooting':
+        if self.discretization_scheme == 'multiple-shooting':
             self.discretizer = MultipleShootingScheme(self)
-        elif self.discretization_method == 'collocation':
+        elif self.discretization_scheme == 'collocation':
             self.discretizer = CollocationScheme(self)
+
     @property
     def model(self):
         return self.problem.model
@@ -63,20 +63,24 @@ class SolutionMethodsBase:
 
     @property
     def time_breakpoints(self):
-        return [self.delta_t*k for k in xrange(self.finite_elements+1)]
+        return [self.delta_t * k for k in xrange(self.finite_elements + 1)]
 
     @property
     def splitXandU(self):
         return self.discretizer.splitXandU
 
-    def collocation_points(self, degree, cp = 'radau', with_zero = False):
+    @property
+    def splitXYandU(self):
+        return self.discretizer.splitXYandU
+
+    def collocation_points(self, degree, cp='radau', with_zero=False):
         return [0] + collocation_points(degree, cp)  # All collocation time points
 
     def createLagrangianPolynomialBasis(self, degree, starting_index=0, tau=None):
         if tau == None:
             tau = self.model.tau_sym  # Collocation point
 
-        tau_root = self.collocation_points(degree, with_zero= True)  # All collocation time points
+        tau_root = self.collocation_points(degree, with_zero=True)  # All collocation time points
 
         # For all collocation points: eq 10.4 or 10.17 in Biegler's book
         # Construct Lagrange polynomials to get the polynomial basis at the collocation point
@@ -234,13 +238,17 @@ class SolutionMethodsBase:
 
         return theta
 
-        # ==============================================================================
-
+    # ==============================================================================
     # SOLVE
     # ==============================================================================
 
+    @property
     def getSolver(self, initial_condition_as_parameter=False):
-        ''' 
+        raise Warning('method changed to get_solver')
+        return self.get_solver
+
+    def get_solver(self, initial_condition_as_parameter=False):
+        '''
             all_mx = [p, theta, x_0]
         '''
 
@@ -249,34 +257,37 @@ class SolutionMethodsBase:
             self.prepared = True
 
         if self.solver == None:
-            self.initial_condition_as_parameter = initial_condition_as_parameter
-            if self.model.Np + self.model.Ntheta > 0 or self.initial_condition_as_parameter:
-                p_mx = MX.sym('p', self.model.Np)
+            self.solver = self.create_solver(initial_condition_as_parameter)
 
-                theta_mx = MX.sym('theta_', self.model.Ntheta, self.finite_elements)
-                theta = dict([(i, vec(theta_mx[:, i])) for i in range(self.finite_elements)])
+        return self.call_solver
 
-                all_mx = vertcat(p_mx, vec(theta_mx))
-                if initial_condition_as_parameter:
-                    p_mx_x_0 = MX.sym('x_0_p', self.model.Nx)
-                    all_mx = vertcat(all_mx, p_mx_x_0)
-                else:
-                    p_mx_x_0 = None
+    def create_solver(self, initial_condition_as_parameter):
+        self.initial_condition_as_parameter = initial_condition_as_parameter
+        if self.model.Np + self.model.Ntheta > 0 or self.initial_condition_as_parameter:
+            p_mx = MX.sym('p', self.model.Np)
 
-                nlp_prob, nlp_call = self.discretizer.discretize(p=p_mx, x_0=p_mx_x_0, theta=theta)
+            theta_mx = MX.sym('theta_', self.model.Ntheta, self.finite_elements)
+            theta = dict([(i, vec(theta_mx[:, i])) for i in range(self.finite_elements)])
 
-                nlp_prob['p'] = all_mx
-
+            all_mx = vertcat(p_mx, vec(theta_mx))
+            if initial_condition_as_parameter:
+                p_mx_x_0 = MX.sym('x_0_p', self.model.Nx)
+                all_mx = vertcat(all_mx, p_mx_x_0)
             else:
-                nlp_prob, nlp_call = self.discretizer.discretize()
+                p_mx_x_0 = None
 
-            self.nlp_prob = nlp_prob
-            self.nlp_call = nlp_call
-            self.solver = self.createNumSolver(nlp_prob)
+            nlp_prob, nlp_call = self.discretizer.discretize(p=p_mx, x_0=p_mx_x_0, theta=theta)
 
-        return self.callSolver
+            nlp_prob['p'] = all_mx
+        else:
+            nlp_prob, nlp_call = self.discretizer.discretize()
 
-    def callSolver(self, initial_guess=None, p=[], theta=None, x_0=[]):
+        self.nlp_prob = nlp_prob
+        self.nlp_call = nlp_call
+        solver = nlpsol('solver', 'ipopt', nlp_prob, config.SOLVER_OPTIONS['nlpsol_options'])
+        return solver
+
+    def call_solver(self, initial_guess=None, p=[], theta=None, x_0=[]):
         if initial_guess == None:
             initial_guess = self.discretizer.create_initial_guess()
 
@@ -289,26 +300,25 @@ class SolutionMethodsBase:
         sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
                           lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
 
-        return sol['x']
+        return sol
 
-    def createNumSolver(self, nlp_prob):
-        solver = nlpsol('solver', 'ipopt', nlp_prob, config.SOLVER_OPTIONS['nlpsol_options'])
-        return solver
+    def callSolver(self, initial_guess=None, p=[], theta=None, x_0=[]):
+        raise Exception('method changed to call_solver')
 
     def solve_raw(self, initial_guess=None, p=[]):
         if not self.prepared:
             self.prepare()
             self.prepared = True
 
-        V_sol = self.getSolver()(initial_guess=initial_guess)
-        return V_sol
+        solution_dict = self.get_solver()(initial_guess=initial_guess)
+        return solution_dict
 
     def solve(self, initial_guess=None, p=[]):
-        V_sol = self.solve_raw(initial_guess, p)
+        solution_dict = self.solve_raw(initial_guess, p)
 
-        X, U = self.splitXandU(V_sol)
-        # return OptimizationResult(V_sol, solution_method=self)
-        return X, U, V_sol
+        # X, U = self.splitXandU(V_sol)
+        return OptimizationResult(solution_dict, solution_method=self)
+        # return X, U, V_sol
 
     # ==============================================================================
     # PLOT AND SIMULAT
@@ -338,7 +348,7 @@ class SolutionMethodsBase:
             plt.grid()
             axes = fig.axes
             axes[0].ticklabel_format(useOffset=False)
-            k +=1
+            k += 1
         # plt.ion()
         plt.show()
 
@@ -373,7 +383,7 @@ class SolutionMethodsBase:
             if time_division == 'linear':
                 micro_t_k = list(linspace(t_list[k], t_list[k + 1], sub_elements + 1).full())
             else:
-                tau_list = self.collocation_points(sub_elements, with_zero = True)
+                tau_list = self.collocation_points(sub_elements, with_zero=True)
                 dt = t_list[k + 1] - t_list[k]
                 mapping = lambda tau: (t_list[k] + tau * dt)
                 micro_t_k = map(mapping, tau_list)
@@ -404,5 +414,3 @@ class SolutionMethodsBase:
 
     def stepForward(self):
         pass
-
-

@@ -26,13 +26,13 @@ problem = StabilizationTwoTanks()
 #
 # solution_method = IndirectMethod(problem,
 # solution_method = DirectMethod(problem, degree_control=5,
-#                                                               discretization_method = 'collocation',
+#                                                               discretization_scheme = 'collocation',
                                # degree=5, finite_elements=20, integrator_type='implicit')
 ##
 t1 = time.time()
 
 solution_method = AugmentedLagrange(problem, IndirectMethod,
-                                    {}, #{ 'discretization_method': 'multiple-shooting'},
+                                    {}, #{ 'discretization_scheme': 'multiple-shooting'},
         degree = 3, degree_control = 3,
        relax_algebraic = True, relax_external_algebraic = True, relax_connecting_equations = False,
        max_iter = 2, mu_0 = 1, beta= 10., finite_elements = 6, integrator_type = 'implicit')

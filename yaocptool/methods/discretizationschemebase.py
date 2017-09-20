@@ -22,10 +22,11 @@ class DiscretizationSchemeBase:
     def finite_elements(self):
         return self.solution_method.finite_elements
 
-    def splitXandU(self, V):
-        raise NotImplementedError
+    def splitXandU(self, results_vector, all_subinterval=False):
+        x_values, _, u_values = self.splitXYandU(results_vector, all_subinterval)
+        return x_values, u_values
 
-    def splitXYandU(self, V):
+    def splitXYandU(self, V, all_subinterval=False):
         raise NotImplementedError
 
     def discretize(self, x_0=None, p=[], theta=None):

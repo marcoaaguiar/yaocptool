@@ -317,7 +317,6 @@ class AugmentedLagrange(SolutionMethodsBase):
     #        self.mu = self.mu_0
 
     def solve_raw(self, initial_guess=None, p=[], theta={}, x_0=[]):
-        t1 = time.time()
         if self.solver_initialized:
             if len(DM(x_0).full()) > 0:
                 initial_condition_as_parameter = True
@@ -325,15 +324,17 @@ class AugmentedLagrange(SolutionMethodsBase):
                 initial_condition_as_parameter = False
             self.getOCPSolver(initial_condition_as_parameter)
             self.solver_initialized = True
-        solver = self.ocp_solver.getSolver()
+        solver = self.ocp_solver.get_solver()
 
-        V_sol = initial_guess
+        # last_solution = initial_guess
         it = 0
 
+        t1 = time.time()
         while True:
             theta_k = self.joinNuToTheta(theta, self.nu)
-            V_sol = solver(V_sol, p=vertcat(p, self.mu), theta=theta_k, x_0=x_0)
-            X, U = self.splitXandU(V_sol)
+            raw_solution_dict = solver(initial_guess, p=vertcat(p, self.mu), theta=theta_k, x_0=x_0)
+            initial_guess = raw_solution_dict['x']
+            X, U = self.splitXandU(initial_guess)
             it += 1
 
             if it == self.max_iter:
@@ -344,13 +345,13 @@ class AugmentedLagrange(SolutionMethodsBase):
                 self.mu = min(self.mu_max, self.mu * self.beta)
 
         print 'Solution time: ', time.time() - t1
-        return V_sol
+        return raw_solution_dict
 
-    def solve(self, initial_guess=None, p=[], theta={}, x_0=[]):
-        V_sol = self.solve_raw(initial_guess, p, theta, x_0)
-
-        X, U = self.splitXandU(V_sol)
-        return X, U, V_sol
+    # def solve(self, initial_guess=None, p=[], theta={}, x_0=[]):
+    #     V_sol = self.solve_raw(initial_guess, p, theta, x_0)
+    #
+    #     X, U = self.splitXandU(V_sol)
+    #     return X, U, V_sol
 
         # ==============================================================================
 

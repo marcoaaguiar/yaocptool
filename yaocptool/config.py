@@ -14,7 +14,7 @@ SOLVER_OPTIONS = { #'nlpsol': "ipopt", \
 #        'ipopt.mu_oracle':'loqo',
         'ipopt.max_iter': 1000,
 #        'ipopt.nlp_scaling_method': 'none',
-       'ipopt.print_level':0,
+#        'ipopt.print_level':0,
 #        'verbose':False,
         },
        'verbose':False
