@@ -17,10 +17,10 @@ problem = create_CSTR_OCP()
 #                           )
 solution_method = AugmentedLagrange(problem, DirectMethod, \
                         {'degree': 3, 'degree_control':3,
-                         # 'discretization_method': 'collocation'
+                         'discretization_method': 'collocation'
                         },
                         max_iter=3,
-                        mu_0=1.,
+                        mu_0=100.,
                         beta=10.,
                         # relax_state_bounds=True,
                         finite_elements=40,

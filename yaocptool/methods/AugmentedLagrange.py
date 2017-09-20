@@ -232,7 +232,7 @@ class AugmentedLagrange(SolutionMethodsBase):
         X = [X_var[:, i] for i in range((self.finite_elements + 1))]
         U = [U_var[:, i] for i in range(self.finite_elements)]
 
-        t_list = self.time_break_points
+        t_list = self.time_breakpoints
         col_points = self.collocation_points(self.degree, with_zero = False)
 
         delta_t_list = [col_points[j] * self.delta_t for j in range(self.degree)]

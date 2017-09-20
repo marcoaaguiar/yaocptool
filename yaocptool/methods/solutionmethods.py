@@ -6,8 +6,6 @@ Created on Fri Oct 21 12:27:29 2016
 """
 
 from yaocptool import config
-
-# if not 'casadi' in sys.modules:
 from casadi import SX, MX, DM, inf, repmat, vertcat, collocation_points, \
     substitute, pi, diag, integrator, vec, nlpsol, \
     Function, linspace, horzcat, dot, gradient, jacobian, mtimes, \
@@ -18,6 +16,7 @@ import types
 from yaocptool.methods.multipleshooting import MultipleShootingScheme
 from yaocptool.methods.collocationscheme import CollocationScheme
 from yaocptool.modelling_classes.model_classes import SystemModel
+from .optimizationresult import OptimizationResult
 # from CONFIG import SOLVER_OPTIONS
 
 solver = "nlpsol"
@@ -57,7 +56,7 @@ class SolutionMethodsBase:
         return float(self.problem.t_f - self.problem.t_0) / self.finite_elements
 
     @property
-    def time_break_points(self):
+    def time_breakpoints(self):
         return [self.delta_t*k for k in xrange(self.finite_elements+1)]
 
     def collocation_points(self, degree, cp = 'radau', with_zero = False):
@@ -298,29 +297,19 @@ class SolutionMethodsBase:
         solver = nlpsol('solver', 'ipopt', nlp_prob, config.SOLVER_OPTIONS['nlpsol_options'])
         return solver
 
-    def solveNumProblem(self, nlp_prob, nlp_call, initial_guess=0):
-        solver = nlpsol('solver', 'ipopt', nlp_prob, config.SOLVER_OPTIONS['nlpsol_options'])
-
-        #        solver_call ={'x0':x0, 'lbg':0, 'ubg':0, 'lbx':num_prob['lbx'], 'ubx':num_prob['ubx']}
-        nlp_call['x0'] = initial_guess
-
-        V_sol = solver(**nlp_call)['x']
-        return V_sol
-
     def solve_raw(self, initial_guess=None, p=[]):
         if not self.prepared:
             self.prepare()
             self.prepared = True
 
-        solver = self.getSolver()
-
-        V_sol = solver(initial_guess=initial_guess)
+        V_sol = self.getSolver()(initial_guess=initial_guess)
         return V_sol
 
     def solve(self, initial_guess=None, p=[]):
         V_sol = self.solve_raw(initial_guess, p)
 
-        X, U = self.splitXandU(V_sol)
+        # X, U = self.splitXandU(V_sol)
+        # return OptimizationResult(V_sol, solution_method=self)
         return X, U, V_sol
 
     # ==============================================================================
@@ -369,16 +358,12 @@ class SolutionMethodsBase:
         t_list = [float(t) for t in (linspace(t_0, t_f, finite_elements + 1)).full()]
         micro_t = [t_0]
 
-        #        F_y = Function('f_y', [self.model.x_sym, self.model.yz_sym,  self.model.t_sym,
-        #                                    self.model.p_sym, self.model.theta_sym,
-        #                                    self.model.u_par], [self.model.alg])
         # Simualtion
         micro_X = [X[0]]
         micro_Y = []
         micro_U = []
         x_0 = X[0]
         for k in xrange(finite_elements):
-            #            x_0 = X[k]
             dae_sys = self.model.getDAESystem()
             self.model.convertFromTauToTime(dae_sys, t_list[k], t_list[k + 1])
             func_u = self.model.convertExprFromTauToTime(self.model.control_function, t_list[k], t_list[k + 1])
