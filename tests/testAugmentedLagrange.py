@@ -37,5 +37,8 @@ for solution_method_class in [DirectMethod, IndirectMethod]:
                                         integrator_type = 'explicit')
 
                 result =solution_method.solve()
-                result.plot()
+                result.plot([{'x':[0]}, {'x':[2],}
+                             # {'u':[0]},
+                             # {'u':[1]}
+                             ])
                 # x, y, u, t= aug.plotSimulate(x_sol, u_sol, [{'x':[0]},{'u':[0]},{'x':[2],'u':[1]}], 1,integrator_type= 'explicit')

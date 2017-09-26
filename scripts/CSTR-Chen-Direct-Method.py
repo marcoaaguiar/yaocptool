@@ -4,7 +4,7 @@ sys.path.append(abspath(dirname(dirname(__file__))))
 
 from yaocptool.problems.cstr_chen import create_CSTR_OCP
 from yaocptool.methods import DirectMethod, AugmentedLagrange, IndirectMethod
-
+import yaocptool.methods.solutionmethodsbase
 
 
 problem = create_CSTR_OCP()
@@ -28,7 +28,9 @@ solution_method = AugmentedLagrange(problem, DirectMethod, \
                                     )
 
 result = solution_method.solve()
-result.plot([{'x':[0,1]},{'x':[2,3]},{'u':[0]},{'u':[1]}])
+result.plot([{'x':[0,1]},{'x':[2,3]},
+             # {'u':[0]},{'u':[1]}
+             ])
 
 # x, y, u, t= solution_method.plotSimulate(x_sol, u_sol, [{'x':[0,1]},{'x':[2,3]},{'u':[0]},{'u':[1]}], 1, integrator_type='explicit')
 # u = problem.u_ref

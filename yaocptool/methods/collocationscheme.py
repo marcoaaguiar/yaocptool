@@ -10,13 +10,32 @@ from discretizationschemebase import DiscretizationSchemeBase
 
 
 class CollocationScheme(DiscretizationSchemeBase):
+    @property
+    def time_interpolation(self):
+        tau_list = self.solution_method.collocation_points(self.degree, with_zero=True)
+        return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
+
+    @property
+    def time_interpolation_states(self):
+        return self.time_interpolation
+
+    @property
+    def time_interpolation_algebraics(self):
+        tau_list = self.solution_method.collocation_points(self.degree, with_zero=False)
+        return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
+
+    @property
+    def time_interpolation_controls(self):
+        tau_list = [0.] if self.degree_control == 1 else self.solution_method.collocation_points(self.degree, with_zero=False)
+        return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
+
     def number_of_variables(self):
         return self.model.Nx * (self.finite_elements) * (self.degree + 1) \
                + self.model.Nyz * self.finite_elements * self.degree \
                + self.model.Nu * self.finite_elements * self.degree_control \
                + self.problem.N_eta
 
-    def create_nlp_symbolic_variables_and_bound_vectors(self):
+    def _create_nlp_symbolic_variables_and_bound_vectors(self):
         eta = MX.sym('eta', self.problem.N_eta)
         X = []
         Y = []
@@ -113,7 +132,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         tf = self.problem.t_f
         h = (tf - t0) / finite_elements
 
-        V, X, YZ, U, eta, vars_lb, vars_ub = self.create_nlp_symbolic_variables_and_bound_vectors()
+        V, X, YZ, U, eta, vars_lb, vars_ub = self._create_nlp_symbolic_variables_and_bound_vectors()
 
         G = []
 
@@ -211,17 +230,51 @@ class CollocationScheme(DiscretizationSchemeBase):
         base_x0 = vertcat(base_x0, DM.zeros(self.problem.N_eta))
         return base_x0
 
-    def solve(self, initial_guess=None, p=[]):
-        V_sol = self.solve_raw(initial_guess, p)
+    def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
+        """
+        Set the raw data received from the solver and put it in the Optimization Result object
+        :type optimization_result: yaocptool.methods.optimizationresult.OptimizationResult
+        :type raw_solution_dict: dict
+        """
 
-        X, U = self.splitXandU(V_sol)
-        X_finite_element = []
-        U_finite_element = []
+        optimization_result.raw_solution_dict = raw_solution_dict
+        optimization_result.raw_decision_variables = raw_solution_dict['x']
 
-        for x in X:
-            X_finite_element.append(x[0])
-        X_finite_element.append(X[-1][-1])
-        #            for u in U:
-        #                U_finite_element.append(u[0])
+        raw_data = raw_solution_dict['x']
+        x_breakpoints_values, y_breakpoints_values, u_breakpoints_values = self.splitXYandU(raw_data, all_subinterval=False)
+        x_interpolation_values, y_interpolation_values, u_interpolation_values = self.splitXYandU(raw_data, all_subinterval=True)
+        
 
-        return X_finite_element, U, V_sol
+        optimization_result.objective = raw_solution_dict['f']
+        optimization_result.constraint_values = raw_solution_dict['g']
+
+        optimization_result.x_breakpoints_data['values'] = x_breakpoints_values
+        optimization_result.y_breakpoints_data['values'] = y_breakpoints_values
+        optimization_result.u_breakpoints_data['values'] = u_breakpoints_values
+
+        optimization_result.x_breakpoints_data['time'] = self.time_breakpoints
+        optimization_result.y_breakpoints_data['time'] = self.time_breakpoints[:-1]
+        optimization_result.u_breakpoints_data['time'] = self.time_breakpoints[:-1]
+
+        optimization_result.x_interpolation_data['values'] = x_interpolation_values
+        optimization_result.y_interpolation_data['values'] = y_interpolation_values
+        optimization_result.u_interpolation_data['values'] = u_interpolation_values
+
+        optimization_result.x_interpolation_data['time'] = self.time_interpolation_states
+        optimization_result.y_interpolation_data['time'] = self.time_interpolation_algebraics
+        optimization_result.u_interpolation_data['time'] = self.time_interpolation_controls
+
+    # def solve(self, initial_guess=None, p=[]):
+    #     V_sol = self.solve_raw(initial_guess, p)
+    #
+    #     X, U = self.splitXandU(V_sol)
+    #     X_finite_element = []
+    #     U_finite_element = []
+    #
+    #     for x in X:
+    #         X_finite_element.append(x[0])
+    #     X_finite_element.append(X[-1][-1])
+    #     #            for u in U:
+    #     #                U_finite_element.append(u[0])
+    #
+    #     return X_finite_element, U, V_sol

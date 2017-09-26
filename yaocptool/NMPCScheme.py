@@ -65,7 +65,7 @@ class NMPCScheme:
         t = self.t_0
         k = 0
         V_sol = 0
-        solver = self.ocp_solver.getSolver(initial_condition_as_parameter=True)
+        solver = self.ocp_solver.get_solver(initial_condition_as_parameter=True)
         x_0 = self.problem.x_0
         X = [x_0]
         U = []

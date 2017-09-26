@@ -92,10 +92,11 @@ class OptimalControlProblem:
         self.V += x_c
 
     def makeFinalCostFunction(self, p = None):
-        if p != None:
-            self.V_function = Function('FinalCost', [self.model.x_sym, p],[self.V])
-        else:
-            self.V_function = Function('FinalCost', [self.model.x_sym],[self.V])
+        raise Exception('To be removed')
+        # if p != None:
+        #     self.V_function = Function('FinalCost', [self.model.x_sym, p],[self.V])
+        # else:
+        #     self.V_function = Function('FinalCost', [self.model.x_sym],[self.V])
 
     def createQuadraticCost(self, par_dict):
         self.L = 0

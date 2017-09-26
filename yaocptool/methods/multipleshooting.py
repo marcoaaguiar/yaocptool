@@ -9,19 +9,19 @@ from discretizationschemebase import DiscretizationSchemeBase
 
 
 class MultipleShootingScheme(DiscretizationSchemeBase):
-    def number_of_variables(self):
+    def _number_of_variables(self):
         return self.model.Nx * (self.finite_elements + 1) \
                + self.finite_elements * self.model.Nu * self.degree_control \
                + self.problem.N_eta
 
-    def create_nlp_symbolic_variables_and_bound_vectors(self):
-        NV = self.number_of_variables()
+    def _create_nlp_symbolic_variables_and_bound_vectors(self):
+        n_v = self._number_of_variables()
 
-        V = MX.sym("V", NV)
-        vars_lb = -DM.inf(NV)
-        vars_ub = DM.inf(NV)
+        v = MX.sym("V", n_v)
+        vars_lb = -DM.inf(n_v)
+        vars_ub = DM.inf(n_v)
 
-        X, U = self.splitXandU(V)
+        x, u = self.splitXandU(v)
 
         v_offset = 0
         for k in range(self.finite_elements + 1):
@@ -34,13 +34,14 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                     vars_lb[v_offset:v_offset + self.model.Nu] = self.problem.u_min
                     vars_ub[v_offset:v_offset + self.model.Nu] = self.problem.u_max
                     v_offset = v_offset + self.model.Nu
-        eta = V[NV - self.problem.N_eta:]
-        return V, X, U, eta, vars_lb, vars_ub
+        eta = v[n_v - self.problem.N_eta:]
+        return v, x, u, eta, vars_lb, vars_ub
 
-    def splitXYandU(self, results_vector,  all_subinterval=False):
+    def splitXYandU(self, results_vector, all_subinterval=False):
         X = []
         Y = []
         U = []
+
         v_offset = 0
         if self.problem.N_eta > 0:
             results_vector = results_vector[:-self.problem.N_eta]
@@ -60,7 +61,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         if theta is None:
             theta = dict([(i, []) for i in range(finite_elements)])
 
-        if x_0 == None:
+        if x_0 is None:
             x_0 = self.problem.x_0
 
         t0 = self.problem.t_0
@@ -68,7 +69,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         h = (tf - t0) / finite_elements
 
         # Get the state at each shooting node
-        V, X, U, eta, vars_lb, vars_ub = self.create_nlp_symbolic_variables_and_bound_vectors()
+        V, X, U, eta, vars_lb, vars_ub = self._create_nlp_symbolic_variables_and_bound_vectors()
         G = []
 
         F_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
@@ -77,21 +78,16 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         G.append(F_h_initial(X[0], x_0))
 
         for k in range(finite_elements):
-            iopts = {}
-            iopts["t0"] = k * h
-            iopts["tf"] = (k + 1) * h
-
             dae_sys = self.model.getDAESystem()
-            self.model.convertFromTauToTime(dae_sys, k * h, (k + 1) * h)
+            self.model.convertFromTauToTime(dae_sys, self.time_breakpoints[k], self.time_breakpoints[k + 1])
 
             p_i = vertcat(p, theta[k], U[k])
 
-            #            I = self.model.createIntegrator(dae_sys, iopts, integrator_type= self.integrator_type)
-            #            XF = I(x0=X[k], p = p_i)["xf"]
-            XF = self.model.simulateStep(X[k], t_0=k * h, t_f=(k + 1) * h, p=p_i, dae_sys=dae_sys,
-                                         integrator_type=self.solution_method.integrator_type)
+            x_f = self.model.simulateStep(X[k], t_0=self.time_breakpoints[k], t_f=self.time_breakpoints[k + 1], p=p_i,
+                                          dae_sys=dae_sys,
+                                          integrator_type=self.solution_method.integrator_type)
 
-            G.append(XF - X[k + 1])
+            G.append(x_f - X[k + 1])
 
         G.append(F_h_final(X[-1], eta))
 
@@ -99,16 +95,18 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(X[-1], p)
         else:
             cost = 0
-        nlp_prob = {}
-        nlp_call = {}
 
-        nlp_prob['g'] = vertcat(*G)
-        nlp_prob['x'] = V
-        nlp_prob['f'] = cost
-        nlp_call['lbx'] = vars_lb
-        nlp_call['ubx'] = vars_ub
-        nlp_call['lbg'] = DM.zeros(nlp_prob['g'].shape)
-        nlp_call['ubg'] = DM.zeros(nlp_prob['g'].shape)
+        nlp_prob = {'g': vertcat(*G),
+                    'x': V,
+                    'f': cost}
+
+        lbg = DM.zeros(nlp_prob['g'].shape)
+        ubg = DM.zeros(nlp_prob['g'].shape)
+
+        nlp_call = {'lbx': vars_lb,
+                    'ubx': vars_ub,
+                    'lbg': lbg,
+                    'ubg': ubg}
 
         return nlp_prob, nlp_call
 
@@ -118,3 +116,33 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         x0 = vertcat(repmat(base_x0, self.finite_elements), self.problem.x_0)
         x0 = vertcat(x0, DM.zeros(self.problem.N_eta))
         return x0
+
+    def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
+        """
+        Set the raw data received from the solver and put it in the Optimization Result object
+        :type optimization_result: yaocptool.methods.optimizationresult.OptimizationResult
+        :type raw_solution_dict: dict
+        """
+
+        optimization_result.raw_solution_dict = raw_solution_dict
+        optimization_result.raw_decision_variables = raw_solution_dict['x']
+
+        optimization_result.objective = raw_solution_dict['f']
+        optimization_result.constraint_values = raw_solution_dict['g']
+
+        x_breakpoints_values, y_breakpoints_values, u_breakpoints_values = self.splitXYandU(raw_solution_dict['x'])
+        optimization_result.x_breakpoints_data['values'] = x_breakpoints_values
+        optimization_result.y_breakpoints_data['values'] = y_breakpoints_values
+        optimization_result.u_breakpoints_data['values'] = u_breakpoints_values
+
+        optimization_result.x_breakpoints_data['time'] = self.time_breakpoints
+        optimization_result.y_breakpoints_data['time'] = self.time_breakpoints[:-1]
+        optimization_result.u_breakpoints_data['time'] = self.time_breakpoints[:-1]
+
+        optimization_result.x_interpolation_data['values'] = [val for val in x_breakpoints_values]
+        optimization_result.y_interpolation_data['values'] = [val for val in y_breakpoints_values]
+        optimization_result.u_interpolation_data['values'] = [val for val in u_breakpoints_values]
+
+        optimization_result.x_interpolation_data['time'] = [t for t in self.time_breakpoints]
+        optimization_result.y_interpolation_data['time'] = [t for t in self.time_breakpoints[:-1]]
+        optimization_result.u_interpolation_data['time'] = [t for t in self.time_breakpoints[:-1]]

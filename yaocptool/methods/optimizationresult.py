@@ -2,29 +2,34 @@ import matplotlib.pyplot as plt
 from casadi import horzcat, DM
 from typing import List
 
+
 class OptimizationResult:
-    def __init__(self, raw_solution_dict=None, solution_method=None, **kwargs):
+    def __init__(self, **kwargs):
         # solution_method:
-        self.raw_solution_dict = raw_solution_dict
-        self.raw_decision_variables = raw_solution_dict['x'] # type: List[DM]
+        self.raw_solution_dict = {}
+        self.raw_decision_variables = None  # type: List[DM]
         self.finite_elements = -1
         self.degree = -1
         self.degree_control = -1
-        self.x_values = []
-        self.y_values = []
-        self.u_values = []
+
         self.t_0 = -1
         self.t_f = -1
         self.discretization_scheme = ''
+
         self.time_breakpoints = []
         self.collocation_points = []
 
+        self.objective = None  # type: DM
+        self.constraints_values = None  # type: DM
+        self.x_breakpoints_data = {'values': [], 'time': []}
+        self.y_breakpoints_data = {'values': [], 'time': []}
+        self.u_breakpoints_data = {'values': [], 'time': []}
+        self.x_interpolation_data = {'values': [], 'time': []}
+        self.y_interpolation_data = {'values': [], 'time': []}
+        self.u_interpolation_data = {'values': [], 'time': []}
+
         for (k, v) in kwargs.items():
             setattr(self, k, v)
-
-        if solution_method is not None:
-            self._get_attributes_from_solution_method(solution_method)
-        self._extract_from_raw_data(self.raw_decision_variables, solution_method)
 
     @property
     def is_collocation(self):
@@ -37,53 +42,42 @@ class OptimizationResult:
         for attr in ['finite_elements', 'degree', 'degree_control', 't_0', 't_f', 'time_breakpoints']:
             if getattr(self, attr) < 0:
                 raise Exception('{} attribute {} is lower than 0'.format(self.__class__.__name__, attr))
+        for attr in ['objective']:
+            if getattr(self, attr) is None:
+                raise Exception('{} attribute {} is None'.format(self.__class__.__name__, attr))
         return True
 
-    def _get_attributes_from_solution_method(self, solution_method):
-        for attr in ['finite_elements', 'degree', 'degree_control', 'time_breakpoints']:
-            attr_value = getattr(solution_method, attr)
-            setattr(self, attr, attr_value)
-
-        self.collocation_points = solution_method.collocation_points(solution_method.degree)
-
-        for attr in ['t_0', 't_f']:
-            attr_value = getattr(solution_method.problem, attr)
-            setattr(self, attr, attr_value)
-
-        self.discretization_scheme = solution_method
-
-
-
-    def _extract_from_raw_data(self, raw_data, solution_method):
-        self.x_values, self.y_values, self.u_values = solution_method.splitXYandU(raw_data)
-
     # Plot
-    def plot(self, plot_list, t_states=None):
+    def plot(self, plot_list, interpolation_data=None):
         if self.is_valid:
-            if self.is_collocation:
-                self.plot_collocation(plot_list, t_states)
+            if self.is_collocation and interpolation_data is not False:
+                self._plot_interpolation(plot_list)
             else:
-                self.plot_multiple_shooting(plot_list, t_states)
+                self._plot_breakpoints(plot_list)
 
-    def plot_multiple_shooting(self, plot_list, t_states=None):
-        x_values, y_values, u_values = self.x_values, self.y_values, self.u_values
-        t_x = self.time_breakpoints
-        t_yu = self.time_breakpoints[:-1]
+    def _plot_breakpoints(self, plot_list):
+        x_values = self.x_breakpoints_data['values']
+        y_values = self.y_breakpoints_data['values']
+        u_values = self.u_breakpoints_data['values']
+
+        t_x = self.x_breakpoints_data['time']
+        t_y = self.y_breakpoints_data['time']
+        t_u = self.u_breakpoints_data['time']
 
         for k, entry in enumerate(plot_list):
             fig = plt.figure(k)
             if 'x' in entry:
                 for i in entry['x']:
-                    plt.step(t_x, horzcat(*x_values)[i, :].T, where='post')
+                    plt.plot(t_x, horzcat(*x_values)[i, :].T)
                 plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
             if 'y' in entry:
                 for i in entry['y']:
-                    plt.step(t_yu, horzcat(*y_values)[i, :].T, where='post')
+                    plt.plot(t_y, horzcat(*y_values)[i, :].T)
                 plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
 
             if 'u' in entry:
                 for i in entry['u']:
-                    plt.step(t_yu, horzcat(*u_values)[i, :].T, where='post')
+                    plt.step(t_u, horzcat(*u_values)[i, :].T, where='post')
                 plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
             plt.grid()
             axes = fig.axes
@@ -91,5 +85,44 @@ class OptimizationResult:
             k += 1
         plt.show()
 
-    def plot_collocation(self, plot_list, t_states=None):
-        pass
+    def _plot_interpolation(self, plot_list):
+        x_values = self.x_interpolation_data['values']
+        y_values = self.y_interpolation_data['values']
+        u_values = self.u_interpolation_data['values']
+
+        x_values = horzcat(*[horzcat(*x_values[i]) for i in range(self.finite_elements)])
+        y_values = horzcat(*[horzcat(*y_values[i]) for i in range(self.finite_elements)])
+
+        t_x = self.x_interpolation_data['time']
+        t_y = self.y_interpolation_data['time']
+        t_u = self.u_interpolation_data['time']
+
+        t_x = horzcat(*[horzcat(*t_x[i]) for i in range(self.finite_elements)])
+        t_y = horzcat(*[horzcat(*t_y[i]) for i in range(self.finite_elements)])
+        t_u = horzcat(*[horzcat(*t_u[i]) for i in range(self.finite_elements)])
+
+        for k, entry in enumerate(plot_list):
+            fig = plt.figure(k)
+
+            if 'x' in entry:
+                for i in entry['x']:
+                    plt.plot(t_x.T, x_values[i, :].T)
+                plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
+
+            if 'y' in entry:
+                for i in entry['y']:
+                    plt.plot(t_y.T, y_values[i, :].T)
+                plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
+
+            if 'u' in entry:
+                u_value_concat = horzcat(*[horzcat(*u_values[i]) for i in range(self.finite_elements)])
+
+                for i in entry['u']:
+                    plt.step(t_u.T, u_value_concat[i, :].T, where='post')
+                plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
+
+            plt.grid()
+            axes = fig.axes
+            axes[0].ticklabel_format(useOffset=False)
+            k += 1
+        plt.show()

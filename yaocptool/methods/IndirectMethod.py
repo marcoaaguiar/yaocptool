@@ -12,16 +12,19 @@ from casadi import SX, MX, DM, inf, repmat, vertcat, collocation_points, \
                     substitute, linspace, integrator, vec, nlpsol, \
                     dot, gradient, hessian, mtimes, inv, fmin, fmax, Function
   
-from solutionmethods import *
+from solutionmethodsbase import *
 import warnings
-
-import matplotlib.pyplot as plt
-
 
 class IndirectMethod(SolutionMethodsBase):
     def __init__(self, problem, **kwargs):
-        SolutionMethodsBase.__init__(self, **kwargs)
-
+        """
+        :param problem: OptimalControlProblem
+        :param integrator_type: str
+        :param solution_method: str
+        :param degree: int
+        :param discretization_scheme: str 'multiple-shooting' | 'collocation'
+        """
+        SolutionMethodsBase.__init__(self, problem, **kwargs)
         self.problem = problem
         self.solution_class = 'indirect'
 
@@ -29,7 +32,12 @@ class IndirectMethod(SolutionMethodsBase):
         self.hasCostState = False
         
         self.checkBounds()
-        
+
+    def prepare(self):
+        self.includeAdjointStates()
+        self.u_opt = self.calculateOptimalControl()
+        self.ReplaceWithOptimalControl(self.u_opt)
+
     def checkBounds(self):
         for i in range(self.model.Nx):
             if not self.problem.x_min[i] == -inf:
@@ -66,10 +74,6 @@ class IndirectMethod(SolutionMethodsBase):
         self.model.control_function = u_opt
         self.problem.removeControl(self.model.u_sym)
     
-    def prepare(self):
-        self.includeAdjointStates()
-        self.u_opt = self.calculateOptimalControl()
-        self.ReplaceWithOptimalControl(self.u_opt)
-        
+
 
         

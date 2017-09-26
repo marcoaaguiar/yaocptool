@@ -101,7 +101,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
         self.transformFreeZInControl()
         self.parametrizeVariablesInProblems()
         self.initializeApproximationData()
-        self.initializeNuValues()
+        self.initialize_nu_values()
         ## itialized ocp solver        
         for p in self.problems_dict:
             self.problems_dict[p]['ocp_solver'] = Ocp_solver_class(self.problems_dict[p]['problem'], **solver_options)
@@ -179,9 +179,9 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
                 problem.model.includeTheta(nu_par)
 
     
-    def initializeNuValues(self):
+    def initialize_nu_values(self):
         for k in self.con_dict:
-            self.con_dict[k]['nu_dict'] = self.createNuInitialGuess(Nr = 1)
+            self.con_dict[k]['nu_dict'] = self.create_nu_initial_guess(Nr = 1)
     
     def getProblemNus(self, problem_id):
         problem_nu_dict = {}
@@ -312,7 +312,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
             initial_condition_as_parameter = False
             
         for p in self.problems_dict:
-            self.problems_dict[p]['nlp_solver'] = self.problems_dict[p]['ocp_solver'].getSolver(initial_condition_as_parameter = initial_condition_as_parameter)
+            self.problems_dict[p]['nlp_solver'] = self.problems_dict[p]['ocp_solver'].get_solver(initial_condition_as_parameter = initial_condition_as_parameter)
     
     def solveIteration(self, initial_guess, p, theta, x_0, tol = 1e-4, max_iter = 2):
         V_sol = initial_guess

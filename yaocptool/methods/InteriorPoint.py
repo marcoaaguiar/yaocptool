@@ -170,7 +170,7 @@ class InteriorPoint:
         return self.solve_raw
     
     def getOCPSolver(self,initial_condition_as_parameter = False):
-        self.solver = self.ocp_solver.getSolver(initial_condition_as_parameter= initial_condition_as_parameter)
+        self.solver = self.ocp_solver.get_solver(initial_condition_as_parameter= initial_condition_as_parameter)
         
         
     def stepForward(self):

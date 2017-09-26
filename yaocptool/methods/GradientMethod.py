@@ -109,7 +109,7 @@ class GradientMethod(IndirectMethod.IndirectMethod):
         
     def prepare(self):
         self.includeAdjointStates()
-        self.createCostState()
+        self._create_cost_state()
         self.initializeU()
         self.defineS()
         self.parametrizeControl()
@@ -117,7 +117,7 @@ class GradientMethod(IndirectMethod.IndirectMethod):
 #        self.ReplaceWithOptimalControl(self.u_opt)
         
 
-    def getSolver(self, num_parameters=None, initial_condition_as_parameter = False):
+    def get_solver(self, num_parameters=None, initial_condition_as_parameter = False):
         ''' 
             all_mx = [p, theta, x_0]
         '''

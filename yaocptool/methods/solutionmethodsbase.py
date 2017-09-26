@@ -1,37 +1,28 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Oct 21 12:27:29 2016
-
-@author: marco
-"""
-
 import matplotlib.pyplot as plt
 from casadi import SX, MX, DM, vertcat, collocation_points, \
     substitute, integrator, vec, nlpsol, \
     Function, linspace, horzcat, dot, gradient, jacobian, mtimes, \
     reshape
 
+from typing import List
 from yaocptool import config
 from yaocptool.methods.collocationscheme import CollocationScheme
 from yaocptool.methods.multipleshooting import MultipleShootingScheme
+from yaocptool.methods.discretizationschemebase import DiscretizationSchemeBase
 from .optimizationresult import OptimizationResult
 from yaocptool.modelling_classes.model_classes import SystemModel
 from yaocptool.modelling_classes.ocp import OptimalControlProblem
-# from CONFIG import SOLVER_OPTIONS
 
-solver = "nlpsol"
-
-# _obj_scaling_factor = 1e-3
-obj_scaling_factor = 1
-
-
-# integrator_options= {
-#        'abstol' : 1e-12, # abs. tolerance
-#        'reltol' :  1e-12 # rel. tolerance
-#    }
 
 class SolutionMethodsBase:
     def __init__(self, problem, **kwargs):
+        """
+        :param problem: OptimalControlProblem
+        :param integrator_type: str
+        :param solution_method: str
+        :param degree: int
+        :param discretization_scheme: str
+        """
         self.solver = None
         self.problem = problem  # type: OptimalControlProblem
         self.model = self.problem.model  # type: SystemModel
@@ -43,7 +34,7 @@ class SolutionMethodsBase:
         self.prepared = False
         self.discretization_scheme = 'multiple-shooting'
         # self.discretization_scheme = 'collocation'
-        self.discretizer = None
+        self.discretizer = None # type: DiscretizationSchemeBase
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -74,11 +65,15 @@ class SolutionMethodsBase:
         return self.discretizer.splitXYandU
 
     def collocation_points(self, degree, cp='radau', with_zero=False):
-        return [0] + collocation_points(degree, cp)  # All collocation time points
+        # type: (int, str, bool) -> List[int]
+        if with_zero:
+            return [0] + collocation_points(degree, cp)  # All collocation time points
+        else:
+            return collocation_points(degree, cp)  # All collocation time points
 
     def createLagrangianPolynomialBasis(self, degree, starting_index=0, tau=None):
         if tau == None:
-            tau = self.model.tau_sym  # Collocation point
+            tau = self.model.tau_sym  # symbolic variable
 
         tau_root = self.collocation_points(degree, with_zero=True)  # All collocation time points
 
@@ -105,11 +100,11 @@ class SolutionMethodsBase:
         else:
             if point_at_t0:
                 points = SX.sym(name, size, degree + 1)
-                tau, ell_list = self.createLagrangianPolynomialBasis(degree, 0)
+                tau, ell_list = self.createLagrangianPolynomialBasis(degree, 0, tau=tau)
                 u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree + 1)])
             else:
                 points = SX.sym(name, size, degree)
-                tau, ell_list = self.createLagrangianPolynomialBasis(degree, 1)
+                tau, ell_list = self.createLagrangianPolynomialBasis(degree, 1, tau=tau)
                 u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree)])
             par = vec(points)
 
@@ -129,7 +124,7 @@ class SolutionMethodsBase:
             u_pol = self.u_pol
         return u_pol
 
-    def createCostState(self):
+    def _create_cost_state(self):
         if not self.hasCostState:
             self.problem.createCostState()
 
@@ -193,20 +188,6 @@ class SolutionMethodsBase:
         if 'alg' in dae_sys:
             dae_sys['alg'] = substitute(dae_sys['alg'], tau, (t - t_k) / h)
 
-    def createIntegrator(self, dae_sys, options):
-        raise Exception
-        if self.integrator_type == 'implicit':
-            if self.model.system_type == 'ode':
-                I = integrator("I", "cvodes", dae_sys, options)
-            else:
-                I = integrator("I", "idas", dae_sys, options)
-        else:
-            if self.model.system_type == 'ode':
-                I = self.explicitIntegrator('explicitIntegrator', 'rk4', dae_sys, options)
-            else:
-                raise Exception('explicit integrator not implemented')
-        return I
-
     def joinThetas(self, *args):
         new_theta = {}
         all_keys = []
@@ -242,10 +223,10 @@ class SolutionMethodsBase:
     # SOLVE
     # ==============================================================================
 
-    @property
-    def getSolver(self, initial_condition_as_parameter=False):
-        raise Warning('method changed to get_solver')
-        return self.get_solver
+    # @property
+    # def get_solver(self, initial_condition_as_parameter=False):
+    #     raise Warning('method changed to get_solver')
+    #     return self.get_solver
 
     def get_solver(self, initial_condition_as_parameter=False):
         '''
@@ -305,20 +286,31 @@ class SolutionMethodsBase:
     def callSolver(self, initial_guess=None, p=[], theta=None, x_0=[]):
         raise Exception('method changed to call_solver')
 
-    def solve_raw(self, initial_guess=None, p=[]):
+    def solve_raw(self, initial_guess=None, p=[], theta={}, x_0=[]):
         if not self.prepared:
             self.prepare()
             self.prepared = True
 
-        solution_dict = self.get_solver()(initial_guess=initial_guess)
+        solution_dict = self.get_solver()(initial_guess=initial_guess, p= p, theta = theta, x_0 = x_0)
         return solution_dict
 
-    def solve(self, initial_guess=None, p=[]):
-        solution_dict = self.solve_raw(initial_guess, p)
+    def solve(self, initial_guess=None, p=[], theta={}, x_0=[]):
+        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p= p, theta = theta, x_0 = x_0)
+        return self.create_optimization_result(raw_solution_dict)
 
-        # X, U = self.splitXandU(V_sol)
-        return OptimizationResult(solution_dict, solution_method=self)
-        # return X, U, V_sol
+    def create_optimization_result(self, raw_solution_dict):
+        optimization_result = OptimizationResult()
+        for attr in ['finite_elements', 'degree', 'degree_control', 'time_breakpoints', 'discretization_scheme']:
+            attr_value = getattr(self, attr)
+            setattr(optimization_result, attr, attr_value)
+
+        for attr in ['t_0', 't_f']:
+            attr_value = getattr(self.problem, attr)
+            setattr(optimization_result, attr, attr_value)
+
+        self.discretizer.set_data_to_optimization_result_from_raw_data(optimization_result, raw_solution_dict)
+
+        return optimization_result
 
     # ==============================================================================
     # PLOT AND SIMULAT

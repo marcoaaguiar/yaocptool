@@ -9,7 +9,7 @@ import time
 
 from casadi import SX, DM, inf, vertcat, dot, collocation_points, vec, Function, linspace, MX, horzcat
 
-from solutionmethods import SolutionMethodsBase
+from solutionmethodsbase import SolutionMethodsBase
 
 
 class AugmentedLagrange(SolutionMethodsBase):
@@ -29,6 +29,7 @@ class AugmentedLagrange(SolutionMethodsBase):
         self.problem = problem
 
         self.degree = 4
+        self.degree_control = 4
 
         self.Nr = 0
         self.nu_sym = []
@@ -46,6 +47,7 @@ class AugmentedLagrange(SolutionMethodsBase):
         self.m = 0
 
         self.solver = None
+        self.ocp_solver = None  # :type solution_method: yaocptool.methods.solutionmethodsbase.SolutionMethodsBase
         self.solver_initialized = False
 
         self.relax_algebraic = True
@@ -63,31 +65,27 @@ class AugmentedLagrange(SolutionMethodsBase):
 
         # RELAXATION
         if self.model.Ny > 0 and self.relax_algebraic:
-            self.relaxAlgebraicEquations()
+            self.relax_algebraic_equations()
 
         if self.model.Nyz > 0 and self.relax_connecting_equations:
-            self.relaxConnectingEquations()
+            self.relax_connecting_equations()
 
         if self.model.Nz > 0 and self.relax_external_algebraic:
-            self.relaxExternalAlgebraicEquations()
+            self.relax_external_algebraic_equations()
 
         if self.relax_state_bounds:
-            self.relaxStatesConstraints()
+            self.relax_states_constraints()
 
         # CREATE THE OCP SOLVER
         self.model.includeParameter(self.mu_sym)
 
-        for attr in ['degree', 'finite_elements']:
+        for attr in ['degree', 'finite_elements', 'degree_control']:
             if attr in solver_options and attr in kwargs and solver_options[attr] != kwargs[attr]:
-                raise Exception(
-                    "Trying to pass attribute '{}' for '{}' and '{}' that are not equal: {} != {}".format(attr,
-                                                                                  self.__class__.__name__,
-                                                                                  Ocp_solver_class.__name__,
-                                                                                  kwargs[attr],
-                                                                                  solver_options[
-                                                                                  attr]))
+                exc_mess = "Trying to pass attribute '{}' for '{}' and '{}' that are not equal: {} != {}"
+                raise Exception(exc_mess.format(attr, self.__class__.__name__, Ocp_solver_class.__name__, kwargs[attr],
+                                                solver_options[attr]))
             elif attr in solver_options:
-                self.degree = solver_options[attr]
+                setattr(self, attr, solver_options[attr])
             else:
                 solver_options[attr] = getattr(self, attr)
 
@@ -95,10 +93,10 @@ class AugmentedLagrange(SolutionMethodsBase):
 
         if self.initialize:
             if self.parametrize:
-                self.parametrizeNu()
+                self.parametrize_nu()
 
-            if self.nu == None:
-                self.initializeNuValues()
+            if self.nu is None:
+                self.initialize_nu_values()
 
             # Initialize OCP solver
 
@@ -124,28 +122,28 @@ class AugmentedLagrange(SolutionMethodsBase):
     # RELAX
     # ==============================================================================
 
-    def saveRelaxedEquation(self, alg):
+    def save_relaxed_equation(self, alg):
         self.model.relaxed_alg = vertcat(self.relaxed_alg, alg)
 
-    def relaxAlgebraicEquations(self):
+    def relax_algebraic_equations(self):
         nu_alg = SX.sym('AL_nu_alg', self.model.alg.size1())
         self.nu_sym = vertcat(self.nu_sym, nu_alg)
         self.problem.L += dot(nu_alg, self.model.alg) + self.mu_sym / 2. * dot(self.model.alg, self.model.alg)
 
         self.Nr += self.model.alg.size1()
 
-        self.saveRelaxedEquation(self.model.alg)
+        self.save_relaxed_equation(self.model.alg)
         self.problem.includeControl(self.model.y_sym, u_max=self.problem.y_max, u_min=self.problem.y_min)
         self.problem.removeAlgebraic(self.model.y_sym, self.model.alg)
 
-    def relaxExternalAlgebraicEquations(self):
+    def relax_external_algebraic_equations(self):
         nu_alg = SX.sym('AL_nu_alg_z', self.model.alg_z.size1())
         self.nu_sym = vertcat(self.nu_sym, nu_alg)
         self.problem.L += dot(nu_alg, self.model.alg_z) + self.mu_sym / 2. * dot(self.model.alg_z, self.model.alg_z)
 
         self.Nr += self.model.alg_z.size1()
 
-        self.saveRelaxedEquation(self.model.alg_z)
+        self.save_relaxed_equation(self.model.alg_z)
         z_without_con_z = self.model.removeVariablesFromVector(self.model.con_z, vertcat(self.model.z_sym))
         z_without_con_z_indeces = self.model.findVariablesIndecesInVector(z_without_con_z, self.model.z_sym)
 
@@ -153,14 +151,14 @@ class AugmentedLagrange(SolutionMethodsBase):
                                     u_min=self.problem.z_min[z_without_con_z_indeces])
         self.problem.removeExternalAlgebraic(z_without_con_z, self.model.alg_z)
 
-    def relaxConnectingEquations(self):
+    def relax_connecting_equations(self):
         nu_alg = SX.sym('AL_nu_alg_con', self.model.con.size1())
         self.nu_sym = vertcat(self.nu_sym, nu_alg)
         self.problem.L += dot(nu_alg, self.model.con) + self.mu_sym / 2. * dot(self.model.con, self.model.con)
 
         self.Nr += self.model.con.size1()
 
-        self.saveRelaxedEquation(self.model.con)
+        self.save_relaxed_equation(self.model.con)
         con_z_ind = self.model.findVariablesIndecesInVector(self.model.con_z, self.model.z_sym)
 
         self.problem.includeControl(self.model.con_z, u_max=self.problem.z_max[con_z_ind],
@@ -168,7 +166,7 @@ class AugmentedLagrange(SolutionMethodsBase):
 
         self.problem.removeConnectingEquations(var=self.model.con_z, eq=self.model.con)
 
-    def relaxStatesConstraints(self):
+    def relax_states_constraints(self):
         for i in range(self.model.Nx):
             if self.problem.x_max[i] != inf or self.problem.x_min[i] != -inf:
                 y_x = SX.sym('y_x_' + str(i))
@@ -179,48 +177,46 @@ class AugmentedLagrange(SolutionMethodsBase):
                 new_alg = y_x - self.model.x_sym[i]
                 self.problem.L += dot(nu_y_x.T, new_alg) + self.mu_sym / 2.0 * dot(new_alg.T, new_alg)
 
-                self.saveRelaxedEquation(new_alg)
+                self.save_relaxed_equation(new_alg)
                 self.problem.includeControl(y_x, u_min=self.problem.x_min[i], u_max=self.problem.x_max[i])
                 self.problem.x_max[i] = inf
                 self.problem.x_min[i] = -inf
                 self.Nr += 1
 
-    def relaxInequalities(self):
+    def relax_inequalities(self):
         raise Exception('Not implemented')
 
     # ==============================================================================
     # NU
     # ==============================================================================
-    def parametrizeNu(self, problem=None, nu_sym=None, Nr=None):
-        if problem == None:
-            problem = self.problem
-        if nu_sym == None:
+    def parametrize_nu(self, nu_sym=None, n_r=None):
+        if nu_sym is None:
             nu_sym = self.nu_sym
-        if Nr == None:
-            Nr = self.Nr
+        if n_r is None:
+            n_r = self.Nr
 
-        nu_pol, nu_par = self.createVariablePolynomialApproximation(Nr, self.degree, 'nu')
+        nu_pol, nu_par = self.createVariablePolynomialApproximation(n_r, self.degree, 'nu')
 
         self.nu_pol = vertcat(self.nu_pol, nu_pol)
         self.nu_par = vertcat(self.nu_par, nu_par)
 
-        problem.replaceVariable(nu_sym, nu_pol, 'other')
-        problem.model.includeTheta(vec(nu_par))
+        self.problem.replaceVariable(nu_sym, nu_pol, 'other')
+        self.problem.model.includeTheta(vec(nu_par))
 
         return nu_pol, nu_par
 
-    def initializeNuValues(self):
-        nu = self.createNuInitialGuess()
+    def initialize_nu_values(self):
+        nu = self.create_nu_initial_guess()
         self.nu = nu
 
-    def createNuInitialGuess(self, Nr=None):
+    def create_nu_initial_guess(self, Nr=None):
         if Nr == None:
             Nr = self.Nr
         nu = self.createConstantTheta(constant=0, dimension=Nr, degree=self.degree,
                                       finite_elements=self.finite_elements)
         return nu
 
-    def createNewNuGenerator(self):
+    def create_new_nu_generator(self):
         X_var = MX.sym('X', self.model.Nx, (self.finite_elements + 1))
         U_var = MX.sym('U', self.model.Nu * self.ocp_solver.degree_control, (self.finite_elements))
         par = MX.sym('par')
@@ -233,13 +229,13 @@ class AugmentedLagrange(SolutionMethodsBase):
         U = [U_var[:, i] for i in range(self.finite_elements)]
 
         t_list = self.time_breakpoints
-        col_points = self.collocation_points(self.degree, with_zero = False)
+        col_points = self.collocation_points(self.degree, with_zero=False)
 
         delta_t_list = [col_points[j] * self.delta_t for j in range(self.degree)]
         new_nu = []
         error = 0
         for k in range(self.finite_elements):
-            x_0 = vertcat(X[k], DM.zeros(1)) # the last value is the initial state of the 'error state'
+            x_0 = vertcat(X[k], DM.zeros(1))  # the last value is the initial state of the 'error state'
             dae_sys = self.model.getDAESystem()
             dae_sys['x'] = vertcat(dae_sys['x'], x_error)
             dae_sys['ode'] = vertcat(dae_sys['ode'], dot(self.relaxed_alg, self.relaxed_alg))
@@ -278,7 +274,7 @@ class AugmentedLagrange(SolutionMethodsBase):
 
     def calculateNewNu(self, X, U, p, theta):
         if self.new_nu_funct == None:
-            self.createNewNuGenerator()
+            self.create_new_nu_generator()
         output = self.new_nu_funct(horzcat(*X), horzcat(*U), p, vertcat(*theta.values()))
         new_nu = output[:-1]
         error = output[-1]
@@ -288,21 +284,21 @@ class AugmentedLagrange(SolutionMethodsBase):
         return nu, error
 
     def joinNuToTheta(self, theta, nu):
-        if theta != None:
+        if theta is not None:
             return self.joinThetas(theta, nu)
         else:
             return nu
 
-            # ==============================================================================
-        # SOLVE
-        # ==============================================================================
+    # ==============================================================================
+    # SOLVE
+    # ==============================================================================
 
-    def getSolver(self, initial_condition_as_parameter=False):
+    def get_solver(self, initial_condition_as_parameter=False):
         self.getOCPSolver(initial_condition_as_parameter)
         return self.solve_raw
 
     def getOCPSolver(self, initial_condition_as_parameter=False):
-        self.solver = self.ocp_solver.getSolver(initial_condition_as_parameter=initial_condition_as_parameter)
+        self.solver = self.ocp_solver.get_solver(initial_condition_as_parameter=initial_condition_as_parameter)
 
     def stepForward(self):
         X, U = self.last_solution
@@ -326,7 +322,6 @@ class AugmentedLagrange(SolutionMethodsBase):
             self.solver_initialized = True
         solver = self.ocp_solver.get_solver()
 
-        # last_solution = initial_guess
         it = 0
 
         t1 = time.time()
@@ -347,11 +342,9 @@ class AugmentedLagrange(SolutionMethodsBase):
         print 'Solution time: ', time.time() - t1
         return raw_solution_dict
 
-    # def solve(self, initial_guess=None, p=[], theta={}, x_0=[]):
-    #     V_sol = self.solve_raw(initial_guess, p, theta, x_0)
-    #
-    #     X, U = self.splitXandU(V_sol)
-    #     return X, U, V_sol
+    def solve(self, initial_guess=None, p=[], theta={}, x_0=[]):
+        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0)
+        return self.ocp_solver.create_optimization_result(raw_solution_dict)
 
         # ==============================================================================
 
@@ -359,15 +352,17 @@ class AugmentedLagrange(SolutionMethodsBase):
     # ==============================================================================
 
     #    def plotSimulate(self, X, U, plot_list, n_of_sub_elements =  5, p = [], theta = None, integrator_type = None):
+    #    def plotSimulate(self, X, U, plot_list, n_of_sub_elements =  5, p = [], theta = None, integrator_type = None):
+    #    def plotSimulate(self, X, U, plot_list, n_of_sub_elements =  5, p = [], theta = None, integrator_type = None):
     #        if integrator_type == None:
     #            integrator_type = self.integrator_type
     #        return self.ocp_solver.plotSimulate(X, U, plot_list, n_of_sub_elements, p = self.mu, theta = self.nu, integrator_type = integrator_type)
 
     def simulate(self, X, U, sub_elements=5, t_0=None, t_f=None, p=[], theta={}, integrator_type='implicit',
                  time_division='linear'):
-        if t_0 == None:
+        if t_0 is None:
             t_0 = self.problem.t_0
-        if t_f == None:
+        if t_f is None:
             t_f = self.problem.t_f
 
         par = vertcat(p, self.mu)

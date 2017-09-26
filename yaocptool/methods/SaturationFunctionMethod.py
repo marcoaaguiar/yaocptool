@@ -59,18 +59,18 @@ class SaturationFunctionMethod(AugmentedLagrange.AugmentedLagrange):
         self.includeSaturationFunction(r_eq_list)
         
         if self.model.Ny >0 and self.relax_algebraic_equations:
-            self.relaxAlgebraicEquations()
+            self.relax_algebraic_equations()
         
         if self.relax_state_bounds:
-            self.relaxStatesConstraints()
+            self.relax_states_constraints()
 
 
         self.model.includeParameter(self.mu_sym)  
         if self.parametrize:
-            self.parametrizeNu()
+            self.parametrize_nu()
 
         if self.nu == None:
-            self.initializeNuValues()
+            self.initialize_nu_values()
         
         # Initialize OCP solver        
         solver_options['finite_elements'] = self.finite_elements     
