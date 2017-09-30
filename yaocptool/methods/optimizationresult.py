@@ -5,16 +5,21 @@ from typing import List
 
 class OptimizationResult:
     def __init__(self, **kwargs):
-        # solution_method:
+        # Raw Information
         self.raw_solution_dict = {}
         self.raw_decision_variables = None  # type: List[DM]
-        self.finite_elements = -1
+
+        # Data from the method
+        self.method_name = ''  # type: str
+        self.discretization_scheme = ''  # type: str
+        self.finite_elements = -1  # type: int
         self.degree = -1
         self.degree_control = -1
 
+        # From problem
+        self.problem_name = ''
         self.t_0 = -1
         self.t_f = -1
-        self.discretization_scheme = ''
 
         self.time_breakpoints = []
         self.collocation_points = []
@@ -65,7 +70,7 @@ class OptimizationResult:
         t_u = self.u_breakpoints_data['time']
 
         for k, entry in enumerate(plot_list):
-            fig = plt.figure(k)
+            fig = plt.figure()
             if 'x' in entry:
                 for i in entry['x']:
                     plt.plot(t_x, horzcat(*x_values)[i, :].T)
@@ -102,7 +107,7 @@ class OptimizationResult:
         t_u = horzcat(*[horzcat(*t_u[i]) for i in range(self.finite_elements)])
 
         for k, entry in enumerate(plot_list):
-            fig = plt.figure(k)
+            fig = plt.figure()
 
             if 'x' in entry:
                 for i in entry['x']:

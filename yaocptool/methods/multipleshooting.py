@@ -38,24 +38,27 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         return v, x, u, eta, vars_lb, vars_ub
 
     def splitXYandU(self, results_vector, all_subinterval=False):
-        X = []
-        Y = []
-        U = []
+        x = []
+        y = []
+        u = []
 
         v_offset = 0
         if self.problem.N_eta > 0:
             results_vector = results_vector[:-self.problem.N_eta]
 
         for k in range(self.finite_elements + 1):
-            X.append(results_vector[v_offset:v_offset + self.model.Nx])
+            x.append(results_vector[v_offset:v_offset + self.model.Nx])
             v_offset = v_offset + self.model.Nx
             if k != self.finite_elements:
-                U.append(results_vector[v_offset:v_offset + self.model.Nu * self.degree_control])
-                Y.append(DM([]))
+                u.append(results_vector[v_offset:v_offset + self.model.Nu * self.degree_control])
+                y.append(DM([]))
                 v_offset = v_offset + self.model.Nu * self.degree_control
-        return X, Y, U
+        return x, y, u
 
-    def discretize(self, finite_elements=None, x_0=None, p=[], theta=None):
+    def discretize(self, finite_elements=None, x_0=None, p=None, theta=None):
+        # TODO: Extract the G generation to another function
+        if p is None:
+            p = []
         finite_elements = self.finite_elements
 
         if theta is None:
@@ -64,40 +67,36 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         if x_0 is None:
             x_0 = self.problem.x_0
 
-        t0 = self.problem.t_0
-        tf = self.problem.t_f
-        h = (tf - t0) / finite_elements
-
         # Get the state at each shooting node
-        V, X, U, eta, vars_lb, vars_ub = self._create_nlp_symbolic_variables_and_bound_vectors()
-        G = []
+        all_decision_vars, x, u, eta, vars_lb, vars_ub = self._create_nlp_symbolic_variables_and_bound_vectors()
+        constraint_list = []
 
-        F_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
-        F_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
+        f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
+        f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
 
-        G.append(F_h_initial(X[0], x_0))
+        constraint_list.append(f_h_initial(x[0], x_0))
 
         for k in range(finite_elements):
             dae_sys = self.model.getDAESystem()
             self.model.convertFromTauToTime(dae_sys, self.time_breakpoints[k], self.time_breakpoints[k + 1])
 
-            p_i = vertcat(p, theta[k], U[k])
+            p_i = vertcat(p, theta[k], u[k])
 
-            x_f = self.model.simulateStep(X[k], t_0=self.time_breakpoints[k], t_f=self.time_breakpoints[k + 1], p=p_i,
+            x_f = self.model.simulateStep(x[k], t_0=self.time_breakpoints[k], t_f=self.time_breakpoints[k + 1], p=p_i,
                                           dae_sys=dae_sys,
                                           integrator_type=self.solution_method.integrator_type)
 
-            G.append(x_f - X[k + 1])
+            constraint_list.append(x_f - x[k + 1])
 
-        G.append(F_h_final(X[-1], eta))
+        constraint_list.append(f_h_final(x[-1], eta))
 
         if self.solution_method.solution_class == 'direct':
-            cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(X[-1], p)
+            cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(x[-1], p)
         else:
             cost = 0
 
-        nlp_prob = {'g': vertcat(*G),
-                    'x': V,
+        nlp_prob = {'g': vertcat(*constraint_list),
+                    'x': all_decision_vars,
                     'f': cost}
 
         lbg = DM.zeros(nlp_prob['g'].shape)

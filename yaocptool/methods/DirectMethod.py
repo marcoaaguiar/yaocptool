@@ -7,12 +7,13 @@ Created on Fri Oct 21 16:40:15 2016
 from casadi import substitute
 
 import solutionmethodsbase
-from yaocptool.modelling_classes.ocp import OptimalControlProblem
+# from yaocptool.modelling_classes.ocp import OptimalControlProblem
+
 
 class DirectMethod(solutionmethodsbase.SolutionMethodsBase):
     def __init__(self, problem, **kwargs):
         """
-        :param problem: OptimalControlProblem
+        :param problem: yaocptool.modelling_classes.ocp.OptimalControlProblem
         :param integrator_type: str
         :param solution_method: str
         :param degree: int

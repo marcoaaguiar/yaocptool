@@ -100,7 +100,7 @@ def create_CSTR_OCP():
                                                 'R': 0, #diag([1/0.003, 1/2.5]),
                                                 # 'Qv':diag([0.1, 1, 0, 0]),
                                                 'x_ref': x_ref}, x_0=x_0,
-                                    t_f=2500./3600)
+                                    t_f=2500./3600, positive_objective = True)
     problem.u_ref = u_ref
     print(problem.t_f)
     ### Constraints

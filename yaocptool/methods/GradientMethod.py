@@ -99,7 +99,7 @@ class GradientMethod(IndirectMethod.IndirectMethod):
             
 
     def initializeU(self):
-        if self.U == None:
+        if self.U is None:
             self.U = []
             for i in range(self.finite_elements):
                 self.U.append(vec(DM.zeros(self.model.Nu, self.degree)))
@@ -121,14 +121,14 @@ class GradientMethod(IndirectMethod.IndirectMethod):
         ''' 
             all_mx = [p, theta, x_0]
         '''
-        if num_parameters != None:
+        if num_parameters is not None:
             raise Exception('option deprecated')
             
         if not self.prepared:
             self.prepare()
             self.prepared = True
         
-        if self.solver == None:
+        if self.solver is None:
             if self.model.Np + self.model.Ntheta>0 or initial_condition_as_parameter:
                 p_mx = MX.sym('p', self.model.Np)
                 

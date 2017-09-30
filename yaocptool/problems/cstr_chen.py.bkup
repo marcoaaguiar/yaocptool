@@ -7,6 +7,7 @@ Created on Fri Jul 07 16:43:42 2017
 from __future__ import division
 import sys
 from os.path import dirname, abspath
+
 sys.path.append(abspath(dirname(dirname(__file__))))
 
 from casadi import vertcat, exp, diag
@@ -95,33 +96,33 @@ def create_CSTR_OCP():
     # model.includeSystemEquations(ode=ode, alg=alg)
     model.includeSystemEquations(ode=ode)
 
-    problem = OptimalControlProblem(model, obj={'Q': diag([0, 1, 0, 0]), 'R': diag([1/0.003, 1/2.5]),
-                                                'Qv':diag([0, 1, 0, 0]),
+    problem = OptimalControlProblem(model, obj={'Q': diag([0, 1, 0, 0]), 'R': diag([1 / 0.003, 1 / 2.5]),
+                                                'Qv': diag([0, 1, 0, 0]),
                                                 'x_ref': [c_A_init, c_B_init, theta_init, theta_K_init]}, x_0=x_0,
                                     t_f=5)
     problem.u_ref = u_ref
 
-    ### Constraints
-    #c_A
+    # === Constraints ===
+    # c_A
     problem.x_min[0] = 0.1
 
-    #c_B
+    # c_B
     problem.x_min[1] = 0.8
     problem.x_max[1] = 1.09
 
-    #theta
+    # theta
     problem.x_min[2] = 0.
 
-    #theta_k
+    # theta_k
     problem.x_min[3] = 0.8
 
-    #V_dotV_R
-    problem.u_min[0] = 3./3600
-    problem.u_max[0] = 35./3600
+    # V_dotV_R
+    problem.u_min[0] = 3. / 3600
+    problem.u_max[0] = 35. / 3600
 
-    problem.u_min[1] = -9000./3600
-    problem.u_max[1] = 0./3600
+    problem.u_min[1] = -9000. / 3600
+    problem.u_max[1] = 0. / 3600
     # problem.u_min[1] = -3600./3600
     # problem.u_max[1] = -3600./3600
-    print problem.u_max, problem.u_min
+
     return problem

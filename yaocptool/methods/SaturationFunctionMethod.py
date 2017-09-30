@@ -67,10 +67,10 @@ class SaturationFunctionMethod(AugmentedLagrange.AugmentedLagrange):
 
         self.model.includeParameter(self.mu_sym)  
         if self.parametrize:
-            self.parametrize_nu()
+            self._parametrize_nu()
 
-        if self.nu == None:
-            self.initialize_nu_values()
+        if self.nu is None:
+            self.nu = self.create_nu_initial_guess()
         
         # Initialize OCP solver        
         solver_options['finite_elements'] = self.finite_elements     

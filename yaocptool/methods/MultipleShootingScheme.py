@@ -7,15 +7,15 @@ Created on Thu Jul 13 17:08:34 2017
 from casadi import DM, vertcat, Function
 class MultipleShootingScheme:
     def discretize(self, finite_elements = None, x_0 = None, p = [], theta =None):
-        if finite_elements == None:
+        if finite_elements is None:
             finite_elements = self.finite_elements 
         else:
             self.finite_elements = finite_elements
         
-        if theta == None:
+        if theta is None:
             theta = dict([(i,[]) for i in range(finite_elements)])
         
-        if x_0 == None:
+        if x_0 is None:
             x_0 = self.problem.x_0 
             
         t0 = self.problem.t_0

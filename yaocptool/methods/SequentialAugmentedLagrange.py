@@ -181,7 +181,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
     
     def initialize_nu_values(self):
         for k in self.con_dict:
-            self.con_dict[k]['nu_dict'] = self.create_nu_initial_guess(Nr = 1)
+            self.con_dict[k]['nu_dict'] = self.create_nu_initial_guess(n_r= 1)
     
     def getProblemNus(self, problem_id):
         problem_nu_dict = {}
@@ -190,7 +190,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
             
         return problem_nu_dict
         
-    def calculateNewNu(self):
+    def _update_nu(self):
         for con_id in self.con_dict:
             nu, error = self.calculateConnectionNewNu(con_id)
             self.con_dict[con_id]['nu_dict'] = nu
@@ -332,10 +332,10 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
         return V_sol
         
     def solve_raw(self, initial_guess = None,  p=[], theta = {}, x_0 = []):
-        if not self.solver_initialized == None:
+        if not self.solver_initialized is None:
             self.initializeProblemsSolvers(x_0)
 
-        if initial_guess == None:
+        if initial_guess is None:
             V_sol = dict(zip(self.problems_dict.keys(), [None]*self.Nproblems))
             
         it = 0
@@ -346,7 +346,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
             if it==self.max_iter:
                 break
             else:
-                self.calculateNewNu()
+                self._update_nu()
                 self.mu = min(self.mu_max,self.mu*self.beta)
 
 #        print 'Solution time: ', time.time()-t1

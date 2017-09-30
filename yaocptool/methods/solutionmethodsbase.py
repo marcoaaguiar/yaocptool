@@ -14,6 +14,8 @@ from yaocptool.modelling_classes.model_classes import SystemModel
 from yaocptool.modelling_classes.ocp import OptimalControlProblem
 
 
+# TODO: fix PEP 8
+
 class SolutionMethodsBase:
     def __init__(self, problem, **kwargs):
         """
@@ -25,7 +27,6 @@ class SolutionMethodsBase:
         """
         self.solver = None
         self.problem = problem  # type: OptimalControlProblem
-        self.model = self.problem.model  # type: SystemModel
         self.integrator_type = 'implicit'
         self.solution_method = 'multiple_shooting'
         self.degree = 4
@@ -34,7 +35,10 @@ class SolutionMethodsBase:
         self.prepared = False
         self.discretization_scheme = 'multiple-shooting'
         # self.discretization_scheme = 'collocation'
-        self.discretizer = None # type: DiscretizationSchemeBase
+        self.discretizer = None  # type: DiscretizationSchemeBase
+        self.initial_condition_as_parameter = False
+        self.nlp_prob = {}
+        self.nlp_call = {}
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -54,7 +58,7 @@ class SolutionMethodsBase:
 
     @property
     def time_breakpoints(self):
-        return [self.delta_t * k for k in xrange(self.finite_elements + 1)]
+        return [self.delta_t * k for k in range(self.finite_elements + 1)]
 
     @property
     def splitXandU(self):
@@ -64,7 +68,8 @@ class SolutionMethodsBase:
     def splitXYandU(self):
         return self.discretizer.splitXYandU
 
-    def collocation_points(self, degree, cp='radau', with_zero=False):
+    @staticmethod
+    def collocation_points(degree, cp='radau', with_zero=False):
         # type: (int, str, bool) -> List[int]
         if with_zero:
             return [0] + collocation_points(degree, cp)  # All collocation time points
@@ -72,25 +77,25 @@ class SolutionMethodsBase:
             return collocation_points(degree, cp)  # All collocation time points
 
     def createLagrangianPolynomialBasis(self, degree, starting_index=0, tau=None):
-        if tau == None:
+        if tau is None:
             tau = self.model.tau_sym  # symbolic variable
 
         tau_root = self.collocation_points(degree, with_zero=True)  # All collocation time points
 
         # For all collocation points: eq 10.4 or 10.17 in Biegler's book
         # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-        L_list = []
+        l_list = []
         for j in range(starting_index, degree + 1):
             L = 1
             for j2 in range(starting_index, degree + 1):
                 if j2 != j:
                     L *= (tau - tau_root[j2]) / (tau_root[j] - tau_root[j2])
-            L_list.append(L)
+            l_list.append(L)
 
-        return tau, L_list
+        return tau, l_list
 
     def createVariablePolynomialApproximation(self, size, degree, name='var_appr', tau=None, point_at_t0=False):
-        if tau == None:
+        if tau is None:
             tau = self.model.tau_sym  # Collocation point
 
         if degree == 1:
@@ -112,7 +117,7 @@ class SolutionMethodsBase:
 
     def createControlApproximation(self):
         degree = self.degree_control
-        if self.parametrized_control == False:
+        if not self.parametrized_control:
             if type(degree) == dict:
                 raise Exception('Not implemented')
             else:
@@ -163,30 +168,10 @@ class SolutionMethodsBase:
         return vertcat(*V)
 
     def unvec(self, vect, degree=None):
-        if degree == None:
+        if degree is None:
             degree = self.degree
-        n_lines = vect.numel() / self.degree
-        return reshape(vect, n_lines, self.degree)
-
-    def convertFromTimeToTau(self, dae_sys, t_k, t_kp1):
-        raise Exception
-        t = self.model.t_sym
-        tau = self.model.tau_sym
-
-        h = t_kp1 - t_k
-        dae_sys['ode'] = substitute(dae_sys['ode'], tau, (t - t_k) / h)
-        if 'alg' in dae_sys:
-            dae_sys['alg'] = substitute(dae_sys['alg'], tau, (t - t_k) / h)
-
-    def convertFromTauToTime(self, dae_sys, t_k, t_kp1):
-        raise Exception
-        t = self.model.t_sym
-        tau = self.model.tau_sym
-
-        h = t_kp1 - t_k
-        dae_sys['ode'] = substitute(dae_sys['ode'], tau, (t - t_k) / h)
-        if 'alg' in dae_sys:
-            dae_sys['alg'] = substitute(dae_sys['alg'], tau, (t - t_k) / h)
+        n_lines = vect.numel() / degree
+        return reshape(vect, n_lines, degree)
 
     def joinThetas(self, *args):
         new_theta = {}
@@ -208,13 +193,13 @@ class SolutionMethodsBase:
         return new_theta
 
     def createConstantTheta(self, constant=0, dimension=1, degree=None, finite_elements=None):
-        if finite_elements == None:
+        if finite_elements is None:
             finite_elements = self.finite_elements
-        if degree == None:
+        if degree is None:
             degree = self.degree
 
         theta = {}
-        for i in xrange(finite_elements):
+        for i in range(finite_elements):
             theta[i] = vec(constant * DM.ones(dimension, degree))
 
         return theta
@@ -223,21 +208,16 @@ class SolutionMethodsBase:
     # SOLVE
     # ==============================================================================
 
-    # @property
-    # def get_solver(self, initial_condition_as_parameter=False):
-    #     raise Warning('method changed to get_solver')
-    #     return self.get_solver
-
     def get_solver(self, initial_condition_as_parameter=False):
-        '''
+        """
             all_mx = [p, theta, x_0]
-        '''
+        """
 
         if not self.prepared:
             self.prepare()
             self.prepared = True
 
-        if self.solver == None:
+        if self.solver is None:
             self.solver = self.create_solver(initial_condition_as_parameter)
 
         return self.call_solver
@@ -269,10 +249,10 @@ class SolutionMethodsBase:
         return solver
 
     def call_solver(self, initial_guess=None, p=[], theta=None, x_0=[]):
-        if initial_guess == None:
+        if initial_guess is None:
             initial_guess = self.discretizer.create_initial_guess()
 
-        if theta != None:
+        if theta is not None:
             par = vertcat(p, *theta.values())
         else:
             par = p
@@ -291,22 +271,27 @@ class SolutionMethodsBase:
             self.prepare()
             self.prepared = True
 
-        solution_dict = self.get_solver()(initial_guess=initial_guess, p= p, theta = theta, x_0 = x_0)
+        solution_dict = self.get_solver()(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0)
         return solution_dict
 
     def solve(self, initial_guess=None, p=[], theta={}, x_0=[]):
-        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p= p, theta = theta, x_0 = x_0)
+        # type: (object, list, dict, list) -> OptimizationResult
+        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0)
         return self.create_optimization_result(raw_solution_dict)
 
     def create_optimization_result(self, raw_solution_dict):
         optimization_result = OptimizationResult()
+        # From the solution_method
         for attr in ['finite_elements', 'degree', 'degree_control', 'time_breakpoints', 'discretization_scheme']:
             attr_value = getattr(self, attr)
             setattr(optimization_result, attr, attr_value)
+        optimization_result.method_name = self.__class__.__name__
 
+        # From the problem
         for attr in ['t_0', 't_f']:
             attr_value = getattr(self.problem, attr)
             setattr(optimization_result, attr, attr_value)
+        optimization_result.problem_name = self.problem.name
 
         self.discretizer.set_data_to_optimization_result_from_raw_data(optimization_result, raw_solution_dict)
 
@@ -317,7 +302,7 @@ class SolutionMethodsBase:
     # ==============================================================================
 
     def plot(self, X, Y, U, plot_list, t_states=None):
-        if t_states == None:
+        if t_states is None:
             t_states = linspace(self.problem.t_0, self.problem.t_f, self.finite_elements + 1)
 
         if isinstance(plot_list, int):
@@ -327,16 +312,16 @@ class SolutionMethodsBase:
             if 'x' in entry:
                 for i in entry['x']:
                     plt.plot(t_states, horzcat(*X)[i, :].T)
-                plt.legend(['x[' + `i` + ']' for i in entry['x']])
+                plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
             if 'y' in entry:
                 for i in entry['y']:
                     plt.plot(t_states[:len(U)], horzcat(*Y)[i, :].T)
-                plt.legend(['y[' + `i` + ']' for i in entry['y']])
+                plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
 
             if 'u' in entry:
                 for i in entry['u']:
                     plt.plot(t_states[:len(U)], horzcat(*U)[i, :].T)
-                plt.legend(['u[' + `i` + ']' for i in entry['u']])
+                plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
             plt.grid()
             axes = fig.axes
             axes[0].ticklabel_format(useOffset=False)
@@ -348,11 +333,11 @@ class SolutionMethodsBase:
                  time_division='linear'):
         finite_elements = len(X) - 1
         if theta == {}:
-            theta = dict([(i, []) for i in xrange(finite_elements)])
+            theta = dict([(i, []) for i in range(finite_elements)])
 
-        if t_0 == None:
+        if t_0 is None:
             t_0 = self.problem.t_0
-        if t_f == None:
+        if t_f is None:
             t_f = self.problem.t_f
 
         t_list = [float(t) for t in (linspace(t_0, t_f, finite_elements + 1)).full()]
@@ -363,7 +348,7 @@ class SolutionMethodsBase:
         micro_Y = []
         micro_U = []
         x_0 = X[0]
-        for k in xrange(finite_elements):
+        for k in range(finite_elements):
             dae_sys = self.model.getDAESystem()
             self.model.convertFromTauToTime(dae_sys, t_list[k], t_list[k + 1])
             func_u = self.model.convertExprFromTauToTime(self.model.control_function, t_list[k], t_list[k + 1])
@@ -395,7 +380,7 @@ class SolutionMethodsBase:
 
     def plotSimulate(self, X, U, plot_list, sub_elements=5, p=[], theta={}, integrator_type=None,
                      time_division='linear'):
-        if integrator_type == None:
+        if integrator_type is None:
             integrator_type = self.integrator_type
         micro_X, micro_Y, micro_U, micro_t = self.simulate(X, U, sub_elements=sub_elements,
                                                            t_0=None, t_f=None, p=p, theta=theta,

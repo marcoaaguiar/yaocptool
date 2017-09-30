@@ -102,17 +102,8 @@ class InteriorPoint:
             #For algebraic variable
         if self.relax_algebraic_bounds:
             for i in range(self.model.Ny):
-                raise Exception('not implemented')
-                if self.problem.y_max[i] != inf:
-                    self.problem.L -= mu_sym*log(-self.model.y_sym[i] + self.problem.y_max[i])
-                    self.problem.y_max[i] = inf
-                    self.m +=1
-                    
-                if self.problem.y_min[i] != -inf:
-                    self.problem.L -= mu_sym*log(+self.model.y_sym[i] - self.problem.y_min[i])
-                    self.problem.y_min[i] = -inf
-                    self.m +=1
-                
+                raise NotImplemented
+
             #For control variables
         if self.relax_control_bounds:
             for i in range(self.model.Nu):
@@ -130,9 +121,9 @@ class InteriorPoint:
         self.problem.g_ineq = []
     
     def simulate(self, X, U, sub_elements = 5, t_0 = None, t_f =None, p = [], theta = None, integrator_type = 'implicit'): 
-        if t_0 == None:
+        if t_0 is None:
             t_0 = self.problem.t_0
-        if t_f == None:
+        if t_f is None:
             t_f = self.problem.t_f
             
         par = vertcat(p, self.mu)
@@ -147,7 +138,7 @@ class InteriorPoint:
     def solve_raw(self, initial_guess = None,  p=[], theta = None, x_0 = []):
         t1 = time.time()
         V_sol = initial_guess
-        if self.solver == None:
+        if self.solver is None:
             if len(DM(x_0).full())>0:
                 initial_condition_as_parameter = True
             else: 

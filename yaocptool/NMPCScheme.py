@@ -31,7 +31,7 @@ class NMPCScheme:
         for (k, v) in kwargs.items():
             setattr(self, k, v)
         
-        if x_0 ==None:
+        if x_0 is None:
             self.x_0 = self.problem.x_0
         else:
             self.problem.x_0 = x_0

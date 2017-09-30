@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
 Created on Wed Nov 02 18:57:40 2016
 
@@ -38,7 +40,7 @@ solution_method = AugmentedLagrange(problem, IndirectMethod,
        max_iter = 2, mu_0 = 1, beta= 10., finite_elements = 6, integrator_type = 'implicit')
 
 x_sol, u_sol, V_sol = solution_method.solve()
-print time.time() - t1
+print(time.time() - t1)
 
 x, y, u, t = solution_method.plotSimulate(x_sol, u_sol, [{'x': [0, 1]}, {'x': [2]}, {'u': [0]}], 10,
                                           integrator_type='implicit')

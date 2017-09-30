@@ -111,9 +111,9 @@ class InteriorPoint:
         self.problem.g_ineq = []
     
     def simulate(self, X, U, sub_elements = 5, t_0 = None, t_f =None, p = [], theta = None, integrator_type = 'implicit'): 
-        if t_0 == None:
+        if t_0 is None:
             t_0 = self.problem.t_0
-        if t_f == None:
+        if t_f is None:
             t_f = self.problem.t_f
             
         par = vertcat(p, self.mu)
@@ -128,7 +128,7 @@ class InteriorPoint:
     def solve_raw(self, initial_guess = None,  p=[], theta = None, x_0 = []):
         t1 = time.time()
         V_sol = initial_guess
-        if self.solver == None:
+        if self.solver is None:
             if len(DM(x_0).full())>0:
                 initial_condition_as_parameter = True
             else: 

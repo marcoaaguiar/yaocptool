@@ -21,6 +21,6 @@ SOLVER_OPTIONS = { #'nlpsol': "ipopt", \
     }
     
 INTEGRATOR_OPTIONS = {
-#        'abstol' : 1e-12, # abs. tolerance
-#        'reltol' :  1e-12 # rel. tolerance
+       # 'abstol' : 1e-10, # abs. tolerance
+       # 'reltol' :  1e-10 # rel. tolerance
 }
