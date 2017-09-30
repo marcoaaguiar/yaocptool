@@ -1,7 +1,4 @@
 from AugmentedLagrange import AugmentedLagrange
-from GradientMethod import GradientMethod
-from InteriorPoint import InteriorPoint
-from SaturationFunctionMethod import SaturationFunctionMethod
 from SequentialAugmentedLagrange import SequentialAugmentedLagrange
 from yaocptool.methods.classic.directmethod import DirectMethod
 from yaocptool.methods.classic.indirectmethod import IndirectMethod

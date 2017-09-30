@@ -11,6 +11,5 @@ from yaocptool import *
 
 import testDirectMethod
 import testIndirectMethod
-# import testInteriorPointMethod
 import testAugmentedLagrange
 
