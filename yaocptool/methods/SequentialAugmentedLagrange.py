@@ -366,17 +366,17 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
 #==============================================================================
 # PLOT 
 #==============================================================================
-    def simulate(self, X, U, sub_elements = 5, t_0 = None, t_f =None, p = [], theta = {}, integrator_type = 'implicit', time_division = 'linear'): 
+    def simulate(self, X, u, sub_elements = 5, t_0 = None, t_f =None, p = [], theta = {}, integrator_type ='implicit', time_division ='linear'):
         one_problem_id = self.problems_dict.keys()[0]
-        all_micro_X = [vertcat([])]*(sub_elements*len(U[one_problem_id])+1)
-        all_micro_Y = [vertcat([])]*(sub_elements*len(U[one_problem_id]))
-        all_micro_U = [vertcat([])]*(sub_elements*len(U[one_problem_id]))
-        all_micro_t = [vertcat([])]*(sub_elements*len(U[one_problem_id])+1)
+        all_micro_X = [vertcat([])]*(sub_elements * len(u[one_problem_id]) + 1)
+        all_micro_Y = [vertcat([])]*(sub_elements * len(u[one_problem_id]))
+        all_micro_U = [vertcat([])]*(sub_elements * len(u[one_problem_id]))
+        all_micro_t = [vertcat([])]*(sub_elements * len(u[one_problem_id]) + 1)
         for problem_id in self.problems_dict:
             problem_p = vertcat(p,self.mu)
             problem_theta = self.joinThetas(theta, self.used_approximation_data[problem_id], self.getProblemNus(problem_id))
         
-            micro_X, micro_Y, micro_U, micro_t = self.problems_dict[problem_id]['ocp_solver'].simulate(X[problem_id], U[problem_id], sub_elements = sub_elements, t_0 = t_0, t_f =t_f, p = problem_p, theta = problem_theta, integrator_type = integrator_type, time_division = time_division)
+            micro_X, micro_Y, micro_U, micro_t = self.problems_dict[problem_id]['ocp_solver'].simulate(X[problem_id], u[problem_id], sub_elements = sub_elements, t_0 = t_0, t_f =t_f, p = problem_p, theta = problem_theta, integrator_type = integrator_type, time_division = time_division)
             for i in xrange(len(micro_X)):
                 all_micro_X[i] = vertcat(all_micro_X[i], micro_X[i])
             for i in xrange(len(micro_Y)):

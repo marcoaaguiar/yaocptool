@@ -4,9 +4,7 @@ from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 
 from yaocptool.problems.cstr_chen import create_CSTR_OCP
-from yaocptool.methods import DirectMethod, AugmentedLagrange, IndirectMethod
-import yaocptool.methods.solutionmethodsbase
-
+from yaocptool.methods import DirectMethod, AugmentedLagrange
 
 problem = create_CSTR_OCP()
 

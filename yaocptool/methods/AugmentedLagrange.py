@@ -7,17 +7,17 @@ Created on Sat Oct 22 16:53:36 2016
 
 import time
 
-from casadi import SX, DM, inf, vertcat, dot, collocation_points, vec, Function, linspace, MX, horzcat
+from casadi import SX, DM, inf, vertcat, dot, vec, Function, MX, horzcat
 
-from solutionmethodsbase import SolutionMethodsBase
-from .optimizationresult import OptimizationResult
+from yaocptool.methods.base.optimizationresult import OptimizationResult
+from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
 # TODO: Fix PEP 8
 # TODO: \nu update for collocation
 
 class AugmentedLagrange(SolutionMethodsBase):
-    '''
+    """
         For a minmization problem in the form
             min f(x,u) = \int L(x,u) dt
             s.t.: \dot{x} = f(x,u),
@@ -26,10 +26,12 @@ class AugmentedLagrange(SolutionMethodsBase):
         Transforms the problem in a sequence of solution of the problem
             min f(x,u) = \int L(x,u) -\mu \sum \log(-g_ineq(x,u)) dt
             s.t.: \dot{x} = f(x,u),
-    '''
+    """
 
-    def __init__(self, problem, Ocp_solver_class, solver_options={}, **kwargs):
+    def __init__(self, problem, Ocp_solver_class, solver_options=None, **kwargs):
         # SolutionMethodsBase.__init__(self, **kwargs)
+        if solver_options is None:
+            solver_options = {}
         self.problem = problem
 
         self.degree = 4
@@ -46,12 +48,13 @@ class AugmentedLagrange(SolutionMethodsBase):
         self.beta = 4.
         self.mu_max = self.mu_0 * self.beta ** 3
         self.nu = None
-        self.new_nu_funct = None # type: Function
+        self.new_nu_func = None # type: Function
+
         self.tol = 1e-4
         self.last_solution = ()
 
         self.solver = None
-        self.ocp_solver = None  # :type solution_method: yaocptool.methods.solutionmethodsbase.SolutionMethodsBase
+        self.ocp_solver = None  # type: SolutionMethodsBase
         self.solver_initialized = False
 
         self.relax_algebraic = True
@@ -106,6 +109,7 @@ class AugmentedLagrange(SolutionMethodsBase):
 
             self.ocp_solver = Ocp_solver_class(self.problem, **solver_options)
 
+    # region # PROPERTY
     @property
     def model(self):
         return self.problem.model
@@ -119,12 +123,18 @@ class AugmentedLagrange(SolutionMethodsBase):
         return self.ocp_solver.joinXandU
 
     @property
+    def splitXYandU(self):
+        return self.ocp_solver.splitXYandU
+
+    @property
     def splitXandU(self):
         return self.ocp_solver.splitXandU
 
+    # endregion
+
     # ==============================================================================
-    # RELAX
-    # ==============================================================================
+    # region RELAX
+
 
     def _save_relaxed_equation(self, alg):
         self.model.relaxed_alg = vertcat(self.relaxed_alg, alg)
@@ -149,10 +159,10 @@ class AugmentedLagrange(SolutionMethodsBase):
 
         self._save_relaxed_equation(self.model.alg_z)
         z_without_con_z = self.model.removeVariablesFromVector(self.model.con_z, vertcat(self.model.z_sym))
-        z_without_con_z_indeces = self.model.findVariablesIndecesInVector(z_without_con_z, self.model.z_sym)
+        z_without_con_z_indices = self.model.findVariablesIndecesInVector(z_without_con_z, self.model.z_sym)
 
-        self.problem.includeControl(z_without_con_z, u_max=self.problem.z_max[z_without_con_z_indeces],
-                                    u_min=self.problem.z_min[z_without_con_z_indeces])
+        self.problem.includeControl(z_without_con_z, u_max=self.problem.z_max[z_without_con_z_indices],
+                                    u_min=self.problem.z_min[z_without_con_z_indices])
         self.problem.removeExternalAlgebraic(z_without_con_z, self.model.alg_z)
 
     def _relax_connecting_equations(self):
@@ -190,8 +200,11 @@ class AugmentedLagrange(SolutionMethodsBase):
     def _relax_inequalities(self):
         raise Exception('Not implemented')
 
+    # endregion
     # ==============================================================================
-    # NU
+
+    # ==============================================================================
+    # region NU
     # ==============================================================================
     def _parametrize_nu(self, nu_sym=None, n_r=None):
         if nu_sym is None:
@@ -216,7 +229,7 @@ class AugmentedLagrange(SolutionMethodsBase):
                                       finite_elements=self.finite_elements)
         return nu
 
-    def create_new_nu_generator(self):
+    def _create_nu_update_func(self):
         x_var = MX.sym('X', self.model.Nx, (self.finite_elements + 1))
         u_var = MX.sym('U', self.model.Nu * self.ocp_solver.degree_control, self.finite_elements)
         par = MX.sym('par')
@@ -234,6 +247,7 @@ class AugmentedLagrange(SolutionMethodsBase):
         delta_t_list = [col_points[j] * self.delta_t for j in range(self.degree)]
         new_nu = []
         error = 0
+        x_f = None
         for k in range(self.finite_elements):
             x_0 = vertcat(x[k], DM.zeros(1))  # the last value is the initial state of the 'error state'
             dae_sys = self.model.getDAESystem()
@@ -270,15 +284,15 @@ class AugmentedLagrange(SolutionMethodsBase):
             new_nu.append(vec(new_nu_k))
 
         output = new_nu + [error]
-        self.new_nu_funct = Function('new_nu_funct', [x_var, u_var, par, theta_var], output)
+        self.new_nu_func = Function('new_nu_funct', [x_var, u_var, par, theta_var], output)
 
     def _update_nu(self, p, theta, raw_solution_dict):
-        if self.new_nu_funct is None:
-            self.create_new_nu_generator()
+        if self.new_nu_func is None:
+            self._create_nu_update_func()
         raw_decision_variables = raw_solution_dict['x']
         x_var, u_var = self.splitXandU(raw_decision_variables)
 
-        output = self.new_nu_funct(horzcat(*x_var), horzcat(*u_var), p, vertcat(*theta.values()))
+        output = self.new_nu_func(horzcat(*x_var), horzcat(*u_var), p, vertcat(*theta.values()))
         new_nu = output[:-1]
         error = output[-1]
         print("Violation: ", error)
@@ -292,15 +306,18 @@ class AugmentedLagrange(SolutionMethodsBase):
         else:
             return nu
 
+    # endregion
+    # ==============================================================================
+
     # ==============================================================================
     # SOLVE
     # ==============================================================================
 
     def get_solver(self, initial_condition_as_parameter=False):
-        self.getOCPSolver(initial_condition_as_parameter)
+        self.get_ocp_solver(initial_condition_as_parameter)
         return self.solve_raw
 
-    def getOCPSolver(self, initial_condition_as_parameter=False):
+    def get_ocp_solver(self, initial_condition_as_parameter=False):
         self.solver = self.ocp_solver.get_solver(initial_condition_as_parameter=initial_condition_as_parameter)
 
     def stepForward(self):
@@ -315,17 +332,24 @@ class AugmentedLagrange(SolutionMethodsBase):
         # self.nu = new_nu
         # self.mu = self.mu_0
 
-    def solve_raw(self, initial_guess=None, p=[], theta={}, x_0=[]):
+    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None):
+        if x_0 is None:
+            x_0 = []
+        if theta is None:
+            theta = {}
+        if p is None:
+            p = []
         if self.solver_initialized:
             if len(DM(x_0).full()) > 0:
                 initial_condition_as_parameter = True
             else:
                 initial_condition_as_parameter = False
-            self.getOCPSolver(initial_condition_as_parameter)
+            self.get_ocp_solver(initial_condition_as_parameter)
             self.solver_initialized = True
         solver = self.ocp_solver.get_solver()
 
         it = 0
+        error = -1
 
         t1 = time.time()
         while True:
@@ -357,13 +381,16 @@ class AugmentedLagrange(SolutionMethodsBase):
         raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0)
         return self.ocp_solver.create_optimization_result(raw_solution_dict)
 
-        # ==============================================================================
-
+    # ==============================================================================
     #     PLOT/SIMULATE
     # ==============================================================================
 
-    def simulate(self, X, U, sub_elements=5, t_0=None, t_f=None, p=[], theta={}, integrator_type='implicit',
+    def simulate(self, x, u, sub_elements=5, t_0=None, t_f=None, p=None, theta=None, integrator_type='implicit',
                  time_division='linear'):
+        if theta is None:
+            theta = {}
+        if p is None:
+            p = []
         if t_0 is None:
             t_0 = self.problem.t_0
         if t_f is None:
@@ -372,6 +399,6 @@ class AugmentedLagrange(SolutionMethodsBase):
         par = vertcat(p, self.mu)
         nu_theta = self.join_nu_to_theta(theta, self.nu)
 
-        micro_X, micro_Y, micro_U, micro_t = self.ocp_solver.simulate(X, U, sub_elements, t_0, t_f, par, nu_theta,
+        micro_x, micro_y, micro_u, micro_t = self.ocp_solver.simulate(x, u, sub_elements, t_0, t_f, par, nu_theta,
                                                                       integrator_type=integrator_type)
-        return micro_X, micro_Y, micro_U, micro_t
+        return micro_x, micro_y, micro_u, micro_t

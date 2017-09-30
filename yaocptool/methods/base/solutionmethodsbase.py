@@ -1,22 +1,21 @@
 import matplotlib.pyplot as plt
 from casadi import SX, MX, DM, vertcat, collocation_points, \
-    substitute, integrator, vec, nlpsol, \
+    vec, nlpsol, \
     Function, linspace, horzcat, dot, gradient, jacobian, mtimes, \
     reshape
-
 from typing import List
+from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
+
 from yaocptool import config
-from yaocptool.methods.collocationscheme import CollocationScheme
-from yaocptool.methods.multipleshooting import MultipleShootingScheme
-from yaocptool.methods.discretizationschemebase import DiscretizationSchemeBase
-from .optimizationresult import OptimizationResult
-from yaocptool.modelling_classes.model_classes import SystemModel
+from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
+from yaocptool.methods.base.optimizationresult import OptimizationResult
+from yaocptool.methods.classic.collocationscheme import CollocationScheme
 from yaocptool.modelling_classes.ocp import OptimalControlProblem
 
 
 # TODO: fix PEP 8
 
-class SolutionMethodsBase:
+class SolutionMethodsBase(object):
     def __init__(self, problem, **kwargs):
         """
         :param problem: OptimalControlProblem

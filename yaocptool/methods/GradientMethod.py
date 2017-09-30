@@ -15,20 +15,17 @@ import sys
 sys.path.append(r"C:\casadi-py27-np1.9.1-v3.1.0")
 sys.path.append(r"C:\coinhsl-win32-openblas-2014.01.10")
 #if not 'casadi' in sys.modules:
-from casadi import SX, MX, DM, inf, repmat, vertcat, collocation_points, \
-                    substitute, linspace, integrator, vec, nlpsol, \
-                    dot, gradient, hessian, mtimes, inv, fmin, fmax, Function
+from casadi import MX, DM, inf, vertcat, collocation_points, \
+                    substitute, linspace, vec, gradient, hessian, mtimes, inv, fmin, fmax, Function
 #from cartpendulum import *
-  
-import IndirectMethod
+
+from yaocptool.methods.classic import indirectmethod
 import warnings
 
-import matplotlib.pyplot as plt
 
-
-class GradientMethod(IndirectMethod.IndirectMethod):
+class GradientMethod(indirectmethod.IndirectMethod):
     def __init__(self, problem, **kwargs):
-        IndirectMethod.IndirectMethod.__init__(self, problem)
+        indirectmethod.IndirectMethod.__init__(self, problem)
 
         self.solution_class = 'gradient_method'
         self.degree = 1

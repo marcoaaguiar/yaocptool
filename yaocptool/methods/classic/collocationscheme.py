@@ -5,8 +5,9 @@ Created on Thu Jul 13 17:08:34 2017
 @author: marco
 """
 from casadi import DM, MX, repmat, vertcat, Function, jacobian, \
-    vec, collocation_points, horzcat, substitute
-from discretizationschemebase import DiscretizationSchemeBase
+    collocation_points
+
+from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
 class CollocationScheme(DiscretizationSchemeBase):

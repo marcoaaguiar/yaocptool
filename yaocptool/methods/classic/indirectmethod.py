@@ -8,11 +8,9 @@ import sys
 sys.path.append(r"C:\casadi-py27-np1.9.1-v3.0.0")
 sys.path.append(r"C:\coinhsl-win32-openblas-2014.01.10")
 #if not 'casadi' in sys.modules:
-from casadi import SX, MX, DM, inf, repmat, vertcat, collocation_points, \
-                    substitute, linspace, integrator, vec, nlpsol, \
-                    dot, gradient, hessian, mtimes, inv, fmin, fmax, Function
-  
-from solutionmethodsbase import *
+from casadi import inf, substitute, hessian, inv, fmin, fmax
+
+from yaocptool.methods.base.solutionmethodsbase import *
 import warnings
 
 class IndirectMethod(SolutionMethodsBase):
@@ -24,7 +22,8 @@ class IndirectMethod(SolutionMethodsBase):
         :param degree: int
         :param discretization_scheme: str 'multiple-shooting' | 'collocation'
         """
-        SolutionMethodsBase.__init__(self, problem, **kwargs)
+        super(IndirectMethod, self).__init__(problem, **kwargs)
+
         self.problem = problem
         self.solution_class = 'indirect'
 

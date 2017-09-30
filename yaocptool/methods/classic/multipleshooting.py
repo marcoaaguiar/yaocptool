@@ -5,7 +5,8 @@ Created on Thu Jul 13 17:08:34 2017
 @author: marco
 """
 from casadi import DM, MX, vertcat, Function, repmat
-from discretizationschemebase import DiscretizationSchemeBase
+
+from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
 class MultipleShootingScheme(DiscretizationSchemeBase):

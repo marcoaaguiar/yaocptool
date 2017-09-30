@@ -6,11 +6,9 @@ Created on Fri Oct 21 16:40:15 2016
 """
 from casadi import substitute
 
-import solutionmethodsbase
-# from yaocptool.modelling_classes.ocp import OptimalControlProblem
+from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
-
-class DirectMethod(solutionmethodsbase.SolutionMethodsBase):
+class DirectMethod(SolutionMethodsBase):
     def __init__(self, problem, **kwargs):
         """
         :param problem: yaocptool.modelling_classes.ocp.OptimalControlProblem
@@ -19,7 +17,7 @@ class DirectMethod(solutionmethodsbase.SolutionMethodsBase):
         :param degree: int
         :param discretization_scheme: str 'multiple-shooting' | 'collocation'
         """
-        solutionmethodsbase.SolutionMethodsBase.__init__(self, problem, **kwargs)
+        super(DirectMethod, self).__init__(problem, **kwargs)
 
         self.solution_class = 'direct'
 
