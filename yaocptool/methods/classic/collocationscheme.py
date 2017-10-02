@@ -42,47 +42,39 @@ class CollocationScheme(DiscretizationSchemeBase):
         Create the symbolic variables that will be used by the NLP problem
         :rtype: (DM, List(List(DM)), List(List(DM)), List(DM), DM, DM, DM)
         """
-        eta = MX.sym('eta', self.problem.N_eta)
-        x = []
-        y = []
-        u = []
-        vars_lb = []
-        vars_ub = []
-        for k in range(self.finite_elements):
-            x_k = []
-            for n in range(self.degree + 1):
-                x_k.append(MX.sym('x_' + repr(k) + '_' + repr(n), self.model.Nx))
-                vars_lb.append(self.problem.x_min)
-                vars_ub.append(self.problem.x_max)
-            x.append(x_k)
-
-        for k in range(self.finite_elements):
-            y_k = []
-            for n in range(self.degree):
-                y_k.append(MX.sym('yz_' + repr(k) + '_' + repr(n), self.model.Nyz))
-                vars_lb.append(self.problem.yz_min)
-                vars_ub.append(self.problem.yz_max)
-            y.append(y_k)
-
-        for k in range(self.finite_elements):
-            u_k = []
-            for n in range(self.degree_control):
-                u_k.append(MX.sym('u_' + repr(k) + '_' + repr(n), self.model.Nu))
-                vars_lb.append(self.problem.u_min)
-                vars_ub.append(self.problem.u_max)
-            u.append(vertcat(*u_k))
-
-        v_x = vertcat(*[vertcat(*x_k) for x_k in x])
-        v_y = vertcat(*[vertcat(*yz_k) for yz_k in y])
-        v_u = vertcat(*u)
-        v = vertcat(v_x, v_y, v_u, eta)
-
-        vars_lb = vertcat(*vars_lb)
-        vars_ub = vertcat(*vars_ub)
+        v, x, y, u, eta = self.create_nlp_symbolic_variables()
+        vars_lb, vars_ub = self._create_variables_bound_vectors()
 
         return v, x, y, u, eta, vars_lb, vars_ub
 
-    def create_symbolic_variables(self):
+    def _create_variables_bound_vectors(self):
+        """
+        Return two items: the vector of lower bounds and upperbounds
+        :rtype: (DM, DM)
+        """
+        vars_lb = []
+        vars_ub = []
+        for k in range(self.finite_elements):
+            for n in range(self.degree + 1):
+                vars_lb.append(self.problem.x_min)
+                vars_ub.append(self.problem.x_max)
+        for k in range(self.finite_elements):
+            for n in range(self.degree):
+                vars_lb.append(self.problem.yz_min)
+                vars_ub.append(self.problem.yz_max)
+        for k in range(self.finite_elements):
+            for n in range(self.degree_control):
+                vars_lb.append(self.problem.u_min)
+                vars_ub.append(self.problem.u_max)
+        vars_lb = vertcat(*vars_lb)
+        vars_ub = vertcat(*vars_ub)
+        return vars_lb, vars_ub
+
+    def create_nlp_symbolic_variables(self):
+        """
+        Create the symbolic variables that will be used by the NLP problem
+        :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX)
+        """
         eta = MX.sym('eta', self.problem.N_eta)
         x = []
         y = []
@@ -109,7 +101,6 @@ class CollocationScheme(DiscretizationSchemeBase):
         v_y = vertcat(*[vertcat(*yz_k) for yz_k in y])
         v_u = vertcat(*u)
         v = vertcat(v_x, v_y, v_u, eta)
-
 
         return v, x, y, u, eta
 
@@ -120,10 +111,9 @@ class CollocationScheme(DiscretizationSchemeBase):
         :return: X, Y, and U -> list with a DM for each element
         """
         assert (results_vector.__class__ == DM)
-        x = []
-        y = []
-        u = []
+        x, y, u = [], [], []
         v_offset = 0
+
         if self.problem.N_eta > 0:
             results_vector = results_vector[:-self.problem.N_eta]
 
@@ -168,7 +158,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             x_0 = self.problem.x_0
 
         # Create NLP symbolic variables
-        all_decision_vars, x, yz, u, eta, vars_lb, vars_ub = self._create_nlp_symbolic_variables_and_bound_vectors()
+        all_decision_vars, x_var, yz_var, u_var, eta = self.create_nlp_symbolic_variables()
         constraint_list = []
 
         # Create "simulations" time_dict
@@ -183,7 +173,7 @@ class CollocationScheme(DiscretizationSchemeBase):
                                       [jacobian(x_pol, self.model.tau_sym)])
 
         f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
-        constraint_list.append(f_h_initial(x[0][0], x_0))
+        constraint_list.append(f_h_initial(x_var[0][0], x_0))
 
         # Create functions to be evaluated
         functions = defaultdict(dict)
@@ -203,7 +193,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             functions['alg'][el] = f_alg
 
         # Obtain the "simulation" results
-        results = self.get_system_at_given_times(x, yz, u, time_dict, p, theta, functions=functions)
+        results = self.get_system_at_given_times(x_var, yz_var, u_var, time_dict, p, theta, functions=functions)
 
         for el in range(self.finite_elements):
             dt = self.solution_method.delta_t
@@ -217,7 +207,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             # Enforce the the derivative of the polynomial to be equal ODE at t
             for col_point in range(1, self.degree + 1):
                 constraint_list.append(
-                    func_d_x_pol_d_tau(tau_list[col_point], vertcat(*x[el])) - dt * results[el]['ode'][col_point])
+                    func_d_x_pol_d_tau(tau_list[col_point], vertcat(*x_var[el])) - dt * results[el]['ode'][col_point])
 
             for col_point in range(self.degree):
                 constraint_list.append(results[el]['alg'][col_point])
@@ -240,6 +230,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         lbg = DM.zeros(nlp_prob['g'].shape)
         ubg = DM.zeros(nlp_prob['g'].shape)
 
+        vars_lb, vars_ub = self._create_variables_bound_vectors()
         nlp_call = {'lbx': vars_lb,
                     'ubx': vars_ub,
                     'lbg': lbg,
@@ -249,7 +240,6 @@ class CollocationScheme(DiscretizationSchemeBase):
 
     def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None,
                                   start_at_t_0=False):
-
         """
         :param x: List[List[MX]]
         :param y: List[List[MX]]
@@ -303,7 +293,7 @@ class CollocationScheme(DiscretizationSchemeBase):
 
             # Find the times that need to be evaluated
             element_breakpoints = set()
-            for key in ['x', 'y', 'u']:
+            for key in ['x', 'y', 'u'] + functions.keys():
                 if key in time_dict[el]:
                     element_breakpoints = element_breakpoints.union(time_dict[el][key])
 

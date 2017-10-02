@@ -19,9 +19,9 @@ if False:
 else:
     solution_method = AugmentedLagrange(problem, DirectMethod,
                                         {'degree': 3, 'degree_control': 3,
-                                         'integrator_type': 'implicit',
+                                         # 'integrator_type': 'implicit',
                                          # 'integrator_type': 'explicit',
-                                         # 'discretization_scheme': 'collocation'
+                                         'discretization_scheme': 'collocation'
                                          },
                                         max_iter=3,
                                         mu_0=1,

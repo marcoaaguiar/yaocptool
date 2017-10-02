@@ -17,81 +17,109 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                + self.finite_elements * self.model.Nu * self.degree_control \
                + self.problem.N_eta
 
-    def _create_nlp_symbolic_variables_and_bound_vectors(self):
-        n_v = self._number_of_variables()
-
-        v = MX.sym("V", n_v)
-        vars_lb = -DM.inf(n_v)
-        vars_ub = DM.inf(n_v)
-
-        x, u = self.splitXandU(v)
-
-        v_offset = 0
+    def _create_variables_bound_vectors(self):
+        """
+        Return two items: the vector of lower bounds and upperbounds
+        :rtype: (DM, DM)
+        """
+        vars_lb = []
+        vars_ub = []
         for k in range(self.finite_elements + 1):
-            vars_lb[v_offset:v_offset + self.model.Nx] = self.problem.x_min
-            vars_ub[v_offset:v_offset + self.model.Nx] = self.problem.x_max
-            v_offset = v_offset + self.model.Nx
+            vars_lb.append(self.problem.x_min)
+            vars_ub.append(self.problem.x_max)
+        # for k in range(self.finite_elements):
+        #         vars_lb.append(self.problem.yz_min)
+        #         vars_ub.append(self.problem.yz_max)
+        for k in range(self.finite_elements):
+            for j in range(self.degree_control):
+                vars_lb.append(self.problem.u_min)
+                vars_ub.append(self.problem.u_max)
+        vars_lb = vertcat(*vars_lb)
+        vars_ub = vertcat(*vars_ub)
+        return vars_lb, vars_ub
 
-            if k != self.finite_elements:
-                for j in range(self.degree_control):
-                    vars_lb[v_offset:v_offset + self.model.Nu] = self.problem.u_min
-                    vars_ub[v_offset:v_offset + self.model.Nu] = self.problem.u_max
-                    v_offset = v_offset + self.model.Nu
-        eta = v[n_v - self.problem.N_eta:]
-        return v, x, u, eta, vars_lb, vars_ub
+    def create_nlp_symbolic_variables(self):
+        """
+       Create the symbolic variables that will be used by the NLP problem
+       :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX)
+       """
+        eta = MX.sym('eta', self.problem.N_eta)
+        x_var, y_var, u_var = [], [], []
+
+        for el in range(self.finite_elements + 1):
+            x_k = [MX.sym('x_' + repr(el), self.model.Nx)]
+            x_var.append(x_k)
+
+        for el in range(self.finite_elements):
+            # y_k = [MX.sym('yz_' + repr(el), self.model.Nyz)]
+            y_k = []
+            y_var.append(y_k)
+
+        for el in range(self.finite_elements):
+            u_k = []
+            for n in range(self.degree_control):
+                u_k.append(MX.sym('u_' + repr(el) + '_' + repr(n), self.model.Nu))
+            u_var.append(vertcat(*u_k))
+
+        v_x = vertcat(*[vertcat(*x_k) for x_k in x_var])
+        v_y = vertcat(*[vertcat(*yz_k) for yz_k in y_var])
+        v_u = vertcat(*u_var)
+        v = vertcat(v_x, v_y, v_u, eta)
+
+        return v, x_var, y_var, u_var, eta
 
     def splitXYandU(self, results_vector, all_subinterval=False):
-        x = []
-        y = []
-        u = []
-
+        x, y, u = [], [], []
         v_offset = 0
+
         if self.problem.N_eta > 0:
             results_vector = results_vector[:-self.problem.N_eta]
 
         for k in range(self.finite_elements + 1):
-            x.append(results_vector[v_offset:v_offset + self.model.Nx])
+            x.append([results_vector[v_offset:v_offset + self.model.Nx]])
             v_offset = v_offset + self.model.Nx
-            if k != self.finite_elements:
-                u.append(results_vector[v_offset:v_offset + self.model.Nu * self.degree_control])
-                y.append(DM([]))
-                v_offset = v_offset + self.model.Nu * self.degree_control
+
+        for k in range(self.finite_elements):
+            u.append(results_vector[v_offset:v_offset + self.model.Nu * self.degree_control])
+            v_offset = v_offset + self.model.Nu * self.degree_control
+
+        for k in range(self.finite_elements):
+                y.append([DM([])])
         return x, y, u
 
     def discretize(self, x_0=None, p=None, theta=None):
         if p is None:
             p = []
-        finite_elements = self.finite_elements
 
         if theta is None:
-            theta = dict([(i, []) for i in range(finite_elements)])
+            theta = dict([(i, []) for i in range(self.finite_elements)])
 
         if x_0 is None:
             x_0 = self.problem.x_0
 
         # Create NLP symbolic variables
-        all_decision_vars, x, u, eta, vars_lb, vars_ub = self._create_nlp_symbolic_variables_and_bound_vectors()
+        all_decision_vars, x_var, yz_var, u_var, eta = self.create_nlp_symbolic_variables()
         y = []
         constraint_list = []
 
-        # Create "simulations" time_dict
+        # Create "simulations" time_dict, a dict informing the simulation points in each finite elem. for each variable
         time_dict = self._create_time_dict_for_multiple_shooting()
 
         # Initial time constraint/initial condition
         f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
-        constraint_list.append(f_h_initial(x[0], x_0))
+        constraint_list.append(f_h_initial(x_var[0][0], x_0))
 
         # Multiple Shooting "simulation"
-        results = self.get_system_at_given_times(x, y, u, time_dict, p, theta)
-        for el in range(finite_elements):
-            constraint_list.append(results[el]['x'][0] - x[el + 1])
+        results = self.get_system_at_given_times(x_var, y, u_var, time_dict, p, theta)
+        for el in range(self.finite_elements):
+            constraint_list.append(results[el]['x'][0] - x_var[el + 1][0])
 
         # Final time constraint
         f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
-        constraint_list.append(f_h_final(x[-1], eta))
+        constraint_list.append(f_h_final(x_var[-1][0], eta))
 
         if self.solution_method.solution_class == 'direct':
-            cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(x[-1], p)
+            cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(x_var[-1][0], p)
         else:
             cost = 0
 
@@ -101,6 +129,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         lbg = DM.zeros(nlp_prob['g'].shape)
         ubg = DM.zeros(nlp_prob['g'].shape)
+        vars_lb, vars_ub = self._create_variables_bound_vectors()
 
         nlp_call = {'lbx': vars_lb,
                     'ubx': vars_ub,
@@ -118,18 +147,21 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         return time_dict
 
-    def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None,
+    def get_system_at_given_times(self, x_var, y_var, u_var, time_dict=None, p=None, theta=None, functions=None,
                                   start_at_t_0=False):
         """
-        :param x: List(MX)
-        :param y: List(MX)
-        :param u: List(MX)
-        :type time_dict: Dict[int, List[float]] Dictionary of simulations times, where the KEY is the the finite_element
-                                                and the VALUE list a list of desired times
+        :param x_var: List[List[MX]]
+        :param y_var: List[List[MX]]
+        :param u_var: List[MX]
+        :type time_dict: Dict(int, List(float)) Dictionary of simulations times, where the KEY is the
+                                                finite_element and the VALUE list a list of desired times
                                                 example : {1:{'t_0': 0.0, 'x':[0.0, 0.1, 0.2], y:[0.2]}}
         :param p: list
         :param theta: dict
-        :param start_at_t_0: bool
+        :param start_at_t_0: bool If TRUE the simulations in each finite_element will start at the element t_0,
+                                  Otherwise the simulation will start the end of the previous element
+        :param functions: Dict[str, Function|Dict[int] dictionary of Functions to be evaluated, KEY is the function
+                                              identifier, VALUE is a CasADi Function with model.all_sym as input
          """
         # TODO make the results[el]['x'] be indexed by the evaluated time (a dict where the key is t) instead of list
 
@@ -141,14 +173,13 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             time_dict = {}
         if functions is None:
             functions = {}
-
         results = defaultdict(lambda: defaultdict(list))
 
         # for el in range(finite_element):
         for el in time_dict:
             t_0 = t_init = time_dict[el]['t_0']
             t_f = time_dict[el]['t_f']
-            x_init = x[el]
+            x_init = x_var[el][0]
             # Create dae_sys and the control function
             dae_sys = self.model.getDAESystem()
             self.model.convert_dae_sys_from_tau_to_time(dae_sys, self.time_breakpoints[el],
@@ -161,18 +192,21 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
             # Find the times that need to be evaluated
             element_breakpoints = set()
-            for key in ['x', 'y', 'u']:
+            for key in ['x', 'y', 'u'] + functions.keys():
                 if key in time_dict[el]:
                     element_breakpoints = element_breakpoints.union(time_dict[el][key])
 
+            element_breakpoints = list(element_breakpoints)
+            element_breakpoints.sort()
+
             # If values are needed from t_0, get it
-            if t_0 in time_dict[el]['x']:
-                results[el]['x'].append(x[el])
+            if 'x' in time_dict[el] and t_0 in time_dict[el]['x']:
+                results[el]['x'].append(x_var[el][0])
             if 'y' in time_dict[el] and t_0 in time_dict[el]['y']:
                 raise NotImplementedError
             if 'u' in time_dict[el] and t_0 in time_dict[el]['u']:
                 if self.solution_method.solution_class == 'direct':
-                    results[el]['x'].append(f_u(t_0, u[el]))
+                    results[el]['x'].append(f_u(t_0, u_var[el]))
                 else:
                     raise NotImplementedError
             for f_name in functions:
@@ -185,7 +219,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
             for t in element_breakpoints:
                 t_next = t
-                p_i = vertcat(p, theta[el], u[el])
+                p_i = vertcat(p, theta[el], u_var[el])
 
                 # Do the simulation
                 sim_result = self.model.simulateStep(x_init, t_0=t_init, t_f=t_next, p=p_i,
@@ -203,17 +237,18 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                     results[el]['y'].append(yz_t)
                 if 'u' in time_dict and t in time_dict[el]['u']:
                     if self.solution_method.solution_class == 'direct':
-                        results[el]['u'].append(f_u(t, u[el]))
+                        results[el]['u'].append(f_u(t, u_var[el]))
                     else:
-                        results[el]['u'].append(f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, z=z_t, p=p,
-                                                                                             theta=theta[el],
-                                                                                             u_par=u[el])))
+                        results[el]['u'].append(
+                            f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, z=z_t, p=p,
+                                                                         theta=theta[el],
+                                                                         u_par=u_var[el])))
                 for f_name in functions:
                     if t in time_dict[el][f_name]:
                         f = functions[f_name][el]
                         val = f(
                             *self.model.put_values_in_all_sym_format(t=t, x=x_t, y=yz_t, z=z_t, p=p, theta=theta[el],
-                                                                     u_par=u[el]))
+                                                                     u_par=u_var[el]))
                         results[el][f_name].append(val)
                 # If the simulation should start from the begin of the simulation interval, do not chage the t_init
                 if not start_at_t_0:
@@ -250,9 +285,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         optimization_result.y_breakpoints_data['time'] = self.time_breakpoints[:-1]
         optimization_result.u_breakpoints_data['time'] = self.time_breakpoints[:-1]
 
-        optimization_result.x_interpolation_data['values'] = [val for val in x_breakpoints_values]
-        optimization_result.y_interpolation_data['values'] = [val for val in y_breakpoints_values]
-        optimization_result.u_interpolation_data['values'] = [val for val in u_breakpoints_values]
+        optimization_result.x_interpolation_data['values'] = x_breakpoints_values
+        optimization_result.y_interpolation_data['values'] = y_breakpoints_values
+        optimization_result.u_interpolation_data['values'] = y_breakpoints_values
 
         optimization_result.x_interpolation_data['time'] = [t for t in self.time_breakpoints]
         optimization_result.y_interpolation_data['time'] = [t for t in self.time_breakpoints[:-1]]

@@ -62,8 +62,8 @@ class OptimizationResult:
                 self._plot_breakpoints(plot_list)
 
     def _plot_breakpoints(self, plot_list):
-        x_values = self.x_breakpoints_data['values']
-        y_values = self.y_breakpoints_data['values']
+        x_values = horzcat(*[self.x_breakpoints_data['values'][i][0] for i in range(self.finite_elements+1)])
+        y_values = horzcat(*[self.y_breakpoints_data['values'][i][0] for i in range(self.finite_elements)])
         u_values = self.u_breakpoints_data['values']
 
         t_x = self.x_breakpoints_data['time']
@@ -74,16 +74,16 @@ class OptimizationResult:
             fig = plt.figure()
             if 'x' in entry:
                 for i in entry['x']:
-                    plt.plot(t_x, horzcat(*x_values)[i, :].T)
+                    plt.plot(t_x, x_values[i, :].T)
                 plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
             if 'y' in entry:
                 for i in entry['y']:
-                    plt.plot(t_y, horzcat(*y_values)[i, :].T)
+                    plt.plot(t_y, y_values[i, :].T)
                 plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
 
             if 'u' in entry:
                 for i in entry['u']:
-                    plt.step(t_u, horzcat(*u_values)[i, :].T, where='post')
+                    plt.step(t_u, u_values[i, :].T, where='post')
                 plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
             plt.grid()
             axes = fig.axes

@@ -44,7 +44,23 @@ class DiscretizationSchemeBase:
     def discretize(self, x_0=None, p=[], theta=None):
         raise NotImplementedError
 
-    def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None, start_at_t_0=False):
+    def create_nlp_symbolic_variables(self):
+        """
+        Create the symbolic variables that will be used by the NLP problem
+        :rtype: (DM, List(List(DM)), List(List(DM)), List(DM), DM, DM, DM)
+        """
+        raise NotImplementedError
+
+    def _create_variables_bound_vectors(self):
+        """
+        Return two items: the vector of lower bounds and upperbounds
+        :rtype: (DM, DM)
+        """
+        raise NotImplementedError
+
+    def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None,
+                                  start_at_t_0=False):
+        # TODO: calculate quadratures, for error evaluation of aug lagrange
         raise NotImplementedError
 
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):

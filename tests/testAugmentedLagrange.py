@@ -17,13 +17,16 @@ solve_direct = False
 
 k = 0
 result_list = []
-for solution_method_class in [DirectMethod, IndirectMethod]:
-    for discretization in ['collocation']:  # 'collocation', 'multiple-shooting']:
-    # for discretization in ['multiple-shooting']:  # 'collocation', 'multiple-shooting']:
+for solution_method_class in [DirectMethod, IndirectMethod]:  # , IndirectMethod]:
+    # for discretization in ['collocation']:  # 'collocation', 'multiple-shooting']:
+    for discretization in ['multiple-shooting']:  # 'collocation', 'multiple-shooting']:
         for integrator_type in ['explicit', 'implicit']:
-            if discretization == 'collocation' and integrator_type == 'implicit':
-                break
+            if discretization == 'collocation' or integrator_type == 'implicit':
+                pass
             else:
+                print(
+                'class: {}, discretization: {}, integrator_type: {}'.format(solution_method_class.__class__.__name__,
+                                                                            discretization, integrator_type))
                 model = PendulumCart()
 
                 problem = UpwardPendulumStabilization(model,
@@ -33,7 +36,12 @@ for solution_method_class in [DirectMethod, IndirectMethod]:
 
                 solution_method = AugmentedLagrange(problem, solution_method_class,
                                                     {'degree': 4, 'degree_control': 4,
-                                                     'discretization_scheme': discretization},
+                                                     'discretization_scheme': discretization,
+                                                     'nlpsol_opts': {
+                                                         'ipopt.print_level': 0,
+                                                         'print_time': False
+                                                     }
+                                                     },
                                                     max_iter=5, mu_0=10, beta=10.,
                                                     relax_state_bounds=True,
                                                     finite_elements=40,
