@@ -18,7 +18,8 @@ solve_direct = False
 k = 0
 result_list = []
 for solution_method_class in [DirectMethod, IndirectMethod]:
-    for discretization in ['collocation', 'multiple-shooting']:  # 'collocation', 'multiple-shooting']:
+    for discretization in ['collocation']:  # 'collocation', 'multiple-shooting']:
+    # for discretization in ['multiple-shooting']:  # 'collocation', 'multiple-shooting']:
         for integrator_type in ['explicit', 'implicit']:
             if discretization == 'collocation' and integrator_type == 'implicit':
                 break

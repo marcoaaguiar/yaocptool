@@ -23,7 +23,7 @@ problem = UpwardPendulumStabilization(model,
 #                                      state_constraints = True, 
 #                                      control_constraints = True,
                                       t_f =3.)
-plant.includeState(cost, casadi.mtimes(casadi.mtimes(plant.x_sym.T,problem.Q),plant.x_sym) + casadi.mtimes(casadi.mtimes(plant.u_sym.T,problem.R),plant.u_sym))
+plant.include_state(cost, casadi.mtimes(casadi.mtimes(plant.x_sym.T, problem.Q), plant.x_sym) + casadi.mtimes(casadi.mtimes(plant.u_sym.T, problem.R), plant.u_sym))
 ocp_solver = IndirectMethod(problem, degree = 1, finite_elements = 40, 
                             integrator_type = 'explicit')
 

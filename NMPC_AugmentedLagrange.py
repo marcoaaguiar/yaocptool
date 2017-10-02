@@ -30,7 +30,7 @@ problem = UpwardPendulumStabilization(model,
 #                                      x_0 = DM([pi-1, 0, 0, 0])
                                       )
 
-plant.includeState(cost, casadi.mtimes(casadi.mtimes(plant.x_sym.T,problem.Q),plant.x_sym) + casadi.mtimes(casadi.mtimes(plant.u_sym.T,problem.R),plant.u_sym))
+plant.include_state(cost, casadi.mtimes(casadi.mtimes(plant.x_sym.T, problem.Q), plant.x_sym) + casadi.mtimes(casadi.mtimes(plant.u_sym.T, problem.R), plant.u_sym))
 ocp_solver = AugmentedLagrange(problem, IndirectMethod, \
     {'degree': 1,},
         max_iter = 1, mu_0 = 1e4, beta= 10., mu_max = 1e4, finite_elements = 40, degree = 2, integrator_type = 'explicit',

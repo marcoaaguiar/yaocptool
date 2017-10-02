@@ -2,7 +2,7 @@ class DiscretizationSchemeBase:
     def __init__(self, solution_method):
         """
 
-        :type solution_method: yaocptool.methods.solutionmethodsbase.SolutionMethodsBase
+        :type solution_method: yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase
         """
         self.solution_method = solution_method
 
@@ -44,10 +44,13 @@ class DiscretizationSchemeBase:
     def discretize(self, x_0=None, p=[], theta=None):
         raise NotImplementedError
 
+    def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None, start_at_t_0=False):
+        raise NotImplementedError
+
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
         """
         Set the raw data received from the solver and put it in the Optimization Result object
         :type optimization_result: yaocptool.methods.optimizationresult.OptimizationResult
         :type raw_solution_dict: dict
         """
-        raise NotImplemented
+        raise NotImplementedError

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from casadi import horzcat, DM
 from typing import List
 
+# TODO: Fix plot u data
 
 class OptimizationResult:
     def __init__(self, **kwargs):

@@ -20,7 +20,7 @@ class OptimalControlProblem:
         if not hasattr(self, 't_f'):
             self.t_f = 1.
         if not hasattr(self, 'x_0'):
-            self.x_0 = []
+            self.x_0 = DM([])
 
         self.name = ''
         self.model = SystemModel()
@@ -41,8 +41,8 @@ class OptimalControlProblem:
         self.h_final = vertcat([])
         self.g_ineq = vertcat([])
 
-        self.L = DM(0)
-        self.V = DM(0)
+        self.L = DM(0.)  # type: DM
+        self.V = DM(0.)  # type: DM
 
         self.eta = SX()
 
@@ -60,12 +60,19 @@ class OptimalControlProblem:
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
+        self.x_0 = DM(self.x_0)
+
         if self.L.is_zero() and self.V.is_zero() and not self.NULL_OBJ:
             raise Exception('No objective')
         elif not hasattr(self, 'L'):
-            self.L = 0
+            self.L = DM(0.)
         elif not hasattr(self, 'V'):
-            self.V = 0
+            self.V = DM(0.)
+
+        if not self.L.numel() == 1:
+            raise Exception('Size of dynamic cost (ocp.L) is different from 1, provided size is: {}'.format(self.L.numel()))
+        if not self.V.numel() == 1:
+            raise Exception('Size of final cost (ocp.V) is different from 1, provided size is: {}'.format(self.L.numel()))
 
     @property
     def N_h_final(self):
@@ -94,10 +101,10 @@ class OptimalControlProblem:
             x_min = -inf
 
         self.includeState(x_c, self.L, x_0=0, x_min=x_min)
-        #        self.includeState(x_c, self.L, x_0 = 0)
+        #        self.include_state(x_c, self.L, x_0 = 0)
         #        self.h_initial = vertcat(self.h_initial, x_c)
         self.model.x_c = x_c
-        self.L = 0
+        self.L = DM(0)
         self.V += x_c
 
     def makeFinalCostFunction(self, p=None):
@@ -108,8 +115,8 @@ class OptimalControlProblem:
         #     self.V_function = Function('FinalCost', [self.model.x_sym],[self.V])
 
     def createQuadraticCost(self, par_dict):
-        self.L = 0
-        self.V = 0
+        self.L = DM(0)
+        self.V = DM(0)
         if 'x_ref' not in par_dict:
             par_dict['x_ref'] = DM.zeros(self.model.Nx)
         if 'u_ref' not in par_dict:
@@ -168,7 +175,7 @@ class OptimalControlProblem:
         if x_0 is None and h_initial is None and not suppress:
             raise Exception('No intial condition given')
 
-        x_0_sym = self.model.includeState(var, ode, x_0_sym)
+        x_0_sym = self.model.include_state(var, ode, x_0_sym)
 
         if x_0 is not None:
             self.x_0 = vertcat(self.x_0, x_0)
@@ -204,7 +211,7 @@ class OptimalControlProblem:
         self.u_max = vertcat(self.u_max, u_max)
 
     def removeAlgebraic(self, var, eq=None):
-        to_remove = self.model.findVariablesIndecesInVector(var, self.model.y_sym)
+        to_remove = self.model.find_variables_indices_in_vector(var, self.model.y_sym)
         to_remove.reverse()
 
         for it in to_remove:
@@ -213,7 +220,7 @@ class OptimalControlProblem:
         self.model.removeAlgebraic(var, eq)
 
     def removeExternalAlgebraic(self, var, eq=None):
-        to_remove = self.model.findVariablesIndecesInVector(var, self.model.z_sym)
+        to_remove = self.model.find_variables_indices_in_vector(var, self.model.z_sym)
         to_remove.reverse()
         for it in to_remove:
             self.z_max.remove([it], [])
@@ -237,12 +244,12 @@ class OptimalControlProblem:
 
         self.model.removeControl(var)
 
-    def replaceVariable(self, original, replacement, variable_type='other'):
+    def replace_variable(self, original, replacement, variable_type='other'):
         self.L = substitute(self.L, original, replacement)
         if variable_type == 'p':
             self.V = substitute(self.V, original, replacement)
 
-        self.model.replaceVariable(original, replacement, variable_type)
+        self.model.replace_variable(original, replacement, variable_type)
 
 
 class SuperOCP(OptimalControlProblem):

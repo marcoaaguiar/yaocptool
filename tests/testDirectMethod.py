@@ -23,7 +23,8 @@ solution_method = DirectMethod(problem, degree=3,
                                degree_control=3,
                                finite_elements=20,
                                integrator_type='implicit',
-                               discretization_scheme = 'collocation')
+                               # discretization_scheme = 'collocation'
+                               )
 
 result = solution_method.solve()
 result.plot([{'x': [0]}, {'x': [2, 3]},

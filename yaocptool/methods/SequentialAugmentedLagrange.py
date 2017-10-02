@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from AugmentedLagrange import AugmentedLagrange
 
 class SequentialAugmentedLagrange(AugmentedLagrange): 
-    def __init__(self, network, Ocp_solver_class, solver_options ={}, **kwargs):
+    def __init__(self, network, ocp_solver_class, solver_options ={}, **kwargs):
         self.network = network
         self.problems = self.network.problems
         self.Nproblems = len(self.problems)
@@ -22,11 +22,11 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
         for (k, v) in kwargs.items():
             setattr(self, k, v)
         
-        AugmentedLagrange.__init__(self, self.problems[0], Ocp_solver_class, solver_options, 
-                                   initialize = False, 
-                                   relax_algebraic = False, 
-                                   relax_external_algebraic = False, 
-                                   relax_connecting_equations = False, 
+        AugmentedLagrange.__init__(self, self.problems[0], ocp_solver_class, solver_options,
+                                   initialize = False,
+                                   relax_algebraic = False,
+                                   relax_external_algebraic = False,
+                                   relax_connecting_equations = False,
                                    relax_state_bounds = False)
         
         for (k, v) in kwargs.items():
@@ -104,13 +104,13 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
         self.initialize_nu_values()
         ## itialized ocp solver        
         for p in self.problems_dict:
-            self.problems_dict[p]['ocp_solver'] = Ocp_solver_class(self.problems_dict[p]['problem'], **solver_options)
+            self.problems_dict[p]['ocp_solver'] = ocp_solver_class(self.problems_dict[p]['problem'], **solver_options)
     
             
     def transformFreeZInControl(self):
         for problem_id in self.problems_dict:
             for k in self.problems_dict[problem_id]['connections_id']:
-                for n_z in self.problems_dict[problem_id]['problem'].model.findVariablesIndecesInVector(self.con_dict[k]['con_z'], self.problems_dict[problem_id]['problem'].model.z_sym):
+                for n_z in self.problems_dict[problem_id]['problem'].model.find_variables_indices_in_vector(self.con_dict[k]['con_z'], self.problems_dict[problem_id]['problem'].model.z_sym):
                  #xrange(self.problems_dict[problem_id]['problem'].model.Nz):
                     print problem_id, n_z, self.problems_dict[problem_id]['problem'].model.Nz, self.problems_dict[problem_id]['problem'].model.z_sym
                     tested_z = self.problems_dict[problem_id]['problem'].model.z_sym[n_z]
@@ -149,7 +149,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
                                                                                     z.name() + '_approx',
                                                                                     tau = self.problems_dict[p]['problem'].model.tau_sym)
                                                                                     
-                self.problems_dict[p]['problem'].replaceVariable(z, exog_z_pol)
+                self.problems_dict[p]['problem'].replace_variable(z, exog_z_pol)
                 self.problems_dict[p]['problem'].model.includeTheta(exog_z_par)
                 self.problems_dict[p]['exog_z_pol'].append(exog_z_pol)
                 self.problems_dict[p]['exog_z_par'].append(exog_z_par)
@@ -173,9 +173,9 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
             
             for p in self.con_dict[k]['associated_problems']: # for all problems
                 problem = self.problems_dict[p]['problem']
-                # parametrize NU
-                problem.replaceVariable(nu_alg, nu_pol)
-                problem.replaceVariable(self.con_dict[k]['nu_tau_sym'], problem.model.tau_sym)
+                # _debug_skip_parametrize NU
+                problem.replace_variable(nu_alg, nu_pol)
+                problem.replace_variable(self.con_dict[k]['nu_tau_sym'], problem.model.tau_sym)
                 problem.model.includeTheta(nu_par)
 
     

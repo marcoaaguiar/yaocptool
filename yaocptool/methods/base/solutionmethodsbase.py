@@ -28,6 +28,7 @@ class SolutionMethodsBase(object):
         self.problem = problem  # type: OptimalControlProblem
         self.integrator_type = 'implicit'
         self.solution_method = 'multiple_shooting'
+        self.solution_class = ''
         self.degree = 4
         self.degree_control = 1
         self.finite_elements = 10
@@ -38,9 +39,14 @@ class SolutionMethodsBase(object):
         self.initial_condition_as_parameter = False
         self.nlp_prob = {}
         self.nlp_call = {}
+        self.nlpsol_opts = {}
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
+
+        for k in config.SOLVER_OPTIONS['nlpsol_options']:
+            if k not in self.nlpsol_opts:
+                self.nlpsol_opts[k] = config.SOLVER_OPTIONS['nlpsol_options'][k]
 
         if self.discretization_scheme == 'multiple-shooting':
             self.discretizer = MultipleShootingScheme(self)
@@ -94,6 +100,7 @@ class SolutionMethodsBase(object):
         return tau, l_list
 
     def createVariablePolynomialApproximation(self, size, degree, name='var_appr', tau=None, point_at_t0=False):
+        # type: (int, int, str, SX, bool) -> Tuple[DM, DM]
         if tau is None:
             tau = self.model.tau_sym  # Collocation point
 
@@ -122,7 +129,7 @@ class SolutionMethodsBase(object):
             else:
                 u_pol, self.model.u_par = self.createVariablePolynomialApproximation(self.model.Nu, degree, 'u_ij')
             self.u_pol = u_pol
-            self.model.control_function = u_pol
+            self.model.u_func = u_pol
 
         else:
             u_pol = self.u_pol
@@ -244,7 +251,8 @@ class SolutionMethodsBase(object):
 
         self.nlp_prob = nlp_prob
         self.nlp_call = nlp_call
-        solver = nlpsol('solver', 'ipopt', nlp_prob, config.SOLVER_OPTIONS['nlpsol_options'])
+
+        solver = nlpsol('solver', 'ipopt', nlp_prob, self.nlpsol_opts)
         return solver
 
     def call_solver(self, initial_guess=None, p=[], theta=None, x_0=[]):
@@ -349,8 +357,8 @@ class SolutionMethodsBase(object):
         x_0 = X[0]
         for k in range(finite_elements):
             dae_sys = self.model.getDAESystem()
-            self.model.convertFromTauToTime(dae_sys, t_list[k], t_list[k + 1])
-            func_u = self.model.convertExprFromTauToTime(self.model.control_function, t_list[k], t_list[k + 1])
+            self.model.convert_dae_sys_from_tau_to_time(dae_sys, t_list[k], t_list[k + 1])
+            func_u = self.model.convertExprFromTauToTime(self.model.u_func, t_list[k], t_list[k + 1])
 
             F_u = Function('f_u', [self.model.x_sym, self.model.yz_sym, self.model.t_sym,
                                    self.model.p_sym, self.model.theta_sym,

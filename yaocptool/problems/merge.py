@@ -11,7 +11,7 @@ def merge_models(models_list, connecting_equations = []):
     system = SystemModel(Nx = 0, Ny = 0, Nu = 0, Nz = 0)
     
     for model in models_list:
-        system.includeState(model.x_sym, model.ode, model.x_0_sym)
+        system.include_state(model.x_sym, model.ode, model.x_0_sym)
         system.includeAlgebraic(model.y_sym, model.alg)
         system.includeExternalAlgebraic(model.z_sym, model.alg_z)
         system.includeControl(model.u_sym)

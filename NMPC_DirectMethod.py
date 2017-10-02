@@ -26,7 +26,7 @@ problem = UpwardPendulumStabilization(model,
                                       )
 #problem.x_min[2] = -2.5
 #problem.x_max[2] = 2.5
-plant.includeState(cost, casadi.mtimes(casadi.mtimes(plant.x_sym.T,problem.Q),plant.x_sym) + casadi.mtimes(casadi.mtimes(plant.u_sym.T,problem.R),plant.u_sym))
+plant.include_state(cost, casadi.mtimes(casadi.mtimes(plant.x_sym.T, problem.Q), plant.x_sym) + casadi.mtimes(casadi.mtimes(plant.u_sym.T, problem.R), plant.u_sym))
 ocp_solver = DirectMethod(problem, degree = 1, finite_elements = 40, integrator_type = 'explicit')
 
 dt = (problem.t_f - problem.t_0)/ocp_solver.finite_elements

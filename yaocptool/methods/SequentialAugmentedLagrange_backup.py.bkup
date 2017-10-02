@@ -146,7 +146,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
                                                                                     z.name() + '_approx',
                                                                                     tau = self.problems_dict[p]['problem'].model.tau_sym)
                                                                                     
-                self.problems_dict[p]['problem'].replaceVariable(z, exog_z_pol)
+                self.problems_dict[p]['problem'].replace_variable(z, exog_z_pol)
                 self.problems_dict[p]['problem'].model.includeTheta(exog_z_par)
                 self.problems_dict[p]['exog_z_pol'].append(exog_z_pol)
                 self.problems_dict[p]['exog_z_par'].append(exog_z_par)
@@ -171,8 +171,8 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
             for p in self.con_dict[k]['associated_problems']: # for all problems
                 problem = self.problems_dict[p]['problem']
                 # parametrize NU
-                problem.replaceVariable(nu_alg, nu_pol)
-                problem.replaceVariable(self.con_dict[k]['nu_tau_sym'], problem.model.tau_sym)
+                problem.replace_variable(nu_alg, nu_pol)
+                problem.replace_variable(self.con_dict[k]['nu_tau_sym'], problem.model.tau_sym)
                 problem.model.includeTheta(nu_par)
 
     

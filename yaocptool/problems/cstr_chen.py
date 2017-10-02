@@ -96,11 +96,11 @@ def create_CSTR_OCP():
 
     x_0 = vertcat([c_A_init, c_B_init, theta_init, theta_K_init])
     x_ref = vertcat([2.14, 1., 110., 105])
-    problem = OptimalControlProblem(model, obj={'Q': diag([0, 10, 0e-3, 0e-3]),
+    problem = OptimalControlProblem(model, obj={'Q': diag([.1, 10, 1e-3, 1e-3]),
                                                 'R': 0, #diag([1/0.003, 1/2.5]),
                                                 # 'Qv':diag([0.1, 1, 0, 0]),
                                                 'x_ref': x_ref}, x_0=x_0,
-                                    t_f=2500./3600, positive_objective = True)
+                                    t_f=500./3600, positive_objective = True)
     problem.u_ref = u_ref
     print(problem.t_f)
     ### Constraints

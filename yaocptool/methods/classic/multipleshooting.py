@@ -4,8 +4,10 @@ Created on Thu Jul 13 17:08:34 2017
 
 @author: marco
 """
-from casadi import DM, MX, vertcat, Function, repmat
+from collections import defaultdict
 
+from casadi import DM, MX, vertcat, Function, repmat
+from typing import Dict, List
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
@@ -56,8 +58,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 v_offset = v_offset + self.model.Nu * self.degree_control
         return x, y, u
 
-    def discretize(self, finite_elements=None, x_0=None, p=None, theta=None):
-        # TODO: Extract the G generation to another function
+    def discretize(self, x_0=None, p=None, theta=None):
         if p is None:
             p = []
         finite_elements = self.finite_elements
@@ -68,27 +69,25 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         if x_0 is None:
             x_0 = self.problem.x_0
 
-        # Get the state at each shooting node
+        # Create NLP symbolic variables
         all_decision_vars, x, u, eta, vars_lb, vars_ub = self._create_nlp_symbolic_variables_and_bound_vectors()
+        y = []
         constraint_list = []
 
-        f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
-        f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
+        # Create "simulations" time_dict
+        time_dict = self._create_time_dict_for_multiple_shooting()
 
+        # Initial time constraint/initial condition
+        f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
         constraint_list.append(f_h_initial(x[0], x_0))
 
-        for k in range(finite_elements):
-            dae_sys = self.model.getDAESystem()
-            self.model.convertFromTauToTime(dae_sys, self.time_breakpoints[k], self.time_breakpoints[k + 1])
+        # Multiple Shooting "simulation"
+        results = self.get_system_at_given_times(x, y, u, time_dict, p, theta)
+        for el in range(finite_elements):
+            constraint_list.append(results[el]['x'][0] - x[el + 1])
 
-            p_i = vertcat(p, theta[k], u[k])
-
-            x_f = self.model.simulateStep(x[k], t_0=self.time_breakpoints[k], t_f=self.time_breakpoints[k + 1], p=p_i,
-                                          dae_sys=dae_sys,
-                                          integrator_type=self.solution_method.integrator_type)
-
-            constraint_list.append(x_f - x[k + 1])
-
+        # Final time constraint
+        f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
         constraint_list.append(f_h_final(x[-1], eta))
 
         if self.solution_method.solution_class == 'direct':
@@ -109,6 +108,118 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                     'ubg': ubg}
 
         return nlp_prob, nlp_call
+
+    def _create_time_dict_for_multiple_shooting(self):
+        time_dict = defaultdict(dict)
+        for el in range(self.finite_elements):
+            time_dict[el]['t_0'] = self.time_breakpoints[el]
+            time_dict[el]['t_f'] = self.time_breakpoints[el + 1]
+            time_dict[el]['x'] = [self.time_breakpoints[el + 1]]
+
+        return time_dict
+
+    def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None,
+                                  start_at_t_0=False):
+        """
+        :param x: List(MX)
+        :param y: List(MX)
+        :param u: List(MX)
+        :type time_dict: Dict[int, List[float]] Dictionary of simulations times, where the KEY is the the finite_element
+                                                and the VALUE list a list of desired times
+                                                example : {1:{'t_0': 0.0, 'x':[0.0, 0.1, 0.2], y:[0.2]}}
+        :param p: list
+        :param theta: dict
+        :param start_at_t_0: bool
+         """
+        # TODO make the results[el]['x'] be indexed by the evaluated time (a dict where the key is t) instead of list
+
+        if theta is None:
+            theta = {}
+        if p is None:
+            p = []
+        if time_dict is None:
+            time_dict = {}
+        if functions is None:
+            functions = {}
+
+        results = defaultdict(lambda: defaultdict(list))
+
+        # for el in range(finite_element):
+        for el in time_dict:
+            t_0 = t_init = time_dict[el]['t_0']
+            t_f = time_dict[el]['t_f']
+            x_init = x[el]
+            # Create dae_sys and the control function
+            dae_sys = self.model.getDAESystem()
+            self.model.convert_dae_sys_from_tau_to_time(dae_sys, self.time_breakpoints[el],
+                                                        self.time_breakpoints[el + 1])
+            u_func = self.model.convertExprFromTauToTime(self.model.u_func, t_0, t_f)
+            if self.solution_method.solution_class == 'direct':
+                f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par], [u_func])
+            else:
+                f_u = Function('f_u_pol', list(self.model.all_sym), [u_func])
+
+            # Find the times that need to be evaluated
+            element_breakpoints = set()
+            for key in ['x', 'y', 'u']:
+                if key in time_dict[el]:
+                    element_breakpoints = element_breakpoints.union(time_dict[el][key])
+
+            # If values are needed from t_0, get it
+            if t_0 in time_dict[el]['x']:
+                results[el]['x'].append(x[el])
+            if 'y' in time_dict[el] and t_0 in time_dict[el]['y']:
+                raise NotImplementedError
+            if 'u' in time_dict[el] and t_0 in time_dict[el]['u']:
+                if self.solution_method.solution_class == 'direct':
+                    results[el]['x'].append(f_u(t_0, u[el]))
+                else:
+                    raise NotImplementedError
+            for f_name in functions:
+                if t_0 in time_dict[el][f_name]:
+                    raise NotImplementedError
+
+            # Remove t_0 from the list of times that need to be evaluated
+            if t_0 in element_breakpoints:
+                element_breakpoints.remove(t_0)
+
+            for t in element_breakpoints:
+                t_next = t
+                p_i = vertcat(p, theta[el], u[el])
+
+                # Do the simulation
+                sim_result = self.model.simulateStep(x_init, t_0=t_init, t_f=t_next, p=p_i,
+                                                     dae_sys=dae_sys,
+                                                     integrator_type=self.solution_method.integrator_type)
+
+                # Fetch values from results
+                x_t, yz_t = sim_result['xf'], sim_result['zf']
+                y_t, z_t = self.model.slice_yz_to_y_and_z(yz_t)
+
+                # Save to the result vector
+                if 'x' in time_dict[el] and t in time_dict[el]['x']:
+                    results[el]['x'].append(x_t)
+                if 'y' in time_dict and t in time_dict[el]['y']:
+                    results[el]['y'].append(yz_t)
+                if 'u' in time_dict and t in time_dict[el]['u']:
+                    if self.solution_method.solution_class == 'direct':
+                        results[el]['u'].append(f_u(t, u[el]))
+                    else:
+                        results[el]['u'].append(f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, z=z_t, p=p,
+                                                                                             theta=theta[el],
+                                                                                             u_par=u[el])))
+                for f_name in functions:
+                    if t in time_dict[el][f_name]:
+                        f = functions[f_name][el]
+                        val = f(
+                            *self.model.put_values_in_all_sym_format(t=t, x=x_t, y=yz_t, z=z_t, p=p, theta=theta[el],
+                                                                     u_par=u[el]))
+                        results[el][f_name].append(val)
+                # If the simulation should start from the begin of the simulation interval, do not chage the t_init
+                if not start_at_t_0:
+                    t_init = t
+                    x_init = x_t
+        return results
 
     def create_initial_guess(self):
         base_x0 = self.problem.x_0

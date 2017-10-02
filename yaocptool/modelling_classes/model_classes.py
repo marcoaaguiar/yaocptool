@@ -62,6 +62,8 @@ class SystemModel:
         self.tau_sym = SX.sym('tau')
 
         self.u_par = vertcat(self.u_sym)
+        self.u_func = vertcat(self.u_sym)
+
         self.hasAdjointVariables = False
         self.con_z = []
 
@@ -97,16 +99,12 @@ class SystemModel:
         return self.theta_sym.numel()
 
     @property
-    def all_alg(self):
-        return vertcat(self.alg, self.alg_z, self.con)
+    def Nyz(self):
+        return self.Ny + self.Nz
 
     @property
     def yz_sym(self):
         return vertcat(self.y_sym, self.z_sym)
-
-    @property
-    def Nyz(self):
-        return self.Ny + self.Nz
 
     @property
     def x_sys_sym(self):
@@ -121,9 +119,17 @@ class SystemModel:
             return self.x_sym[self.Nx / 2:]
         else:
             return SX()
+    @property
+    def all_sym(self):
+        return self.t_sym, self.x_sym, self.y_sym, self.z_sym, self.u_sym, self.p_sym, self.theta_sym, self.u_par
+
+    @property
+    def all_alg(self):
+        return vertcat(self.alg, self.alg_z, self.con)
+
     def __repr__(self):
         s = ''
-        s += '='*20 + '\n'
+        s += '=' * 20 + '\n'
         s += 'Model Name: {}'.format(self.name) + '\n'
         s += 'Number of states (x):         {:4} | Number of algebraic (y):               {:4}'.format(self.Nx,
                                                                                                        self.Ny)
@@ -134,9 +140,13 @@ class SystemModel:
         s += 'Number of parameters (p):     {:4} | Number of finite elem. param. (theta): {:4}'.format(self.Np,
                                                                                                        self.Ntheta)
         s += '\n'
-        s += '-'*20 + '\n'
-        s += 'Number of ODE:                {:4} | Number of algebraic eq:                {:4}'.format(self.ode.numel(), self.alg.numel()) + '\n'
-        s += 'Number of external alg. eq.:  {:4} | Number of connecting eq.:              {:4}'.format(self.alg_z.numel(), self.con.numel()) + '\n'
+        s += '-' * 20 + '\n'
+        s += 'Number of ODE:                {:4} | Number of algebraic eq:                {:4}'.format(self.ode.numel(),
+                                                                                                       self.alg.numel())
+        s += '\n'
+        s += 'Number of external alg. eq.:  {:4} | Number of connecting eq.:              {:4}'.format(
+            self.alg_z.numel(), self.con.numel())
+        s += '\n'
         s += '=' * 20 + '\n'
         return s
 
@@ -149,12 +159,13 @@ class SystemModel:
             alg = []
         if ode is None:
             ode = []
+
         self.ode = vertcat(self.ode, ode)
         self.alg = vertcat(self.alg, alg)
         self.alg_z = vertcat(self.alg_z, alg_z)
         self.con = vertcat(self.con, con)
 
-    def replaceVariable(self, original, replacement, variable_type='other'):
+    def replace_variable(self, original, replacement, variable_type='other'):
         """
             Replace a variable or parameter by something else.
             Input original and replacement, and also variable type which
@@ -175,7 +186,7 @@ class SystemModel:
         else:
             raise Exception('Not implemented')
 
-    def includeState(self, var, ode, x_0_sym=None):
+    def include_state(self, var, ode, x_0_sym=None):
         delta_Nx = var.numel()
         self.x_sym = vertcat(self.x_sym, var)
         if x_0_sym is None:
@@ -212,7 +223,7 @@ class SystemModel:
         self.theta_sym = vertcat(self.theta_sym, theta)
 
     def removeVariablesFromVector(self, var, vector):
-        to_remove = self.findVariablesIndecesInVector(var, vector)
+        to_remove = self.find_variables_indices_in_vector(var, vector)
         to_remove.sort(reverse=True)
         for it in to_remove:
             vector.remove([it], [])
@@ -233,34 +244,67 @@ class SystemModel:
         self.removeVariablesFromVector(eq, self.con)
 
     def removeControl(self, var):
-        to_remove = self.findVariablesIndecesInVector(var, self.u_sym)
+        to_remove = self.find_variables_indices_in_vector(var, self.u_sym)
         to_remove.sort(reverse=True)
 
         for it in to_remove:
             self.u_sym.remove([it], [])
             self.u_par.remove([it], [])
+    # ==============================================================================
+    # region # Standard Function Call
+    # ==============================================================================
+
+    def slice_yz_to_y_and_z(self, yz):
+        return yz[self.Ny:], yz[:self.Ny]
+
+    def concat_y_and_z(self, y, z):
+        return vertcat(y, z)
+
+    def put_values_in_all_sym_format(self, t=None, x=None, y=None, z=None, u=None, p=None, theta=None, u_par=None):
+        if t is None:
+            t = []
+        if x is None:
+            x = []
+        if y is None:
+            y = []
+        if z is None:
+            z = []
+        if u is None:
+            u = []
+        if p is None:
+            p = []
+        if theta is None:
+            theta = []
+        if u_par is None:
+            u_par = []
+        return t, x, y, z, u, p, theta, u_par
+
+    # endregion
+    # ==============================================================================
 
     # ==============================================================================
-    # TIME
+    # region # TIME
     # ==============================================================================
 
     def convertFromTimeToTau(self, dae_sys, t_k, t_kp1):
-        raise NotImplemented
+        raise NotImplementedError
 
     def convertExprFromTauToTime(self, expr, t_k, t_kp1):
         t = self.t_sym
         tau = self.tau_sym
-
         h = t_kp1 - t_k
         return substitute(expr, tau, (t - t_k) / h)
 
-    def convertFromTauToTime(self, dae_sys, t_k, t_kp1):
+    def convert_dae_sys_from_tau_to_time(self, dae_sys, t_k, t_kp1):
         dae_sys['ode'] = self.convertExprFromTauToTime(dae_sys['ode'], t_k, t_kp1)
         if 'alg' in dae_sys:
             dae_sys['alg'] = self.convertExprFromTauToTime(dae_sys['alg'], t_k, t_kp1)
 
+    # endregion
     # ==============================================================================
-    # MERGE
+
+    # ==============================================================================
+    # region MERGE
     # ==============================================================================
 
     def merge(self, models_list, connecting_equations=[], associated_z=[]):
@@ -268,7 +312,7 @@ class SystemModel:
             models_list = [models_list]
 
         for model in models_list:
-            self.includeState(model.x_sym, model.ode, model.x_0_sym)
+            self.include_state(model.x_sym, model.ode, model.x_0_sym)
             self.includeAlgebraic(model.y_sym, model.alg)
             self.includeExternalAlgebraic(model.z_sym, model.alg_z)
             self.includeControl(model.u_sym)
@@ -277,9 +321,13 @@ class SystemModel:
 
         self.includeConnectingEquations(connecting_equations, associated_z)
 
+    # endregion
     # ==============================================================================
-    #   Simulation
+
     # ==============================================================================
+    # region SIMULATION
+    # ==============================================================================
+
     def getDAESystem(self):
         if self.system_type == 'ode':
             system = {'x': self.x_sym, 'ode': self.ode, 't': self.t_sym}
@@ -307,7 +355,7 @@ class SystemModel:
         F = self.createIntegrator(dae_sys, opts, integrator_type)
         args = {'x0': x_0, 'p': p}
 
-        return F(**args)['xf']
+        return F(**args)
 
     def simulateInterval(self, x_0, t_0, t_f, t_grid, p=None, dae_sys=None, integrator_type='implicit'):
         if dae_sys is None:
@@ -358,11 +406,12 @@ class SystemModel:
 
         N_states = dae_sys['x'].numel()
         if integrator_type == 'rk4':
-            def RungeKutta4thOrder(x0=DM.zeros(N_states, 1), p=[], iterations=4):
-                h = (t_f - t_0)/iterations
+            def RungeKutta4thOrder(x0=DM.zeros(N_states, 1), p=None, iterations=4):
+                if p is None:
+                    p = []
+                h = (t_f - t_0) / iterations
                 t = t_0
                 for it in range(iterations):
-
                     k1 = h * f(t, x0, p)
                     k2 = h * f(t + 0.5 * h, x0 + 0.5 * k1, p)
                     k3 = h * f(t + 0.5 * h, x0 + 0.5 * k2, p)
@@ -375,14 +424,17 @@ class SystemModel:
 
             return RungeKutta4thOrder
 
+    # endregion
+
     @staticmethod
-    def findVariablesIndecesInVector(var, vector):
+    def find_variables_indices_in_vector(var, vector):
         index = []
         for j in range(vector.size1()):
             for i in range(var.numel()):
                 if is_equal(vector[j], var[i]):
                     index.append(j)
         return index
+
 
 
 #######################################################################

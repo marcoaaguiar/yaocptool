@@ -69,8 +69,8 @@ class IndirectMethod(SolutionMethodsBase):
         return u_opt
 
     def ReplaceWithOptimalControl(self, u_opt):
-        self.problem.replaceVariable(self.model.u_sym, u_opt, 'u')
-        self.model.control_function = u_opt
+        self.problem.replace_variable(self.model.u_sym, u_opt, 'u')
+        self.model.u_func = u_opt
         self.problem.removeControl(self.model.u_sym)
     
 

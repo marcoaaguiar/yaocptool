@@ -4,9 +4,9 @@ Created on Thu Jul 13 17:08:34 2017
 
 @author: marco
 """
-from casadi import DM, MX, repmat, vertcat, Function, jacobian, \
-    collocation_points
-
+from collections import defaultdict
+from typing import List, Dict
+from casadi import DM, MX, repmat, vertcat, Function, jacobian
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
@@ -32,12 +32,16 @@ class CollocationScheme(DiscretizationSchemeBase):
         return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
 
     def number_of_variables(self):
-        return self.model.Nx * (self.finite_elements) * (self.degree + 1) \
+        return self.model.Nx * self.finite_elements * (self.degree + 1) \
                + self.model.Nyz * self.finite_elements * self.degree \
                + self.model.Nu * self.finite_elements * self.degree_control \
                + self.problem.N_eta
 
     def _create_nlp_symbolic_variables_and_bound_vectors(self):
+        """
+        Create the symbolic variables that will be used by the NLP problem
+        :rtype: (DM, List(List(DM)), List(List(DM)), List(DM), DM, DM, DM)
+        """
         eta = MX.sym('eta', self.problem.N_eta)
         x = []
         y = []
@@ -51,6 +55,7 @@ class CollocationScheme(DiscretizationSchemeBase):
                 vars_lb.append(self.problem.x_min)
                 vars_ub.append(self.problem.x_max)
             x.append(x_k)
+
         for k in range(self.finite_elements):
             y_k = []
             for n in range(self.degree):
@@ -58,6 +63,7 @@ class CollocationScheme(DiscretizationSchemeBase):
                 vars_lb.append(self.problem.yz_min)
                 vars_ub.append(self.problem.yz_max)
             y.append(y_k)
+
         for k in range(self.finite_elements):
             u_k = []
             for n in range(self.degree_control):
@@ -76,6 +82,37 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         return v, x, y, u, eta, vars_lb, vars_ub
 
+    def create_symbolic_variables(self):
+        eta = MX.sym('eta', self.problem.N_eta)
+        x = []
+        y = []
+        u = []
+        for k in range(self.finite_elements):
+            x_k = []
+            for n in range(self.degree + 1):
+                x_k.append(MX.sym('x_' + repr(k) + '_' + repr(n), self.model.Nx))
+            x.append(x_k)
+
+        for k in range(self.finite_elements):
+            y_k = []
+            for n in range(self.degree):
+                y_k.append(MX.sym('yz_' + repr(k) + '_' + repr(n), self.model.Nyz))
+            y.append(y_k)
+
+        for k in range(self.finite_elements):
+            u_k = []
+            for n in range(self.degree_control):
+                u_k.append(MX.sym('u_' + repr(k) + '_' + repr(n), self.model.Nu))
+            u.append(vertcat(*u_k))
+
+        v_x = vertcat(*[vertcat(*x_k) for x_k in x])
+        v_y = vertcat(*[vertcat(*yz_k) for yz_k in y])
+        v_u = vertcat(*u)
+        v = vertcat(v_x, v_y, v_u, eta)
+
+
+        return v, x, y, u, eta
+
     def splitXYandU(self, results_vector, all_subinterval=False):
         """
         :param all_subinterval: Bool 'Returns all elements of the subinterval (or only the first one)'
@@ -90,6 +127,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         if self.problem.N_eta > 0:
             results_vector = results_vector[:-self.problem.N_eta]
 
+        x_k = []
         for k in range(self.finite_elements):
             x_k = []
             for i in range(self.degree + 1):
@@ -119,109 +157,205 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         return x, y, u
 
-    def discretize(self, finite_elements=None, degree=None, x_0=None, p=None, theta=None):
+    def discretize(self, x_0=None, p=None, theta=None):
         if p is None:
             p = []
 
-        if finite_elements is None:
-            finite_elements = self.finite_elements
-        if degree is None:
-            degree = self.degree
+        finite_elements = self.finite_elements
         if theta is None:
             theta = dict([(i, []) for i in range(finite_elements)])
         if x_0 is None:
             x_0 = self.problem.x_0
 
-        t0 = self.problem.t_0
-        tf = self.problem.t_f
+        # Create NLP symbolic variables
+        all_decision_vars, x, yz, u, eta, vars_lb, vars_ub = self._create_nlp_symbolic_variables_and_bound_vectors()
+        constraint_list = []
 
-        v, x, yz, u, eta, vars_lb, vars_ub = self._create_nlp_symbolic_variables_and_bound_vectors()
-
-        G = []
-
-        F_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
-        f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
+        # Create "simulations" time_dict
+        time_dict = self._create_time_dict_for_collocation()
 
         ###
-        u_pol, u_par = self.solution_method.createVariablePolynomialApproximation(self.model.Nu, self.degree_control,
-                                                                                  name='u_col',
-                                                                                  point_at_t0=False)
+        x_pol, x_par = self.solution_method.createVariablePolynomialApproximation(self.model.Nx, self.degree,
+                                                                                  name='col_x_approx',
+                                                                                  point_at_t0=True)
 
-        tau, ell_list = self.solution_method.createLagrangianPolynomialBasis(self.degree, starting_index=0)
-        d_ell_list = [jacobian(l, tau) for l in ell_list]
-        f_d_ell_list = Function('f_dL_list', [tau], d_ell_list)
+        func_d_x_pol_d_tau = Function('f_dL_list', [self.model.tau_sym, x_par],
+                                      [jacobian(x_pol, self.model.tau_sym)])
 
-        G.append(F_h_initial(x[0][0], x_0))
-        for n_element in range(self.finite_elements):
-            dt = self.delta_t
-            t_0_element = dt * n_element
-            t_f_element = dt * (n_element + 1)
+        f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
+        constraint_list.append(f_h_initial(x[0][0], x_0))
 
-            tau_list = [0] + collocation_points(self.degree)
-            mapping = lambda tau: (t_0_element + tau * dt)
-            micro_t_k = map(mapping, tau_list)
+        # Create functions to be evaluated
+        functions = defaultdict(dict)
+        for el in range(self.finite_elements):
+            dae_sys = self.model.getDAESystem()
+            if 'z' not in dae_sys:
+                dae_sys['z'] = vertcat([])
+                dae_sys['alg'] = vertcat([])
 
-            # self.model.convertFromTauToTime(dae_sys, t_0_element, t_f_element)
+            self.model.convert_dae_sys_from_tau_to_time(dae_sys, self.time_breakpoints[el],
+                                                        self.time_breakpoints[el + 1])
 
-            if not n_element == 0:
-                G.append(x[n_element - 1][-1] - x[n_element][0])
+            f_ode = Function('f_ode_' + repr(el), self.model.all_sym, [dae_sys['ode']])
+            f_alg = Function('f_alg_' + repr(el), self.model.all_sym, [dae_sys['alg']])
 
-            for c_point in range(self.degree):
-                dae_sys = self.model.getDAESystem()
-                if not 'z' in dae_sys:
-                    dae_sys['z'] = vertcat([])
-                    dae_sys['alg'] = vertcat([])
-                if not 'p' in dae_sys:
-                    dae_sys['p'] = vertcat([])
+            functions['ode'][el] = f_ode
+            functions['alg'][el] = f_alg
 
-                # dae_sys['ode']  = substitute(dae_sys['ode'], dae_sys['x'], x_pol)
-                # dae_sys['alg']  = substitute(dae_sys['alg'], dae_sys['x'], x_pol)
+        # Obtain the "simulation" results
+        results = self.get_system_at_given_times(x, yz, u, time_dict, p, theta, functions=functions)
 
-                # dae_sys['ode']  = substitute(dae_sys['ode'], self.model.tau_sym, tau_list[i+1])
-                # dae_sys['alg']  = substitute(dae_sys['alg'], self.model.tau_sym, tau_list[i+1])
+        for el in range(self.finite_elements):
+            dt = self.solution_method.delta_t
 
-                arg_sym = [self.model.tau_sym, dae_sys['x'], dae_sys['z'], dae_sys['p']]
+            # State continuity, valid for all but the first finite element
+            if not el == 0:
+                constraint_list.append(results[el - 1]['x'][-1] - results[el]['x'][0])
 
-                f_ode = Function('f_ode', arg_sym, [dae_sys['ode']])
-                f_alg = Function('f_alg', arg_sym, [dae_sys['alg']])
+            tau_list = self.solution_method.collocation_points(self.degree, with_zero=True)
 
-                p_i = vertcat(p, theta[n_element], u[n_element])
+            # Enforce the the derivative of the polynomial to be equal ODE at t
+            for col_point in range(1, self.degree + 1):
+                constraint_list.append(
+                    func_d_x_pol_d_tau(tau_list[col_point], vertcat(*x[el])) - dt * results[el]['ode'][col_point])
 
-                arg = [tau_list[c_point + 1], x[n_element][c_point + 1], yz[n_element][c_point], p_i]
-                # f_x_arg = [micro_t_k[i + 1], vec(horzcat(*X[n_element]))]
+            for col_point in range(self.degree):
+                constraint_list.append(results[el]['alg'][col_point])
 
-                d_x_d_tau = sum([f_d_ell_list(tau_list[c_point + 1])[k] * x[n_element][k] for k in range(degree + 1)])
+        # Final constraint
+        x_f = results[self.finite_elements - 1]['x'][-1]
+        f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
+        constraint_list.append(f_h_final(x_f, eta))
 
-                G.append(d_x_d_tau - dt * f_ode(*arg))
-                G.append(f_alg(*arg))
-            # XF = f_x_pol(*f_x_arg)
-            XF = x[n_element][-1]
-
-        G.append(f_h_final(XF, eta))
-
+        # Cost function
         if self.solution_method.solution_class == 'direct':
-            cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(XF, p)
+            cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(x_f, p)
         else:
             cost = 0
 
-        nlp_prob = {}
-        nlp_call = {}
-        nlp_prob['g'] = vertcat(*G)
-        nlp_prob['x'] = v
-        #            nlp_prob['f'] = cost
-        nlp_prob['f'] = cost
-        nlp_call['lbx'] = vars_lb
-        nlp_call['ubx'] = vars_ub
-        nlp_call['lbg'] = DM.zeros(nlp_prob['g'].shape)
-        nlp_call['ubg'] = DM.zeros(nlp_prob['g'].shape)
+        nlp_prob = {'g': vertcat(*constraint_list),
+                    'x': all_decision_vars,
+                    'f': cost}
+
+        lbg = DM.zeros(nlp_prob['g'].shape)
+        ubg = DM.zeros(nlp_prob['g'].shape)
+
+        nlp_call = {'lbx': vars_lb,
+                    'ubx': vars_ub,
+                    'lbg': lbg,
+                    'ubg': ubg}
 
         return nlp_prob, nlp_call
+
+    def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None,
+                                  start_at_t_0=False):
+
+        """
+        :param x: List[List[MX]]
+        :param y: List[List[MX]]
+        :param u: List[MX]
+        :type time_dict: Dict(int, List(float)) Dictionary of simulations times, where the KEY is the
+                                                finite_element and the VALUE list a list of desired times
+                                                example : {1:{'t_0': 0.0, 'x':[0.0, 0.1, 0.2], y:[0.2]}}
+        :param p: list
+        :param theta: dict
+        :param start_at_t_0: bool If TRUE the simulations in each finite_element will start at the element t_0,
+                                  Otherwise the simulation will start the end of the previous element
+        :param functions: Dict[str, Function|Dict[int] dictionary of Functions to be evaluated, KEY is the function
+                                              identifier, VALUE is a CasADi Function with model.all_sym as input
+         """
+
+        if theta is None:
+            theta = {}
+        if p is None:
+            p = []
+        if time_dict is None:
+            time_dict = {}
+        if functions is None:
+            functions = {}
+        results = defaultdict(lambda: defaultdict(list))
+
+        # for el in range(finite_element):
+        for el in time_dict:
+            t_0 = time_dict[el]['t_0']
+            t_f = time_dict[el]['t_f']
+
+            # The control function
+            u_func = self.model.convertExprFromTauToTime(self.model.u_func, t_0, t_f)
+            if self.solution_method.solution_class == 'direct':
+                f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par], [u_func])
+            else:
+                f_u = Function('f_u_pol', list(self.model.all_sym), [u_func])
+
+            # Create function for obtaining x at an given time
+            x_pol, x_par = self.solution_method.createVariablePolynomialApproximation(self.model.Nx, self.degree,
+                                                                                      name='col_x_approx',
+                                                                                      point_at_t0=True)
+            x_pol = self.model.convertExprFromTauToTime(x_pol, t_k=t_0, t_kp1=t_f)
+            f_x = Function('f_x_pol', [self.model.t_sym, x_par], [x_pol])
+
+            # Create function for obtaining y at an given time
+            y_pol, y_par = self.solution_method.createVariablePolynomialApproximation(self.model.Nyz, self.degree,
+                                                                                      name='col_y_approx',
+                                                                                      point_at_t0=False)
+            y_pol = self.model.convertExprFromTauToTime(y_pol, t_k=t_0, t_kp1=t_f)
+            f_y = Function('f_y_pol', [self.model.t_sym, y_par], [y_pol])
+
+            # Find the times that need to be evaluated
+            element_breakpoints = set()
+            for key in ['x', 'y', 'u']:
+                if key in time_dict[el]:
+                    element_breakpoints = element_breakpoints.union(time_dict[el][key])
+
+            element_breakpoints = list(element_breakpoints)
+            element_breakpoints.sort()
+
+            # Iterate with the times in the finite element
+            for t in element_breakpoints:
+                x_t = f_x(t, vertcat(*x[el]))
+                yz_t = f_y(t, vertcat(*y[el]))
+                y_t, z_t = self.model.slice_yz_to_y_and_z(yz_t)
+
+                if 'x' in time_dict[el] and t in time_dict[el]['x']:
+                    results[el]['x'].append(x_t)
+                if 'y' in time_dict and t in time_dict[el]['y']:
+                    results[el]['y'].append(yz_t)
+                if 'u' in time_dict and t in time_dict[el]['u']:
+                    if self.solution_method.solution_class == 'direct':
+                        results[el]['u'].append(f_u(t, u[el]))
+                    else:
+                        results[el]['u'].append(
+                            f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, z=z_t, p=p,
+                                                                         theta=theta[el],
+                                                                         u_par=u[el])))
+                for f_name in functions:
+                    if t in time_dict[el][f_name]:
+                        f = functions[f_name][el]
+                        val = f(*self.model.put_values_in_all_sym_format(t=t, x=x_t, y=y_t, z=z_t, p=p, theta=theta[el],
+                                                                         u_par=u[el]))
+                        results[el][f_name].append(val)
+        return results
+
+    def _create_time_dict_for_collocation(self):
+        time_dict = defaultdict(dict)
+        for el in range(self.finite_elements):
+            time_dict[el]['t_0'] = self.time_breakpoints[el]
+            time_dict[el]['t_f'] = self.time_breakpoints[el + 1]
+            time_dict[el]['x'] = self.time_interpolation_states[el]
+            time_dict[el]['y'] = self.time_interpolation_algebraics[el]
+            time_dict[el]['u'] = self.time_interpolation_controls[el]
+
+            time_dict[el]['ode'] = self.time_interpolation_states[el]
+            time_dict[el]['alg'] = self.time_interpolation_algebraics[el]
+
+        return time_dict
 
     def create_initial_guess(self):
         base_x0 = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
         base_x0 = vertcat(base_x0,
                           DM.zeros((
-                              self.model.Nyz * self.degree * self.finite_elements + self.model.Nu * self.degree_control * self.finite_elements),
+                              self.model.Nyz * self.degree * self.finite_elements +
+                              self.model.Nu * self.degree_control * self.finite_elements),
                               1))
 
         base_x0 = vertcat(base_x0, DM.zeros(self.problem.N_eta))
@@ -230,7 +364,7 @@ class CollocationScheme(DiscretizationSchemeBase):
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
         """
         Set the raw data received from the solver and put it in the Optimization Result object
-        :type optimization_result: yaocptool.methods.optimizationresult.OptimizationResult
+        :type optimization_result: yaocptool.methods.base.optimizationresult.OptimizationResult
         :type raw_solution_dict: dict
         """
 
@@ -261,18 +395,3 @@ class CollocationScheme(DiscretizationSchemeBase):
         optimization_result.x_interpolation_data['time'] = self.time_interpolation_states
         optimization_result.y_interpolation_data['time'] = self.time_interpolation_algebraics
         optimization_result.u_interpolation_data['time'] = self.time_interpolation_controls
-
-        # def solve(self, initial_guess=None, p=[]):
-        #     V_sol = self.solve_raw(initial_guess, p)
-        #
-        #     X, U = self.splitXandU(V_sol)
-        #     X_finite_element = []
-        #     U_finite_element = []
-        #
-        #     for x in X:
-        #         X_finite_element.append(x[0])
-        #     X_finite_element.append(X[-1][-1])
-        #     #            for u in U:
-        #     #                U_finite_element.append(u[0])
-        #
-        #     return X_finite_element, U, V_sol
