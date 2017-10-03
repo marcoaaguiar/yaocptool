@@ -255,7 +255,7 @@ class SystemModel:
     # ==============================================================================
 
     def slice_yz_to_y_and_z(self, yz):
-        return yz[self.Ny:], yz[:self.Ny]
+        return yz[:self.Ny], yz[self.Ny:]
 
     def concat_y_and_z(self, y, z):
         return vertcat(y, z)

@@ -8,7 +8,7 @@ import sys
 sys.path.append(r"C:\casadi-py27-np1.9.1-v3.0.0")
 sys.path.append(r"C:\coinhsl-win32-openblas-2014.01.10")
 #if not 'casadi' in sys.modules:
-from casadi import inf, substitute, hessian, inv, fmin, fmax
+from casadi import inf, substitute, hessian, inv, fmin, fmax, is_equal
 
 from yaocptool.methods.base.solutionmethodsbase import *
 import warnings
@@ -58,6 +58,12 @@ class IndirectMethod(SolutionMethodsBase):
                 
     def calculateOptimalControl(self):
         ddH_dudu, dH_du = hessian(self.problem.H,self.model.u_sym)
+        if is_equal(ddH_dudu, DM.zeros(self.model.Nu, self.model.Nu)):
+            # TODO: Implement the case where the controls are linear on the Hamiltonina ("Bang-Bang" control)
+            raise Exception('The Hamiltonian "H" is not strictly convex with respect to the control "u". The obtained hessian d^2 H/du^2 = 0')
+        if not ddH_dudu.is_constant():
+            raise NotImplementedError('The Hessian of the Hamiltonian with respect to "u" is not constant, this case has not been implemented')
+
         u_opt = -mtimes(inv(ddH_dudu),substitute(dH_du, self.model.u_sym,0))
 
         for i in range(self.model.Nu):
