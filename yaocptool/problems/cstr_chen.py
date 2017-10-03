@@ -10,8 +10,8 @@ from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 
 from casadi import vertcat, exp, diag
-from yaocptool.modelling_classes.model_classes import SystemModel
-from yaocptool.modelling_classes.ocp import OptimalControlProblem
+from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.ocp import OptimalControlProblem
 
 
 def create_CSTR_OCP():
@@ -91,8 +91,8 @@ def create_CSTR_OCP():
                   k_30 * exp(E_3 / (theta + 273.15)) - k_3
                   )
 
-    model.includeSystemEquations(ode=ode, alg=alg)
-    # model.includeSystemEquations(ode=ode)
+    model.include_system_equations(ode=ode, alg=alg)
+    # model.include_system_equations(ode=ode)
 
     x_0 = vertcat([c_A_init, c_B_init, theta_init, theta_K_init])
     x_ref = vertcat([2.14, 1., 110., 105])

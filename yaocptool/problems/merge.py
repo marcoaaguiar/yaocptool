@@ -12,12 +12,12 @@ def merge_models(models_list, connecting_equations = []):
     
     for model in models_list:
         system.include_state(model.x_sym, model.ode, model.x_0_sym)
-        system.includeAlgebraic(model.y_sym, model.alg)
-        system.includeExternalAlgebraic(model.z_sym, model.alg_z)
-        system.includeControl(model.u_sym)
-        system.includeParameter(model.p_sym)
-        system.includeTheta(model.theta_sym)
+        system.include_algebraic(model.y_sym, model.alg)
+        system.include_external_algebraic(model.z_sym, model.alg_z)
+        system.include_control(model.u_sym)
+        system.include_parameter(model.p_sym)
+        system.include_theta(model.theta_sym)
 
-    system.includeSystemEquations(con = connecting_equations)
+    system.include_system_equations(con = connecting_equations)
     
     return system

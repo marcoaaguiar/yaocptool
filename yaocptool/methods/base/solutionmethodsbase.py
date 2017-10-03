@@ -10,7 +10,7 @@ from yaocptool import config
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
-from yaocptool.modelling_classes.ocp import OptimalControlProblem
+from yaocptool.modelling.ocp import OptimalControlProblem
 
 
 # TODO: fix PEP 8
@@ -255,7 +255,11 @@ class SolutionMethodsBase(object):
         solver = nlpsol('solver', 'ipopt', nlp_prob, self.nlpsol_opts)
         return solver
 
-    def call_solver(self, initial_guess=None, p=[], theta=None, x_0=[]):
+    def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None):
+        if x_0 is None:
+            x_0 = []
+        if p is None:
+            p = []
         if initial_guess is None:
             initial_guess = self.discretizer.create_initial_guess()
 
@@ -267,7 +271,6 @@ class SolutionMethodsBase(object):
             par = vertcat(par, x_0)
         sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
                           lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
-
         return sol
 
     def callSolver(self, initial_guess=None, p=[], theta=None, x_0=[]):

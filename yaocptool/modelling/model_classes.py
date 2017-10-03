@@ -5,12 +5,8 @@ Created on Thu Jun 09 10:50:48 2016
 @author: marco
 """
 
-# if not 'casadi' in sys.modules:
+from casadi import SX, DM, vertcat, substitute, Function, integrator, is_equal
 from yaocptool import config
-from casadi import SX, DM, inf, repmat, vertcat, collocation_points, \
-    substitute, Function, integrator, mtimes, vec, is_equal
-
-import copy
 
 
 # TODO: fix PEP 8
@@ -119,6 +115,7 @@ class SystemModel:
             return self.x_sym[self.Nx / 2:]
         else:
             return SX()
+
     @property
     def all_sym(self):
         return self.t_sym, self.x_sym, self.y_sym, self.z_sym, self.u_sym, self.p_sym, self.theta_sym, self.u_par
@@ -141,8 +138,9 @@ class SystemModel:
                                                                                                        self.Ntheta)
         s += '\n'
         s += '-' * 20 + '\n'
-        s += 'Number of ODE:                {:4} | Number of algebraic eq:                {:4}'.format(self.ode.numel(),
-                                                                                                       self.alg.numel())
+        s += 'Number of ODE:                {:4} | Number of algebraic eq.:                {:4}'.format(
+            self.ode.numel(),
+            self.alg.numel())
         s += '\n'
         s += 'Number of external alg. eq.:  {:4} | Number of connecting eq.:              {:4}'.format(
             self.alg_z.numel(), self.con.numel())
@@ -150,25 +148,10 @@ class SystemModel:
         s += '=' * 20 + '\n'
         return s
 
-    def includeSystemEquations(self, ode=None, alg=None, alg_z=None, con=None):
-        if con is None:
-            con = []
-        if alg_z is None:
-            alg_z = []
-        if alg is None:
-            alg = []
-        if ode is None:
-            ode = []
-
-        self.ode = vertcat(self.ode, ode)
-        self.alg = vertcat(self.alg, alg)
-        self.alg_z = vertcat(self.alg_z, alg_z)
-        self.con = vertcat(self.con, con)
-
     def replace_variable(self, original, replacement, variable_type='other'):
         """
-            Replace a variable or parameter by something else.
-            Input original and replacement, and also variable type which
+            Replace a variable or parameter by an varaible or expression.
+            :param original: SX: and replacement, and also variable type which
             describes which type of variable is being remove to it from the
             counters. Types: 'x', 'y', 'u', 'p', 'ignore'
         """
@@ -186,6 +169,34 @@ class SystemModel:
         else:
             raise Exception('Not implemented')
 
+    # region INCLUDES
+
+    def include_system_equations(self, ode=None, alg=None, alg_z=None, con=None):
+        if ode is None:
+            ode = []
+        elif isinstance(ode, list):  # if ode is list or tupple
+            ode = vertcat(*ode)
+
+        if alg is None:
+            alg = []
+        elif isinstance(alg, list):  # if alg is list or tupple
+            alg = vertcat(*alg)
+
+        if alg_z is None:
+            alg_z = []
+        elif isinstance(alg_z, list):  # if alg_z is list or tupple
+            alg_z = vertcat(*alg_z)
+
+        if con is None:
+            con = []
+        elif isinstance(con, list):  # if con is list or tupple
+            con = vertcat(*con)
+
+        self.ode = vertcat(self.ode, ode)
+        self.alg = vertcat(self.alg, alg)
+        self.alg_z = vertcat(self.alg_z, alg_z)
+        self.con = vertcat(self.con, con)
+
     def include_state(self, var, ode, x_0_sym=None):
         delta_Nx = var.numel()
         self.x_sym = vertcat(self.x_sym, var)
@@ -196,60 +207,66 @@ class SystemModel:
         self.ode = vertcat(self.ode, ode)
         return x_0_sym
 
-    def includeAlgebraic(self, var, alg):
+    def include_algebraic(self, var, alg):
         self.y_sym = vertcat(self.y_sym, var)
         self.alg = vertcat(self.alg, alg)
 
-    def includeExternalAlgebraic(self, var, alg_z=None):
+    def include_external_algebraic(self, var, alg_z=None):
         if alg_z is None:
             alg_z = []
         self.z_sym = vertcat(self.z_sym, var)
         self.alg_z = vertcat(self.alg_z, alg_z)
 
-    def includeConnectingEquations(self, con, con_z=None):
+    def include_connecting_equations(self, con, con_z=None):
         if con_z is None:
             con_z = []
         self.con = vertcat(self.con, con)
         self.con_z = vertcat(self.con_z, con_z)
 
-    def includeControl(self, var):
+    def include_control(self, var):
         self.u_sym = vertcat(self.u_sym, var)
         self.u_par = vertcat(self.u_par, var)
 
-    def includeParameter(self, p):
+    def include_parameter(self, p):
         self.p_sym = vertcat(self.p_sym, p)
 
-    def includeTheta(self, theta):
+    def include_theta(self, theta):
         self.theta_sym = vertcat(self.theta_sym, theta)
 
-    def removeVariablesFromVector(self, var, vector):
+    # endregion
+
+    # region REMOVE
+
+    def remove_variables_from_vector(self, var, vector):
         to_remove = self.find_variables_indices_in_vector(var, vector)
         to_remove.sort(reverse=True)
         for it in to_remove:
             vector.remove([it], [])
         return vector
 
-    def removeAlgebraic(self, var, eq=None):
-        self.removeVariablesFromVector(var, self.y_sym)
+    def remove_algebraic(self, var, eq=None):
+        self.remove_variables_from_vector(var, self.y_sym)
         if eq is not None:
-            self.removeVariablesFromVector(eq, self.alg)
+            self.remove_variables_from_vector(eq, self.alg)
 
-    def removeExternalAlgebraic(self, var, eq=None):
-        self.removeVariablesFromVector(var, self.z_sym)
+    def remove_external_algebraic(self, var, eq=None):
+        self.remove_variables_from_vector(var, self.z_sym)
         if eq is not None:
-            self.removeVariablesFromVector(eq, self.alg_z)
+            self.remove_variables_from_vector(eq, self.alg_z)
 
-    def removeConnectingEquations(self, var, eq):
-        self.removeVariablesFromVector(var, self.z_sym)
-        self.removeVariablesFromVector(eq, self.con)
+    def remove_connecting_equations(self, var, eq):
+        self.remove_variables_from_vector(var, self.z_sym)
+        self.remove_variables_from_vector(eq, self.con)
 
-    def removeControl(self, var):
+    def remove_control(self, var):
         to_remove = self.find_variables_indices_in_vector(var, self.u_sym)
         to_remove.sort(reverse=True)
 
         for it in to_remove:
             self.u_sym.remove([it], [])
             self.u_par.remove([it], [])
+
+    # endregion
     # ==============================================================================
     # region # Standard Function Call
     # ==============================================================================
@@ -313,13 +330,13 @@ class SystemModel:
 
         for model in models_list:
             self.include_state(model.x_sym, model.ode, model.x_0_sym)
-            self.includeAlgebraic(model.y_sym, model.alg)
-            self.includeExternalAlgebraic(model.z_sym, model.alg_z)
-            self.includeControl(model.u_sym)
-            self.includeParameter(model.p_sym)
-            self.includeTheta(model.theta_sym)
+            self.include_algebraic(model.y_sym, model.alg)
+            self.include_external_algebraic(model.z_sym, model.alg_z)
+            self.include_control(model.u_sym)
+            self.include_parameter(model.p_sym)
+            self.include_theta(model.theta_sym)
 
-        self.includeConnectingEquations(connecting_equations, associated_z)
+        self.include_connecting_equations(connecting_equations, associated_z)
 
     # endregion
     # ==============================================================================
@@ -434,7 +451,6 @@ class SystemModel:
                 if is_equal(vector[j], var[i]):
                     index.append(j)
         return index
-
 
 
 #######################################################################

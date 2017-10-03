@@ -341,14 +341,12 @@ class CollocationScheme(DiscretizationSchemeBase):
         return time_dict
 
     def create_initial_guess(self):
-        base_x0 = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
-        base_x0 = vertcat(base_x0,
-                          DM.zeros((
-                              self.model.Nyz * self.degree * self.finite_elements +
-                              self.model.Nu * self.degree_control * self.finite_elements),
-                              1))
+        x_init  = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
+        y_init =  DM.zeros(self.model.Nyz * self.degree * self.finite_elements, 1)
+        u_init = DM.zeros(self.model.Nu * self.degree_control * self.finite_elements, 1)
+        eta_init = DM.zeros(self.problem.N_eta, 1)
 
-        base_x0 = vertcat(base_x0, DM.zeros(self.problem.N_eta))
+        base_x0 = vertcat(x_init,  y_init, u_init, eta_init)
         return base_x0
 
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):

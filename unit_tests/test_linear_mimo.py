@@ -3,8 +3,8 @@ import unittest
 from casadi import vertcat, DM, mtimes, inf
 
 from yaocptool.methods import DirectMethod
-from yaocptool.modelling_classes.model_classes import SystemModel
-from yaocptool.modelling_classes.ocp import OptimalControlProblem
+from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.ocp import OptimalControlProblem
 
 # NLPSOL_OPTS = {
 #        'ipopt.print_level':0,
@@ -14,7 +14,7 @@ def _create_model_and_problem():
     model = SystemModel(name='MIMO_2x2', Nx=2, Nu=2)
     x = model.x_sym
     a = DM([[-1, -2], [5, -1]])
-    model.includeSystemEquations(mtimes(a, x))
+    model.include_system_equations(mtimes(a, x))
 
     problem = OptimalControlProblem(model, obj={'Q': DM.ones(2, 2), 'R': DM.ones(2, 2)}, x_0=[1, 1])
     return model, problem

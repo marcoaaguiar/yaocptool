@@ -1,14 +1,8 @@
-# yaocptool
-(YAOCPTool) Yet Another Optimal Control Tool
+from yaocptool.modelling import SystemModel
+from yaocptool.methods import DirectMethod
+from yaocptool.modelling import OptimalControlProblem
 
-## How to use
-The objective of this tool is to make easier to use the state-of-the-art CasADi, at the same time allowing for researchers to propose new methods.
-
-Trust me, it is easier!
-
-### Creating a model
-
-```python
+# PART 1
 model = SystemModel(Nx=1, Nu=1)
 x = model.x_sym # vector of state variables
 u = model.u_sym # vector of control variables
@@ -19,18 +13,11 @@ model.include_system_equations(ode=ode)
 
 # Print model information
 print model
-```
 
-### Creating a Optimal Control Problem (OCP)
-
-```python
-from yaocptool.modelling import OptimalControlProblem
-
+# Part 2
 problem = OptimalControlProblem(model, x_0 = [1], t_f=10, obj={'Q': 1, 'R': 1})
-```
 
-### Creating a Solver for the OCP
-```python
+# Part 3
 # Initialize a DirectMethod to solve the OCP using collocation
 solution_method = DirectMethod(problem, finite_elements=20, discretization_scheme='collocation')
 
@@ -40,4 +27,3 @@ result = solution_method.solve()
 # Make one plot with the element x[0] (the first state) and one plot with the control u[0]
 result.plot([{'x':[0]}, {'u':[0]}])
 
-```

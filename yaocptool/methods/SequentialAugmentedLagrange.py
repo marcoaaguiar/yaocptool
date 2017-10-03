@@ -116,8 +116,8 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
                     tested_z = self.problems_dict[problem_id]['problem'].model.z_sym[n_z]
                     if is_equal(tested_z, self.con_dict[k]['con_z']):
                         index = self.problems_dict[problem_id]['problem'].model.Nu
-                        self.problems_dict[problem_id]['problem'].includeControl(tested_z, u_max = self.problem.z_max[n_z], u_min = self.problem.z_min[n_z])
-                        self.problems_dict[problem_id]['problem'].removeExternalAlgebraic(tested_z)
+                        self.problems_dict[problem_id]['problem'].include_control(tested_z, u_max = self.problem.z_max[n_z], u_min = self.problem.z_min[n_z])
+                        self.problems_dict[problem_id]['problem'].remove_external_algebraic(tested_z)
                         self.problems_dict[problem_id]['control_id_of_free_z_dict'][index] = tested_z
             
     def includeAugmentedLagrangianTermInTheObjective(self):
@@ -134,7 +134,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
                 if depends_on(con, problem.model.z_sym):
                     problem.L += dot(nu_alg, con) + self.mu_sym/2.*dot(con, con)
                 if not depends_on(problem.model.p_sym, self.mu_sym):
-                    problem.model.includeParameter(self.mu_sym)
+                    problem.model.include_parameter(self.mu_sym)
     
     def parametrizeVariablesInProblems(self):
         self.parametrizExogenousVariables()
@@ -150,7 +150,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
                                                                                     tau = self.problems_dict[p]['problem'].model.tau_sym)
                                                                                     
                 self.problems_dict[p]['problem'].replace_variable(z, exog_z_pol)
-                self.problems_dict[p]['problem'].model.includeTheta(exog_z_par)
+                self.problems_dict[p]['problem'].model.include_theta(exog_z_par)
                 self.problems_dict[p]['exog_z_pol'].append(exog_z_pol)
                 self.problems_dict[p]['exog_z_par'].append(exog_z_par)
 
@@ -176,7 +176,7 @@ class SequentialAugmentedLagrange(AugmentedLagrange):
                 # _debug_skip_parametrize NU
                 problem.replace_variable(nu_alg, nu_pol)
                 problem.replace_variable(self.con_dict[k]['nu_tau_sym'], problem.model.tau_sym)
-                problem.model.includeTheta(nu_par)
+                problem.model.include_theta(nu_par)
 
     
     def initialize_nu_values(self):

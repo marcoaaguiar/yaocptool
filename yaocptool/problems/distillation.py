@@ -14,8 +14,8 @@ from casadi import SX,DM, inf, repmat, vertcat, collocation_points, \
 import matplotlib.pyplot as plt
 
 
-from yaocptool.modelling_classes.model_classes import SystemModel, SuperModel
-from yaocptool.modelling_classes.ocp import OptimalControlProblem, SuperOCP
+from yaocptool.modelling.model_classes import SystemModel, SuperModel
+from yaocptool.modelling.ocp import OptimalControlProblem, SuperOCP
 
 if __name__ == '__main__':
     import solutionmethods, DirectMethod, IndirectMethod,InteriorPoint, AugmentedLagrange
@@ -56,7 +56,7 @@ class Distillation(SystemModel):
         alg = vertcat((((mu_max*x1)/(K_s+x1+x1**2/K_sI))*(K_p)/(K_p+x2+x2**2/K_pI))-z0, 
                ((nu_max*x1)/(K_s_dash+x1+x1**2/K_sI_dash))*(K_p_dash)/(K_p_dash+x2+x2**2/K_pI_dash)-z1) 
         
-        self.includeSystemEquations(ode, alg)
+        self.include_system_equations(ode, alg)
 
 
 class ProdMaximization(OptimalControlProblem):

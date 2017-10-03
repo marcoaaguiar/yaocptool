@@ -9,10 +9,10 @@ from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 
 from casadi import vertcat
-from yaocptool.modelling_classes.model_classes import SystemModel
-from yaocptool.modelling_classes.ocp import OptimalControlProblem
-from yaocptool.modelling_classes.node import Node
-from yaocptool.modelling_classes.network import Network
+from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.ocp import OptimalControlProblem
+from yaocptool.modelling.node import Node
+from yaocptool.modelling.network import Network
 
 
 
@@ -31,9 +31,9 @@ class SimpleNode(Node):
         else:
             ode = vertcat(sum([model.z_sym[n_z]*outputs_weights[n_z] for n_z in xrange(outputs)]))
             
-        model.includeSystemEquations(ode = ode,
-                        alg_z = vertcat(model.u_sym[0] - model.z_sym[1])
-                        ) 
+        model.include_system_equations(ode = ode,
+                                       alg_z = vertcat(model.u_sym[0] - model.z_sym[1])
+                                       )
                         
         problem = OptimalControlProblem(model, obj = {'Q':[1], 'R':[10], 'x_ref':[reference]}, x_0 = x_0, t_f =10)
         problem.h_final = vertcat(problem.h_final, problem.model.x_sym - reference)

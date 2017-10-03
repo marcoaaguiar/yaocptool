@@ -84,7 +84,7 @@ class AugmentedLagrange(SolutionMethodsBase):
             self._relax_states_constraints()
 
         # CREATE THE OCP SOLVER
-        self.model.includeParameter(self.mu_sym)
+        self.model.include_parameter(self.mu_sym)
 
         for attr in ['degree', 'finite_elements', 'degree_control', 'integrator_type']:
             if attr in solver_options and attr in kwargs and solver_options[attr] != kwargs[attr]:
@@ -153,7 +153,7 @@ class AugmentedLagrange(SolutionMethodsBase):
         self.Nr += self.model.alg_z.size1()
 
         self._save_relaxed_equation(self.model.alg_z)
-        z_without_con_z = self.model.removeVariablesFromVector(self.model.con_z, vertcat(self.model.z_sym))
+        z_without_con_z = self.model.remove_variables_from_vector(self.model.con_z, vertcat(self.model.z_sym))
         z_without_con_z_indices = self.model.find_variables_indices_in_vector(z_without_con_z, self.model.z_sym)
 
         self.problem.includeControl(z_without_con_z, u_max=self.problem.z_max[z_without_con_z_indices],
@@ -213,7 +213,7 @@ class AugmentedLagrange(SolutionMethodsBase):
         self.nu_par = vertcat(self.nu_par, nu_par)
 
         self.problem.replace_variable(nu_sym, nu_pol, 'other')
-        self.problem.model.includeTheta(vec(nu_par))
+        self.problem.model.include_theta(vec(nu_par))
 
         return nu_pol, nu_par
 

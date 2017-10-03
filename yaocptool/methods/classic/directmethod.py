@@ -11,7 +11,7 @@ from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 class DirectMethod(SolutionMethodsBase):
     def __init__(self, problem, **kwargs):
         """
-        :param problem: yaocptool.modelling_classes.ocp.OptimalControlProblem
+        :param problem: yaocptool.modelling.ocp.OptimalControlProblem
         :param integrator_type: str
         :param solution_method: str
         :param degree: int

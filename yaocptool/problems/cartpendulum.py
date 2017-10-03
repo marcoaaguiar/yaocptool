@@ -14,8 +14,8 @@ from casadi import SX,DM, inf, repmat, vertcat, collocation_points, DM, \
 import matplotlib.pyplot as plt
 
 
-from yaocptool.modelling_classes.model_classes import SystemModel
-from yaocptool.modelling_classes.ocp import OptimalControlProblem
+from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.ocp import OptimalControlProblem
 
 
 class PendulumCart(SystemModel):
@@ -52,7 +52,7 @@ class PendulumCart(SystemModel):
             x_dot,
             (m*g*cos(theta)*sin(theta) -m*l*theta_dot**2*sin(theta)-u)/(M+m-m*cos(theta)**2)
         )
-        self.includeSystemEquations(ode)
+        self.include_system_equations(ode)
 
 
 class UpwardPendulumStabilization(OptimalControlProblem):

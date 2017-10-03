@@ -14,10 +14,10 @@ from casadi import SX,DM, inf, repmat, vertcat, collocation_points, DM, \
                     sqrt
 import matplotlib.pyplot as plt
 
-from yaocptool.modelling_classes.model_classes import SystemModel, SuperModel
-from yaocptool.modelling_classes.ocp import OptimalControlProblem, SuperOCP
-from yaocptool.modelling_classes.node import Node
-from yaocptool.modelling_classes.network import Network
+from yaocptool.modelling.model_classes import SystemModel, SuperModel
+from yaocptool.modelling.ocp import OptimalControlProblem, SuperOCP
+from yaocptool.modelling.node import Node
+from yaocptool.modelling.network import Network
 
 class Tank1(SystemModel):
     def __init__(self, **kwargs):
@@ -132,7 +132,7 @@ class StabilizationTwoTanks(SuperOCP):
         connecting_eq = vertcat(ocpTank1.model.z_sym - ocpTank2.model.z_sym)
         SuperOCP.__init__(self, problems= [ocpTank1,ocpTank2], **kwargs)
         
-        self.model.includeConnectingEquations(con = connecting_eq, con_z = ocpTank2.model.z_sym)
+        self.model.include_connecting_equations(con = connecting_eq, con_z = ocpTank2.model.z_sym)
 #        self.h_final = vertcat(self.h_final, self.model.x_sym[0] -2,self.model.x_sym[1] -4)
 
 

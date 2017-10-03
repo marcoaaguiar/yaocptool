@@ -15,8 +15,8 @@ from casadi import SX,DM, inf, repmat, vertcat, collocation_points, \
 import matplotlib.pyplot as plt
 
 
-from yaocptool.modelling_classes.model_classes import SystemModel, SuperModel
-from yaocptool.modelling_classes.ocp import OptimalControlProblem, SuperOCP
+from yaocptool.modelling.model_classes import SystemModel, SuperModel
+from yaocptool.modelling.ocp import OptimalControlProblem, SuperOCP
 
 if __name__ == '__main__':
     from yaocptool.methods import DirectMethod
@@ -37,7 +37,7 @@ class LinearSystem(SystemModel):
                       )
         alg = vertcat(((1-x_2**2)*x_1 - x_2 - y ))
         
-        self.includeSystemEquations(ode, alg)
+        self.include_system_equations(ode, alg)
 
 
 class Stabilizing(OptimalControlProblem):

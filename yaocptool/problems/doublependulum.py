@@ -15,8 +15,8 @@ from casadi import SX,DM, inf, repmat, vertcat, collocation_points, DM, \
 import matplotlib.pyplot as plt
 
 
-from yaocptool.modelling_classes.model_classes import SystemModel, SuperModel
-from yaocptool.modelling_classes.ocp import OptimalControlProblem, SuperOCP
+from yaocptool.modelling.model_classes import SystemModel, SuperModel
+from yaocptool.modelling.ocp import OptimalControlProblem, SuperOCP
 
 if __name__ == '__main__':
     import solutionmethods, DirectMethod, IndirectMethod,InteriorPoint, GradientMethod
@@ -69,7 +69,7 @@ class DoublePendulum(SystemModel):
             dphi_2,
             ddphi[1]
         )
-        self.includeSystemEquations(ode)
+        self.include_system_equations(ode)
 
 
 class UpwardStabilization(OptimalControlProblem):

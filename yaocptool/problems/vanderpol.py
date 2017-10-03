@@ -15,8 +15,8 @@ from casadi import SX,DM, inf, repmat, vertcat, collocation_points, \
 import matplotlib.pyplot as plt
 
 #from yaocptool.problems import modelproblem
-from yaocptool.modelling_classes.model_classes import SystemModel, SuperModel
-from yaocptool.modelling_classes.ocp import OptimalControlProblem, SuperOCP
+from yaocptool.modelling.model_classes import SystemModel, SuperModel
+from yaocptool.modelling.ocp import OptimalControlProblem, SuperOCP
 
 if __name__ == '__main__':
 #    from yaocptool.methods import DirectMethod, IndirectMethod,  SaturationFunctionMethod, AugmentedLagrange
@@ -39,7 +39,7 @@ class VanDerPol(SystemModel):
                       )
         alg = vertcat(((1-x_2**2)*x_1 - x_2 - y ))
         
-        self.includeSystemEquations(ode, alg)
+        self.include_system_equations(ode, alg)
         
 
 #class VanDerPol(SystemModel):
@@ -56,7 +56,7 @@ class VanDerPol(SystemModel):
 #                        x_1,
 #                      )
 #        
-#        self.includeSystemEquations(ode)
+#        self.include_system_equations(ode)
         
 #class VanDerPol(SystemModel):
 #    def __init__(self):
@@ -74,7 +74,7 @@ class VanDerPol(SystemModel):
 #                      )
 #        alg = vertcat(((1-x_2**2)*x_1 - x_2 - y ))
 #
-#        self.includeSystemEquations(ode, alg)
+#        self.include_system_equations(ode, alg)
 
 
 class Stabilizing(OptimalControlProblem):

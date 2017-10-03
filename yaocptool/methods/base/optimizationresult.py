@@ -55,6 +55,9 @@ class OptimizationResult:
 
     # Plot
     def plot(self, plot_list, interpolation_data=None):
+        if isinstance(plot_list, dict):
+            plot_list = [plot_list]
+
         if self.is_valid:
             if self.is_collocation and interpolation_data is not False:
                 self._plot_interpolation(plot_list)

@@ -62,17 +62,8 @@ class OptimalControlProblem:
 
         self.x_0 = DM(self.x_0)
 
-        if self.L.is_zero() and self.V.is_zero() and not self.NULL_OBJ:
-            raise Exception('No objective')
-        elif not hasattr(self, 'L'):
-            self.L = DM(0.)
-        elif not hasattr(self, 'V'):
-            self.V = DM(0.)
-
-        if not self.L.numel() == 1:
-            raise Exception('Size of dynamic cost (ocp.L) is different from 1, provided size is: {}'.format(self.L.numel()))
-        if not self.V.numel() == 1:
-            raise Exception('Size of final cost (ocp.V) is different from 1, provided size is: {}'.format(self.L.numel()))
+        # Treat Initialization
+        self._check_integrity(kwargs)
 
     @property
     def N_h_final(self):
@@ -89,6 +80,31 @@ class OptimalControlProblem:
     @property
     def yz_min(self):
         return vertcat(self.y_min, self.z_min)
+
+    def _check_integrity(self, kwargs):
+        # Check if Objective Function was provided
+        if self.L.is_zero() and self.V.is_zero() and not self.NULL_OBJ:
+            raise Exception('No objective')
+        elif not hasattr(self, 'L'):
+            self.L = DM(0.)
+        elif not hasattr(self, 'V'):
+            self.V = DM(0.)
+
+        # Check if the objective function has the proper size
+        if not self.L.numel() == 1:
+            raise Exception(
+                'Size of dynamic cost (ocp.L) is different from 1, provided size is: {}'.format(self.L.numel()))
+        if not self.V.numel() == 1:
+            raise Exception(
+                'Size of final cost (ocp.V) is different from 1, provided size is: {}'.format(self.L.numel()))
+
+        if not 'x_0' in kwargs:
+            raise Exception('No initial condition for the states were provided')
+
+        if not self.model.Nx == self.x_0.numel():
+            raise Exception(
+                'The size of the initial guess "self.x_0" is not equal to the number of states "model.Nx",'
+                + ' {} != {}'.format(self.x_0.numel(), self.model.Nx))
 
     def resetWorkingModel(self):
         self.model = copy.copy(self._model)
@@ -163,8 +179,8 @@ class OptimalControlProblem:
             self.model.merge([problem.model])
 
             # ==============================================================================
-        # INCLUDE VARIABLES
-        # ==============================================================================
+            # INCLUDE VARIABLES
+            # ==============================================================================
 
     def includeState(self, var, ode, x_0=None, x_min=None, x_max=None, h_initial=None, x_0_sym=None, suppress=False):
         if x_min is None:
@@ -196,7 +212,7 @@ class OptimalControlProblem:
         if y_max is None:
             y_max = DM.inf(var.numel())
 
-        self.model.includeAlgebraic(var, alg)
+        self.model.include_algebraic(var, alg)
         self.y_min = vertcat(self.y_min, y_min)
         self.y_max = vertcat(self.y_max, y_max)
 
@@ -206,7 +222,7 @@ class OptimalControlProblem:
         if u_max is None:
             u_max = DM.inf(var.numel())
 
-        self.model.includeControl(var)
+        self.model.include_control(var)
         self.u_min = vertcat(self.u_min, u_min)
         self.u_max = vertcat(self.u_max, u_max)
 
@@ -217,7 +233,7 @@ class OptimalControlProblem:
         for it in to_remove:
             self.y_max.remove([it], [])
             self.y_min.remove([it], [])
-        self.model.removeAlgebraic(var, eq)
+        self.model.remove_algebraic(var, eq)
 
     def removeExternalAlgebraic(self, var, eq=None):
         to_remove = self.model.find_variables_indices_in_vector(var, self.model.z_sym)
@@ -225,10 +241,10 @@ class OptimalControlProblem:
         for it in to_remove:
             self.z_max.remove([it], [])
             self.z_min.remove([it], [])
-        self.model.removeExternalAlgebraic(var, eq)
+        self.model.remove_external_algebraic(var, eq)
 
     def removeConnectingEquations(self, var, eq):
-        self.model.removeConnectingEquations(var=var, eq=eq)
+        self.model.remove_connecting_equations(var=var, eq=eq)
 
     def removeControl(self, var):
         to_remove = []
@@ -242,7 +258,7 @@ class OptimalControlProblem:
             self.u_max.remove([it], [])
             self.u_min.remove([it], [])
 
-        self.model.removeControl(var)
+        self.model.remove_control(var)
 
     def replace_variable(self, original, replacement, variable_type='other'):
         self.L = substitute(self.L, original, replacement)
