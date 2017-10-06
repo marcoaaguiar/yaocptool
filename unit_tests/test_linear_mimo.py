@@ -1,14 +1,11 @@
+from __future__ import print_function
 import unittest
 
-from casadi import vertcat, DM, mtimes, inf
-
+from casadi import DM, mtimes, inf
 from yaocptool.methods import DirectMethod
 from yaocptool.modelling.model_classes import SystemModel
 from yaocptool.modelling.ocp import OptimalControlProblem
 
-# NLPSOL_OPTS = {
-#        'ipopt.print_level':0,
-# }
 
 def _create_model_and_problem():
     model = SystemModel(name='MIMO_2x2', Nx=2, Nu=2)
@@ -41,9 +38,6 @@ class MIMO2x2TestCase(unittest.TestCase):
         self.assertEqual(self.model.Nu, 2)
 
     # endregion
-
-    def test_problem_x_0(self):
-        self.assertEqual(self.problem.x_0.numel(), 2)
 
     def test_problem_x_0(self):
         self.assertEqual(self.problem.x_0.numel(), 2)
@@ -131,7 +125,7 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        nlpsol_opts = self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        print result.objective
+        print(result.objective)
         self.assertAlmostEqual(result.objective, self.obj_value, delta = self.obj_tol)
         return
 

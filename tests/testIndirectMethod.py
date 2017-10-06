@@ -20,7 +20,7 @@ problem = UpwardPendulumStabilization(model, t_f = 3.)
 
 indir_method = IndirectMethod(problem, degree = 5, finite_elements = 20, integrator_type = 'implicit')
 x_sol, u_sol, V_sol = indir_method.solve()
-x, y, u, t= indir_method.plotSimulate(x_sol, u_sol, [{'x':[0,1]},{'x':[2,3]},{'u':[0]}], 5, integrator_type = 'implicit')
+x, y, u, t= indir_method.plot_simulate(x_sol, u_sol, [{'x':[0, 1]}, {'x':[2, 3]}, {'u':[0]}], 5, integrator_type ='implicit')
 
 U = dict(zip(range(indir_method.finite_elements), [float(i) for i in u]))
 X = dict(zip(range(indir_method.finite_elements), [i.full() for i in x_sol]))

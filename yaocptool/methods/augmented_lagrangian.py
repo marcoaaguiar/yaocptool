@@ -17,7 +17,7 @@ from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 # TODO: Fix PEP 8
 # TODO: update_nu calculate error
 
-class AugmentedLagrange(SolutionMethodsBase):
+class AugmentedLagrangian(SolutionMethodsBase):
     """
         For a minmization problem in the form
             min f(x,u) = \int L(x,u) dt
@@ -66,7 +66,7 @@ class AugmentedLagrange(SolutionMethodsBase):
         self._debug_skip_update_nu = False
         self._debug_skip_update_mu = False
 
-        super(AugmentedLagrange, self).__init__(problem, **kwargs)
+        super(AugmentedLagrangian, self).__init__(problem, **kwargs)
 
         self.mu = self.mu_0
 
@@ -119,13 +119,18 @@ class AugmentedLagrange(SolutionMethodsBase):
         return self.model.relaxed_alg
 
     @property
-    def splitXYandU(self):
-        return self.ocp_solver.splitXYandU
+    def split_x_y_and_u(self):
+        return self.ocp_solver.split_x_y_and_u
 
     @property
-    def splitXandU(self):
-        return self.ocp_solver.splitXandU
+    def split_x_and_u(self):
+        return self.ocp_solver.split_x_and_u
 
+    @property
+    def time_interpolation_nu(self):
+        col_points = self.collocation_points(self.degree,with_zero=False)
+        return [[self.time_breakpoints[el] + self.delta_t * col_points[j] for j in
+                                     range(self.degree)] for el in range(self.finite_elements)]
     # endregion
 
     # ==============================================================================
@@ -142,8 +147,8 @@ class AugmentedLagrange(SolutionMethodsBase):
         self.Nr += self.model.alg.size1()
 
         self._save_relaxed_equation(self.model.alg)
-        self.problem.includeControl(self.model.y_sym, u_max=self.problem.y_max, u_min=self.problem.y_min)
-        self.problem.removeAlgebraic(self.model.y_sym, self.model.alg)
+        self.problem.include_control(self.model.y_sym, u_max=self.problem.y_max, u_min=self.problem.y_min)
+        self.problem.remove_algebraic(self.model.y_sym, self.model.alg)
 
     def _relax_external_algebraic_equations(self):
         nu_alg = SX.sym('AL_nu_alg_z', self.model.alg_z.size1())
@@ -156,9 +161,9 @@ class AugmentedLagrange(SolutionMethodsBase):
         z_without_con_z = self.model.remove_variables_from_vector(self.model.con_z, vertcat(self.model.z_sym))
         z_without_con_z_indices = self.model.find_variables_indices_in_vector(z_without_con_z, self.model.z_sym)
 
-        self.problem.includeControl(z_without_con_z, u_max=self.problem.z_max[z_without_con_z_indices],
-                                    u_min=self.problem.z_min[z_without_con_z_indices])
-        self.problem.removeExternalAlgebraic(z_without_con_z, self.model.alg_z)
+        self.problem.include_control(z_without_con_z, u_max=self.problem.z_max[z_without_con_z_indices],
+                                     u_min=self.problem.z_min[z_without_con_z_indices])
+        self.problem.remove_external_algebraic(z_without_con_z, self.model.alg_z)
 
     def _relax_connecting_equations(self):
         nu_alg = SX.sym('AL_nu_alg_con', self.model.con.size1())
@@ -170,10 +175,10 @@ class AugmentedLagrange(SolutionMethodsBase):
         self._save_relaxed_equation(self.model.con)
         con_z_ind = self.model.find_variables_indices_in_vector(self.model.con_z, self.model.z_sym)
 
-        self.problem.includeControl(self.model.con_z, u_max=self.problem.z_max[con_z_ind],
-                                    u_min=self.problem.z_min[con_z_ind])
+        self.problem.include_control(self.model.con_z, u_max=self.problem.z_max[con_z_ind],
+                                     u_min=self.problem.z_min[con_z_ind])
 
-        self.problem.removeConnectingEquations(var=self.model.con_z, eq=self.model.con)
+        self.problem.remove_connecting_equations(var=self.model.con_z, eq=self.model.con)
 
     def _relax_states_constraints(self):
         for i in range(self.model.Nx):
@@ -187,7 +192,7 @@ class AugmentedLagrange(SolutionMethodsBase):
                 self.problem.L += dot(nu_y_x.T, new_alg) + self.mu_sym / 2.0 * dot(new_alg.T, new_alg)
 
                 self._save_relaxed_equation(new_alg)
-                self.problem.includeControl(y_x, u_min=self.problem.x_min[i], u_max=self.problem.x_max[i])
+                self.problem.include_control(y_x, u_min=self.problem.x_min[i], u_max=self.problem.x_max[i])
                 self.problem.x_max[i] = inf
                 self.problem.x_min[i] = -inf
                 self.Nr += 1
@@ -207,7 +212,7 @@ class AugmentedLagrange(SolutionMethodsBase):
         if n_r is None:
             n_r = self.Nr
 
-        nu_pol, nu_par = self.createVariablePolynomialApproximation(n_r, self.degree, 'nu')
+        nu_pol, nu_par = self.create_variable_polynomial_approximation(n_r, self.degree, 'nu')
 
         self.nu_pol = vertcat(self.nu_pol, nu_pol)
         self.nu_par = vertcat(self.nu_par, nu_par)
@@ -220,8 +225,8 @@ class AugmentedLagrange(SolutionMethodsBase):
     def create_nu_initial_guess(self, n_r=None):
         if n_r is None:
             n_r = self.Nr
-        nu = self.createConstantTheta(constant=0, dimension=n_r, degree=self.degree,
-                                      finite_elements=self.finite_elements)
+        nu = self.create_constant_theta(constant=0, dimension=n_r, degree=self.degree,
+                                        finite_elements=self.finite_elements)
         return nu
 
     def _create_nu_update_func(self):
@@ -239,10 +244,8 @@ class AugmentedLagrange(SolutionMethodsBase):
         for el in range(self.finite_elements):
             time_dict[el]['t_0'] = self.time_breakpoints[el]
             time_dict[el]['t_f'] = self.time_breakpoints[el + 1]
-            time_dict[el]['f_nu'] = [self.time_breakpoints[el] + self.delta_t * col_points[j] for j in
-                                     range(self.degree)]
-            time_dict[el]['f_relax_alg'] = [self.time_breakpoints[el] + self.delta_t * col_points[j] for j in
-                                            range(self.degree)]
+            time_dict[el]['f_nu'] = self.time_interpolation_nu[el]
+            time_dict[el]['f_relax_alg'] = self.time_interpolation_nu[el]
 
         functions = defaultdict(dict)
         for el in range(self.finite_elements):
@@ -271,11 +274,18 @@ class AugmentedLagrange(SolutionMethodsBase):
         output = new_nu + [error]
         self.new_nu_func = Function('new_nu_funct', [v, par, theta_var], output)
 
-    def _update_nu(self, p, theta, raw_solution_dict):
+    def _update_nu(self, p=None, theta=None, raw_solution_dict=None):
+        if raw_solution_dict is None:
+            raw_solution_dict = {}
+        if theta is None:
+            theta = {}
+        if p is None:
+            p = []
         if not self._debug_skip_update_nu:
             if self.new_nu_func is None:
                 self._create_nu_update_func()
             raw_decision_variables = raw_solution_dict['x']
+            # noinspection PyCallingNonCallable
             output = self.new_nu_func(raw_decision_variables, p, vertcat(*theta.values()))
             new_nu = output[:-1]
             error = output[-1]
@@ -288,9 +298,13 @@ class AugmentedLagrange(SolutionMethodsBase):
 
     def join_nu_to_theta(self, theta, nu):
         if theta is not None:
-            return self.joinThetas(theta, nu)
+            return self.join_thetas(theta, nu)
         else:
             return nu
+
+    def _update_mu(self):
+        if not self._debug_skip_update_mu:
+            self.mu = min(self.mu_max, self.mu * self.beta)
 
     # endregion
     # ==============================================================================
@@ -306,7 +320,7 @@ class AugmentedLagrange(SolutionMethodsBase):
     def get_ocp_solver(self, initial_condition_as_parameter=False):
         self.solver = self.ocp_solver.get_solver(initial_condition_as_parameter=initial_condition_as_parameter)
 
-    def stepForward(self):
+    def step_forward(self):
         raise NotImplementedError
         # X, U = self.last_solution
         # error = self._update_nu(self.mu, self.nu, raw_solution_dict=raw_solution_dict)
@@ -343,7 +357,7 @@ class AugmentedLagrange(SolutionMethodsBase):
             p_k = vertcat(p, self.mu)
             raw_solution_dict = solver(initial_guess, p=p_k, theta=theta_k, x_0=x_0)
             initial_guess = raw_solution_dict['x']
-            x, u = self.splitXandU(initial_guess)
+            x, u = self.split_x_and_u(initial_guess)
             it += 1
 
             if it == self.max_iter:
@@ -357,16 +371,17 @@ class AugmentedLagrange(SolutionMethodsBase):
         print('Approximation error: {}'.format(error))
         return raw_solution_dict
 
-    def solve(self, initial_guess=None, p=None, theta=None, x_0=None):
-        # type: (object, list, dict, list) -> OptimizationResult
-        if x_0 is None:
-            x_0 = []
-        if theta is None:
-            theta = {}
+    def create_optimization_result(self, raw_solution_dict, p=None, theta=None, x_0=None):
         if p is None:
             p = []
-        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0)
-        return self.ocp_solver.create_optimization_result(raw_solution_dict)
+        if theta is None:
+            theta = {}
+        p = vertcat(p, self.mu)
+        theta = self.join_nu_to_theta(self.nu, theta)
+        result = self.ocp_solver.create_optimization_result(raw_solution_dict, p, theta, x_0)
+        result.other_data['nu']['values'] = [[self.unvec(self.nu[el])[:, d] for d in range(self.degree)] for el in range(self.finite_elements)]
+        result.other_data['nu']['times'] = self.time_interpolation_nu
+        return result
 
     # ==============================================================================
     #     PLOT/SIMULATE
@@ -389,7 +404,3 @@ class AugmentedLagrange(SolutionMethodsBase):
         micro_x, micro_y, micro_u, micro_t = self.ocp_solver.simulate(x, u, sub_elements, t_0, t_f, par, nu_theta,
                                                                       integrator_type=integrator_type)
         return micro_x, micro_y, micro_u, micro_t
-
-    def _update_mu(self):
-        if not self._debug_skip_update_mu:
-            self.mu = min(self.mu_max, self.mu * self.beta)

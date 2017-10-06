@@ -40,7 +40,7 @@ class CSTRColumnSystem(modelproblem.SystemModel):
         F_default = 958/60
         
         for (k, v) in kwargs.items():
-            exec( k + ' = ' + `v`)
+            exec(k + ' = ' + repr(v))
         
         M_r = x_sym[0]
         M_rA = x_sym[1]

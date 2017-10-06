@@ -151,6 +151,8 @@ class SystemModel:
     def replace_variable(self, original, replacement, variable_type='other'):
         """
             Replace a variable or parameter by an varaible or expression.
+            :param replacement:
+            :param variable_type:
             :param original: SX: and replacement, and also variable type which
             describes which type of variable is being remove to it from the
             counters. Types: 'x', 'y', 'u', 'p', 'ignore'
@@ -304,7 +306,7 @@ class SystemModel:
     # ==============================================================================
 
     def convertFromTimeToTau(self, dae_sys, t_k, t_kp1):
-        raise NotImplementedError
+        raise Exception('Method not implemented')
 
     def convertExprFromTauToTime(self, expr, t_k, t_kp1):
         t = self.t_sym
@@ -324,7 +326,11 @@ class SystemModel:
     # region MERGE
     # ==============================================================================
 
-    def merge(self, models_list, connecting_equations=[], associated_z=[]):
+    def merge(self, models_list, connecting_equations=None, associated_z=None):
+        if connecting_equations is None:
+            connecting_equations = []
+        if associated_z is None:
+            associated_z = []
         if not isinstance(models_list, list):
             models_list = [models_list]
 
@@ -408,7 +414,9 @@ class SystemModel:
                 raise Exception('explicit integrator not implemented')
         return I
 
-    def createExplicitIntegrator(self, name, integrator_type, dae_sys, options={'t0': 0, 'tf': 1}):
+    def createExplicitIntegrator(self, name, integrator_type, dae_sys, options=None):
+        if options is None:
+            options = {'t0': 0, 'tf': 1}
         if 'alg' in dae_sys:
             raise Exception('Explicit integrator not implemented for DAE systems')
         f_in = [dae_sys['t'], dae_sys['x']]
@@ -424,8 +432,12 @@ class SystemModel:
         N_states = dae_sys['x'].numel()
         if integrator_type == 'rk4':
             def RungeKutta4thOrder(x0=DM.zeros(N_states, 1), p=None, iterations=4):
+                if iterations<1:
+                    raise Exception("The given number of Runge Kutta iterations is less than one, given {}".format(iterations))
                 if p is None:
                     p = []
+
+                x_f = x0
                 h = (t_f - t_0) / iterations
                 t = t_0
                 for it in range(iterations):
@@ -456,7 +468,11 @@ class SystemModel:
 #######################################################################
 
 class SuperModel(SystemModel):
-    def __init__(self, models=[], connections=[], **kwargs):
+    def __init__(self, models=None, connections=None, **kwargs):
+        if models is None:
+            models = []
+        if connections is None:
+            connections = []
         self.models = models
         SystemModel.__init__(self, **kwargs)
 

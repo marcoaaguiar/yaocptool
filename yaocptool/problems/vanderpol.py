@@ -109,8 +109,8 @@ if __name__ == '__main__':
     
     indir_method = DirectMethod(problem, degree = 3, degree_control = 3, finite_elements = 50, integrator_type = 'implicit')
     x_sol, u_sol, V_sol = indir_method.solve()
-#    x, y, u, t= indir_method.plotSimulate(x_sol, u_sol, [{'x':[0,1]},{'y':[0]}, {'u':[0,1]}], 5)
-    x, y, u, t= indir_method.plotSimulate(x_sol, u_sol, [{'x':[0,1]},{'y':[0]}, {'u':[0]}], 5)
+#    x, y, u, t= indir_method.plot_simulate(x_sol, u_sol, [{'x':[0,1]},{'y':[0]}, {'u':[0,1]}], 5)
+    x, y, u, t= indir_method.plot_simulate(x_sol, u_sol, [{'x':[0, 1]}, {'y':[0]}, {'u':[0]}], 5)
 
 #    grad = GradientMethod.GradientMethod(problem, degree = 1, finite_elements = 50, integrator_type = 'implicit')
 #    x_sol, u_sol, V_sol = grad.solve()    
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 #            max_iter = 5, mu_0 = 1, finite_elements = 20, degree = 5)
 #    x_sol, u_sol, V_sol =aug.solve()
     
-#    x, u, t= aug.plotSimulate(x_sol, u_sol, [{'x':[2]},{'u':[1]}], 3, integrator_type = 'implicit')
+#    x, u, t= aug.plot_simulate(x_sol, u_sol, [{'x':[2]},{'u':[1]}], 3, integrator_type = 'implicit')
 
 #    print x_sol[1]
 #    a= aug.simulate(x_sol[0], t_0 = 0.0,t_f = 5./aug.finite_elements, integrator_type= 'implicit')['xf']

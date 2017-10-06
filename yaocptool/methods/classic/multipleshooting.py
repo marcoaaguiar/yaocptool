@@ -7,6 +7,7 @@ Created on Thu Jul 13 17:08:34 2017
 from collections import defaultdict
 
 from casadi import DM, MX, vertcat, Function, repmat
+# noinspection PyUnresolvedReferences
 from typing import Dict, List
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
@@ -59,16 +60,22 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             u_k = []
             for n in range(self.degree_control):
                 u_k.append(MX.sym('u_' + repr(el) + '_' + repr(n), self.model.Nu))
-            u_var.append(vertcat(*u_k))
+            u_var.append(u_k)
 
-        v_x = vertcat(*[vertcat(*x_k) for x_k in x_var])
-        v_y = vertcat(*[vertcat(*yz_k) for yz_k in y_var])
-        v_u = vertcat(*u_var)
+        v_x = self.vectorize(x_var)
+        v_y = self.vectorize(y_var)
+        v_u = self.vectorize(u_var)
         v = vertcat(v_x, v_y, v_u, eta)
 
         return v, x_var, y_var, u_var, eta
 
-    def splitXYandU(self, results_vector, all_subinterval=False):
+    def split_x_y_and_u(self, results_vector, all_subinterval=False):
+        """
+        :param all_subinterval: Bool 'Returns all elements of the subinterval (or only the first one)'
+        :param results_vector: DM
+        :return: X, Y, and U -> list with a DM for each element
+        """
+        assert (results_vector.__class__ == DM)
         x, y, u = [], [], []
         v_offset = 0
 
@@ -80,11 +87,17 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             v_offset = v_offset + self.model.Nx
 
         for k in range(self.finite_elements):
-            u.append(results_vector[v_offset:v_offset + self.model.Nu * self.degree_control])
-            v_offset = v_offset + self.model.Nu * self.degree_control
+                y.append([DM([])])
 
         for k in range(self.finite_elements):
-                y.append([DM([])])
+            u_k = []
+            for i in range(self.degree_control):
+                u_k.append(results_vector[v_offset:v_offset + self.model.Nu])
+                v_offset += self.model.Nu
+            u.append(u_k)
+
+        assert v_offset == results_vector.numel()
+
         return x, y, u
 
     def discretize(self, x_0=None, p=None, theta=None):
@@ -152,7 +165,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         """
         :param x_var: List[List[MX]]
         :param y_var: List[List[MX]]
-        :param u_var: List[MX]
+        :param u_var: List[List[MX]]
         :type time_dict: Dict(int, List(float)) Dictionary of simulations times, where the KEY is the
                                                 finite_element and the VALUE list a list of desired times
                                                 example : {1:{'t_0': 0.0, 'x':[0.0, 0.1, 0.2], y:[0.2]}}
@@ -206,7 +219,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 raise NotImplementedError
             if 'u' in time_dict[el] and t_0 in time_dict[el]['u']:
                 if self.solution_method.solution_class == 'direct':
-                    results[el]['x'].append(f_u(t_0, u_var[el]))
+                    results[el]['x'].append(f_u(t_0, self.vectorize(u_var[el])))
                 else:
                     raise NotImplementedError
             for f_name in functions:
@@ -219,7 +232,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
             for t in element_breakpoints:
                 t_next = t
-                p_i = vertcat(p, theta[el], u_var[el])
+                p_i = vertcat(p, theta[el], self.vectorize(u_var[el]))
 
                 # Do the simulation
                 sim_result = self.model.simulateStep(x_init, t_0=t_init, t_f=t_next, p=p_i,
@@ -237,7 +250,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                     results[el]['y'].append(yz_t)
                 if 'u' in time_dict and t in time_dict[el]['u']:
                     if self.solution_method.solution_class == 'direct':
-                        results[el]['u'].append(f_u(t, u_var[el]))
+                        results[el]['u'].append(f_u(t, self.vectorize(u_var[el])))
                     else:
                         results[el]['u'].append(
                             f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, z=z_t, p=p,
@@ -248,9 +261,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                         f = functions[f_name][el]
                         val = f(
                             *self.model.put_values_in_all_sym_format(t=t, x=x_t, y=yz_t, z=z_t, p=p, theta=theta[el],
-                                                                     u_par=u_var[el]))
+                                                                     u_par=self.vectorize(u_var[el])))
                         results[el][f_name].append(val)
-                # If the simulation should start from the begin of the simulation interval, do not chage the t_init
+                # If the simulation should start from the begin of the simulation interval, do not change the t_init
                 if not start_at_t_0:
                     t_init = t
                     x_init = x_t
@@ -276,7 +289,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         optimization_result.objective = raw_solution_dict['f']
         optimization_result.constraint_values = raw_solution_dict['g']
 
-        x_breakpoints_values, y_breakpoints_values, u_breakpoints_values = self.splitXYandU(raw_solution_dict['x'])
+        x_breakpoints_values, y_breakpoints_values, u_breakpoints_values = self.split_x_y_and_u(raw_solution_dict['x'])
+
         optimization_result.x_breakpoints_data['values'] = x_breakpoints_values
         optimization_result.y_breakpoints_data['values'] = y_breakpoints_values
         optimization_result.u_breakpoints_data['values'] = u_breakpoints_values

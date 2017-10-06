@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
 Created on Thu Nov 17 14:45:29 2016
 
@@ -10,8 +12,8 @@ from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 
 from yaocptool.problems.cartpendulum import *
-from yaocptool.methods import DirectMethod, IndirectMethod, AugmentedLagrange
-from yaocptool import NMPCScheme
+from yaocptool.methods import DirectMethod
+from yaocptool.nmpc import NMPCScheme
 from yaocptool import casadi
 
 #plant = PendulumCart(l = 9.8/9*1.05)
@@ -31,9 +33,9 @@ ocp_solver = DirectMethod(problem, degree = 1, finite_elements = 40, integrator_
 
 dt = (problem.t_f - problem.t_0)/ocp_solver.finite_elements
 nmpc = NMPCScheme(plant, problem, ocp_solver, t_f = 10., dt = dt)
-X, U, T = nmpc.run()
+X, U, T = nmpc.run
 #    
-print 'Realized Objective: ', X[-1][4]
+print('Realized Objective: ', X[-1][4])
 nmpc.plot(X, U, [{'x':[0,2]},{'x':[4]},{'u':[0]}], T)
 
 ##
@@ -48,5 +50,5 @@ nmpc.plot(X, U, [{'x':[0,2]},{'x':[4]},{'u':[0]}], T)
 
 X_mat = [dm.full() for dm in X]
 U_mat = [dm.full() for dm in U]
-import numpy, scipy.io
+import scipy.io
 scipy.io.savemat('matlab/dir_method.mat', mdict={'X': X_mat, 'U': U_mat, 'T':T})

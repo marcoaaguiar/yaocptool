@@ -3,7 +3,7 @@ from os.path import dirname, abspath
 
 path.append(abspath(dirname(dirname(__file__))))
 
-from yaocptool.methods import IndirectMethod, DirectMethod, AugmentedLagrange
+from yaocptool.methods import IndirectMethod, DirectMethod, AugmentedLagrangian
 from yaocptool.modelling.model_classes import SystemModel
 from yaocptool.modelling.ocp import OptimalControlProblem
 
@@ -24,4 +24,4 @@ solution_method = DirectMethod(problem, degree_control=3,
 
 x_sol, u_sol, V_sol = solution_method.solve()
 
-x, y, u, t= solution_method.plotSimulate(x_sol, u_sol, [{'x':[0,1]},{'u':[0]}], 5, integrator_type = 'implicit')
+x, y, u, t= solution_method.plot_simulate(x_sol, u_sol, [{'x':[0, 1]}, {'u':[0]}], 5, integrator_type ='implicit')

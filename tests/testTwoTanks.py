@@ -14,7 +14,7 @@ from os.path import dirname, abspath
 path.append(dirname(dirname(abspath(__file__))))
 
 from yaocptool.problems.twotanks import *
-from yaocptool.methods import IndirectMethod, DirectMethod, AugmentedLagrange
+from yaocptool.methods import IndirectMethod, DirectMethod, AugmentedLagrangian
 import time
 
 # model = TwoTanks()
@@ -33,15 +33,15 @@ problem = StabilizationTwoTanks()
 ##
 t1 = time.time()
 
-solution_method = AugmentedLagrange(problem, IndirectMethod,
-                                    {}, #{ 'discretization_scheme': 'multiple-shooting'},
+solution_method = AugmentedLagrangian(problem, IndirectMethod,
+                                      {},  #{ 'discretization_scheme': 'multiple-shooting'},
         degree = 3, degree_control = 3,
-       relax_algebraic = True, relax_external_algebraic = True, relax_connecting_equations = False,
-       max_iter = 2, mu_0 = 1, beta= 10., finite_elements = 6, integrator_type = 'implicit')
+                                      relax_algebraic = True, relax_external_algebraic = True, relax_connecting_equations = False,
+                                      max_iter = 2, mu_0 = 1, beta= 10., finite_elements = 6, integrator_type = 'implicit')
 
 x_sol, u_sol, V_sol = solution_method.solve()
 print(time.time() - t1)
 
-x, y, u, t = solution_method.plotSimulate(x_sol, u_sol, [{'x': [0, 1]}, {'x': [2]}, {'u': [0]}], 10,
-                                          integrator_type='implicit')
+x, y, u, t = solution_method.plot_simulate(x_sol, u_sol, [{'x': [0, 1]}, {'x': [2]}, {'u': [0]}], 10,
+                                           integrator_type='implicit')
 

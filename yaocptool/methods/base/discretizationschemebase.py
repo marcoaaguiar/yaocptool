@@ -1,3 +1,8 @@
+# noinspection PyUnresolvedReferences
+from typing import List
+from casadi import DM, vertcat
+
+
 class DiscretizationSchemeBase:
     def __init__(self, solution_method):
         """
@@ -34,26 +39,35 @@ class DiscretizationSchemeBase:
     def time_breakpoints(self):
         return self.solution_method.time_breakpoints
 
-    def splitXandU(self, results_vector, all_subinterval=False):
-        x_values, _, u_values = self.splitXYandU(results_vector, all_subinterval)
+    def split_x_and_u(self, results_vector, all_subinterval=False):
+        x_values, _, u_values = self.split_x_y_and_u(results_vector, all_subinterval)
         return x_values, u_values
 
-    def splitXYandU(self, V, all_subinterval=False):
+    def vectorize(self, vector):
+        if len(vector) > 0:
+            if not isinstance(vector[0], list):
+                return vertcat(*vector)
+            else:
+                return vertcat(*[self.vectorize(sub_vector) for sub_vector in vector])
+        else:
+            return vertcat(vector)
+
+    def split_x_y_and_u(self, v, all_subinterval=False):
         raise NotImplementedError
 
-    def discretize(self, x_0=None, p=[], theta=None):
+    def discretize(self, x_0=None, p=None, theta=None):
         raise NotImplementedError
 
     def create_nlp_symbolic_variables(self):
         """
         Create the symbolic variables that will be used by the NLP problem
-        :rtype: (DM, List(List(DM)), List(List(DM)), List(DM), DM, DM, DM)
+        :rtype: (DM, List[List[DM]], List(List(DM)), List(DM), DM, DM, DM)
         """
         raise NotImplementedError
 
     def _create_variables_bound_vectors(self):
         """
-        Return two items: the vector of lower bounds and upperbounds
+        Return two items: the vector of lower bounds and upper bounds
         :rtype: (DM, DM)
         """
         raise NotImplementedError

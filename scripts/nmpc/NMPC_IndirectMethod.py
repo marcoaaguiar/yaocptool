@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
 Created on Thu Nov 17 14:45:29 2016
 
@@ -10,16 +12,15 @@ from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 
 from yaocptool.problems.cartpendulum import *
-from yaocptool.methods import DirectMethod, IndirectMethod, AugmentedLagrange
-from yaocptool import NMPCScheme
+from yaocptool.methods import IndirectMethod
+from yaocptool.nmpc import NMPCScheme
 from yaocptool import casadi
 
 cost = casadi.SX.sym('cost')
 plant = PendulumCart() 
 model = PendulumCart() 
 state_constraints = False
-state_constraints = False
-problem = UpwardPendulumStabilization(model,                                       
+problem = UpwardPendulumStabilization(model,
 #                                      state_constraints = True, 
 #                                      control_constraints = True,
                                       t_f =3.)
@@ -29,8 +30,8 @@ ocp_solver = IndirectMethod(problem, degree = 1, finite_elements = 40,
 
 dt = (problem.t_f - problem.t_0)/ocp_solver.finite_elements
 nmpc = NMPCScheme(plant, problem, ocp_solver, t_f = 10., dt = dt)
-X, U, T = nmpc.run()
-print 'Realized Objective: ', X[-1][4]
+X, U, T = nmpc.run
+print('Realized Objective: ', X[-1][4])
 
 #    
 nmpc.plot(X, U, [{'x':[0]},{'x':[2]},{'u':[0]}], T)

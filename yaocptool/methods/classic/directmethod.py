@@ -21,11 +21,10 @@ class DirectMethod(SolutionMethodsBase):
 
         self.solution_class = 'direct'
 
-        self.parametrized_control = False
         self.hasCostState = False
 
     def _parametrize_control(self):
-        u_pol = self.createControlApproximation()
+        u_pol = self.create_control_approximation()
 
         self.problem.replace_variable(self.model.u_sym, u_pol)
 
@@ -41,6 +40,7 @@ class DirectMethod(SolutionMethodsBase):
         return u_pol
 
     def prepare(self):
+        super(DirectMethod, self).prepare()
         self._parametrize_control()
         self._create_cost_state()
         # self.problem.makeFinalCostFunction()

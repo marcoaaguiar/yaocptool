@@ -30,7 +30,7 @@ class ToySystem(modelproblem.SystemModel):
 
         
         for (k, v) in kwargs.items():
-            exec( k + ' = ' + `v`)
+            exec(k + ' = ' + repr(v))
 #        m = 0.853
 #        M = 1
 #        l = 0.323

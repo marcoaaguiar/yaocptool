@@ -30,7 +30,7 @@ class Tank1(SystemModel):
         u = self.u_sym
         
         for (k, v) in kwargs.items():
-            exec( k + ' = ' + `v`)
+            exec(k + ' = ' + repr(v))
         
         h = x_sym[0]
         q_out = z_sym[0]
@@ -57,7 +57,7 @@ class Tank2(SystemModel):
         u = self.u_sym
         
         for (k, v) in kwargs.items():
-            exec( k + ' = ' + `v`)
+            exec(k + ' = ' + repr(v))
         
         h = x_sym
         q_out = u

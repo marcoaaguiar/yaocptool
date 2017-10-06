@@ -1,3 +1,6 @@
+from __future__ import print_function
+from __future__ import print_function
+from __future__ import print_function
 import multiprocessing
 import sys
 sys.path.append(r"C:\casadi-py27-np1.9.1-v3.1.1")
@@ -29,7 +32,7 @@ class Worker(multiprocessing.Process):
         self.queue_out = queue_out
 
     def run(self):
-        print 'Starting to run: %s' % self.name
+        print('Starting to run: %s' % self.name)
         self.obj = self.obj_class(self.obj_arg)
 
         while True:
@@ -57,16 +60,16 @@ if __name__ == '__main__':
         queue_in.put(j)
 
     # Wait all the 50 data to be processed
-    a = [queue_out.get() for i in xrange(par_range)]
+    a = [queue_out.get() for i in range(par_range)]
     dt1 = time.time()- t1
-    print 'parallel: ', dt1
+    print('parallel: ', dt1)
 
     # Same thing but in parallel
     # if False:
     if True:
         t2 = time.time()
         task = Task(i)
-        for k in xrange(par_range):
+        for k in range(par_range):
             task.call(k)
         dt2 = time.time() -t2
-        print 'serial: ', dt2
+        print('serial: ', dt2)

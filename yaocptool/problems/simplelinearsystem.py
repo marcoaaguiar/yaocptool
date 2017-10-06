@@ -9,14 +9,10 @@ import sys
 sys.path.append(r"C:\casadi-py27-np1.9.1-v3.0.0")
 sys.path.append(r"C:\coinhsl-win32-openblas-2014.01.10")
 #if not 'casadi' in sys.modules:
-from casadi import SX,DM, inf, repmat, vertcat, collocation_points, \
-                    substitute, cos, sin, pi, diag, horzcat, jacobian, hessian, \
-                    Function, vec
-import matplotlib.pyplot as plt
+from casadi import DM, vertcat, diag
 
-
-from yaocptool.modelling.model_classes import SystemModel, SuperModel
-from yaocptool.modelling.ocp import OptimalControlProblem, SuperOCP
+from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.ocp import OptimalControlProblem
 
 if __name__ == '__main__':
     from yaocptool.methods import DirectMethod
@@ -72,23 +68,23 @@ if __name__ == '__main__':
     
 #    indir_method = IndirectMethod.IndirectMethod(problem, degree = 1, finite_elements = 50, integrator_type = 'implicit')
 #    x_sol, u_sol, V_sol = indir_method.solve()
-#    x, u, t= indir_method.plotSimulate(x_sol, u_sol, [{'x':[0],'u':[0]},{'x':[2]}], 5)
+#    x, u, t= indir_method.plot_simulate(x_sol, u_sol, [{'x':[0],'u':[0]},{'x':[2]}], 5)
     
     dirm = DirectMethod(problem, degree = 5, degree_control = 5, finite_elements = 50, integrator_type = 'implicit')
     x_sol, u_sol, V_sol = dirm.solve()
-    x, y, u, t= dirm.plotSimulate(x_sol, u_sol, [{'x':[0],'u':[0]},{'x':[2]}], 5)
+    x, y, u, t= dirm.plot_simulate(x_sol, u_sol, [{'x':[0], 'u':[0]}, {'x':[2]}], 5)
 
 #    grad = GradientMethod.GradientMethod(problem, degree = 1, max_iter = 10, finite_elements = 50, integrator_type = 'implicit')
 #    x_sol, u_sol, V_sol = grad.solve()    
-#    x, u, t= grad.plotSimulate(x_sol, u_sol, [{'x':[0],'u':[0]},{'x':[1]}], 5)
+#    x, u, t= grad.plot_simulate(x_sol, u_sol, [{'x':[0],'u':[0]},{'x':[1]}], 5)
 ## it.:  9 cost:  0.682064
 
-#    aug = AugmentedLagrange.AugmentedLagrange(problem, IndirectMethod.IndirectMethod, \
+#    aug = AugmentedLagrange.AugmentedLagrangian(problem, IndirectMethod.IndirectMethod, \
 #        { 'integrator_type': 'explicit'},
 #            max_iter = 5, mu_0 = 1, finite_elements = 20, degree = 5)
 #    x_sol, u_sol, V_sol =aug.solve()
     
-#    x, u, t= aug.plotSimulate(x_sol, u_sol, [{'x':[2]},{'u':[1]}], 3, integrator_type = 'implicit')
+#    x, u, t= aug.plot_simulate(x_sol, u_sol, [{'x':[2]},{'u':[1]}], 3, integrator_type = 'implicit')
 
 #    print x_sol[1]
 #    a= aug.model.simulate(x_sol[0], t_0 = 0.0,t_f = 5./aug.finite_elements, integrator_type= 'implicit')['xf']

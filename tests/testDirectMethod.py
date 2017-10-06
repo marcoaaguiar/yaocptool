@@ -30,4 +30,4 @@ result = solution_method.solve()
 result.plot([{'x': [0]}, {'x': [2, 3]},
              {'u': [0]}
              ])
-# x, y, u, t= solution_method.plotSimulate(x_sol, u_sol, [{'x':[0]},{'x':[2,3]},{'u':[0]}], 5)
+# x, y, u, t= solution_method.plot_simulate(x_sol, u_sol, [{'x':[0]},{'x':[2,3]},{'u':[0]}], 5)

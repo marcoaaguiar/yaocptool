@@ -5,13 +5,11 @@ Created on Mon Apr 03 11:15:03 2017
 @author: marco
 """
 
-from yaocptool import config
-from casadi import SX, DM, inf, repmat, vertcat, collocation_points, \
-    substitute, Function, integrator, mtimes, vec, is_equal, SX, inf
-
 import copy
-from model_classes import SystemModel
 
+from casadi import DM, repmat, vertcat, substitute, mtimes, is_equal, SX, inf
+
+from yaocptool.modelling import SystemModel
 
 class OptimalControlProblem:
     def __init__(self, model, **kwargs):
@@ -43,6 +41,7 @@ class OptimalControlProblem:
 
         self.L = DM(0.)  # type: DM
         self.V = DM(0.)  # type: DM
+        self.H = DM(0.)
 
         self.eta = SX()
 
@@ -63,7 +62,7 @@ class OptimalControlProblem:
         self.x_0 = DM(self.x_0)
 
         # Treat Initialization
-        self._check_integrity(kwargs)
+        self.check_integrity()
 
     @property
     def N_h_final(self):
@@ -81,7 +80,7 @@ class OptimalControlProblem:
     def yz_min(self):
         return vertcat(self.y_min, self.z_min)
 
-    def _check_integrity(self, kwargs):
+    def check_integrity(self):
         # Check if Objective Function was provided
         if self.L.is_zero() and self.V.is_zero() and not self.NULL_OBJ:
             raise Exception('No objective')
@@ -97,14 +96,34 @@ class OptimalControlProblem:
         if not self.V.numel() == 1:
             raise Exception(
                 'Size of final cost (ocp.V) is different from 1, provided size is: {}'.format(self.L.numel()))
+        return True
 
-        if not 'x_0' in kwargs:
-            raise Exception('No initial condition for the states were provided')
+    def pre_solve_check(self):
+        self._fix_types()
+        self.check_integrity()
 
-        if not self.model.Nx == self.x_0.numel():
-            raise Exception(
-                'The size of the initial guess "self.x_0" is not equal to the number of states "model.Nx",'
-                + ' {} != {}'.format(self.x_0.numel(), self.model.Nx))
+        # Check if the initial condition has the same number of elements of the model
+        attributes = ['x_0', 'x_max', 'y_max', 'z_max', 'u_max', 'x_min', 'y_min', 'z_min', 'u_min']
+        attr_to_compare = ['Nx', 'Nx', 'Ny', 'Nz', 'Nu', 'Nx', 'Ny', 'Nz', 'Nu']
+        for i, attr in enumerate(attributes):
+            if not getattr(self, attr).numel() == getattr(self.model, attr_to_compare[i]):
+                raise Exception(
+                    'The size of the initial guess "self.{}" is not equal to the number of states "model.{}",'
+                    + ' {} != {}'.format(attr, attr_to_compare[i], self.x_0.numel(), self.model.Nx))
+        return True
+
+    def _fix_types(self):
+        self.x_max = vertcat(self.x_max)
+        self.y_max = vertcat(self.y_max)
+        self.z_max = vertcat(self.z_max)
+        self.u_max = vertcat(self.u_max)
+
+        self.x_min = vertcat(self.x_min)
+        self.y_min = vertcat(self.y_min)
+        self.z_min = vertcat(self.z_min)
+        self.u_min = vertcat(self.u_min)
+
+        self.x_0 = vertcat(self.x_0)
 
     def resetWorkingModel(self):
         self.model = copy.copy(self._model)
@@ -116,7 +135,7 @@ class OptimalControlProblem:
         else:
             x_min = -inf
 
-        self.includeState(x_c, self.L, x_0=0, x_min=x_min)
+        self.include_state(x_c, self.L, x_0=0, x_min=x_min)
         #        self.include_state(x_c, self.L, x_0 = 0)
         #        self.h_initial = vertcat(self.h_initial, x_c)
         self.model.x_c = x_c
@@ -182,7 +201,7 @@ class OptimalControlProblem:
             # INCLUDE VARIABLES
             # ==============================================================================
 
-    def includeState(self, var, ode, x_0=None, x_min=None, x_max=None, h_initial=None, x_0_sym=None, suppress=False):
+    def include_state(self, var, ode, x_0=None, x_min=None, x_max=None, h_initial=None, x_0_sym=None, suppress=False):
         if x_min is None:
             x_min = -DM.inf(var.numel())
         if x_max is None:
@@ -206,7 +225,7 @@ class OptimalControlProblem:
         self.x_min = vertcat(self.x_min, x_min)
         self.x_max = vertcat(self.x_max, x_max)
 
-    def includeAlgebraic(self, var, alg, y_min=None, y_max=None):
+    def include_algebraic(self, var, alg, y_min=None, y_max=None):
         if y_min is None:
             y_min = -DM.inf(var.numel())
         if y_max is None:
@@ -216,7 +235,7 @@ class OptimalControlProblem:
         self.y_min = vertcat(self.y_min, y_min)
         self.y_max = vertcat(self.y_max, y_max)
 
-    def includeControl(self, var, u_min=None, u_max=None):
+    def include_control(self, var, u_min=None, u_max=None):
         if u_min is None:
             u_min = -DM.inf(var.numel())
         if u_max is None:
@@ -226,7 +245,7 @@ class OptimalControlProblem:
         self.u_min = vertcat(self.u_min, u_min)
         self.u_max = vertcat(self.u_max, u_max)
 
-    def removeAlgebraic(self, var, eq=None):
+    def remove_algebraic(self, var, eq=None):
         to_remove = self.model.find_variables_indices_in_vector(var, self.model.y_sym)
         to_remove.reverse()
 
@@ -235,7 +254,7 @@ class OptimalControlProblem:
             self.y_min.remove([it], [])
         self.model.remove_algebraic(var, eq)
 
-    def removeExternalAlgebraic(self, var, eq=None):
+    def remove_external_algebraic(self, var, eq=None):
         to_remove = self.model.find_variables_indices_in_vector(var, self.model.z_sym)
         to_remove.reverse()
         for it in to_remove:
@@ -243,10 +262,10 @@ class OptimalControlProblem:
             self.z_min.remove([it], [])
         self.model.remove_external_algebraic(var, eq)
 
-    def removeConnectingEquations(self, var, eq):
+    def remove_connecting_equations(self, var, eq):
         self.model.remove_connecting_equations(var=var, eq=eq)
 
-    def removeControl(self, var):
+    def remove_control(self, var):
         to_remove = []
         for j in range(self.model.Nu):
             for i in range(var.numel()):

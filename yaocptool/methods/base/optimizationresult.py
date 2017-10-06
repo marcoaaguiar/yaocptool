@@ -1,6 +1,9 @@
+from collections import defaultdict
+
 import matplotlib.pyplot as plt
 from casadi import horzcat, DM
 from typing import List
+
 
 # TODO: Fix plot u data
 
@@ -33,6 +36,11 @@ class OptimizationResult:
         self.x_interpolation_data = {'values': [], 'time': []}
         self.y_interpolation_data = {'values': [], 'time': []}
         self.u_interpolation_data = {'values': [], 'time': []}
+        self.other_data = defaultdict(lambda: {'values': [], 'time': []})
+
+        self.x_0 = []
+        self.theta = {}
+        self.p = []
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -45,9 +53,11 @@ class OptimizationResult:
 
     @property
     def is_valid(self):
-        for attr in ['finite_elements', 'degree', 'degree_control', 't_0', 't_f', 'time_breakpoints']:
+        for attr in ['finite_elements', 'degree', 'degree_control', 't_0', 't_f']:
             if getattr(self, attr) < 0:
                 raise Exception('{} attribute {} is lower than 0'.format(self.__class__.__name__, attr))
+        if len(self.time_breakpoints) < 1:
+            raise Exception('{} attribute {} (list) is empty'.format(self.__class__.__name__, 'time_breakpoints'))
         for attr in ['objective']:
             if getattr(self, attr) is None:
                 raise Exception('{} attribute {} is None'.format(self.__class__.__name__, attr))
@@ -65,9 +75,9 @@ class OptimizationResult:
                 self._plot_breakpoints(plot_list)
 
     def _plot_breakpoints(self, plot_list):
-        x_values = horzcat(*[self.x_breakpoints_data['values'][i][0] for i in range(self.finite_elements+1)])
+        x_values = horzcat(*[self.x_breakpoints_data['values'][i][0] for i in range(self.finite_elements + 1)])
         y_values = horzcat(*[self.y_breakpoints_data['values'][i][0] for i in range(self.finite_elements)])
-        u_values = self.u_breakpoints_data['values']
+        u_values = horzcat(*[self.u_breakpoints_data['values'][i][0] for i in range(self.finite_elements)])
 
         t_x = self.x_breakpoints_data['time']
         t_y = self.y_breakpoints_data['time']
@@ -99,39 +109,45 @@ class OptimizationResult:
         y_values = self.y_interpolation_data['values']
         u_values = self.u_interpolation_data['values']
 
-        x_values = horzcat(*[horzcat(*x_values[i]) for i in range(self.finite_elements)])
-        y_values = horzcat(*[horzcat(*y_values[i]) for i in range(self.finite_elements)])
+        x_values = horzcat(*[horzcat(*x_values[l]) for l in range(self.finite_elements)])
+        y_values = horzcat(*[horzcat(*y_values[l]) for l in range(self.finite_elements)])
+        u_values = horzcat(*[horzcat(*u_values[l]) for l in range(self.finite_elements)])
 
         t_x = self.x_interpolation_data['time']
         t_y = self.y_interpolation_data['time']
         t_u = self.u_interpolation_data['time']
 
-        t_x = horzcat(*[horzcat(*t_x[i]) for i in range(self.finite_elements)])
-        t_y = horzcat(*[horzcat(*t_y[i]) for i in range(self.finite_elements)])
-        t_u = horzcat(*[horzcat(*t_u[i]) for i in range(self.finite_elements)])
+        t_x = horzcat(*[horzcat(*t_x[l]) for l in range(self.finite_elements)])
+        t_y = horzcat(*[horzcat(*t_y[l]) for l in range(self.finite_elements)])
+        t_u = horzcat(*[horzcat(*t_u[l]) for l in range(self.finite_elements)])
 
         for k, entry in enumerate(plot_list):
             fig = plt.figure()
 
             if 'x' in entry:
-                for i in entry['x']:
-                    plt.plot(t_x.T, x_values[i, :].T)
-                plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
+                for l in entry['x']:
+                    plt.plot(t_x.T, x_values[l, :].T)
+                plt.legend(['x[' + repr(l) + ']' for l in entry['x']])
 
             if 'y' in entry:
-                for i in entry['y']:
-                    plt.plot(t_y.T, y_values[i, :].T)
-                plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
+                for l in entry['y']:
+                    plt.plot(t_y.T, y_values[l, :].T)
+                plt.legend(['y[' + repr(l) + ']' for l in entry['y']])
 
             if 'u' in entry:
-                u_value_concat = horzcat(*[horzcat(*u_values[i]) for i in range(self.finite_elements)])
-
-                for i in entry['u']:
-                    plt.step(t_u.T, u_value_concat[i, :].T, where='post')
-                plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
-
+                for l in entry['u']:
+                    plt.step(t_u.T, u_values[l, :].T, where='post')
+                plt.legend(['u[' + repr(l) + ']' for l in entry['u']])
+            for key in set(entry.keys()).difference(['x', 'y', 'u']):
+                for l in entry[key]:
+                    entry_values = horzcat(
+                        *[horzcat(*self.other_data[key]['values'][i]) for i in range(self.finite_elements)])
+                    entry_time = horzcat(
+                        *[horzcat(*self.other_data[key]['times'][i]) for i in range(self.finite_elements)])
+                    plt.plot(entry_time.T, entry_values[l, :].T)
+                plt.legend([key + '[' + repr(l) + ']' for l in entry[key]])
             plt.grid()
             axes = fig.axes
             axes[0].ticklabel_format(useOffset=False)
-            k += 1
+
         plt.show()

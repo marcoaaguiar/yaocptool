@@ -3,7 +3,7 @@ from casadi import SX, MX, DM, vertcat, collocation_points, \
     vec, nlpsol, \
     Function, linspace, horzcat, dot, gradient, jacobian, mtimes, \
     reshape
-from typing import List
+from typing import List, Tuple
 from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 
 from yaocptool import config
@@ -37,6 +37,7 @@ class SolutionMethodsBase(object):
         # self.discretization_scheme = 'collocation'
         self.discretizer = None  # type: DiscretizationSchemeBase
         self.initial_condition_as_parameter = False
+        self.parametrized_control = False
         self.nlp_prob = {}
         self.nlp_call = {}
         self.nlpsol_opts = {}
@@ -66,12 +67,12 @@ class SolutionMethodsBase(object):
         return [self.delta_t * k for k in range(self.finite_elements + 1)]
 
     @property
-    def splitXandU(self):
-        return self.discretizer.splitXandU
+    def split_x_and_u(self):
+        return self.discretizer.split_x_and_u
 
     @property
-    def splitXYandU(self):
-        return self.discretizer.splitXYandU
+    def split_x_y_and_u(self):
+        return self.discretizer.split_x_y_and_u
 
     @staticmethod
     def collocation_points(degree, cp='radau', with_zero=False):
@@ -81,7 +82,7 @@ class SolutionMethodsBase(object):
         else:
             return collocation_points(degree, cp)  # All collocation time points
 
-    def createLagrangianPolynomialBasis(self, degree, starting_index=0, tau=None):
+    def create_lagrangian_polynomial_basis(self, degree, starting_index=0, tau=None):
         if tau is None:
             tau = self.model.tau_sym  # symbolic variable
 
@@ -91,15 +92,15 @@ class SolutionMethodsBase(object):
         # Construct Lagrange polynomials to get the polynomial basis at the collocation point
         l_list = []
         for j in range(starting_index, degree + 1):
-            L = 1
+            ell = 1
             for j2 in range(starting_index, degree + 1):
                 if j2 != j:
-                    L *= (tau - tau_root[j2]) / (tau_root[j] - tau_root[j2])
-            l_list.append(L)
+                    ell *= (tau - tau_root[j2]) / (tau_root[j] - tau_root[j2])
+            l_list.append(ell)
 
         return tau, l_list
 
-    def createVariablePolynomialApproximation(self, size, degree, name='var_appr', tau=None, point_at_t0=False):
+    def create_variable_polynomial_approximation(self, size, degree, name='var_appr', tau=None, point_at_t0=False):
         # type: (int, int, str, SX, bool) -> Tuple[DM, DM]
         if tau is None:
             tau = self.model.tau_sym  # Collocation point
@@ -111,42 +112,38 @@ class SolutionMethodsBase(object):
         else:
             if point_at_t0:
                 points = SX.sym(name, size, degree + 1)
-                tau, ell_list = self.createLagrangianPolynomialBasis(degree, 0, tau=tau)
+                tau, ell_list = self.create_lagrangian_polynomial_basis(degree, 0, tau=tau)
                 u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree + 1)])
             else:
                 points = SX.sym(name, size, degree)
-                tau, ell_list = self.createLagrangianPolynomialBasis(degree, 1, tau=tau)
+                tau, ell_list = self.create_lagrangian_polynomial_basis(degree, 1, tau=tau)
                 u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree)])
             par = vec(points)
 
         return u_pol, par
 
-    def createControlApproximation(self):
+    def create_control_approximation(self):
         degree = self.degree_control
         if not self.parametrized_control:
             if type(degree) == dict:
                 raise Exception('Not implemented')
             else:
-                u_pol, self.model.u_par = self.createVariablePolynomialApproximation(self.model.Nu, degree, 'u_ij')
-            self.u_pol = u_pol
+                u_pol, self.model.u_par = self.create_variable_polynomial_approximation(self.model.Nu, degree, 'u_ij')
             self.model.u_func = u_pol
-
         else:
-            u_pol = self.u_pol
+            u_pol = self.model.u_func
+
         return u_pol
 
     def _create_cost_state(self):
         if not self.hasCostState:
             self.problem.createCostState()
-
             self.hasCostState = True
 
-    def includeAdjointStates(self):
-        Nx_old = self.model.Nx
-        Ny_old = self.model.Nyz
+    def include_adjoint_states(self):
 
-        lamb = SX.sym('lamb', Nx_old)
-        nu = SX.sym('nu', Ny_old)
+        lamb = SX.sym('lamb', self.model.Nx)
+        nu = SX.sym('nu', self.model.Nyz)
 
         self.problem.eta = SX.sym('eta', self.problem.N_h_final)
 
@@ -155,31 +152,37 @@ class SolutionMethodsBase(object):
         ldot = -gradient(self.problem.H, self.model.x_sym)
         alg_eq = gradient(self.problem.H, self.model.yz_sym)
 
-        self.problem.includeState(lamb, ldot, suppress=True)
+        self.problem.include_state(lamb, ldot, suppress=True)
         self.model.hasAdjointVariables = True
 
-        self.problem.includeAlgebraic(nu, alg_eq)
+        self.problem.include_algebraic(nu, alg_eq)
 
         self.problem.h_final = vertcat(self.problem.h_final,
                                        self.model.lamb_sym - gradient(self.problem.V, self.model.x_sys_sym)
                                        - mtimes(jacobian(self.problem.h_final, self.model.x_sys_sym).T,
                                                 self.problem.eta))
 
-    def joinXandU(self, X, U):
-        V = []
+    def join_x_and_u(self, x, u):
+        v = []
         for k in range(self.finite_elements + 1):
-            V.append(X[k])
+            v.append(x[k])
             if k != self.finite_elements:
-                V.append(U[k])
-        return vertcat(*V)
+                v.append(u[k])
+        return vertcat(*v)
 
-    def unvec(self, vect, degree=None):
+    def unvec(self, vector, degree=None):
+        """
+        Unvectorize 'vector' a vectorized matrix, assuming that it was a matrix with 'degree' number of columns
+        :type vector: DM a vecotr (flattened matrix)
+        :type degree: int
+        """
         if degree is None:
             degree = self.degree
-        n_lines = vect.numel() / degree
-        return reshape(vect, n_lines, degree)
+        n_lines = vector.numel() / degree
+        return reshape(vector, n_lines, degree)
 
-    def joinThetas(self, *args):
+    @staticmethod
+    def join_thetas(*args):
         new_theta = {}
         all_keys = []
         for theta in args:
@@ -198,7 +201,7 @@ class SolutionMethodsBase(object):
 
         return new_theta
 
-    def createConstantTheta(self, constant=0, dimension=1, degree=None, finite_elements=None):
+    def create_constant_theta(self, constant=0, dimension=1, degree=None, finite_elements=None):
         if finite_elements is None:
             finite_elements = self.finite_elements
         if degree is None:
@@ -213,6 +216,9 @@ class SolutionMethodsBase(object):
     # ==============================================================================
     # SOLVE
     # ==============================================================================
+
+    def prepare(self):
+        self.problem.pre_solve_check()
 
     def get_solver(self, initial_condition_as_parameter=False):
         """
@@ -273,10 +279,13 @@ class SolutionMethodsBase(object):
                           lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
         return sol
 
-    def callSolver(self, initial_guess=None, p=[], theta=None, x_0=[]):
-        raise Exception('method changed to call_solver')
-
-    def solve_raw(self, initial_guess=None, p=[], theta={}, x_0=[]):
+    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None):
+        if p is None:
+            p = []
+        if theta is None:
+            theta = {}
+        if x_0 is None:
+            x_0 = []
         if not self.prepared:
             self.prepare()
             self.prepared = True
@@ -284,18 +293,37 @@ class SolutionMethodsBase(object):
         solution_dict = self.get_solver()(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0)
         return solution_dict
 
-    def solve(self, initial_guess=None, p=[], theta={}, x_0=[]):
+    def solve(self, initial_guess=None, p=None, theta=None, x_0=None):
         # type: (object, list, dict, list) -> OptimizationResult
+        if p is None:
+            p = []
+        if theta is None:
+            theta = {}
+        if x_0 is None:
+            x_0 = []
         raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0)
-        return self.create_optimization_result(raw_solution_dict)
+        return self.create_optimization_result(raw_solution_dict, p, theta, x_0=x_0)
 
-    def create_optimization_result(self, raw_solution_dict):
+    def create_optimization_result(self, raw_solution_dict, p=None, theta=None, x_0=None):
+        if x_0 is None:
+            x_0 = self.problem.x_0
+        if theta is None:
+            theta = {}
+        if p is None:
+            p = []
+
         optimization_result = OptimizationResult()
+
         # From the solution_method
         for attr in ['finite_elements', 'degree', 'degree_control', 'time_breakpoints', 'discretization_scheme']:
             attr_value = getattr(self, attr)
             setattr(optimization_result, attr, attr_value)
         optimization_result.method_name = self.__class__.__name__
+
+        # Initial condition, theta, and parameters used
+        optimization_result.x_0 = x_0
+        optimization_result.theta = theta
+        optimization_result.p = p
 
         # From the problem
         for attr in ['t_0', 't_f']:
@@ -311,7 +339,7 @@ class SolutionMethodsBase(object):
     # PLOT AND SIMULAT
     # ==============================================================================
 
-    def plot(self, X, Y, U, plot_list, t_states=None):
+    def plot(self, x, y, u, plot_list, t_states=None):
         if t_states is None:
             t_states = linspace(self.problem.t_0, self.problem.t_f, self.finite_elements + 1)
 
@@ -321,16 +349,16 @@ class SolutionMethodsBase(object):
             fig = plt.figure(k)
             if 'x' in entry:
                 for i in entry['x']:
-                    plt.plot(t_states, horzcat(*X)[i, :].T)
+                    plt.plot(t_states, horzcat(*x)[i, :].T)
                 plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
             if 'y' in entry:
                 for i in entry['y']:
-                    plt.plot(t_states[:len(U)], horzcat(*Y)[i, :].T)
+                    plt.plot(t_states[:len(u)], horzcat(*y)[i, :].T)
                 plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
 
             if 'u' in entry:
                 for i in entry['u']:
-                    plt.plot(t_states[:len(U)], horzcat(*U)[i, :].T)
+                    plt.plot(t_states[:len(u)], horzcat(*u)[i, :].T)
                 plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
             plt.grid()
             axes = fig.axes
@@ -339,9 +367,13 @@ class SolutionMethodsBase(object):
         # plt.ion()
         plt.show()
 
-    def simulate(self, X, U, sub_elements=5, t_0=None, t_f=None, p=[], theta={}, integrator_type='implicit',
+    def simulate(self, x, u, sub_elements=5, t_0=None, t_f=None, p=None, theta=None, integrator_type='implicit',
                  time_division='linear'):
-        finite_elements = len(X) - 1
+        if theta is None:
+            theta = {}
+        if p is None:
+            p = []
+        finite_elements = len(x) - 1
         if theta == {}:
             theta = dict([(i, []) for i in range(finite_elements)])
 
@@ -354,16 +386,16 @@ class SolutionMethodsBase(object):
         micro_t = [t_0]
 
         # Simualtion
-        micro_X = [X[0]]
-        micro_Y = []
-        micro_U = []
-        x_0 = X[0]
+        micro_x = [x[0]]
+        micro_y = []
+        micro_u = []
+        x_0 = x[0]
         for k in range(finite_elements):
             dae_sys = self.model.getDAESystem()
             self.model.convert_dae_sys_from_tau_to_time(dae_sys, t_list[k], t_list[k + 1])
             func_u = self.model.convertExprFromTauToTime(self.model.u_func, t_list[k], t_list[k + 1])
 
-            F_u = Function('f_u', [self.model.x_sym, self.model.yz_sym, self.model.t_sym,
+            f_u = Function('f_u', [self.model.x_sym, self.model.yz_sym, self.model.t_sym,
                                    self.model.p_sym, self.model.theta_sym,
                                    self.model.u_par], [func_u])
 
@@ -371,33 +403,35 @@ class SolutionMethodsBase(object):
                 micro_t_k = list(linspace(t_list[k], t_list[k + 1], sub_elements + 1).full())
             else:
                 tau_list = self.collocation_points(sub_elements, with_zero=True)
-                dt = t_list[k + 1] - t_list[k]
-                mapping = lambda tau: (t_list[k] + tau * dt)
-                micro_t_k = map(mapping, tau_list)
+                micro_t_k = [self.time_breakpoints[k] + self.delta_t*tau_list[j] for j in range(self.degree)]
             micro_t += micro_t_k[1:]
-            par = vertcat(p, theta[k], U[k])
+            par = vertcat(p, theta[k], u[k])
             x_f, y_f = self.model.simulateInterval(x_0, t_list[k], t_list[k + 1], micro_t_k[1:], p=par, dae_sys=dae_sys,
                                                    integrator_type=integrator_type)
-            micro_X.extend(x_f)
-            micro_Y.extend(y_f)
+            micro_x.extend(x_f)
+            micro_y.extend(y_f)
             #            x_f.insert(0,x_0)
             for j in range(sub_elements):
-                micro_U.append(F_u(x_f[j], y_f[j], float(micro_t_k[j + 1]), p, theta[k], U[k]))
+                micro_u.append(f_u(x_f[j], y_f[j], float(micro_t_k[j + 1]), p, theta[k], u[k]))
 
             x_0 = x_f[-1]
 
-        return micro_X, micro_Y, micro_U, micro_t
+        return micro_x, micro_y, micro_u, micro_t
 
-    def plotSimulate(self, X, U, plot_list, sub_elements=5, p=[], theta={}, integrator_type=None,
-                     time_division='linear'):
+    def plot_simulate(self, x, u, plot_list, sub_elements=5, p=None, theta=None, integrator_type=None,
+                      time_division='linear'):
+        if p is None:
+            p = []
+        if theta is None:
+            theta = {}
         if integrator_type is None:
             integrator_type = self.integrator_type
-        micro_X, micro_Y, micro_U, micro_t = self.simulate(X, U, sub_elements=sub_elements,
+        micro_x, micro_y, micro_u, micro_t = self.simulate(x, u, sub_elements=sub_elements,
                                                            t_0=None, t_f=None, p=p, theta=theta,
                                                            integrator_type=integrator_type,
                                                            time_division=time_division)
-        self.plot(micro_X, micro_Y, micro_U, plot_list, t_states=micro_t)
-        return micro_X, micro_Y, micro_U, micro_t
+        self.plot(micro_x, micro_y, micro_u, plot_list, t_states=micro_t)
+        return micro_x, micro_y, micro_u, micro_t
 
-    def stepForward(self):
+    def step_forward(self):
         pass

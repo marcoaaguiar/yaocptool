@@ -122,12 +122,12 @@ if __name__ == '__main__':
     
 #    dir_method = DirectMethod.DirectMethod(problem, degree = 1, finite_elements = 300, integrator_type = 'explicit')
 #    x_sol, u_sol, V_sol = dir_method.solve()
-#    x, u, t= dir_method.plotSimulate(x_sol, u_sol, [{'x':[2,4]},{'u':[0]}], 1)
+#    x, u, t= dir_method.plot_simulate(x_sol, u_sol, [{'x':[2,4]},{'u':[0]}], 1)
 
 #    indir = IndirectMethod.IndirectMethod(problem, degree = 1, finite_elements = 80, integrator_type = 'implicit')
 #    x_sol, u_sol, V_sol = indir.solve()
-#    x, u, t= indir.plotSimulate(x_sol, u_sol, [{'x':[2,4]},{'u':[0]}], 1)
+#    x, u, t= indir.plot_simulate(x_sol, u_sol, [{'x':[2,4]},{'u':[0]}], 1)
 
     grad = GradientMethod.GradientMethod(problem, degree = 1, max_iter =5, finite_elements = 40, integrator_type = 'implicit')
     x_sol, u_sol, V_sol = grad.solve()
-    x, u, t= grad.plotSimulate(x_sol, u_sol, [{'x':[0]},{'x':[1,2,3]},{'u':[0]}], 10)
+    x, u, t= grad.plot_simulate(x_sol, u_sol, [{'x':[0]}, {'x':[1, 2, 3]}, {'u':[0]}], 10)

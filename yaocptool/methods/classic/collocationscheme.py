@@ -5,8 +5,10 @@ Created on Thu Jul 13 17:08:34 2017
 @author: marco
 """
 from collections import defaultdict
+# noinspection PyUnresolvedReferences
 from typing import List, Dict
 from casadi import DM, MX, repmat, vertcat, Function, jacobian
+from itertools import chain
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
@@ -31,7 +33,7 @@ class CollocationScheme(DiscretizationSchemeBase):
                                                                                                  with_zero=False)
         return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
 
-    def number_of_variables(self):
+    def _number_of_variables(self):
         return self.model.Nx * self.finite_elements * (self.degree + 1) \
                + self.model.Nyz * self.finite_elements * self.degree \
                + self.model.Nu * self.finite_elements * self.degree_control \
@@ -95,16 +97,16 @@ class CollocationScheme(DiscretizationSchemeBase):
             u_k = []
             for n in range(self.degree_control):
                 u_k.append(MX.sym('u_' + repr(k) + '_' + repr(n), self.model.Nu))
-            u.append(vertcat(*u_k))
+            u.append(u_k)
 
-        v_x = vertcat(*[vertcat(*x_k) for x_k in x])
-        v_y = vertcat(*[vertcat(*yz_k) for yz_k in y])
-        v_u = vertcat(*u)
+        v_x = self.vectorize(x)
+        v_y = self.vectorize(y)
+        v_u = self.vectorize(u)
         v = vertcat(v_x, v_y, v_u, eta)
 
         return v, x, y, u, eta
 
-    def splitXYandU(self, results_vector, all_subinterval=False):
+    def split_x_y_and_u(self, results_vector, all_subinterval=False):
         """
         :param all_subinterval: Bool 'Returns all elements of the subinterval (or only the first one)'
         :param results_vector: DM
@@ -140,8 +142,10 @@ class CollocationScheme(DiscretizationSchemeBase):
                 y.append(y_k[0])
 
         for k in range(self.finite_elements):
-            u_k = results_vector[v_offset:v_offset + self.model.Nu * self.degree_control]
-            v_offset += self.model.Nu * self.degree_control
+            u_k = []
+            for i in range(self.degree_control):
+                u_k.append(results_vector[v_offset:v_offset + self.model.Nu])
+                v_offset += self.model.Nu
             u.append(u_k)
         assert v_offset == results_vector.numel()
 
@@ -165,9 +169,9 @@ class CollocationScheme(DiscretizationSchemeBase):
         time_dict = self._create_time_dict_for_collocation()
 
         ###
-        x_pol, x_par = self.solution_method.createVariablePolynomialApproximation(self.model.Nx, self.degree,
-                                                                                  name='col_x_approx',
-                                                                                  point_at_t0=True)
+        x_pol, x_par = self.solution_method.create_variable_polynomial_approximation(self.model.Nx, self.degree,
+                                                                                     name='col_x_approx',
+                                                                                     point_at_t0=True)
 
         func_d_x_pol_d_tau = Function('f_dL_list', [self.model.tau_sym, x_par],
                                       [jacobian(x_pol, self.model.tau_sym)])
@@ -207,7 +211,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             # Enforce the the derivative of the polynomial to be equal ODE at t
             for col_point in range(1, self.degree + 1):
                 constraint_list.append(
-                    func_d_x_pol_d_tau(tau_list[col_point], vertcat(*x_var[el])) - dt * results[el]['ode'][col_point])
+                    func_d_x_pol_d_tau(tau_list[col_point], self.vectorize(x_var[el])) - dt * results[el]['ode'][col_point])
 
             for col_point in range(self.degree):
                 constraint_list.append(results[el]['alg'][col_point])
@@ -243,7 +247,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         """
         :param x: List[List[MX]]
         :param y: List[List[MX]]
-        :param u: List[MX]
+        :param u: List[List[MX]]
         :type time_dict: Dict(int, List(float)) Dictionary of simulations times, where the KEY is the
                                                 finite_element and the VALUE list a list of desired times
                                                 example : {1:{'t_0': 0.0, 'x':[0.0, 0.1, 0.2], y:[0.2]}}
@@ -278,22 +282,22 @@ class CollocationScheme(DiscretizationSchemeBase):
                 f_u = Function('f_u_pol', list(self.model.all_sym), [u_func])
 
             # Create function for obtaining x at an given time
-            x_pol, x_par = self.solution_method.createVariablePolynomialApproximation(self.model.Nx, self.degree,
-                                                                                      name='col_x_approx',
-                                                                                      point_at_t0=True)
+            x_pol, x_par = self.solution_method.create_variable_polynomial_approximation(self.model.Nx, self.degree,
+                                                                                         name='col_x_approx',
+                                                                                         point_at_t0=True)
             x_pol = self.model.convertExprFromTauToTime(x_pol, t_k=t_0, t_kp1=t_f)
             f_x = Function('f_x_pol', [self.model.t_sym, x_par], [x_pol])
 
             # Create function for obtaining y at an given time
-            y_pol, y_par = self.solution_method.createVariablePolynomialApproximation(self.model.Nyz, self.degree,
-                                                                                      name='col_y_approx',
-                                                                                      point_at_t0=False)
+            y_pol, y_par = self.solution_method.create_variable_polynomial_approximation(self.model.Nyz, self.degree,
+                                                                                         name='col_y_approx',
+                                                                                         point_at_t0=False)
             y_pol = self.model.convertExprFromTauToTime(y_pol, t_k=t_0, t_kp1=t_f)
             f_y = Function('f_y_pol', [self.model.t_sym, y_par], [y_pol])
 
             # Find the times that need to be evaluated
             element_breakpoints = set()
-            for key in ['x', 'y', 'u'] + functions.keys():
+            for key in chain(['x', 'y', 'u'],functions.keys()):
                 if key in time_dict[el]:
                     element_breakpoints = element_breakpoints.union(time_dict[el][key])
 
@@ -302,27 +306,29 @@ class CollocationScheme(DiscretizationSchemeBase):
 
             # Iterate with the times in the finite element
             for t in element_breakpoints:
-                x_t = f_x(t, vertcat(*x[el]))
-                yz_t = f_y(t, vertcat(*y[el]))
+                x_t = f_x(t, self.vectorize(x[el]))
+                yz_t = f_y(t, self.vectorize(y[el]))
                 y_t, z_t = self.model.slice_yz_to_y_and_z(yz_t)
+
+                if self.solution_method.solution_class == 'direct':
+                    u_t = f_u(t, self.vectorize(u[el]))
+                else:
+                    u_t = f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, z=z_t, p=p,
+                                                                       theta=theta[el],
+                                                                       u_par=self.vectorize(u[el])))
 
                 if 'x' in time_dict[el] and t in time_dict[el]['x']:
                     results[el]['x'].append(x_t)
                 if 'y' in time_dict and t in time_dict[el]['y']:
                     results[el]['y'].append(yz_t)
                 if 'u' in time_dict and t in time_dict[el]['u']:
-                    if self.solution_method.solution_class == 'direct':
-                        results[el]['u'].append(f_u(t, u[el]))
-                    else:
-                        results[el]['u'].append(
-                            f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, z=z_t, p=p,
-                                                                         theta=theta[el],
-                                                                         u_par=u[el])))
+                    results[el]['u'].append(u_t)
+
                 for f_name in functions:
                     if t in time_dict[el][f_name]:
                         f = functions[f_name][el]
                         val = f(*self.model.put_values_in_all_sym_format(t=t, x=x_t, y=y_t, z=z_t, p=p, theta=theta[el],
-                                                                         u_par=u[el]))
+                                                                         u_par=self.vectorize(u[el])))
                         results[el][f_name].append(val)
         return results
 
@@ -341,12 +347,12 @@ class CollocationScheme(DiscretizationSchemeBase):
         return time_dict
 
     def create_initial_guess(self):
-        x_init  = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
-        y_init =  DM.zeros(self.model.Nyz * self.degree * self.finite_elements, 1)
+        x_init = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
+        y_init = DM.zeros(self.model.Nyz * self.degree * self.finite_elements, 1)
         u_init = DM.zeros(self.model.Nu * self.degree_control * self.finite_elements, 1)
         eta_init = DM.zeros(self.problem.N_eta, 1)
 
-        base_x0 = vertcat(x_init,  y_init, u_init, eta_init)
+        base_x0 = vertcat(x_init, y_init, u_init, eta_init)
         return base_x0
 
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
@@ -360,10 +366,10 @@ class CollocationScheme(DiscretizationSchemeBase):
         optimization_result.raw_decision_variables = raw_solution_dict['x']
 
         raw_data = raw_solution_dict['x']
-        x_breakpoints_values, y_breakpoints_values, u_breakpoints_values = self.splitXYandU(raw_data,
-                                                                                            all_subinterval=False)
-        x_interpolation_values, y_interpolation_values, u_interpolation_values = self.splitXYandU(raw_data,
-                                                                                                  all_subinterval=True)
+        x_breakpoints_values, y_breakpoints_values, u_breakpoints_values = self.split_x_y_and_u(raw_data,
+                                                                                                all_subinterval=False)
+        x_interpolation_values, y_interpolation_values, u_interpolation_values = self.split_x_y_and_u(raw_data,
+                                                                                                      all_subinterval=True)
 
         optimization_result.objective = raw_solution_dict['f']
         optimization_result.constraint_values = raw_solution_dict['g']

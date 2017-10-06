@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
 Created on Fri Jul 07 16:43:42 2017
 
@@ -97,10 +99,10 @@ def create_CSTR_OCP():
     x_0 = vertcat([c_A_init, c_B_init, theta_init, theta_K_init])
     x_ref = vertcat([2.14, 1., 110., 105])
     problem = OptimalControlProblem(model, obj={'Q': diag([.1, 10, 1e-3, 1e-3]),
-                                                'R': diag([1/3000, 1/2.5]),
+                                                'R': diag([1/2.5, 1/9000.]),
                                                 # 'Qv':diag([0.1, 1, 0, 0]),
                                                 'x_ref': x_ref}, x_0=x_0,
-                                    t_f=500./3600, positive_objective = True)
+                                    t_f=1200./3600, positive_objective = True)
     problem.u_ref = u_ref
     print(problem.t_f)
     ### Constraints
@@ -126,5 +128,5 @@ def create_CSTR_OCP():
     problem.u_min[1] = -9000.
     problem.u_max[1] = 0.
 
-    print problem.u_max, problem.u_min
+    print(problem.u_max, problem.u_min)
     return problem

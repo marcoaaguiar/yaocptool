@@ -18,7 +18,7 @@ ode = [-x + u]
 model.include_system_equations(ode=ode)
 
 # Print model information
-print model
+print(model)
 ```
 
 ### Creating a Optimal Control Problem (OCP)
