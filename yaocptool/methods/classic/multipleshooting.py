@@ -20,7 +20,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
     def _create_variables_bound_vectors(self):
         """
-        Return two items: the vector of lower bounds and upperbounds
+        Return two items: the vector of lower bounds and upper bounds
         :rtype: (DM, DM)
         """
         vars_lb = []

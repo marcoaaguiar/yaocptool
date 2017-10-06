@@ -2,7 +2,7 @@ from __future__ import print_function
 import unittest
 
 from casadi import DM, mtimes, inf
-from yaocptool.methods import DirectMethod
+from yaocptool.methods import DirectMethod, IndirectMethod
 from yaocptool.modelling.model_classes import SystemModel
 from yaocptool.modelling.ocp import OptimalControlProblem
 
@@ -15,6 +15,7 @@ def _create_model_and_problem():
 
     problem = OptimalControlProblem(model, obj={'Q': DM.ones(2, 2), 'R': DM.ones(2, 2)}, x_0=[1, 1])
     return model, problem
+
 
 class MIMO2x2TestCase(unittest.TestCase):
     @property
@@ -66,10 +67,10 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        finite_elements=20,
                                        integrator_type='explicit',
                                        discretization_scheme='multiple-shooting',
-                                       nlpsol_opts = self.nlpsol_opts
+                                       nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        self.assertAlmostEqual(result.objective, self.obj_value, delta =  self.obj_tol)
+        self.assertAlmostEqual(result.objective, self.obj_value, delta=self.obj_tol)
 
     def test_direct_multiple_shooting_implicit_pw_cont_control(self):
         model, problem = self._create_model_and_problem()
@@ -77,10 +78,10 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        finite_elements=20,
                                        integrator_type='implicit',
                                        discretization_scheme='multiple-shooting',
-                                       nlpsol_opts = self.nlpsol_opts
+                                       nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        self.assertAlmostEqual(result.objective, self.obj_value, delta =  self.obj_tol)
+        self.assertAlmostEqual(result.objective, self.obj_value, delta=self.obj_tol)
 
     def test_direct_multiple_shooting_explicit_polynomial_control(self):
         model, problem = self._create_model_and_problem()
@@ -88,33 +89,34 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        finite_elements=20,
                                        integrator_type='explicit',
                                        discretization_scheme='multiple-shooting',
-                                       nlpsol_opts = self.nlpsol_opts
+                                       nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        self.assertAlmostEqual(result.objective, self.obj_value, delta =  self.obj_tol)
+        self.assertAlmostEqual(result.objective, self.obj_value, delta=self.obj_tol)
 
     def test_direct_multiple_shooting_implicit_polynomial_control(self):
         model, problem = self._create_model_and_problem()
         solution_method = DirectMethod(problem, degree=3, degree_control=3,
                                        finite_elements=20,
-                                       integrator_type='explicit',
+                                       integrator_type='implicit',
                                        discretization_scheme='multiple-shooting',
-                                       nlpsol_opts = self.nlpsol_opts
+                                       nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        self.assertAlmostEqual(result.objective, self.obj_value, delta =  self.obj_tol)
+        self.assertAlmostEqual(result.objective, self.obj_value, delta=self.obj_tol)
+
     # endregion
 
-    # region COLLOCAITON METHOD
+    # region DIRECT COLLOCAITON METHOD
     def test_direct_collocation_polynomial_control(self):
         model, problem = self._create_model_and_problem()
         solution_method = DirectMethod(problem, degree=3, degree_control=3,
                                        finite_elements=20,
                                        discretization_scheme='collocation',
-                                       nlpsol_opts = self.nlpsol_opts
+                                       nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        self.assertAlmostEqual(result.objective, self.obj_value, delta =  self.obj_tol)
+        self.assertAlmostEqual(result.objective, self.obj_value, delta=self.obj_tol)
 
     def test_direct_collocation_pw_cont_control(self):
         model, problem = self._create_model_and_problem()
@@ -122,14 +124,46 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        finite_elements=20,
                                        integrator_type='explicit',
                                        discretization_scheme='collocation',
-                                       nlpsol_opts = self.nlpsol_opts
+                                       nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
         print(result.objective)
-        self.assertAlmostEqual(result.objective, self.obj_value, delta = self.obj_tol)
-        return
+        self.assertAlmostEqual(result.objective, self.obj_value, delta=self.obj_tol)
 
     # endregion
+    # region INIDRECT METHOD
+    def test_indirect_multiple_collocation(self):
+        model, problem = self._create_model_and_problem()
+        solution_method = IndirectMethod(problem, degree=3, degree_control=3,
+                                         finite_elements=20,
+                                         discretization_scheme='collocation',
+                                         nlpsol_opts=self.nlpsol_opts
+                                         )
+        result = solution_method.solve()
+        self.assertAlmostEqual(result.objective, 0, delta=self.obj_tol)
+
+    def test_indirect_multiple_shooting_implicit(self):
+        model, problem = self._create_model_and_problem()
+        solution_method = IndirectMethod(problem, degree=3, degree_control=3,
+                                         finite_elements=20,
+                                         integrator_type='implicit',
+                                         discretization_scheme='multiple-shooting',
+                                         nlpsol_opts=self.nlpsol_opts
+                                         )
+        result = solution_method.solve()
+        self.assertAlmostEqual(result.objective, 0, delta=self.obj_tol)
+
+    def test_indirect_multiple_shooting_explicit(self):
+        model, problem = self._create_model_and_problem()
+        solution_method = IndirectMethod(problem, degree=3, degree_control=3,
+                                         finite_elements=20,
+                                         integrator_type='explicit',
+                                         discretization_scheme='multiple-shooting',
+                                         nlpsol_opts=self.nlpsol_opts
+                                         )
+        result = solution_method.solve()
+        self.assertAlmostEqual(result.objective, 0, delta=self.obj_tol)
+        # endregion
 
 
 if __name__ == '__main__':

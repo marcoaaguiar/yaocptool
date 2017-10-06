@@ -200,10 +200,10 @@ class SystemModel:
         self.con = vertcat(self.con, con)
 
     def include_state(self, var, ode, x_0_sym=None):
-        delta_Nx = var.numel()
+        delta_n_x = var.numel()
         self.x_sym = vertcat(self.x_sym, var)
         if x_0_sym is None:
-            x_0_sym = SX.sym('x_0_sym', delta_Nx)
+            x_0_sym = SX.sym('x_0_sym', delta_n_x)
         self.x_0_sym = vertcat(self.x_0_sym, x_0_sym)
 
         self.ode = vertcat(self.ode, ode)
@@ -365,7 +365,7 @@ class SystemModel:
         dae = self.getDAESystem()
 
         opts = {'tf': t_f, 't0': t_0}  # final time
-        F = self.createIntegrator(dae, opts, integrator_type)
+        F = self.create_integrator(dae, opts, integrator_type)
         call = {'x0': x_0, 'p': p}
 
         return F(**call)['xf']
@@ -375,19 +375,19 @@ class SystemModel:
             dae_sys = self.getDAESystem()
 
         opts = {'tf': float(t_f), 't0': float(t_0)}  # final time
-        F = self.createIntegrator(dae_sys, opts, integrator_type)
+        F = self.create_integrator(dae_sys, opts, integrator_type)
         args = {'x0': x_0, 'p': p}
 
         return F(**args)
 
-    def simulateInterval(self, x_0, t_0, t_f, t_grid, p=None, dae_sys=None, integrator_type='implicit'):
+    def simulate_interval(self, x_0, t_0, t_grid, p=None, dae_sys=None, integrator_type='implicit'):
         if dae_sys is None:
             dae_sys = self.getDAESystem()
         X = []
         Y = []
         for t in t_grid:
             opts = {'tf': float(t), 't0': float(t_0)}  # final time
-            F = self.createIntegrator(dae_sys, opts, integrator_type)
+            F = self.create_integrator(dae_sys, opts, integrator_type)
             call = {'x0': x_0, 'p': p}
 
             if p is not None:
@@ -398,7 +398,7 @@ class SystemModel:
             Y.append(res['zf'])
         return X, Y
 
-    def createIntegrator(self, dae_sys, options, integrator_type='implicit'):
+    def create_integrator(self, dae_sys, options, integrator_type='implicit'):
         for k in config.INTEGRATOR_OPTIONS:
             options[k] = config.INTEGRATOR_OPTIONS[k]
 
@@ -409,14 +409,19 @@ class SystemModel:
                 I = integrator("I", "idas", dae_sys, options)
         else:
             if self.system_type == 'ode':
-                I = self.createExplicitIntegrator('explicitIntegrator', 'rk4', dae_sys, options)
+                I = self.create_explicit_integrator('explicitIntegrator', 'rk4', dae_sys, options)
             else:
                 raise Exception('explicit integrator not implemented')
         return I
 
-    def createExplicitIntegrator(self, name, integrator_type, dae_sys, options=None):
+    def create_explicit_integrator(self, name, integrator_type, dae_sys, options=None):
+        default_options = {'t0': 0, 'tf': 1, 'iterations': 4}
         if options is None:
-            options = {'t0': 0, 'tf': 1}
+            options = default_options
+        for k in default_options:
+            if k not in options:
+                options[k] = default_options[k]
+
         if 'alg' in dae_sys:
             raise Exception('Explicit integrator not implemented for DAE systems')
         f_in = [dae_sys['t'], dae_sys['x']]
@@ -424,23 +429,24 @@ class SystemModel:
             f_in.append(dae_sys['p'])
         else:
             f_in.append(SX.sym('fake_p'))
-        f = Function('f_ode', f_in, [dae_sys['ode']])
+        f = Function(name, f_in, [dae_sys['ode']])
 
         t_0 = options['t0']
         t_f = options['tf']
-
-        N_states = dae_sys['x'].numel()
+        iterations = options['iterations']
+        n_states = dae_sys['x'].numel()
         if integrator_type == 'rk4':
-            def RungeKutta4thOrder(x0=DM.zeros(N_states, 1), p=None, iterations=4):
-                if iterations<1:
-                    raise Exception("The given number of Runge Kutta iterations is less than one, given {}".format(iterations))
+            def runge_kutta_4th_order(x0=DM.zeros(n_states, 1), p=None, iter=iterations):
+                if iter < 1:
+                    raise Exception(
+                        "The given number of Runge Kutta iterations is less than one, given {}".format(iter))
                 if p is None:
                     p = []
 
                 x_f = x0
-                h = (t_f - t_0) / iterations
+                h = (t_f - t_0) / iter
                 t = t_0
-                for it in range(iterations):
+                for it in range(iter):
                     k1 = h * f(t, x0, p)
                     k2 = h * f(t + 0.5 * h, x0 + 0.5 * k1, p)
                     k3 = h * f(t + 0.5 * h, x0 + 0.5 * k2, p)
@@ -451,7 +457,7 @@ class SystemModel:
                     t += h
                 return {'xf': x_f, 'zf': []}
 
-            return RungeKutta4thOrder
+            return runge_kutta_4th_order
 
     # endregion
 

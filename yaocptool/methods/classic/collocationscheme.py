@@ -211,7 +211,8 @@ class CollocationScheme(DiscretizationSchemeBase):
             # Enforce the the derivative of the polynomial to be equal ODE at t
             for col_point in range(1, self.degree + 1):
                 constraint_list.append(
-                    func_d_x_pol_d_tau(tau_list[col_point], self.vectorize(x_var[el])) - dt * results[el]['ode'][col_point])
+                    func_d_x_pol_d_tau(tau_list[col_point],
+                                       self.vectorize(x_var[el])) - dt * results[el]['ode'][col_point])
 
             for col_point in range(self.degree):
                 constraint_list.append(results[el]['alg'][col_point])
@@ -297,7 +298,7 @@ class CollocationScheme(DiscretizationSchemeBase):
 
             # Find the times that need to be evaluated
             element_breakpoints = set()
-            for key in chain(['x', 'y', 'u'],functions.keys()):
+            for key in chain(['x', 'y', 'u'], functions.keys()):
                 if key in time_dict[el]:
                     element_breakpoints = element_breakpoints.union(time_dict[el][key])
 
@@ -368,8 +369,8 @@ class CollocationScheme(DiscretizationSchemeBase):
         raw_data = raw_solution_dict['x']
         x_breakpoints_values, y_breakpoints_values, u_breakpoints_values = self.split_x_y_and_u(raw_data,
                                                                                                 all_subinterval=False)
-        x_interpolation_values, y_interpolation_values, u_interpolation_values = self.split_x_y_and_u(raw_data,
-                                                                                                      all_subinterval=True)
+        x_interpolation_values, y_interpolation_values, u_interpolation_values \
+            = self.split_x_y_and_u(raw_data, all_subinterval=True)
 
         optimization_result.objective = raw_solution_dict['f']
         optimization_result.constraint_values = raw_solution_dict['g']

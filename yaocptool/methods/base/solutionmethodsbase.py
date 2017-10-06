@@ -406,8 +406,8 @@ class SolutionMethodsBase(object):
                 micro_t_k = [self.time_breakpoints[k] + self.delta_t*tau_list[j] for j in range(self.degree)]
             micro_t += micro_t_k[1:]
             par = vertcat(p, theta[k], u[k])
-            x_f, y_f = self.model.simulateInterval(x_0, t_list[k], t_list[k + 1], micro_t_k[1:], p=par, dae_sys=dae_sys,
-                                                   integrator_type=integrator_type)
+            x_f, y_f = self.model.simulate_interval(x_0, t_list[k], micro_t_k[1:], p=par, dae_sys=dae_sys,
+                                                    integrator_type=integrator_type)
             micro_x.extend(x_f)
             micro_y.extend(y_f)
             #            x_f.insert(0,x_0)

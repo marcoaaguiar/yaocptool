@@ -8,6 +8,7 @@ from casadi import substitute
 
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
+
 class DirectMethod(SolutionMethodsBase):
     def __init__(self, problem, **kwargs):
         """
