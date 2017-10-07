@@ -23,7 +23,7 @@ class Tank1(SystemModel):
     def __init__(self, **kwargs):
         
         self.name = 'tank1'        
-        SystemModel.__init__(self, Nx =1, Ny= 0, Nz =1, Nu=1)
+        SystemModel.__init__(self, n_x=1, n_y= 0, n_z=1, n_u=1)
         
         x_sym = self.x_sym
         z_sym = self.z_sym
@@ -49,8 +49,8 @@ class Tank2(SystemModel):
     def __init__(self, **kwargs):
         self.name = 'tank2'
         
-        SystemModel.__init__(self, Nx =1, Ny= 0, Nz =1, Nu=1)
-#        SystemModel.__init__(self, Nx =1, Ny= 0, Nz =1, Nu=0)
+        SystemModel.__init__(self, n_x=1, n_y= 0, n_z=1, n_u=1)
+#        SystemModel.__init__(self, n_x =1, n_y= 0, n_z =1, n_u=0)
         
         x_sym = self.x_sym
         z_sym = self.z_sym

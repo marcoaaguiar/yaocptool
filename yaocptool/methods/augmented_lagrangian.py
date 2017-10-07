@@ -71,13 +71,13 @@ class AugmentedLagrangian(SolutionMethodsBase):
         self.mu = self.mu_0
 
         # RELAXATION
-        if self.model.Ny > 0 and self.relax_algebraic:
+        if self.model.n_y > 0 and self.relax_algebraic:
             self._relax_algebraic_equations()
 
-        if self.model.Nyz > 0 and self.relax_connecting_equations:
+        if self.model.n_yz > 0 and self.relax_connecting_equations:
             self._relax_connecting_equations()
 
-        if self.model.Nz > 0 and self.relax_external_algebraic:
+        if self.model.n_z > 0 and self.relax_external_algebraic:
             self._relax_external_algebraic_equations()
 
         if self.relax_state_bounds:
@@ -181,7 +181,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         self.problem.remove_connecting_equations(var=self.model.con_z, eq=self.model.con)
 
     def _relax_states_constraints(self):
-        for i in range(self.model.Nx):
+        for i in range(self.model.n_x):
             if self.problem.x_max[i] != inf or self.problem.x_min[i] != -inf:
                 y_x = SX.sym('y_x_' + str(i))
                 nu_y_x = SX.sym('nu_y_x_' + str(i))
@@ -231,7 +231,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
     def _create_nu_update_func(self):
         v, x_var, y_var, u_var, eta = self.ocp_solver.discretizer.create_nlp_symbolic_variables()
-        par = MX.sym('par', self.model.Np)
+        par = MX.sym('par', self.model.n_p)
         theta = dict([(i, vec(MX.sym('theta_' + repr(i), self.Nr, self.degree))) for i in range(self.finite_elements)])
         theta_var = vertcat(*theta.values())
 
@@ -249,10 +249,10 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
         functions = defaultdict(dict)
         for el in range(self.finite_elements):
-            func_rel_alg = self.model.convertExprFromTauToTime(self.relaxed_alg, self.time_breakpoints[el],
-                                                               self.time_breakpoints[el + 1])
-            nu_time_dependent = self.model.convertExprFromTauToTime(self.nu_pol, self.time_breakpoints[el],
+            func_rel_alg = self.model.convert_expr_from_tau_to_time(self.relaxed_alg, self.time_breakpoints[el],
                                                                     self.time_breakpoints[el + 1])
+            nu_time_dependent = self.model.convert_expr_from_tau_to_time(self.nu_pol, self.time_breakpoints[el],
+                                                                         self.time_breakpoints[el + 1])
 
             f_nu = Function('f_nu', self.model.all_sym, [nu_time_dependent])
             f_relax_alg = Function('f_relax_alg', self.model.all_sym, [func_rel_alg])

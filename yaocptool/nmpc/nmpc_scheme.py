@@ -86,17 +86,17 @@ class NMPCScheme:
             if self.verbose >= 3:
                 print('optimizing')
             x, u = self.ocp_solver.split_x_and_u(V_sol)
-            control = self.getControls(x, u, t_0=t, t_f=t + self.dt)[:self.plant.Nu]
+            control = self.getControls(x, u, t_0=t, t_f=t + self.dt)[:self.plant.n_u]
             #            return control, None, None
             # simulate
             if self.verbose >= 3:
                 print('simulating')
-            x_f_sim = self.plant.simulate(x_0=x_0[:self.plant.Nx], t_f=t + self.dt, t_0=t, p=control,
+            x_f_sim = self.plant.simulate(x_0=x_0[:self.plant.n_x], t_f=t + self.dt, t_0=t, p=control,
                                           integrator_type='implicit')
             if self.verbose >= 3:
                 print('simulated')
             x_0 = x[1]
-            x_0[:self.plant.Nx] = x_f_sim
+            x_0[:self.plant.n_x] = x_f_sim
             #            x_0[-1] = 0
             V_sol = self.nextInitialGuess(V_sol, x_0)
             X.append(x_0)

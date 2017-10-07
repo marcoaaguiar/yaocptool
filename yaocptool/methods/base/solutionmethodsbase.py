@@ -4,8 +4,9 @@ from casadi import SX, MX, DM, vertcat, collocation_points, \
     Function, linspace, horzcat, dot, gradient, jacobian, mtimes, \
     reshape
 from typing import List, Tuple
-from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
+import copy
 
+from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 from yaocptool import config
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
@@ -25,7 +26,8 @@ class SolutionMethodsBase(object):
         :param discretization_scheme: str
         """
         self.solver = None
-        self.problem = problem  # type: OptimalControlProblem
+        self._problem = problem
+        self.problem = copy.copy(self._problem)  # type: OptimalControlProblem
         self.integrator_type = 'implicit'
         self.solution_method = 'multiple_shooting'
         self.solution_class = ''
@@ -128,7 +130,7 @@ class SolutionMethodsBase(object):
             if type(degree) == dict:
                 raise Exception('Not implemented')
             else:
-                u_pol, self.model.u_par = self.create_variable_polynomial_approximation(self.model.Nu, degree, 'u_ij')
+                u_pol, self.model.u_par = self.create_variable_polynomial_approximation(self.model.n_u, degree, 'u_ij')
             self.model.u_func = u_pol
         else:
             u_pol = self.model.u_func
@@ -137,15 +139,15 @@ class SolutionMethodsBase(object):
 
     def _create_cost_state(self):
         if not self.hasCostState:
-            self.problem.createCostState()
+            self.problem.create_cost_state()
             self.hasCostState = True
 
     def include_adjoint_states(self):
 
-        lamb = SX.sym('lamb', self.model.Nx)
-        nu = SX.sym('nu', self.model.Nyz)
+        lamb = SX.sym('lamb', self.model.n_x)
+        nu = SX.sym('nu', self.model.n_yz)
 
-        self.problem.eta = SX.sym('eta', self.problem.N_h_final)
+        self.problem.eta = SX.sym('eta', self.problem.n_h_final)
 
         self.problem.H = self.problem.L + dot(lamb, self.model.ode) + dot(nu, self.model.all_alg)
 
@@ -236,15 +238,15 @@ class SolutionMethodsBase(object):
 
     def create_solver(self, initial_condition_as_parameter):
         self.initial_condition_as_parameter = initial_condition_as_parameter
-        if self.model.Np + self.model.Ntheta > 0 or self.initial_condition_as_parameter:
-            p_mx = MX.sym('p', self.model.Np)
+        if self.model.n_p + self.model.n_theta > 0 or self.initial_condition_as_parameter:
+            p_mx = MX.sym('p', self.model.n_p)
 
-            theta_mx = MX.sym('theta_', self.model.Ntheta, self.finite_elements)
+            theta_mx = MX.sym('theta_', self.model.n_theta, self.finite_elements)
             theta = dict([(i, vec(theta_mx[:, i])) for i in range(self.finite_elements)])
 
             all_mx = vertcat(p_mx, vec(theta_mx))
             if initial_condition_as_parameter:
-                p_mx_x_0 = MX.sym('x_0_p', self.model.Nx)
+                p_mx_x_0 = MX.sym('x_0_p', self.model.n_x)
                 all_mx = vertcat(all_mx, p_mx_x_0)
             else:
                 p_mx_x_0 = None
@@ -391,9 +393,9 @@ class SolutionMethodsBase(object):
         micro_u = []
         x_0 = x[0]
         for k in range(finite_elements):
-            dae_sys = self.model.getDAESystem()
+            dae_sys = self.model.get_dae_system()
             self.model.convert_dae_sys_from_tau_to_time(dae_sys, t_list[k], t_list[k + 1])
-            func_u = self.model.convertExprFromTauToTime(self.model.u_func, t_list[k], t_list[k + 1])
+            func_u = self.model.convert_expr_from_tau_to_time(self.model.u_func, t_list[k], t_list[k + 1])
 
             f_u = Function('f_u', [self.model.x_sym, self.model.yz_sym, self.model.t_sym,
                                    self.model.p_sym, self.model.theta_sym,

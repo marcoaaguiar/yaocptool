@@ -29,7 +29,7 @@ class SimpleNode(Node):
             Nu = 2
         else:
             Nu = 1
-        model = SystemModel(Nx = 1, Nz = outputs, Nu= Nu, name = 'node_' + repr(node_id))
+        model = SystemModel(n_x= 1, n_z= outputs, n_u= Nu, name ='node_' + repr(node_id))
         if Nu == 2:
             ode = vertcat(model.u_sym[1]*control_weight + sum([model.z_sym[n_z]*outputs_weights[n_z] for n_z in range(outputs)]))
         else:

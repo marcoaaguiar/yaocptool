@@ -17,7 +17,7 @@ from yaocptool.modelling.ocp import OptimalControlProblem
 
 
 def create_CSTR_OCP():
-    model = SystemModel(Nx=4, Ny=3, Nu=2, name='cstr')
+    model = SystemModel(n_x=4, n_y=3, n_u=2, name='cstr')
     x = model.x_sym
     y = model.y_sym
     u = model.u_sym

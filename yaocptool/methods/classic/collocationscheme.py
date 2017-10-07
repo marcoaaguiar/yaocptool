@@ -34,10 +34,10 @@ class CollocationScheme(DiscretizationSchemeBase):
         return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
 
     def _number_of_variables(self):
-        return self.model.Nx * self.finite_elements * (self.degree + 1) \
-               + self.model.Nyz * self.finite_elements * self.degree \
-               + self.model.Nu * self.finite_elements * self.degree_control \
-               + self.problem.N_eta
+        return self.model.n_x * self.finite_elements * (self.degree + 1) \
+               + self.model.n_yz * self.finite_elements * self.degree \
+               + self.model.n_u * self.finite_elements * self.degree_control \
+               + self.problem.n_eta
 
     def _create_nlp_symbolic_variables_and_bound_vectors(self):
         """
@@ -77,26 +77,26 @@ class CollocationScheme(DiscretizationSchemeBase):
         Create the symbolic variables that will be used by the NLP problem
         :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX)
         """
-        eta = MX.sym('eta', self.problem.N_eta)
+        eta = MX.sym('eta', self.problem.n_eta)
         x = []
         y = []
         u = []
         for k in range(self.finite_elements):
             x_k = []
             for n in range(self.degree + 1):
-                x_k.append(MX.sym('x_' + repr(k) + '_' + repr(n), self.model.Nx))
+                x_k.append(MX.sym('x_' + repr(k) + '_' + repr(n), self.model.n_x))
             x.append(x_k)
 
         for k in range(self.finite_elements):
             y_k = []
             for n in range(self.degree):
-                y_k.append(MX.sym('yz_' + repr(k) + '_' + repr(n), self.model.Nyz))
+                y_k.append(MX.sym('yz_' + repr(k) + '_' + repr(n), self.model.n_yz))
             y.append(y_k)
 
         for k in range(self.finite_elements):
             u_k = []
             for n in range(self.degree_control):
-                u_k.append(MX.sym('u_' + repr(k) + '_' + repr(n), self.model.Nu))
+                u_k.append(MX.sym('u_' + repr(k) + '_' + repr(n), self.model.n_u))
             u.append(u_k)
 
         v_x = self.vectorize(x)
@@ -116,15 +116,15 @@ class CollocationScheme(DiscretizationSchemeBase):
         x, y, u = [], [], []
         v_offset = 0
 
-        if self.problem.N_eta > 0:
-            results_vector = results_vector[:-self.problem.N_eta]
+        if self.problem.n_eta > 0:
+            results_vector = results_vector[:-self.problem.n_eta]
 
         x_k = []
         for k in range(self.finite_elements):
             x_k = []
             for i in range(self.degree + 1):
-                x_k.append(results_vector[v_offset:v_offset + self.model.Nx])
-                v_offset += self.model.Nx
+                x_k.append(results_vector[v_offset:v_offset + self.model.n_x])
+                v_offset += self.model.n_x
             if all_subinterval:
                 x.append(x_k)
             else:
@@ -134,8 +134,8 @@ class CollocationScheme(DiscretizationSchemeBase):
         for k in range(self.finite_elements):
             y_k = []
             for i in range(self.degree):
-                y_k.append(results_vector[v_offset:v_offset + self.model.Nyz])
-                v_offset += self.model.Nyz
+                y_k.append(results_vector[v_offset:v_offset + self.model.n_yz])
+                v_offset += self.model.n_yz
             if all_subinterval:
                 y.append(y_k)
             else:
@@ -144,8 +144,8 @@ class CollocationScheme(DiscretizationSchemeBase):
         for k in range(self.finite_elements):
             u_k = []
             for i in range(self.degree_control):
-                u_k.append(results_vector[v_offset:v_offset + self.model.Nu])
-                v_offset += self.model.Nu
+                u_k.append(results_vector[v_offset:v_offset + self.model.n_u])
+                v_offset += self.model.n_u
             u.append(u_k)
         assert v_offset == results_vector.numel()
 
@@ -169,7 +169,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         time_dict = self._create_time_dict_for_collocation()
 
         ###
-        x_pol, x_par = self.solution_method.create_variable_polynomial_approximation(self.model.Nx, self.degree,
+        x_pol, x_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_x, self.degree,
                                                                                      name='col_x_approx',
                                                                                      point_at_t0=True)
 
@@ -182,7 +182,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         # Create functions to be evaluated
         functions = defaultdict(dict)
         for el in range(self.finite_elements):
-            dae_sys = self.model.getDAESystem()
+            dae_sys = self.model.get_dae_system()
             if 'z' not in dae_sys:
                 dae_sys['z'] = vertcat([])
                 dae_sys['alg'] = vertcat([])
@@ -276,24 +276,24 @@ class CollocationScheme(DiscretizationSchemeBase):
             t_f = time_dict[el]['t_f']
 
             # The control function
-            u_func = self.model.convertExprFromTauToTime(self.model.u_func, t_0, t_f)
+            u_func = self.model.convert_expr_from_tau_to_time(self.model.u_func, t_0, t_f)
             if self.solution_method.solution_class == 'direct':
                 f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par], [u_func])
             else:
                 f_u = Function('f_u_pol', list(self.model.all_sym), [u_func])
 
             # Create function for obtaining x at an given time
-            x_pol, x_par = self.solution_method.create_variable_polynomial_approximation(self.model.Nx, self.degree,
+            x_pol, x_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_x, self.degree,
                                                                                          name='col_x_approx',
                                                                                          point_at_t0=True)
-            x_pol = self.model.convertExprFromTauToTime(x_pol, t_k=t_0, t_kp1=t_f)
+            x_pol = self.model.convert_expr_from_tau_to_time(x_pol, t_k=t_0, t_kp1=t_f)
             f_x = Function('f_x_pol', [self.model.t_sym, x_par], [x_pol])
 
             # Create function for obtaining y at an given time
-            y_pol, y_par = self.solution_method.create_variable_polynomial_approximation(self.model.Nyz, self.degree,
+            y_pol, y_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_yz, self.degree,
                                                                                          name='col_y_approx',
                                                                                          point_at_t0=False)
-            y_pol = self.model.convertExprFromTauToTime(y_pol, t_k=t_0, t_kp1=t_f)
+            y_pol = self.model.convert_expr_from_tau_to_time(y_pol, t_k=t_0, t_kp1=t_f)
             f_y = Function('f_y_pol', [self.model.t_sym, y_par], [y_pol])
 
             # Find the times that need to be evaluated
@@ -349,9 +349,9 @@ class CollocationScheme(DiscretizationSchemeBase):
 
     def create_initial_guess(self):
         x_init = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
-        y_init = DM.zeros(self.model.Nyz * self.degree * self.finite_elements, 1)
-        u_init = DM.zeros(self.model.Nu * self.degree_control * self.finite_elements, 1)
-        eta_init = DM.zeros(self.problem.N_eta, 1)
+        y_init = DM.zeros(self.model.n_yz * self.degree * self.finite_elements, 1)
+        u_init = DM.zeros(self.model.n_u * self.degree_control * self.finite_elements, 1)
+        eta_init = DM.zeros(self.problem.n_eta, 1)
 
         base_x0 = vertcat(x_init, y_init, u_init, eta_init)
         return base_x0

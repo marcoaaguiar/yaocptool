@@ -77,7 +77,7 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
                     self.problems_dict[p]['connections_id'].append(k)
                     self.con_dict[k]['associated_problems'].append(p)
                     # find the z_sym on the connections and save it on the connection dict
-                    for n_z in range(self.problems_dict[p]['problem'].model.Nz):
+                    for n_z in range(self.problems_dict[p]['problem'].model.n_z):
                         tested_nz = self.problems_dict[p]['problem'].model.z_sym[n_z]
                         if depends_on(self.con_dict[k]['con'], self.problems_dict[p]['problem'].model.z_sym[n_z]):
                             self.con_dict[k]['associated_z_sym'].append(tested_nz)
@@ -118,12 +118,12 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
             for k in self.problems_dict[problem_id]['connections_id']:
                 for n_z in self.problems_dict[problem_id]['problem'].model.find_variables_indices_in_vector(
                         self.con_dict[k]['con_z'], self.problems_dict[problem_id]['problem'].model.z_sym):
-                    # range(self.problems_dict[problem_id]['problem'].model.Nz):
-                    print(problem_id, n_z, self.problems_dict[problem_id]['problem'].model.Nz,
+                    # range(self.problems_dict[problem_id]['problem'].model.n_z):
+                    print(problem_id, n_z, self.problems_dict[problem_id]['problem'].model.n_z,
                           self.problems_dict[problem_id]['problem'].model.z_sym)
                     tested_z = self.problems_dict[problem_id]['problem'].model.z_sym[n_z]
                     if is_equal(tested_z, self.con_dict[k]['con_z']):
-                        index = self.problems_dict[problem_id]['problem'].model.Nu
+                        index = self.problems_dict[problem_id]['problem'].model.n_u
                         self.problems_dict[problem_id]['problem'].include_control(tested_z,
                                                                                   u_max=self.problem.z_max[n_z],
                                                                                   u_min=self.problem.z_min[n_z])
@@ -291,8 +291,8 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
                                                                   time_division='radau')
 
         # For all z defined by the system equations
-        for n_z in range(self.problems_dict[problem_id]['problem'].model.Nz):
-            index = self.problems_dict[problem_id]['problem'].model.Ny + n_z
+        for n_z in range(self.problems_dict[problem_id]['problem'].model.n_z):
+            index = self.problems_dict[problem_id]['problem'].model.n_y + n_z
             #
             #            plt.plot(micro_t[1:],
             #                 vertcat(*[micro_Y[i][index] for i in range(len(micro_Y))]).full()

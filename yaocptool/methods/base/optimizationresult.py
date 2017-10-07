@@ -69,10 +69,10 @@ class OptimizationResult:
             plot_list = [plot_list]
 
         if self.is_valid:
-            if self.is_collocation and interpolation_data is not False:
-                self._plot_interpolation(plot_list)
-            else:
-                self._plot_breakpoints(plot_list)
+            # if self.is_collocation and interpolation_data is not False:
+            self._plot_interpolation(plot_list)
+            # else:
+            #     self._plot_breakpoints(plot_list)
 
     def _plot_breakpoints(self, plot_list):
         x_values = horzcat(*[self.x_breakpoints_data['values'][i][0] for i in range(self.finite_elements + 1)])
@@ -84,25 +84,32 @@ class OptimizationResult:
         t_u = self.u_breakpoints_data['time']
 
         for k, entry in enumerate(plot_list):
-            fig = plt.figure()
+            fig = plt.figure(k)
             if 'x' in entry:
                 for i in entry['x']:
-                    plt.plot(t_x, x_values[i, :].T)
+                    self._plot_entry(t_x, x_values, i, 'plot')
                 plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
             if 'y' in entry:
                 for i in entry['y']:
-                    plt.plot(t_y, y_values[i, :].T)
+                    self._plot_entry(t_y, y_values, i, 'plot')
                 plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
 
             if 'u' in entry:
                 for i in entry['u']:
-                    plt.step(t_u, u_values[i, :].T, where='post')
+                    self._plot_entry(t_u, u_values, i, 'step')
                 plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
             plt.grid()
             axes = fig.axes
             axes[0].ticklabel_format(useOffset=False)
             k += 1
         plt.show()
+    def _plot_entry(self, t_vector, data_vector, line, plot_style = 'plot'):
+        if plot_style not in ['plot', 'step']:
+            raise Exception('Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(plot_style))
+        if plot_style == 'plot':
+            plt.plot(t_vector.T, data_vector[line, :].T)
+        elif plot_style == 'step':
+            plt.step(t_vector.T, data_vector[line, :].T)
 
     def _plot_interpolation(self, plot_list):
         x_values = self.x_interpolation_data['values']
@@ -122,29 +129,34 @@ class OptimizationResult:
         t_u = horzcat(*[horzcat(*t_u[l]) for l in range(self.finite_elements)])
 
         for k, entry in enumerate(plot_list):
-            fig = plt.figure()
+            fig = plt.figure(k)
 
+            # Plot optimization x data
             if 'x' in entry:
                 for l in entry['x']:
-                    plt.plot(t_x.T, x_values[l, :].T)
+                    self._plot_entry(t_x, x_values, l, 'plot')
                 plt.legend(['x[' + repr(l) + ']' for l in entry['x']])
 
+            # Plot optimization y data
             if 'y' in entry:
                 for l in entry['y']:
-                    plt.plot(t_y.T, y_values[l, :].T)
+                    self._plot_entry(t_y, y_values, l, 'plot')
                 plt.legend(['y[' + repr(l) + ']' for l in entry['y']])
 
+            # Plot optimization u data
             if 'u' in entry:
                 for l in entry['u']:
-                    plt.step(t_u.T, u_values[l, :].T, where='post')
+                    self._plot_entry(t_u, u_values, l, 'plot')
                 plt.legend(['u[' + repr(l) + ']' for l in entry['u']])
+
+            # Plot optimization any other data included in the OptimizationResult
             for key in set(entry.keys()).difference(['x', 'y', 'u']):
                 for l in entry[key]:
-                    entry_values = horzcat(
-                        *[horzcat(*self.other_data[key]['values'][i]) for i in range(self.finite_elements)])
                     entry_time = horzcat(
                         *[horzcat(*self.other_data[key]['times'][i]) for i in range(self.finite_elements)])
-                    plt.plot(entry_time.T, entry_values[l, :].T)
+                    entry_values = horzcat(
+                        *[horzcat(*self.other_data[key]['values'][i]) for i in range(self.finite_elements)])
+                    self._plot_entry(entry_time, entry_values, l, 'plot')
                 plt.legend([key + '[' + repr(l) + ']' for l in entry[key]])
             plt.grid()
             axes = fig.axes

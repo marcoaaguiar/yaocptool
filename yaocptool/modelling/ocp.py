@@ -6,10 +6,9 @@ Created on Mon Apr 03 11:15:03 2017
 """
 
 import copy
-
 from casadi import DM, repmat, vertcat, substitute, mtimes, is_equal, SX, inf
-
 from yaocptool.modelling import SystemModel
+
 
 class OptimalControlProblem:
     def __init__(self, model, **kwargs):
@@ -21,19 +20,19 @@ class OptimalControlProblem:
             self.x_0 = DM([])
 
         self.name = ''
-        self.model = SystemModel()
+        self.model = None # type: SystemModel
         self._model = model  # type: SystemModel
-        self.resetWorkingModel()
+        self.reset_working_model()
 
-        self.x_max = repmat(inf, self.model.Nx)
-        self.y_max = repmat(inf, self.model.Ny)
-        self.z_max = repmat(inf, self.model.Nz)
-        self.u_max = repmat(inf, self.model.Nu)
+        self.x_max = repmat(inf, self.model.n_x)
+        self.y_max = repmat(inf, self.model.n_y)
+        self.z_max = repmat(inf, self.model.n_z)
+        self.u_max = repmat(inf, self.model.n_u)
 
-        self.x_min = repmat(-inf, self.model.Nx)
-        self.y_min = repmat(-inf, self.model.Ny)
-        self.z_min = repmat(-inf, self.model.Nz)
-        self.u_min = repmat(-inf, self.model.Nu)
+        self.x_min = repmat(-inf, self.model.n_x)
+        self.y_min = repmat(-inf, self.model.n_y)
+        self.z_min = repmat(-inf, self.model.n_z)
+        self.u_min = repmat(-inf, self.model.n_u)
 
         self.h_initial = self.model.x_sym - self.model.x_0_sym
         self.h_final = vertcat([])
@@ -54,7 +53,7 @@ class OptimalControlProblem:
             if type(obj_value) == dict:
                 for (k, v) in obj_value.items():
                     setattr(self, k, v)
-                self.createQuadraticCost(obj_value)
+                self.create_quadratic_cost(obj_value)
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -65,11 +64,11 @@ class OptimalControlProblem:
         self.check_integrity()
 
     @property
-    def N_h_final(self):
+    def n_h_final(self):
         return self.h_final.size1()
 
     @property
-    def N_eta(self):
+    def n_eta(self):
         return self.eta.size1()
 
     @property
@@ -104,12 +103,12 @@ class OptimalControlProblem:
 
         # Check if the initial condition has the same number of elements of the model
         attributes = ['x_0', 'x_max', 'y_max', 'z_max', 'u_max', 'x_min', 'y_min', 'z_min', 'u_min']
-        attr_to_compare = ['Nx', 'Nx', 'Ny', 'Nz', 'Nu', 'Nx', 'Ny', 'Nz', 'Nu']
+        attr_to_compare = ['n_x', 'n_x', 'n_y', 'n_z', 'n_u', 'n_x', 'n_y', 'n_z', 'n_u']
         for i, attr in enumerate(attributes):
             if not getattr(self, attr).numel() == getattr(self.model, attr_to_compare[i]):
                 raise Exception(
                     'The size of the initial guess "self.{}" is not equal to the number of states "model.{}",'
-                    + ' {} != {}'.format(attr, attr_to_compare[i], self.x_0.numel(), self.model.Nx))
+                    + ' {} != {}'.format(attr, attr_to_compare[i], self.x_0.numel(), self.model.n_x))
         return True
 
     def _fix_types(self):
@@ -125,10 +124,10 @@ class OptimalControlProblem:
 
         self.x_0 = vertcat(self.x_0)
 
-    def resetWorkingModel(self):
+    def reset_working_model(self):
         self.model = copy.copy(self._model)
 
-    def createCostState(self):
+    def create_cost_state(self):
         x_c = SX.sym('x_c')
         if self.positive_objective:
             x_min = 0
@@ -142,39 +141,35 @@ class OptimalControlProblem:
         self.L = DM(0)
         self.V += x_c
 
-    def makeFinalCostFunction(self, p=None):
+    def make_final_cost_function(self, p=None):
         raise Exception('To be removed')
         # if p != None:
         #     self.V_function = Function('FinalCost', [self.model.x_sym, p],[self.V])
         # else:
         #     self.V_function = Function('FinalCost', [self.model.x_sym],[self.V])
 
-    def createQuadraticCost(self, par_dict):
+    def create_quadratic_cost(self, par_dict):
         self.L = DM(0)
         self.V = DM(0)
         if 'x_ref' not in par_dict:
-            par_dict['x_ref'] = DM.zeros(self.model.Nx)
+            par_dict['x_ref'] = DM.zeros(self.model.n_x)
         if 'u_ref' not in par_dict:
-            par_dict['u_ref'] = DM.zeros(self.model.Nu)
+            par_dict['u_ref'] = DM.zeros(self.model.n_u)
 
         if 'Q' in par_dict:
-            Q = par_dict['Q']
-            self.L += mtimes(mtimes((self.model.x_sym - par_dict['x_ref']).T, Q),
+            self.L += mtimes(mtimes((self.model.x_sym - par_dict['x_ref']).T, par_dict['Q']),
                              (self.model.x_sym - par_dict['x_ref']))
 
         if 'R' in par_dict:
-            R = par_dict['R']
-            self.L += mtimes(mtimes((self.model.u_sym - par_dict['u_ref']).T, R),
+            self.L += mtimes(mtimes((self.model.u_sym - par_dict['u_ref']).T, par_dict['R']),
                              (self.model.u_sym - par_dict['u_ref']))
 
         if 'Qv' in par_dict:
-            Qv = par_dict['Qv']
-            self.V += mtimes(mtimes((self.model.x_sym - par_dict['x_ref']).T, Qv),
+            self.V += mtimes(mtimes((self.model.x_sym - par_dict['x_ref']).T, par_dict['Qv']),
                              (self.model.x_sym - par_dict['x_ref']))
 
         if 'Rv' in par_dict:
-            Rv = par_dict['Rv']
-            self.V += mtimes(mtimes(self.model.x_sym.T, Rv), self.model.x_sym)
+            self.V += mtimes(mtimes(self.model.x_sym.T, par_dict['Rv']), self.model.x_sym)
 
     def merge(self, problems):
         for problem in problems:
@@ -267,7 +262,7 @@ class OptimalControlProblem:
 
     def remove_control(self, var):
         to_remove = []
-        for j in range(self.model.Nu):
+        for j in range(self.model.n_u):
             for i in range(var.numel()):
                 if is_equal(self.model.u_sym[j], var[i]):
                     to_remove.append(j)
