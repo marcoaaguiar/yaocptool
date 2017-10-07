@@ -301,8 +301,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         optimization_result.x_interpolation_data['values'] = x_breakpoints_values
         optimization_result.y_interpolation_data['values'] = y_breakpoints_values
-        optimization_result.u_interpolation_data['values'] = y_breakpoints_values
+        optimization_result.u_interpolation_data['values'] = u_breakpoints_values
 
-        optimization_result.x_interpolation_data['time'] = [t for t in self.time_breakpoints]
-        optimization_result.y_interpolation_data['time'] = [t for t in self.time_breakpoints[:-1]]
-        optimization_result.u_interpolation_data['time'] = [t for t in self.time_breakpoints[:-1]]
+        optimization_result.x_interpolation_data['time'] = [[t] for t in self.time_breakpoints]
+        optimization_result.y_interpolation_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
+        optimization_result.u_interpolation_data['time'] = [[t + self.delta_t*col for col in self.solution_method.collocation_points(self.degree_control)] for t in self.time_breakpoints[:-1]]

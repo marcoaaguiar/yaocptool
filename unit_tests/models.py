@@ -15,7 +15,7 @@ def create_siso():
     b = DM([1])
 
     model = _create_linear_system(n_x=1, n_u=1, a=a, b=b, name='SISO')
-    problem = OptimalControlProblem(model, obj={'Q': DM.ones(1), 'R': DM.ones(1)}, x_0=[1])
+    problem = OptimalControlProblem(model, obj={'Q': DM.eye(1), 'R': DM.eye(1)}, x_0=[1])
     return model, problem
 
 
@@ -24,7 +24,7 @@ def create_2x1_mimo():
     b = DM([1, 0])
 
     model = _create_linear_system(n_x=2, n_u=1, a=a, b=b, name='MIMO_2x1')
-    problem = OptimalControlProblem(model, obj={'Q': DM.ones(2, 2), 'R': DM.ones(1)}, x_0=[1, 1])
+    problem = OptimalControlProblem(model, obj={'Q': DM.eye(2), 'R': DM.eye(1)}, x_0=[1, 1])
     return model, problem
 
 
@@ -33,5 +33,5 @@ def create_2x2_mimo():
     b = DM([[1, 0], [0, 1]])
 
     model = _create_linear_system(n_x=2, n_u=2, a=a, b=b, name='MIMO_2x2')
-    problem = OptimalControlProblem(model, obj={'Q': DM.ones(2, 2), 'R': DM.ones(2, 2)}, x_0=[1, 1])
+    problem = OptimalControlProblem(model, obj={'Q': DM.eye(2), 'R': DM.eye(2)}, x_0=[1, 1])
     return model, problem

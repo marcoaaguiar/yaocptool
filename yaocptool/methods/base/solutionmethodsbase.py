@@ -26,8 +26,8 @@ class SolutionMethodsBase(object):
         :param discretization_scheme: str
         """
         self.solver = None
-        self._problem = problem
-        self.problem = copy.copy(self._problem)  # type: OptimalControlProblem
+        self.problem = problem
+        # self.problem = copy.copy(self._problem)  # type: OptimalControlProblem
         self.integrator_type = 'implicit'
         self.solution_method = 'multiple_shooting'
         self.solution_class = ''

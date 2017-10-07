@@ -129,7 +129,7 @@ class CollocationScheme(DiscretizationSchemeBase):
                 x.append(x_k)
             else:
                 x.append(x_k[0])
-        x.append(x_k[-1])
+        x.append([x_k[-1]])
 
         for k in range(self.finite_elements):
             y_k = []
@@ -210,9 +210,8 @@ class CollocationScheme(DiscretizationSchemeBase):
 
             # Enforce the the derivative of the polynomial to be equal ODE at t
             for col_point in range(1, self.degree + 1):
-                constraint_list.append(
-                    func_d_x_pol_d_tau(tau_list[col_point],
-                                       self.vectorize(x_var[el])) - dt * results[el]['ode'][col_point])
+                constraint_list.append(func_d_x_pol_d_tau(tau_list[col_point],self.vectorize(x_var[el]))
+                                       - dt * results[el]['ode'][col_point])
 
             for col_point in range(self.degree):
                 constraint_list.append(results[el]['alg'][col_point])

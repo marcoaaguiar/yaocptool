@@ -74,35 +74,35 @@ class OptimizationResult:
             # else:
             #     self._plot_breakpoints(plot_list)
 
-    def _plot_breakpoints(self, plot_list):
-        x_values = horzcat(*[self.x_breakpoints_data['values'][i][0] for i in range(self.finite_elements + 1)])
-        y_values = horzcat(*[self.y_breakpoints_data['values'][i][0] for i in range(self.finite_elements)])
-        u_values = horzcat(*[self.u_breakpoints_data['values'][i][0] for i in range(self.finite_elements)])
-
-        t_x = self.x_breakpoints_data['time']
-        t_y = self.y_breakpoints_data['time']
-        t_u = self.u_breakpoints_data['time']
-
-        for k, entry in enumerate(plot_list):
-            fig = plt.figure(k)
-            if 'x' in entry:
-                for i in entry['x']:
-                    self._plot_entry(t_x, x_values, i, 'plot')
-                plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
-            if 'y' in entry:
-                for i in entry['y']:
-                    self._plot_entry(t_y, y_values, i, 'plot')
-                plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
-
-            if 'u' in entry:
-                for i in entry['u']:
-                    self._plot_entry(t_u, u_values, i, 'step')
-                plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
-            plt.grid()
-            axes = fig.axes
-            axes[0].ticklabel_format(useOffset=False)
-            k += 1
-        plt.show()
+    # def _plot_breakpoints(self, plot_list):
+    #     x_values = horzcat(*[self.x_breakpoints_data['values'][i][0] for i in range(self.finite_elements + 1)])
+    #     y_values = horzcat(*[self.y_breakpoints_data['values'][i][0] for i in range(self.finite_elements)])
+    #     u_values = horzcat(*[self.u_breakpoints_data['values'][i][0] for i in range(self.finite_elements)])
+    #
+    #     t_x = self.x_breakpoints_data['time']
+    #     t_y = self.y_breakpoints_data['time']
+    #     t_u = self.u_breakpoints_data['time']
+    #
+    #     for k, entry in enumerate(plot_list):
+    #         fig = plt.figure(k)
+    #         if 'x' in entry:
+    #             for i in entry['x']:
+    #                 self._plot_entry(t_x, x_values, i, 'plot')
+    #             plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
+    #         if 'y' in entry:
+    #             for i in entry['y']:
+    #                 self._plot_entry(t_y, y_values, i, 'plot')
+    #             plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
+    #
+    #         if 'u' in entry:
+    #             for i in entry['u']:
+    #                 self._plot_entry(t_u, u_values, i, 'step')
+    #             plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
+    #         plt.grid()
+    #         axes = fig.axes
+    #         axes[0].ticklabel_format(useOffset=False)
+    #         k += 1
+    #     plt.show()
     def _plot_entry(self, t_vector, data_vector, line, plot_style = 'plot'):
         if plot_style not in ['plot', 'step']:
             raise Exception('Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(plot_style))
