@@ -333,12 +333,18 @@ class SolutionMethodsBase(object):
             setattr(optimization_result, attr, attr_value)
         optimization_result.problem_name = self.problem.name
 
+        # From model
+        optimization_result.x_names = [self.model.x_sym[i].name() for i in range(self.model.n_x)]
+        optimization_result.y_names = [self.model.y_sym[i].name() for i in range(self.model.n_y)]
+        optimization_result.z_names = [self.model.z_sym[i].name() for i in range(self.model.n_z)]
+        optimization_result.u_names = [self.model.u_sym[i].name() for i in range(self.model.n_u)]
+
         self.discretizer.set_data_to_optimization_result_from_raw_data(optimization_result, raw_solution_dict)
 
         return optimization_result
 
     # ==============================================================================
-    # PLOT AND SIMULAT
+    # PLOT AND SIMULATE
     # ==============================================================================
 
     def plot(self, x, y, u, plot_list, t_states=None):

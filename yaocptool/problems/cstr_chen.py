@@ -57,19 +57,6 @@ def create_CSTR_OCP():
     c_A0 = 5.10
     theta_0 = 104.9  # 100 < theta_0 < 115
 
-    ### INITIAL CONDITIONS
-
-    theta_0_init = 104.9
-
-    c_A_init = 2.14
-    c_B_init = 1.09
-    theta_init = 114.2
-    theta_K_init = 112.9
-
-    V_dotV_R_init = 14.19
-    Q_K_dot_init = -1113.5
-
-    u_ref = vertcat(V_dotV_R_init, Q_K_dot_init)
     ### EQUATIONS
 
     # k_1 = k_10 * exp(E_1 / (theta + 273.15))
@@ -96,15 +83,29 @@ def create_CSTR_OCP():
     model.include_system_equations(ode=ode, alg=alg)
     # model.include_system_equations(ode=ode)
 
-    x_0 = vertcat([c_A_init, c_B_init, theta_init, theta_K_init])
-    x_ref = vertcat([2.14, 1., 110., 105])
-    problem = OptimalControlProblem(model, obj={'Q': diag([.1, 10, 1e-3, 1e-3]),
+
+    ### INITIAL CONDITIONS
+
+    theta_0_init = 104.9
+
+    c_A_init = 2.14
+    c_B_init = 1.09
+    theta_init = 114.2
+    theta_K_init = 112.9
+
+    V_dotV_R_init = 14.19
+    Q_K_dot_init = -1113.5
+
+    u_ref = vertcat(V_dotV_R_init, Q_K_dot_init)
+
+    x_0 = vertcat([2., 1., 110., 100])
+    x_ref = vertcat([2.14, 1.09, 110., 105])
+    problem = OptimalControlProblem(model, obj={'Q': diag([.0, 1e5, 0e-3, 0e-3]),
                                                 'R': diag([1/2.5, 1/9000.]),
                                                 # 'Qv':diag([0.1, 1, 0, 0]),
                                                 'x_ref': x_ref}, x_0=x_0,
-                                    t_f=1200./3600, positive_objective = True)
+                                    t_f=300./3600, positive_objective = True)
     problem.u_ref = u_ref
-    print(problem.t_f)
     ### Constraints
     #c_A
     problem.x_min[0] = 0.1

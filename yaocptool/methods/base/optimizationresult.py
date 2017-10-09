@@ -30,6 +30,12 @@ class OptimizationResult:
 
         self.objective = None  # type: DM
         self.constraints_values = None  # type: DM
+
+        self.x_names = []
+        self.y_names = []
+        self.z_names = []
+        self.u_names = []
+
         self.x_breakpoints_data = {'values': [], 'time': []}
         self.y_breakpoints_data = {'values': [], 'time': []}
         self.u_breakpoints_data = {'values': [], 'time': []}
@@ -135,19 +141,19 @@ class OptimizationResult:
             if 'x' in entry:
                 for l in entry['x']:
                     self._plot_entry(t_x, x_values, l, 'plot')
-                plt.legend(['x[' + repr(l) + ']' for l in entry['x']])
+                plt.legend([self.x_names[l] for l in entry['x']])
 
             # Plot optimization y data
             if 'y' in entry:
                 for l in entry['y']:
                     self._plot_entry(t_y, y_values, l, 'plot')
-                plt.legend(['y[' + repr(l) + ']' for l in entry['y']])
+                plt.legend([(self.y_names+self.z_names)[l] for l in entry['y']])
 
             # Plot optimization u data
             if 'u' in entry:
                 for l in entry['u']:
                     self._plot_entry(t_u, u_values, l, 'plot')
-                plt.legend(['u[' + repr(l) + ']' for l in entry['u']])
+                plt.legend([self.u_names[l] for l in entry['u']])
 
             # Plot optimization any other data included in the OptimizationResult
             for key in set(entry.keys()).difference(['x', 'y', 'u']):

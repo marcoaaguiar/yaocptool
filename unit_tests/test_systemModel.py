@@ -121,9 +121,10 @@ class TestSystemModel(TestCase):
             self.assertEqual(new_x_0_sym_1.numel(), new_state_1.numel())  # The returned initial cond var == size added
             self.assertTrue(is_equal(model.x_sym[-1], new_state_1))  # The added var is the in the x_sym
 
-            new_x_0_sym_2 = model.include_state(new_state_2) # Number of state variables has increased
+            new_x_0_sym_2 = model.include_state(new_state_2)  # Number of state variables has increased
             self.assertEqual(model.n_x, model_n_x + 1 + 2)
-            self.assertEqual(model.x_0_sym.numel(), model_n_x + 1 + 2)  # Num. of initial cond for the state has increased
+            self.assertEqual(model.x_0_sym.numel(),
+                             model_n_x + 1 + 2)  # Num. of initial cond for the state has increased
             self.assertEqual(new_x_0_sym_2.numel(), new_state_2.numel())  # The returned initial cond var == size added
             self.assertTrue(is_equal(model.x_sym[-3], new_state_1))
             self.assertTrue(is_equal(model.x_sym[-2:], new_state_2))
@@ -201,4 +202,7 @@ class TestSystemModel(TestCase):
         pass
 
     def test_find_variables_indices_in_vector(self):
+        pass
+
+    def test_linearize(self):
         pass

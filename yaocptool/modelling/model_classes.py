@@ -5,9 +5,11 @@ Created on Thu Jun 09 10:50:48 2016
 @author: marco
 """
 
-from casadi import SX, DM, vertcat, substitute, Function, integrator, is_equal
+from casadi import SX, DM, vertcat, substitute, Function, integrator, is_equal, jacobian, mtimes
 from yaocptool import config
 
+# TODO: Check linearize method
+# TODO: Create find_equilibrium method
 
 class SystemModel:
     def __init__(self, n_x=0, n_y=0, n_z=0, n_u=0, n_p=0, n_theta=0, **kwargs):
@@ -123,7 +125,10 @@ class SystemModel:
     def __repr__(self):
         s = ''
         s += '=' * 20 + '\n'
-        s += 'Model Name: {}'.format(self.name) + '\n'
+        s += 'Model Name: {:>23}'.format(self.name)
+        s += '| System type:                            {:>3}'.format(self.system_type)
+        s += '\n'
+        s += '-' * 20 + '\n'
         s += 'Number of states (x):         {:4} | Number of algebraic (y):               {:4}'.format(self.n_x,
                                                                                                        self.n_y)
         s += '\n'
@@ -134,7 +139,7 @@ class SystemModel:
                                                                                                        self.n_theta)
         s += '\n'
         s += '-' * 20 + '\n'
-        s += 'Number of ODE:                {:4} | Number of algebraic eq.:                {:4}'.format(
+        s += 'Number of ODE:                {:4} | Number of algebraic eq.:               {:4}'.format(
             self.ode.numel(),
             self.alg.numel())
         s += '\n'
@@ -362,13 +367,15 @@ class SystemModel:
         return system
 
     def simulate(self, x_0, t_f, t_0=0, p=None, integrator_type='implicit'):
+        if p is None:
+            p = []
         dae = self.get_dae_system()
 
         opts = {'tf': t_f, 't0': t_0}  # final time
         integrator_ = self._create_integrator(dae, opts, integrator_type)
         call = {'x0': x_0, 'p': p}
 
-        return integrator_(**call)['xf']
+        return integrator_(**call)
 
     def simulate_step(self, x_0, t_0, t_f, p=None, dae_sys=None, integrator_type='implicit'):
         if dae_sys is None:
@@ -461,6 +468,23 @@ class SystemModel:
             return runge_kutta_4th_order
 
     # endregion
+
+    def linearize(self, x_bar, u_bar):
+        """
+        Returns a linearized model at a given points (X_BAR, U_BAR)
+        """
+        a_matrix = Function('a_matrix', [self.x_sym, self.u_sym], [jacobian(self.ode, self.x_sym)])(x_bar, u_bar)
+        b_matrix = Function('b_matrix', [self.x_sym, self.u_sym], [jacobian(self.ode, self.u_sym)])(x_bar, u_bar)
+
+        linear_model = SystemModel(n_x=self.n_x, n_u=self.n_u)
+        linear_model.include_system_equations(
+            ode=[mtimes(a_matrix, linear_model.x_sym) + mtimes(b_matrix, linear_model.u_sym)])
+        linear_model.name = 'linearized_' + self.name
+
+        linear_model.a_matrix = a_matrix
+        linear_model.b_matrix = b_matrix
+
+        return linear_model
 
     @staticmethod
     def find_variables_indices_in_vector(var, vector):

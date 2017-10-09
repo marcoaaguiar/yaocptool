@@ -10,7 +10,7 @@ from casadi import DM, MX, vertcat, Function, repmat
 # noinspection PyUnresolvedReferences
 from typing import Dict, List
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
-
+from yaocptool.methods.base.optimizationresult import OptimizationResult
 
 class MultipleShootingScheme(DiscretizationSchemeBase):
     def _number_of_variables(self):
@@ -279,8 +279,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
         """
         Set the raw data received from the solver and put it in the Optimization Result object
-        :type optimization_result: yaocptool.methods.optimizationresult.OptimizationResult
-        :type raw_solution_dict: dict
+        :param optimization_result: OptimizationResult
+        :param raw_solution_dict: dict
         """
 
         optimization_result.raw_solution_dict = raw_solution_dict
@@ -306,3 +306,4 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         optimization_result.x_interpolation_data['time'] = [[t] for t in self.time_breakpoints]
         optimization_result.y_interpolation_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
         optimization_result.u_interpolation_data['time'] = [[t + self.delta_t*col for col in self.solution_method.collocation_points(self.degree_control)] for t in self.time_breakpoints[:-1]]
+
