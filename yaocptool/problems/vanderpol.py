@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
 class VanDerPol(SystemModel):
     def __init__(self):
-        SystemModel.__init__(self, Nx =2, Ny= 1, Nu=1)
+        SystemModel.__init__(self, n_x=2, n_y= 1, n_u=1)
         
         x_1 = self.x_sym[0]
         x_2 = self.x_sym[1]
@@ -44,7 +44,7 @@ class VanDerPol(SystemModel):
 
 #class VanDerPol(SystemModel):
 #    def __init__(self):
-#        SystemModel.__init__(self, Nx =2, Ny= 0, Nu=1)
+#        SystemModel.__init__(self, n_x =2, n_y= 0, n_u=1)
 #        
 #        x_1 = self.x_sym[0]
 #        x_2 = self.x_sym[1]
@@ -60,7 +60,7 @@ class VanDerPol(SystemModel):
         
 #class VanDerPol(SystemModel):
 #    def __init__(self):
-#        SystemModel.__init__(self, Nx =2, Ny= 1, Nu=2)
+#        SystemModel.__init__(self, n_x =2, n_y= 1, n_u=2)
 #        
 #        x_1 = self.x_sym[0]
 #        x_2 = self.x_sym[1]

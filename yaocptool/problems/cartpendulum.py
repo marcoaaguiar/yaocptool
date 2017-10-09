@@ -14,7 +14,7 @@ from yaocptool.modelling.ocp import OptimalControlProblem
 
 class PendulumCart(SystemModel):
     def __init__(self, **kwargs):
-        SystemModel.__init__(self, Nx=4, Ny=0, Nu=1)
+        SystemModel.__init__(self, n_x=4, n_y=0, n_u=1)
 
         x_sym = self.x_sym
         # y_sym = self.y_sym

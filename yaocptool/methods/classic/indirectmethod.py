@@ -35,7 +35,7 @@ class IndirectMethod(SolutionMethodsBase):
         self.replace_with_optimal_control(u_opt)
 
     def _check_bounds(self):
-        for i in range(self.model.Nx):
+        for i in range(self.model.n_x):
             if not self.problem.x_min[i] == -inf:
                 warnings.warn('Problem contains state constraints, they will be ignored')
                 self.problem.x_min[i] = -inf
@@ -44,7 +44,7 @@ class IndirectMethod(SolutionMethodsBase):
                 warnings.warn('Problem contains state constraints, they will be ignored')
                 self.problem.x_max[i] = inf
 
-        for i in range(self.model.Ny):
+        for i in range(self.model.n_y):
             if not self.problem.y_min[i] == -inf:
                 warnings.warn('Problem contains state constraints, they will be ignored')
                 self.problem.y_min[i] = -inf
@@ -55,7 +55,7 @@ class IndirectMethod(SolutionMethodsBase):
 
     def calculate_optimal_control(self):
         ddH_dudu, dH_du = hessian(self.problem.H, self.model.u_sym)
-        if is_equal(ddH_dudu, DM.zeros(self.model.Nu, self.model.Nu)):
+        if is_equal(ddH_dudu, DM.zeros(self.model.n_u, self.model.n_u)):
             # TODO: Implement the case where the controls are linear on the Hamiltonina ("Bang-Bang" control)
             raise Exception('The Hamiltonian "H" is not strictly convex with respect to the control "u". '
                             + 'The obtained hessian d^2 H/du^2 = 0')
@@ -65,7 +65,7 @@ class IndirectMethod(SolutionMethodsBase):
 
         u_opt = -mtimes(inv(ddH_dudu), substitute(dH_du, self.model.u_sym, 0))
 
-        for i in range(self.model.Nu):
+        for i in range(self.model.n_u):
             if not self.problem.u_min[i] == -inf:
                 u_opt[i] = fmax(u_opt[i], self.problem.u_min[i])
 

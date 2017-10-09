@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
 class LinearSystem(SystemModel):
     def __init__(self):
-        SystemModel.__init__(self, Nx =2, Ny= 0, Nu=1)
+        SystemModel.__init__(self, n_x=2, n_y= 0, n_u=1)
         
         x_1 = self.x_sym[0]
         x_2 = self.x_sym[1]

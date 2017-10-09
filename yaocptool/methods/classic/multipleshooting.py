@@ -10,13 +10,13 @@ from casadi import DM, MX, vertcat, Function, repmat
 # noinspection PyUnresolvedReferences
 from typing import Dict, List
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
-
+from yaocptool.methods.base.optimizationresult import OptimizationResult
 
 class MultipleShootingScheme(DiscretizationSchemeBase):
     def _number_of_variables(self):
-        return self.model.Nx * (self.finite_elements + 1) \
-               + self.finite_elements * self.model.Nu * self.degree_control \
-               + self.problem.N_eta
+        return self.model.n_x * (self.finite_elements + 1) \
+               + self.finite_elements * self.model.n_u * self.degree_control \
+               + self.problem.n_eta
 
     def _create_variables_bound_vectors(self):
         """
@@ -44,22 +44,22 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
        Create the symbolic variables that will be used by the NLP problem
        :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX)
        """
-        eta = MX.sym('eta', self.problem.N_eta)
+        eta = MX.sym('eta', self.problem.n_eta)
         x_var, y_var, u_var = [], [], []
 
         for el in range(self.finite_elements + 1):
-            x_k = [MX.sym('x_' + repr(el), self.model.Nx)]
+            x_k = [MX.sym('x_' + repr(el), self.model.n_x)]
             x_var.append(x_k)
 
         for el in range(self.finite_elements):
-            # y_k = [MX.sym('yz_' + repr(el), self.model.Nyz)]
+            # y_k = [MX.sym('yz_' + repr(el), self.model.n_yz)]
             y_k = []
             y_var.append(y_k)
 
         for el in range(self.finite_elements):
             u_k = []
             for n in range(self.degree_control):
-                u_k.append(MX.sym('u_' + repr(el) + '_' + repr(n), self.model.Nu))
+                u_k.append(MX.sym('u_' + repr(el) + '_' + repr(n), self.model.n_u))
             u_var.append(u_k)
 
         v_x = self.vectorize(x_var)
@@ -79,12 +79,12 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         x, y, u = [], [], []
         v_offset = 0
 
-        if self.problem.N_eta > 0:
-            results_vector = results_vector[:-self.problem.N_eta]
+        if self.problem.n_eta > 0:
+            results_vector = results_vector[:-self.problem.n_eta]
 
         for k in range(self.finite_elements + 1):
-            x.append([results_vector[v_offset:v_offset + self.model.Nx]])
-            v_offset = v_offset + self.model.Nx
+            x.append([results_vector[v_offset:v_offset + self.model.n_x]])
+            v_offset = v_offset + self.model.n_x
 
         for k in range(self.finite_elements):
                 y.append([DM([])])
@@ -92,8 +92,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         for k in range(self.finite_elements):
             u_k = []
             for i in range(self.degree_control):
-                u_k.append(results_vector[v_offset:v_offset + self.model.Nu])
-                v_offset += self.model.Nu
+                u_k.append(results_vector[v_offset:v_offset + self.model.n_u])
+                v_offset += self.model.n_u
             u.append(u_k)
 
         assert v_offset == results_vector.numel()
@@ -194,10 +194,10 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             t_f = time_dict[el]['t_f']
             x_init = x_var[el][0]
             # Create dae_sys and the control function
-            dae_sys = self.model.getDAESystem()
+            dae_sys = self.model.get_dae_system()
             self.model.convert_dae_sys_from_tau_to_time(dae_sys, self.time_breakpoints[el],
                                                         self.time_breakpoints[el + 1])
-            u_func = self.model.convertExprFromTauToTime(self.model.u_func, t_0, t_f)
+            u_func = self.model.convert_expr_from_tau_to_time(self.model.u_func, t_0, t_f)
             if self.solution_method.solution_class == 'direct':
                 f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par], [u_func])
             else:
@@ -235,9 +235,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 p_i = vertcat(p, theta[el], self.vectorize(u_var[el]))
 
                 # Do the simulation
-                sim_result = self.model.simulateStep(x_init, t_0=t_init, t_f=t_next, p=p_i,
-                                                     dae_sys=dae_sys,
-                                                     integrator_type=self.solution_method.integrator_type)
+                sim_result = self.model.simulate_step(x_init, t_0=t_init, t_f=t_next, p=p_i,
+                                                      dae_sys=dae_sys,
+                                                      integrator_type=self.solution_method.integrator_type)
 
                 # Fetch values from results
                 x_t, yz_t = sim_result['xf'], sim_result['zf']
@@ -271,16 +271,16 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
     def create_initial_guess(self):
         base_x0 = self.problem.x_0
-        base_x0 = vertcat(base_x0, repmat(DM([0] * self.model.Nu), self.degree_control))
+        base_x0 = vertcat(base_x0, repmat(DM([0] * self.model.n_u), self.degree_control))
         x0 = vertcat(repmat(base_x0, self.finite_elements), self.problem.x_0)
-        x0 = vertcat(x0, DM.zeros(self.problem.N_eta))
+        x0 = vertcat(x0, DM.zeros(self.problem.n_eta))
         return x0
 
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
         """
         Set the raw data received from the solver and put it in the Optimization Result object
-        :type optimization_result: yaocptool.methods.optimizationresult.OptimizationResult
-        :type raw_solution_dict: dict
+        :param optimization_result: OptimizationResult
+        :param raw_solution_dict: dict
         """
 
         optimization_result.raw_solution_dict = raw_solution_dict
@@ -301,8 +301,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         optimization_result.x_interpolation_data['values'] = x_breakpoints_values
         optimization_result.y_interpolation_data['values'] = y_breakpoints_values
-        optimization_result.u_interpolation_data['values'] = y_breakpoints_values
+        optimization_result.u_interpolation_data['values'] = u_breakpoints_values
 
-        optimization_result.x_interpolation_data['time'] = [t for t in self.time_breakpoints]
-        optimization_result.y_interpolation_data['time'] = [t for t in self.time_breakpoints[:-1]]
-        optimization_result.u_interpolation_data['time'] = [t for t in self.time_breakpoints[:-1]]
+        optimization_result.x_interpolation_data['time'] = [[t] for t in self.time_breakpoints]
+        optimization_result.y_interpolation_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
+        optimization_result.u_interpolation_data['time'] = [[t + self.delta_t*col for col in self.solution_method.collocation_points(self.degree_control)] for t in self.time_breakpoints[:-1]]
+

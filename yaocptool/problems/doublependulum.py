@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
 class DoublePendulum(SystemModel):
     def __init__(self):
-        SystemModel.__init__(self, Nx =6, Ny= 0, Nu=1)
+        SystemModel.__init__(self, n_x=6, n_y= 0, n_u=1)
         
         x_sym = self.x_sym
         #y_sym = self.y_sym 
