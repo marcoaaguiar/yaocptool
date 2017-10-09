@@ -9,6 +9,8 @@ Trust me, it is easier!
 ### Creating a model
 
 ```python
+from yaocptool.modelling import SystemModel
+
 model = SystemModel(n_x=1, n_u=1)
 x = model.x_sym # vector of state variables
 u = model.u_sym # vector of control variables
