@@ -225,14 +225,14 @@ class AugmentedLagrangian(SolutionMethodsBase):
     def create_nu_initial_guess(self, n_r=None):
         if n_r is None:
             n_r = self.Nr
-        nu = self.create_constant_theta(constant=0, dimension=n_r, degree=self.degree,
-                                        finite_elements=self.finite_elements)
+        nu = self.create_constant_theta(constant=0, dimension=n_r*self.degree, finite_elements=self.finite_elements)
         return nu
 
     def _create_nu_update_func(self):
         v, x_var, y_var, u_var, eta = self.ocp_solver.discretizer.create_nlp_symbolic_variables()
         par = MX.sym('par', self.model.n_p)
-        theta = dict([(i, vec(MX.sym('theta_' + repr(i), self.Nr, self.degree))) for i in range(self.finite_elements)])
+        theta = dict([(i, vec(MX.sym('theta_' + repr(i), self.model.n_theta)))
+                      for i in range(self.finite_elements)])
         theta_var = vertcat(*theta.values())
 
         col_points = self.collocation_points(self.degree, with_zero=False)
@@ -364,7 +364,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
                 self.last_solution = (x, u)
                 break
             else:
-                error = self._update_nu(p=self.mu, theta=self.nu, raw_solution_dict=raw_solution_dict)
+                error = self._update_nu(p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict)
                 self._update_mu()
 
         print('Solution time: {}'.format(time.time() - t1))

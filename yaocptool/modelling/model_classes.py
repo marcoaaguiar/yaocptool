@@ -4,12 +4,15 @@ Created on Thu Jun 09 10:50:48 2016
 
 @author: marco
 """
+from warnings import warn
 
-from casadi import SX, DM, vertcat, substitute, Function, integrator, is_equal, jacobian, mtimes
-from yaocptool import config
+from casadi import SX, DM, vertcat, substitute, Function, integrator, jacobian, mtimes, rootfinder
+from yaocptool import config, find_variables_indices_in_vector
+
 
 # TODO: Check linearize method
 # TODO: Create find_equilibrium method
+
 
 class SystemModel:
     def __init__(self, n_x=0, n_y=0, n_z=0, n_u=0, n_p=0, n_theta=0, **kwargs):
@@ -42,10 +45,18 @@ class SystemModel:
             setattr(self, k, v)
 
         if not hasattr(self, 'name'):
-            self.name = ''
+            self.name = 'model'
+        if 'x_names' in kwargs and n_x == 0:
+            self.x_sym = []
+            for name_tuple in kwargs['x_names']:
+                name = name_tuple[0]
+                size = name_tuple[1]
+                self.x_sym = vertcat(self.x_sym, SX.sym(self.name + '_' + name, size))
+        else:
+            self.x_sym = SX.sym(self.name + '_x', n_x)
+            # raise Exception("You should provide an 'n_x' OR a 'x_names' dict.")
 
-        self.x_sym = SX.sym(self.name + '_x', n_x)
-        self.x_0_sym = SX.sym(self.name + '_x_0_sym', n_x)
+        self.x_0_sym = SX.sym(self.name + '_x_0_sym', self.n_x)
         self.y_sym = SX.sym(self.name + '_y', n_y)
         self.z_sym = SX.sym(self.name + '_z', n_z)
         self.u_sym = SX.sym(self.name + '_u', n_u)
@@ -486,13 +497,26 @@ class SystemModel:
 
         return linear_model
 
+    def find_equilibrium(self, additional_eqs, guess=None, t_0=0):
+        if guess is None:
+            guess = [2] * (self.n_x + self.n_y + self.n_u)
+        if isinstance(additional_eqs, list):
+            additional_eqs = vertcat(*additional_eqs)
+
+        eqs = vertcat(self.ode, self.alg, additional_eqs)
+        eqs = substitute(eqs, self.t_sym, t_0)
+        eqs = substitute(eqs, self.tau_sym, 0)
+        f_eqs = Function('f_equilibrium', [vertcat(*self.all_sym[1:-1])], [eqs])
+        f_jeqs = Function('f_equilibrium', [vertcat(*self.all_sym[1:-1])], [jacobian(eqs, vertcat(*self.all_sym[1:-1]))])
+
+        rf = rootfinder('rf_equilibrium', 'newton', f_eqs)
+        res = rf(guess)
+        return res[:self.n_x], res[self.n_x:self.n_x + self.n_y], res[self.n_x + self.n_y:]
+
     @staticmethod
     def find_variables_indices_in_vector(var, vector):
-        index = []
-        for j in range(vector.size1()):
-            for i in range(var.numel()):
-                if is_equal(vector[j], var[i]):
-                    index.append(j)
+        warn('Use yaocptool.find_variables_indices_in_vector')
+        index = find_variables_indices_in_vector(var, vector)
         return index
 
 

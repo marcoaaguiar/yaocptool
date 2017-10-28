@@ -273,8 +273,7 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
         for k in self.con_dict:
             for z_sym in self.con_dict[k]['associated_z_sym']:
                 self.approximation_data[z_sym] = self.create_constant_theta(constant=0,
-                                                                            dimension=1,
-                                                                            degree=self.degree,
+                                                                            dimension=1*self.degree,
                                                                             finite_elements=self.finite_elements)
 
     def saveUsedApproximationData(self, problem_id, approximation_data):

@@ -38,8 +38,8 @@ class OptimalControlProblem:
         self.h_final = vertcat([])
         self.g_ineq = vertcat([])
 
-        self.L = DM(0.)  # type: DM
-        self.V = DM(0.)  # type: DM
+        self.L = DM(0.)  # type: DM # Integral cost
+        self.V = DM(0.)  # type: DM # Final cost
         self.H = DM(0.)
 
         self.eta = SX()

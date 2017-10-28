@@ -1,3 +1,5 @@
+from warnings import warn
+
 import matplotlib.pyplot as plt
 from casadi import SX, MX, DM, vertcat, collocation_points, \
     vec, nlpsol, \
@@ -7,7 +9,7 @@ from typing import List, Tuple
 import copy
 
 from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
-from yaocptool import config
+from yaocptool import config, create_constant_theta, join_thetas
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
@@ -185,35 +187,14 @@ class SolutionMethodsBase(object):
 
     @staticmethod
     def join_thetas(*args):
-        new_theta = {}
-        all_keys = []
-        for theta in args:
-            all_keys.extend(theta.keys())
-        all_keys = set(all_keys)
+        warn('Use yaocptool.join_theta')
+        return join_thetas(*args)
 
-        for i in all_keys:
-            new_theta[i] = []
-            for theta in args:
-                if i in theta:
-                    theta1_value = theta[i]
-                else:
-                    theta1_value = []
-
-                new_theta[i] = vertcat(new_theta[i], theta1_value)
-
-        return new_theta
-
-    def create_constant_theta(self, constant=0, dimension=1, degree=None, finite_elements=None):
+    def create_constant_theta(self, constant=0, dimension=1, finite_elements=None):
         if finite_elements is None:
             finite_elements = self.finite_elements
-        if degree is None:
-            degree = self.degree
 
-        theta = {}
-        for i in range(finite_elements):
-            theta[i] = vec(constant * DM.ones(dimension, degree))
-
-        return theta
+        return create_constant_theta(constant, dimension, finite_elements)
 
     # ==============================================================================
     # SOLVE

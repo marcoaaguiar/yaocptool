@@ -36,9 +36,9 @@ class Network:
     def createConnections(self):
         for connection_id in self.connections_settings_dict:
             nodes = [self.nodes_dict[node_id] for node_id in self.connections_settings_dict[connection_id]]
-            z_sym_indeces_list = self.connections_settings_dict[connection_id].values()
+            z_sym_indices_list = self.connections_settings_dict[connection_id].values()
             self.connection_dict[connection_id] = Connection(connection_id=connection_id, nodes=nodes,
-                                                             z_sym_indeces_list=z_sym_indeces_list)
+                                                             z_sym_indeces_list=z_sym_indices_list)
 
     @property
     def models(self):
