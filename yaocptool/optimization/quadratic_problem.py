@@ -18,7 +18,7 @@ class QuadraticOptimizationProblem(AbstractOptimizationProblem):
 
         :param n_x: int
         """
-        super(QuadraticOptimizationProblem, self).__init__(n_x)
+        super(QuadraticOptimizationProblem, self).__init__(n_x, **kwargs)
 
     def _create_solver(self):
         problem_dict = self.get_problem_dict()

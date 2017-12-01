@@ -12,6 +12,7 @@ from typing import Dict, List
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 
+
 class MultipleShootingScheme(DiscretizationSchemeBase):
     def _number_of_variables(self):
         return self.model.n_x * (self.finite_elements + 1) \
@@ -87,7 +88,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             v_offset = v_offset + self.model.n_x
 
         for k in range(self.finite_elements):
-                y.append([DM([])])
+            y.append([DM([])])
 
         for k in range(self.finite_elements):
             u_k = []
@@ -195,8 +196,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             x_init = x_var[el][0]
             # Create dae_sys and the control function
             dae_sys = self.model.get_dae_system()
-            self.model.convert_dae_sys_from_tau_to_time(dae_sys, self.time_breakpoints[el],
-                                                        self.time_breakpoints[el + 1])
+            dae_sys.convert_from_tau_to_time(self.time_breakpoints[el],
+                                             self.time_breakpoints[el + 1])
+
             u_func = self.model.convert_expr_from_tau_to_time(self.model.u_func, t_0, t_f)
             if self.solution_method.solution_class == 'direct':
                 f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par], [u_func])
@@ -235,9 +237,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 p_i = vertcat(p, theta[el], self.vectorize(u_var[el]))
 
                 # Do the simulation
-                sim_result = self.model.simulate_step(x_init, t_0=t_init, t_f=t_next, p=p_i,
-                                                      dae_sys=dae_sys,
-                                                      integrator_type=self.solution_method.integrator_type)
+                sim_result = dae_sys.simulate(x_init, t_0=t_init, t_f=t_next, p=p_i,
+                                              integrator_type=self.solution_method.integrator_type)
 
                 # Fetch values from results
                 x_t, yz_t = sim_result['xf'], sim_result['zf']
@@ -305,5 +306,6 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         optimization_result.x_interpolation_data['time'] = [[t] for t in self.time_breakpoints]
         optimization_result.y_interpolation_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
-        optimization_result.u_interpolation_data['time'] = [[t + self.delta_t*col for col in self.solution_method.collocation_points(self.degree_control)] for t in self.time_breakpoints[:-1]]
-
+        optimization_result.u_interpolation_data['time'] = [
+            [t + self.delta_t * col for col in self.solution_method.collocation_points(self.degree_control)] for t in
+            self.time_breakpoints[:-1]]

@@ -18,8 +18,7 @@ class NonlinearOptimizationProblem(AbstractOptimizationProblem):
 
         :param n_x: int
         """
-        super(NonlinearOptimizationProblem, self).__init__(n_x)
-
+        super(NonlinearOptimizationProblem, self).__init__(n_x, **kwargs)
 
     def _create_solver(self):
         problem_dict = self.get_problem_dict()

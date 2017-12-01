@@ -6,9 +6,10 @@ Created on Thu Jun 09 10:50:48 2016
 """
 from warnings import warn
 
-from casadi import SX, DM, vertcat, substitute, Function, integrator, jacobian, mtimes, rootfinder
-from yaocptool import config, find_variables_indices_in_vector
+from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder
 
+from yaocptool import find_variables_indices_in_vector
+from yaocptool.modelling import DAESystem
 
 # TODO: Check linearize method
 # TODO: Create find_equilibrium method
@@ -369,114 +370,21 @@ class SystemModel:
 
     def get_dae_system(self):
         if self.system_type == 'ode':
-            system = {'x': self.x_sym, 'ode': self.ode, 't': self.t_sym}
+            kwargs = {'x': self.x_sym, 'ode': self.ode, 't': self.t_sym, 'tau': self.tau_sym}
         else:
-            system = {'x': self.x_sym, 'z': vertcat(self.y_sym, self.z_sym), 'ode': self.ode,
-                      'alg': vertcat(self.alg, self.alg_z, self.con), 't': self.t_sym}
+            kwargs = {'x': self.x_sym, 'z': vertcat(self.y_sym, self.z_sym), 'ode': self.ode,
+                      'alg': vertcat(self.alg, self.alg_z, self.con), 't': self.t_sym, 'tau': self.tau_sym}
         if self.n_p + self.n_theta + self.u_par.numel() > 0:
-            system['p'] = vertcat(self.p_sym, self.theta_sym, self.u_par)
-        return system
+            kwargs['p'] = vertcat(self.p_sym, self.theta_sym, self.u_par)
+
+        dae_sys = DAESystem(**kwargs)
+        return dae_sys
 
     def simulate(self, x_0, t_f, t_0=0, p=None, integrator_type='implicit'):
         if p is None:
             p = []
-        dae = self.get_dae_system()
-
-        opts = {'tf': t_f, 't0': t_0}  # final time
-        integrator_ = self._create_integrator(dae, opts, integrator_type)
-        call = {'x0': x_0, 'p': p}
-
-        return integrator_(**call)
-
-    def simulate_step(self, x_0, t_0, t_f, p=None, dae_sys=None, integrator_type='implicit'):
-        if dae_sys is None:
-            dae_sys = self.get_dae_system()
-
-        opts = {'tf': float(t_f), 't0': float(t_0)}  # final time
-        integrator_ = self._create_integrator(dae_sys, opts, integrator_type)
-        args = {'x0': x_0, 'p': p}
-
-        return integrator_(**args)
-
-    def simulate_interval(self, x_0, t_0, t_grid, p=None, dae_sys=None, integrator_type='implicit'):
-        if dae_sys is None:
-            dae_sys = self.get_dae_system()
-        x_vars = []
-        y_vars = []
-        for t in t_grid:
-            opts = {'tf': float(t), 't0': float(t_0)}  # final time
-            integrator_ = self._create_integrator(dae_sys, opts, integrator_type)
-            call = {'x0': x_0, 'p': p}
-
-            if p is not None:
-                call['p'] = DM(p)
-
-            res = integrator_(**call)
-            x_vars.append(res['xf'])
-            y_vars.append(res['zf'])
-        return x_vars, y_vars
-
-    def _create_integrator(self, dae_sys, options, integrator_type='implicit'):
-        for k in config.INTEGRATOR_OPTIONS:
-            options[k] = config.INTEGRATOR_OPTIONS[k]
-
-        if integrator_type == 'implicit':
-            if self.system_type == 'ode':
-                integrator_ = integrator("integrator", "cvodes", dae_sys, options)
-            else:
-                integrator_ = integrator("integrator", "idas", dae_sys, options)
-        else:
-            if self.system_type == 'ode':
-                integrator_ = self._create_explicit_integrator('explicitIntegrator', 'rk4', dae_sys, options)
-            else:
-                raise Exception('explicit integrator not implemented')
-        return integrator_
-
-    @staticmethod
-    def _create_explicit_integrator(name, integrator_type, dae_sys, options=None):
-        default_options = {'t0': 0, 'tf': 1, 'iterations': 4}
-        if options is None:
-            options = default_options
-        for k in default_options:
-            if k not in options:
-                options[k] = default_options[k]
-
-        if 'alg' in dae_sys:
-            raise Exception('Explicit integrator not implemented for DAE systems')
-        f_in = [dae_sys['t'], dae_sys['x']]
-        if 'p' in dae_sys:
-            f_in.append(dae_sys['p'])
-        else:
-            f_in.append(SX.sym('fake_p'))
-        f = Function(name, f_in, [dae_sys['ode']])
-
-        t_0 = options['t0']
-        t_f = options['tf']
-        iterations = options['iterations']
-        n_states = dae_sys['x'].numel()
-        if integrator_type == 'rk4':
-            def runge_kutta_4th_order(x0=DM.zeros(n_states, 1), p=None, n_iter=iterations):
-                if n_iter < 1:
-                    raise Exception(
-                        "The given number of Runge Kutta iterations is less than one, given {}".format(n_iter))
-                if p is None:
-                    p = []
-
-                x_f = x0
-                h = (t_f - t_0) / n_iter
-                t = t_0
-                for it in range(n_iter):
-                    k1 = h * f(t, x0, p)
-                    k2 = h * f(t + 0.5 * h, x0 + 0.5 * k1, p)
-                    k3 = h * f(t + 0.5 * h, x0 + 0.5 * k2, p)
-                    k4 = h * f(t + h, x0 + k3, p)
-
-                    x_f = x0 + 1 / 6. * k1 + 1 / 3. * k2 + 1 / 3. * k3 + 1 / 6. * k4
-                    x0 = x_f
-                    t += h
-                return {'xf': x_f, 'zf': []}
-
-            return runge_kutta_4th_order
+        dae_sys = self.get_dae_system()
+        return dae_sys.simulate(x_0=x_0, t_f=t_f, t_0=t_0, p=p, integrator_type=integrator_type)
 
     # endregion
 
@@ -497,9 +405,28 @@ class SystemModel:
 
         return linear_model
 
-    def find_equilibrium(self, additional_eqs, guess=None, t_0=0):
+    def find_equilibrium(self, additional_eqs, guess=None, t_0=0.):
+        """Find a equilibrium point for the model.
+        This method solves the root finding problem:
+
+            f(x,y,u,t_0) = 0
+            g(x,y,u,t_0) = 0
+            additional_eqs (x,y,u,t_0) = 0
+
+        Use additional_eqs to specify the additional conditions remembering that dim(additional_eqs) = n_u,
+        so the system can be well defined.
+        If no initial guess is provided ("guess" parameter) a guess of ones will be used (not zero to avoid problems
+        with singularities.
+
+        Returns x_0, y_0, u_0
+
+        :param additional_eqs: SX
+        :param guess: DM
+        :param t_0: float
+        :return: (DM, DM, DM)
+        """
         if guess is None:
-            guess = [2] * (self.n_x + self.n_y + self.n_u)
+            guess = [1] * (self.n_x + self.n_y + self.n_u)
         if isinstance(additional_eqs, list):
             additional_eqs = vertcat(*additional_eqs)
 
@@ -507,7 +434,6 @@ class SystemModel:
         eqs = substitute(eqs, self.t_sym, t_0)
         eqs = substitute(eqs, self.tau_sym, 0)
         f_eqs = Function('f_equilibrium', [vertcat(*self.all_sym[1:-1])], [eqs])
-        f_jeqs = Function('f_equilibrium', [vertcat(*self.all_sym[1:-1])], [jacobian(eqs, vertcat(*self.all_sym[1:-1]))])
 
         rf = rootfinder('rf_equilibrium', 'newton', f_eqs)
         res = rf(guess)
