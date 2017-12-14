@@ -6,10 +6,11 @@ Created on Thu Jun 09 10:50:48 2016
 """
 from warnings import warn
 
-from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder
+from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec
 
 from yaocptool import find_variables_indices_in_vector
 from yaocptool.modelling import DAESystem
+
 
 # TODO: Check linearize method
 # TODO: Create find_equilibrium method
@@ -184,33 +185,84 @@ class SystemModel:
         else:
             raise Exception('Not implemented')
 
+    def create_state(self, name='x', size=1):
+        """
+        Create a new state with the name "name" and size "size"
+        :param name: str
+        :param size: int
+        :return:
+        """
+        new_x = SX.sym(name, size)
+        new_x_0_sym = SX.sym(name + '_0_sym', size)
+        self.include_state(vec(new_x), ode=None, x_0_sym=vec(new_x_0_sym))
+        return new_x
+
+    def create_algebraic_variable(self, name='y', size=1):
+        """
+        Create a new algebraic variable with the name "name" and size "size"
+        :param name: str
+        :param size: int or tuple
+        :return:
+        """
+        new_y = SX.sym(name, size)
+        self.include_algebraic(new_y)
+        return new_y
+
+    def create_control(self, name='u', size=1):
+        """
+        Create a new control variable name "name" and size "size"
+        :param name: str
+        :param size: int
+        :return:
+        """
+        new_u = SX.sym(name, size)
+        self.include_control(new_u)
+        return new_u
+
+    def create_parameter(self, name='p', size=1):
+        """
+        Create a new parameter name "name" and size "size"
+        :param name: str
+        :param size: int
+        :return:
+        """
+        new_p = SX.sym(name, size)
+        self.include_parameter(new_p)
+        return new_p
+
+    def create_theta(self, name='theta', size=1):
+        """
+        Create a new parameter name "name" and size "size"
+        :param name: str
+        :param size: int
+        :return:
+        """
+        new_theta = SX.sym(name, size)
+        self.include_theta(new_theta)
+        return new_theta
+
     # region INCLUDES
 
     def include_system_equations(self, ode=None, alg=None, alg_z=None, con=None):
-        if ode is None:
-            ode = []
-        elif isinstance(ode, list):  # if ode is list or tuple
-            ode = vertcat(*ode)
+        if ode is not None:
+            if isinstance(ode, list):  # if ode is list or tuple
+                ode = vertcat(*ode)
+            self.ode = vertcat(self.ode, ode)
 
-        if alg is None:
-            alg = []
-        elif isinstance(alg, list):  # if alg is list or tuple
-            alg = vertcat(*alg)
+        if alg is not None:
+            if isinstance(alg, list):  # if alg is list or tuple
+                alg = vertcat(*alg)
+            self.alg = vertcat(self.alg, alg)
 
-        if alg_z is None:
-            alg_z = []
-        elif isinstance(alg_z, list):  # if alg_z is list or tuple
-            alg_z = vertcat(*alg_z)
+        if alg_z is not None:
+            if isinstance(alg_z, list):  # if alg_z is list or tuple
+                alg_z = vertcat(*alg_z)
+            self.alg_z = vertcat(self.alg_z, alg_z)
 
-        if con is None:
-            con = []
-        elif isinstance(con, list):  # if con is list or tuple
-            con = vertcat(*con)
-
-        self.ode = vertcat(self.ode, ode)
-        self.alg = vertcat(self.alg, alg)
-        self.alg_z = vertcat(self.alg_z, alg_z)
-        self.con = vertcat(self.con, con)
+        if con is not None:
+            if isinstance(con, list):  # if con is list or tuple
+                con = vertcat(*con)
+            self.con = vertcat(self.con, con)
 
     def include_state(self, var, ode=None, x_0_sym=None):
         if ode is None:
@@ -224,9 +276,11 @@ class SystemModel:
         self.include_system_equations(ode=ode)
         return x_0_sym
 
-    def include_algebraic(self, var, alg):
+    def include_algebraic(self, var, alg=None):
         self.y_sym = vertcat(self.y_sym, var)
-        self.alg = vertcat(self.alg, alg)
+
+        if alg is None:
+            self.include_system_equations(alg=alg)
 
     def include_external_algebraic(self, var, alg_z=None):
         if alg_z is None:
@@ -380,11 +434,14 @@ class SystemModel:
         dae_sys = DAESystem(**kwargs)
         return dae_sys
 
-    def simulate(self, x_0, t_f, t_0=0, p=None, integrator_type='implicit'):
+    def simulate(self, x_0, t_f, t_0=0, p=None, integrator_type='implicit', integrator_options=None):
+        if integrator_options is None:
+            integrator_options = {}
         if p is None:
             p = []
         dae_sys = self.get_dae_system()
-        return dae_sys.simulate(x_0=x_0, t_f=t_f, t_0=t_0, p=p, integrator_type=integrator_type)
+        return dae_sys.simulate(x_0=x_0, t_f=t_f, t_0=t_0, p=p,
+                                integrator_type=integrator_type, integrator_options = integrator_options)
 
     # endregion
 

@@ -10,7 +10,7 @@ from casadi import DM, MX, vertcat, Function, repmat
 # noinspection PyUnresolvedReferences
 from typing import Dict, List
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
-from yaocptool.methods.base.optimizationresult import OptimizationResult
+from yaocptool import find_variables_indices_in_vector
 
 
 class MultipleShootingScheme(DiscretizationSchemeBase):
@@ -114,6 +114,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         # Create NLP symbolic variables
         all_decision_vars, x_var, yz_var, u_var, eta = self.create_nlp_symbolic_variables()
         y = []
+        cost = 0
         constraint_list = []
 
         # Create "simulations" time_dict, a dict informing the simulation points in each finite elem. for each variable
@@ -126,16 +127,22 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         # Multiple Shooting "simulation"
         results = self.get_system_at_given_times(x_var, y, u_var, time_dict, p, theta)
         for el in range(self.finite_elements):
-            constraint_list.append(results[el]['x'][0] - x_var[el + 1][0])
+            x_at_el_p_1 = results[el]['x'][0]
+
+            if self.solution_method.solution_class == 'direct' and self.solution_method.cost_as_a_sum:
+                x_at_el_p_1 = [x_at_el_p_1[n] for n in range(self.model.n_x)]
+                x_at_el_p_1[-1] = 0
+                x_at_el_p_1 = vertcat(*x_at_el_p_1)
+                cost += results[el]['x'][0][-1]
+            constraint_list.append(x_at_el_p_1 - x_var[el + 1][0])
 
         # Final time constraint
         f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
         constraint_list.append(f_h_final(x_var[-1][0], eta))
 
         if self.solution_method.solution_class == 'direct':
-            cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(x_var[-1][0], p)
-        else:
-            cost = 0
+            if not self.solution_method.cost_as_a_sum:
+                cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(x_var[-1][0], p)
 
         nlp_prob = {'g': vertcat(*constraint_list),
                     'x': all_decision_vars,

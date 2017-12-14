@@ -31,9 +31,8 @@ class SolutionMethodsBase(object):
         self.problem = problem
         # self.problem = copy.copy(self._problem)  # type: OptimalControlProblem
         self.integrator_type = 'implicit'
-        self.solution_method = 'multiple_shooting'
         self.solution_class = ''
-        self.degree = 4
+        self.degree = 3
         self.degree_control = 1
         self.finite_elements = 10
         self.prepared = False
@@ -57,6 +56,9 @@ class SolutionMethodsBase(object):
             self.discretizer = MultipleShootingScheme(self)
         elif self.discretization_scheme == 'collocation':
             self.discretizer = CollocationScheme(self)
+        else:
+            raise Exception("Discretization scheme not recognized: '{}'. Available options: 'multiple-shooting'"
+                            " and 'collocation'".format(self.discretization_scheme))
 
     @property
     def model(self):

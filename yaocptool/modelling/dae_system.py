@@ -39,13 +39,13 @@ class DAESystem:
     @property
     def dae_system_dict(self):
         if self.is_ode:
-            d = {'x': self.x, 'ode': self.ode, 't': self.t}
+            dae_sys_dict = {'x': self.x, 'ode': self.ode, 't': self.t}
         else:
-            d = {'x': self.x, 'z': self.y, 'ode': self.ode, 'alg': self.alg, 't': self.t}
+            dae_sys_dict = {'x': self.x, 'z': self.y, 'ode': self.ode, 'alg': self.alg, 't': self.t}
 
         if self.has_parameters:
-            d['p'] = self.p
-        return d
+            dae_sys_dict['p'] = self.p
+        return dae_sys_dict
 
     def convert_from_tau_to_time(self, t_k, t_kp1):
         if self.t is None:
@@ -60,11 +60,16 @@ class DAESystem:
     #  Simulate  #
     ##############
 
-    def simulate(self, x_0, t_f, t_0=0, p=None, integrator_type='implicit'):
+    def simulate(self, x_0, t_f, t_0=0, p=None, integrator_type='implicit', integrator_options=None):
+        if integrator_options is None:
+            integrator_options = {}
         if p is None:
             p = []
 
         opts = {'tf': t_f, 't0': t_0}  # final time
+        for k in integrator_options:
+            opts[k] = integrator_options[k]
+
         integrator_ = self._create_integrator(opts, integrator_type)
         call = {'x0': x_0, 'p': p}
         return integrator_(**call)

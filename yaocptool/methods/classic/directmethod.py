@@ -18,6 +18,7 @@ class DirectMethod(SolutionMethodsBase):
         :param degree: int
         :param discretization_scheme: str 'multiple-shooting' | 'collocation'
         """
+        self.cost_as_a_sum = False
         super(DirectMethod, self).__init__(problem, **kwargs)
 
         self.solution_class = 'direct'
