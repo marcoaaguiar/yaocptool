@@ -13,8 +13,7 @@ from os.path import dirname, abspath
 
 path.append(dirname(dirname(abspath(__file__))))
 
-from yaocptool.problems.twotanks import *
-from yaocptool.methods import IndirectMethod, DirectMethod, AugmentedLagrangian
+from yaocptool.methods import IndirectMethod, AugmentedLagrangian
 import time
 
 # model = TwoTanks()

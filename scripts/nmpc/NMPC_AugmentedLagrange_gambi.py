@@ -12,7 +12,6 @@ from os.path import dirname, abspath
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 
-from yaocptool.problems.cartpendulum import *
 from yaocptool.methods import IndirectMethod, AugmentedLagrangian
 from yaocptool.nmpc import NMPCScheme
 from yaocptool import casadi

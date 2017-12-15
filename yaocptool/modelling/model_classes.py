@@ -4,12 +4,17 @@ Created on Thu Jun 09 10:50:48 2016
 
 @author: marco
 """
+from warnings import warn
 
-from casadi import SX, DM, vertcat, substitute, Function, integrator, is_equal, jacobian, mtimes
-from yaocptool import config
+from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec
+
+from yaocptool import find_variables_indices_in_vector
+from yaocptool.modelling import DAESystem
+
 
 # TODO: Check linearize method
 # TODO: Create find_equilibrium method
+
 
 class SystemModel:
     def __init__(self, n_x=0, n_y=0, n_z=0, n_u=0, n_p=0, n_theta=0, **kwargs):
@@ -42,10 +47,18 @@ class SystemModel:
             setattr(self, k, v)
 
         if not hasattr(self, 'name'):
-            self.name = ''
+            self.name = 'model'
+        if 'x_names' in kwargs and n_x == 0:
+            self.x_sym = []
+            for name_tuple in kwargs['x_names']:
+                name = name_tuple[0]
+                size = name_tuple[1]
+                self.x_sym = vertcat(self.x_sym, SX.sym(self.name + '_' + name, size))
+        else:
+            self.x_sym = SX.sym(self.name + '_x', n_x)
+            # raise Exception("You should provide an 'n_x' OR a 'x_names' dict.")
 
-        self.x_sym = SX.sym(self.name + '_x', n_x)
-        self.x_0_sym = SX.sym(self.name + '_x_0_sym', n_x)
+        self.x_0_sym = SX.sym(self.name + '_x_0_sym', self.n_x)
         self.y_sym = SX.sym(self.name + '_y', n_y)
         self.z_sym = SX.sym(self.name + '_z', n_z)
         self.u_sym = SX.sym(self.name + '_u', n_u)
@@ -172,33 +185,84 @@ class SystemModel:
         else:
             raise Exception('Not implemented')
 
+    def create_state(self, name='x', size=1):
+        """
+        Create a new state with the name "name" and size "size"
+        :param name: str
+        :param size: int
+        :return:
+        """
+        new_x = SX.sym(name, size)
+        new_x_0_sym = SX.sym(name + '_0_sym', size)
+        self.include_state(vec(new_x), ode=None, x_0_sym=vec(new_x_0_sym))
+        return new_x
+
+    def create_algebraic_variable(self, name='y', size=1):
+        """
+        Create a new algebraic variable with the name "name" and size "size"
+        :param name: str
+        :param size: int or tuple
+        :return:
+        """
+        new_y = SX.sym(name, size)
+        self.include_algebraic(new_y)
+        return new_y
+
+    def create_control(self, name='u', size=1):
+        """
+        Create a new control variable name "name" and size "size"
+        :param name: str
+        :param size: int
+        :return:
+        """
+        new_u = SX.sym(name, size)
+        self.include_control(new_u)
+        return new_u
+
+    def create_parameter(self, name='p', size=1):
+        """
+        Create a new parameter name "name" and size "size"
+        :param name: str
+        :param size: int
+        :return:
+        """
+        new_p = SX.sym(name, size)
+        self.include_parameter(new_p)
+        return new_p
+
+    def create_theta(self, name='theta', size=1):
+        """
+        Create a new parameter name "name" and size "size"
+        :param name: str
+        :param size: int
+        :return:
+        """
+        new_theta = SX.sym(name, size)
+        self.include_theta(new_theta)
+        return new_theta
+
     # region INCLUDES
 
     def include_system_equations(self, ode=None, alg=None, alg_z=None, con=None):
-        if ode is None:
-            ode = []
-        elif isinstance(ode, list):  # if ode is list or tuple
-            ode = vertcat(*ode)
+        if ode is not None:
+            if isinstance(ode, list):  # if ode is list or tuple
+                ode = vertcat(*ode)
+            self.ode = vertcat(self.ode, ode)
 
-        if alg is None:
-            alg = []
-        elif isinstance(alg, list):  # if alg is list or tuple
-            alg = vertcat(*alg)
+        if alg is not None:
+            if isinstance(alg, list):  # if alg is list or tuple
+                alg = vertcat(*alg)
+            self.alg = vertcat(self.alg, alg)
 
-        if alg_z is None:
-            alg_z = []
-        elif isinstance(alg_z, list):  # if alg_z is list or tuple
-            alg_z = vertcat(*alg_z)
+        if alg_z is not None:
+            if isinstance(alg_z, list):  # if alg_z is list or tuple
+                alg_z = vertcat(*alg_z)
+            self.alg_z = vertcat(self.alg_z, alg_z)
 
-        if con is None:
-            con = []
-        elif isinstance(con, list):  # if con is list or tuple
-            con = vertcat(*con)
-
-        self.ode = vertcat(self.ode, ode)
-        self.alg = vertcat(self.alg, alg)
-        self.alg_z = vertcat(self.alg_z, alg_z)
-        self.con = vertcat(self.con, con)
+        if con is not None:
+            if isinstance(con, list):  # if con is list or tuple
+                con = vertcat(*con)
+            self.con = vertcat(self.con, con)
 
     def include_state(self, var, ode=None, x_0_sym=None):
         if ode is None:
@@ -212,9 +276,11 @@ class SystemModel:
         self.include_system_equations(ode=ode)
         return x_0_sym
 
-    def include_algebraic(self, var, alg):
+    def include_algebraic(self, var, alg=None):
         self.y_sym = vertcat(self.y_sym, var)
-        self.alg = vertcat(self.alg, alg)
+
+        if alg is None:
+            self.include_system_equations(alg=alg)
 
     def include_external_algebraic(self, var, alg_z=None):
         if alg_z is None:
@@ -358,114 +424,24 @@ class SystemModel:
 
     def get_dae_system(self):
         if self.system_type == 'ode':
-            system = {'x': self.x_sym, 'ode': self.ode, 't': self.t_sym}
+            kwargs = {'x': self.x_sym, 'ode': self.ode, 't': self.t_sym, 'tau': self.tau_sym}
         else:
-            system = {'x': self.x_sym, 'z': vertcat(self.y_sym, self.z_sym), 'ode': self.ode,
-                      'alg': vertcat(self.alg, self.alg_z, self.con), 't': self.t_sym}
+            kwargs = {'x': self.x_sym, 'z': vertcat(self.y_sym, self.z_sym), 'ode': self.ode,
+                      'alg': vertcat(self.alg, self.alg_z, self.con), 't': self.t_sym, 'tau': self.tau_sym}
         if self.n_p + self.n_theta + self.u_par.numel() > 0:
-            system['p'] = vertcat(self.p_sym, self.theta_sym, self.u_par)
-        return system
+            kwargs['p'] = vertcat(self.p_sym, self.theta_sym, self.u_par)
 
-    def simulate(self, x_0, t_f, t_0=0, p=None, integrator_type='implicit'):
+        dae_sys = DAESystem(**kwargs)
+        return dae_sys
+
+    def simulate(self, x_0, t_f, t_0=0, p=None, integrator_type='implicit', integrator_options=None):
+        if integrator_options is None:
+            integrator_options = {}
         if p is None:
             p = []
-        dae = self.get_dae_system()
-
-        opts = {'tf': t_f, 't0': t_0}  # final time
-        integrator_ = self._create_integrator(dae, opts, integrator_type)
-        call = {'x0': x_0, 'p': p}
-
-        return integrator_(**call)
-
-    def simulate_step(self, x_0, t_0, t_f, p=None, dae_sys=None, integrator_type='implicit'):
-        if dae_sys is None:
-            dae_sys = self.get_dae_system()
-
-        opts = {'tf': float(t_f), 't0': float(t_0)}  # final time
-        integrator_ = self._create_integrator(dae_sys, opts, integrator_type)
-        args = {'x0': x_0, 'p': p}
-
-        return integrator_(**args)
-
-    def simulate_interval(self, x_0, t_0, t_grid, p=None, dae_sys=None, integrator_type='implicit'):
-        if dae_sys is None:
-            dae_sys = self.get_dae_system()
-        x_vars = []
-        y_vars = []
-        for t in t_grid:
-            opts = {'tf': float(t), 't0': float(t_0)}  # final time
-            integrator_ = self._create_integrator(dae_sys, opts, integrator_type)
-            call = {'x0': x_0, 'p': p}
-
-            if p is not None:
-                call['p'] = DM(p)
-
-            res = integrator_(**call)
-            x_vars.append(res['xf'])
-            y_vars.append(res['zf'])
-        return x_vars, y_vars
-
-    def _create_integrator(self, dae_sys, options, integrator_type='implicit'):
-        for k in config.INTEGRATOR_OPTIONS:
-            options[k] = config.INTEGRATOR_OPTIONS[k]
-
-        if integrator_type == 'implicit':
-            if self.system_type == 'ode':
-                integrator_ = integrator("integrator", "cvodes", dae_sys, options)
-            else:
-                integrator_ = integrator("integrator", "idas", dae_sys, options)
-        else:
-            if self.system_type == 'ode':
-                integrator_ = self._create_explicit_integrator('explicitIntegrator', 'rk4', dae_sys, options)
-            else:
-                raise Exception('explicit integrator not implemented')
-        return integrator_
-
-    @staticmethod
-    def _create_explicit_integrator(name, integrator_type, dae_sys, options=None):
-        default_options = {'t0': 0, 'tf': 1, 'iterations': 4}
-        if options is None:
-            options = default_options
-        for k in default_options:
-            if k not in options:
-                options[k] = default_options[k]
-
-        if 'alg' in dae_sys:
-            raise Exception('Explicit integrator not implemented for DAE systems')
-        f_in = [dae_sys['t'], dae_sys['x']]
-        if 'p' in dae_sys:
-            f_in.append(dae_sys['p'])
-        else:
-            f_in.append(SX.sym('fake_p'))
-        f = Function(name, f_in, [dae_sys['ode']])
-
-        t_0 = options['t0']
-        t_f = options['tf']
-        iterations = options['iterations']
-        n_states = dae_sys['x'].numel()
-        if integrator_type == 'rk4':
-            def runge_kutta_4th_order(x0=DM.zeros(n_states, 1), p=None, n_iter=iterations):
-                if n_iter < 1:
-                    raise Exception(
-                        "The given number of Runge Kutta iterations is less than one, given {}".format(n_iter))
-                if p is None:
-                    p = []
-
-                x_f = x0
-                h = (t_f - t_0) / n_iter
-                t = t_0
-                for it in range(n_iter):
-                    k1 = h * f(t, x0, p)
-                    k2 = h * f(t + 0.5 * h, x0 + 0.5 * k1, p)
-                    k3 = h * f(t + 0.5 * h, x0 + 0.5 * k2, p)
-                    k4 = h * f(t + h, x0 + k3, p)
-
-                    x_f = x0 + 1 / 6. * k1 + 1 / 3. * k2 + 1 / 3. * k3 + 1 / 6. * k4
-                    x0 = x_f
-                    t += h
-                return {'xf': x_f, 'zf': []}
-
-            return runge_kutta_4th_order
+        dae_sys = self.get_dae_system()
+        return dae_sys.simulate(x_0=x_0, t_f=t_f, t_0=t_0, p=p,
+                                integrator_type=integrator_type, integrator_options=integrator_options)
 
     # endregion
 
@@ -486,13 +462,44 @@ class SystemModel:
 
         return linear_model
 
+    def find_equilibrium(self, additional_eqs, guess=None, t_0=0.):
+        """Find a equilibrium point for the model.
+        This method solves the root finding problem:
+
+            f(x,y,u,t_0) = 0
+            g(x,y,u,t_0) = 0
+            additional_eqs (x,y,u,t_0) = 0
+
+        Use additional_eqs to specify the additional conditions remembering that dim(additional_eqs) = n_u,
+        so the system can be well defined.
+        If no initial guess is provided ("guess" parameter) a guess of ones will be used (not zero to avoid problems
+        with singularities.
+
+        Returns x_0, y_0, u_0
+
+        :param additional_eqs: SX
+        :param guess: DM
+        :param t_0: float
+        :return: (DM, DM, DM)
+        """
+        if guess is None:
+            guess = [1] * (self.n_x + self.n_y + self.n_u)
+        if isinstance(additional_eqs, list):
+            additional_eqs = vertcat(*additional_eqs)
+
+        eqs = vertcat(self.ode, self.alg, additional_eqs)
+        eqs = substitute(eqs, self.t_sym, t_0)
+        eqs = substitute(eqs, self.tau_sym, 0)
+        f_eqs = Function('f_equilibrium', [vertcat(*self.all_sym[1:-1])], [eqs])
+
+        rf = rootfinder('rf_equilibrium', 'newton', f_eqs)
+        res = rf(guess)
+        return res[:self.n_x], res[self.n_x:self.n_x + self.n_y], res[self.n_x + self.n_y:]
+
     @staticmethod
     def find_variables_indices_in_vector(var, vector):
-        index = []
-        for j in range(vector.size1()):
-            for i in range(var.numel()):
-                if is_equal(vector[j], var[i]):
-                    index.append(j)
+        warn('Use yaocptool.find_variables_indices_in_vector')
+        index = find_variables_indices_in_vector(var, vector)
         return index
 
 

@@ -20,7 +20,7 @@ class OptimalControlProblem:
             self.x_0 = DM([])
 
         self.name = ''
-        self.model = None # type: SystemModel
+        self.model = None  # type: SystemModel
         self._model = model  # type: SystemModel
         self.reset_working_model()
 
@@ -38,8 +38,8 @@ class OptimalControlProblem:
         self.h_final = vertcat([])
         self.g_ineq = vertcat([])
 
-        self.L = DM(0.)  # type: DM
-        self.V = DM(0.)  # type: DM
+        self.L = DM(0.)  # type: DM # Integral cost
+        self.V = DM(0.)  # type: DM # Final cost
         self.H = DM(0.)
 
         self.eta = SX()
@@ -107,7 +107,7 @@ class OptimalControlProblem:
         for i, attr in enumerate(attributes):
             if not getattr(self, attr).numel() == getattr(self.model, attr_to_compare[i]):
                 raise Exception(
-                    'The size of the initial guess "self.{}" is not equal to the number of states "model.{}",'
+                    'The size of "self.{}" is not equal to the number of states "model.{}",'
                     + ' {} != {}'.format(attr, attr_to_compare[i], self.x_0.numel(), self.model.n_x))
         return True
 

@@ -10,9 +10,7 @@ import sys
 from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 
-import yaocptool
-from yaocptool.problems.twotanks import *
-from yaocptool.methods import IndirectMethod, DirectMethod, AugmentedLagrangian, SequentialAugmentedLagrange
+from yaocptool.methods import IndirectMethod, SequentialAugmentedLagrange
 import time 
 #model = TwoTanks() 
 

@@ -25,11 +25,11 @@ print(model)
 
 # Do a simple simulation
 x_0 = DM([0.101211, 0.101211])
-x_f = model.simulate(x_0=x_0, t_f=100., p = [(1.1)*1e-5])
+x_f = model.simulate(x_0=x_0, t_f=100., p=[1.1 * 1e-5])
 print(x_f['xf'])
 
 # Linearize the model at a given point
 linearized_model = model.linearize(x_bar=x_0, u_bar=[1e-5])
-x_f2 = linearized_model.simulate(x_0=[0, 0], t_f=100., p=[(0.1)*1e-5])
+x_f2 = linearized_model.simulate(x_0=[0, 0], t_f=100., p=[0.1 * 1e-5])
 
 print(x_0 + x_f2['xf'])

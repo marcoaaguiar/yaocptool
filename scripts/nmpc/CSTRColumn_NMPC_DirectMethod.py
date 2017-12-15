@@ -17,7 +17,6 @@ from os.path import dirname, abspath
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 
-from yaocptool.problems.cstrcolumn import *
 from yaocptool.methods import DirectMethod
 from yaocptool.nmpc import NMPCScheme
 

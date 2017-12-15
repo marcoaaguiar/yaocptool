@@ -9,8 +9,9 @@ from collections import defaultdict
 from casadi import DM, MX, vertcat, Function, repmat
 # noinspection PyUnresolvedReferences
 from typing import Dict, List
+
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
-from yaocptool.methods.base.optimizationresult import OptimizationResult
+
 
 class MultipleShootingScheme(DiscretizationSchemeBase):
     def _number_of_variables(self):
@@ -87,7 +88,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             v_offset = v_offset + self.model.n_x
 
         for k in range(self.finite_elements):
-                y.append([DM([])])
+            y.append([DM([])])
 
         for k in range(self.finite_elements):
             u_k = []
@@ -113,6 +114,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         # Create NLP symbolic variables
         all_decision_vars, x_var, yz_var, u_var, eta = self.create_nlp_symbolic_variables()
         y = []
+        cost = 0
         constraint_list = []
 
         # Create "simulations" time_dict, a dict informing the simulation points in each finite elem. for each variable
@@ -125,16 +127,22 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         # Multiple Shooting "simulation"
         results = self.get_system_at_given_times(x_var, y, u_var, time_dict, p, theta)
         for el in range(self.finite_elements):
-            constraint_list.append(results[el]['x'][0] - x_var[el + 1][0])
+            x_at_el_p_1 = results[el]['x'][0]
+
+            if self.solution_method.solution_class == 'direct' and self.solution_method.cost_as_a_sum:
+                x_at_el_p_1 = [x_at_el_p_1[n] for n in range(self.model.n_x)]
+                x_at_el_p_1[-1] = 0
+                x_at_el_p_1 = vertcat(*x_at_el_p_1)
+                cost += results[el]['x'][0][-1]
+            constraint_list.append(x_at_el_p_1 - x_var[el + 1][0])
 
         # Final time constraint
         f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
         constraint_list.append(f_h_final(x_var[-1][0], eta))
 
         if self.solution_method.solution_class == 'direct':
-            cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(x_var[-1][0], p)
-        else:
-            cost = 0
+            if not self.solution_method.cost_as_a_sum:
+                cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(x_var[-1][0], p)
 
         nlp_prob = {'g': vertcat(*constraint_list),
                     'x': all_decision_vars,
@@ -195,8 +203,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             x_init = x_var[el][0]
             # Create dae_sys and the control function
             dae_sys = self.model.get_dae_system()
-            self.model.convert_dae_sys_from_tau_to_time(dae_sys, self.time_breakpoints[el],
-                                                        self.time_breakpoints[el + 1])
+            dae_sys.convert_from_tau_to_time(self.time_breakpoints[el],
+                                             self.time_breakpoints[el + 1])
+
             u_func = self.model.convert_expr_from_tau_to_time(self.model.u_func, t_0, t_f)
             if self.solution_method.solution_class == 'direct':
                 f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par], [u_func])
@@ -235,9 +244,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 p_i = vertcat(p, theta[el], self.vectorize(u_var[el]))
 
                 # Do the simulation
-                sim_result = self.model.simulate_step(x_init, t_0=t_init, t_f=t_next, p=p_i,
-                                                      dae_sys=dae_sys,
-                                                      integrator_type=self.solution_method.integrator_type)
+                sim_result = dae_sys.simulate(x_init, t_0=t_init, t_f=t_next, p=p_i,
+                                              integrator_type=self.solution_method.integrator_type)
 
                 # Fetch values from results
                 x_t, yz_t = sim_result['xf'], sim_result['zf']
@@ -305,5 +313,6 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         optimization_result.x_interpolation_data['time'] = [[t] for t in self.time_breakpoints]
         optimization_result.y_interpolation_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
-        optimization_result.u_interpolation_data['time'] = [[t + self.delta_t*col for col in self.solution_method.collocation_points(self.degree_control)] for t in self.time_breakpoints[:-1]]
-
+        optimization_result.u_interpolation_data['time'] = [
+            [t + self.delta_t * col for col in self.solution_method.collocation_points(self.degree_control)] for t in
+            self.time_breakpoints[:-1]]

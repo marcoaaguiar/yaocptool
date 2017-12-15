@@ -1,13 +1,10 @@
 import sys
-from collections import defaultdict
 from os.path import dirname, abspath
-
-from casadi import Function
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 
-from yaocptool.problems.cstr_chen import create_CSTR_OCP
-from yaocptool.methods import DirectMethod, AugmentedLagrangian, IndirectMethod
+from scripts.problems import create_CSTR_OCP
+from yaocptool.methods import DirectMethod, AugmentedLagrangian
 
 problem = create_CSTR_OCP()
 

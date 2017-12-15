@@ -7,7 +7,6 @@ Created on Wed Nov 02 19:01:00 2016
 # import sys
 # from os.path import dirname, abspath
 # sys.path.append(abspath(dirname(dirname(__file__))))
-from yaocptool.problems.cartpendulum import *
 from yaocptool.methods import DirectMethod, IndirectMethod, AugmentedLagrangian
 
 # solve_indirect = False

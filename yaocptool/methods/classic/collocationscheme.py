@@ -12,6 +12,8 @@ from itertools import chain
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
+# TODO: implement cost_as_a_sum
+
 class CollocationScheme(DiscretizationSchemeBase):
     @property
     def time_interpolation(self):
@@ -183,15 +185,12 @@ class CollocationScheme(DiscretizationSchemeBase):
         functions = defaultdict(dict)
         for el in range(self.finite_elements):
             dae_sys = self.model.get_dae_system()
-            if 'z' not in dae_sys:
-                dae_sys['z'] = vertcat([])
-                dae_sys['alg'] = vertcat([])
 
-            self.model.convert_dae_sys_from_tau_to_time(dae_sys, self.time_breakpoints[el],
-                                                        self.time_breakpoints[el + 1])
+            dae_sys.convert_from_tau_to_time(self.time_breakpoints[el],
+                                             self.time_breakpoints[el + 1])
 
-            f_ode = Function('f_ode_' + repr(el), self.model.all_sym, [dae_sys['ode']])
-            f_alg = Function('f_alg_' + repr(el), self.model.all_sym, [dae_sys['alg']])
+            f_ode = Function('f_ode_' + repr(el), self.model.all_sym, [dae_sys.ode])
+            f_alg = Function('f_alg_' + repr(el), self.model.all_sym, [dae_sys.alg])
 
             functions['ode'][el] = f_ode
             functions['alg'][el] = f_alg
@@ -210,7 +209,7 @@ class CollocationScheme(DiscretizationSchemeBase):
 
             # Enforce the the derivative of the polynomial to be equal ODE at t
             for col_point in range(1, self.degree + 1):
-                constraint_list.append(func_d_x_pol_d_tau(tau_list[col_point],self.vectorize(x_var[el]))
+                constraint_list.append(func_d_x_pol_d_tau(tau_list[col_point], self.vectorize(x_var[el]))
                                        - dt * results[el]['ode'][col_point])
 
             for col_point in range(self.degree):

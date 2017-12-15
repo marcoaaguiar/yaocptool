@@ -70,52 +70,21 @@ class OptimizationResult:
         return True
 
     # Plot
-    def plot(self, plot_list, interpolation_data=None):
+    def plot(self, plot_list):
         if isinstance(plot_list, dict):
             plot_list = [plot_list]
 
         if self.is_valid:
-            # if self.is_collocation and interpolation_data is not False:
             self._plot_interpolation(plot_list)
-            # else:
-            #     self._plot_breakpoints(plot_list)
 
-    # def _plot_breakpoints(self, plot_list):
-    #     x_values = horzcat(*[self.x_breakpoints_data['values'][i][0] for i in range(self.finite_elements + 1)])
-    #     y_values = horzcat(*[self.y_breakpoints_data['values'][i][0] for i in range(self.finite_elements)])
-    #     u_values = horzcat(*[self.u_breakpoints_data['values'][i][0] for i in range(self.finite_elements)])
-    #
-    #     t_x = self.x_breakpoints_data['time']
-    #     t_y = self.y_breakpoints_data['time']
-    #     t_u = self.u_breakpoints_data['time']
-    #
-    #     for k, entry in enumerate(plot_list):
-    #         fig = plt.figure(k)
-    #         if 'x' in entry:
-    #             for i in entry['x']:
-    #                 self._plot_entry(t_x, x_values, i, 'plot')
-    #             plt.legend(['x[' + repr(i) + ']' for i in entry['x']])
-    #         if 'y' in entry:
-    #             for i in entry['y']:
-    #                 self._plot_entry(t_y, y_values, i, 'plot')
-    #             plt.legend(['y[' + repr(i) + ']' for i in entry['y']])
-    #
-    #         if 'u' in entry:
-    #             for i in entry['u']:
-    #                 self._plot_entry(t_u, u_values, i, 'step')
-    #             plt.legend(['u[' + repr(i) + ']' for i in entry['u']])
-    #         plt.grid()
-    #         axes = fig.axes
-    #         axes[0].ticklabel_format(useOffset=False)
-    #         k += 1
-    #     plt.show()
-    def _plot_entry(self, t_vector, data_vector, line, plot_style = 'plot'):
+    @staticmethod
+    def _plot_entry(t_vector, data_vector, row, label='', plot_style='plot'):
         if plot_style not in ['plot', 'step']:
-            raise Exception('Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(plot_style))
+            raise ValueError('Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(plot_style))
         if plot_style == 'plot':
-            plt.plot(t_vector.T, data_vector[line, :].T)
+            return plt.plot(t_vector.T, data_vector[row, :].T, label=label)
         elif plot_style == 'step':
-            plt.step(t_vector.T, data_vector[line, :].T)
+            return plt.step(t_vector.T, data_vector[row, :].T, label=label, where='post')
 
     def _plot_interpolation(self, plot_list):
         x_values = self.x_interpolation_data['values']
@@ -136,24 +105,33 @@ class OptimizationResult:
 
         for k, entry in enumerate(plot_list):
             fig = plt.figure(k)
-
+            lines = []
             # Plot optimization x data
             if 'x' in entry:
                 for l in entry['x']:
-                    self._plot_entry(t_x, x_values, l, 'plot')
-                plt.legend([self.x_names[l] for l in entry['x']])
+                    line = self._plot_entry(t_x, x_values, l, label=self.x_names[l], plot_style='plot')
+                    lines.append(line)
 
             # Plot optimization y data
             if 'y' in entry:
                 for l in entry['y']:
-                    self._plot_entry(t_y, y_values, l, 'plot')
-                plt.legend([(self.y_names+self.z_names)[l] for l in entry['y']])
+                    line = self._plot_entry(t_y, y_values, l, label=self.y_names[l], plot_style='plot')
+                    lines.append(line)
 
             # Plot optimization u data
             if 'u' in entry:
                 for l in entry['u']:
-                    self._plot_entry(t_u, u_values, l, 'plot')
-                plt.legend([self.u_names[l] for l in entry['u']])
+                    plot_style = 'step' if self.degree_control == 1 else 'plot'
+                    line = self._plot_entry(t_u, u_values, l, label=self.u_names[l], plot_style=plot_style)
+                    lines.append(line)
+
+            # Set the legends
+            # if 'x' in entry:
+            #     plt.legend([self.x_names[l] for l in entry['x']])
+            # if 'y' in entry:
+            #     plt.legend([self.y_names[l] for l in entry['y']])
+            # if 'u' in entry:
+            #     plt.legend([self.u_names[l] for l in entry['u']])
 
             # Plot optimization any other data included in the OptimizationResult
             for key in set(entry.keys()).difference(['x', 'y', 'u']):
@@ -162,10 +140,9 @@ class OptimizationResult:
                         *[horzcat(*self.other_data[key]['times'][i]) for i in range(self.finite_elements)])
                     entry_values = horzcat(
                         *[horzcat(*self.other_data[key]['values'][i]) for i in range(self.finite_elements)])
-                    self._plot_entry(entry_time, entry_values, l, 'plot')
-                plt.legend([key + '[' + repr(l) + ']' for l in entry[key]])
+                    self._plot_entry(entry_time, entry_values, l, label=key + '[' + repr(l) + ']', plot_style='plot')
             plt.grid()
             axes = fig.axes
             axes[0].ticklabel_format(useOffset=False)
-
+            plt.legend()
         plt.show()

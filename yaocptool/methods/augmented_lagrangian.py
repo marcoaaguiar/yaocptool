@@ -10,7 +10,6 @@ from collections import defaultdict
 
 from casadi import SX, DM, inf, vertcat, dot, vec, Function, MX, horzcat
 
-from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
@@ -19,7 +18,7 @@ from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 class AugmentedLagrangian(SolutionMethodsBase):
     """
-        For a minmization problem in the form
+        For a minimization problem in the form
             min f(x,u) = \int L(x,u) dt
             s.t.: \dot{x} = f(x,u),
             g_ineq (x,u) \leq 0
@@ -128,9 +127,10 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
     @property
     def time_interpolation_nu(self):
-        col_points = self.collocation_points(self.degree,with_zero=False)
+        col_points = self.collocation_points(self.degree, with_zero=False)
         return [[self.time_breakpoints[el] + self.delta_t * col_points[j] for j in
-                                     range(self.degree)] for el in range(self.finite_elements)]
+                 range(self.degree)] for el in range(self.finite_elements)]
+
     # endregion
 
     # ==============================================================================
@@ -225,17 +225,15 @@ class AugmentedLagrangian(SolutionMethodsBase):
     def create_nu_initial_guess(self, n_r=None):
         if n_r is None:
             n_r = self.Nr
-        nu = self.create_constant_theta(constant=0, dimension=n_r, degree=self.degree,
-                                        finite_elements=self.finite_elements)
+        nu = self.create_constant_theta(constant=0, dimension=n_r * self.degree, finite_elements=self.finite_elements)
         return nu
 
     def _create_nu_update_func(self):
         v, x_var, y_var, u_var, eta = self.ocp_solver.discretizer.create_nlp_symbolic_variables()
         par = MX.sym('par', self.model.n_p)
-        theta = dict([(i, vec(MX.sym('theta_' + repr(i), self.Nr, self.degree))) for i in range(self.finite_elements)])
+        theta = dict([(i, vec(MX.sym('theta_' + repr(i), self.model.n_theta)))
+                      for i in range(self.finite_elements)])
         theta_var = vertcat(*theta.values())
-
-        col_points = self.collocation_points(self.degree, with_zero=False)
 
         new_nu = []
         error = 0
@@ -272,7 +270,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
             new_nu.append(vec(new_nu_k))
 
         output = new_nu + [error]
-        self.new_nu_func = Function('new_nu_funct', [v, par, theta_var], output)
+        self.new_nu_func = Function('nu_update_function', [v, par, theta_var], output)
 
     def _update_nu(self, p=None, theta=None, raw_solution_dict=None):
         if raw_solution_dict is None:
@@ -364,7 +362,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
                 self.last_solution = (x, u)
                 break
             else:
-                error = self._update_nu(p=self.mu, theta=self.nu, raw_solution_dict=raw_solution_dict)
+                error = self._update_nu(p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict)
                 self._update_mu()
 
         print('Solution time: {}'.format(time.time() - t1))
@@ -379,28 +377,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         p = vertcat(p, self.mu)
         theta = self.join_nu_to_theta(self.nu, theta)
         result = self.ocp_solver.create_optimization_result(raw_solution_dict, p, theta, x_0)
-        result.other_data['nu']['values'] = [[self.unvec(self.nu[el])[:, d] for d in range(self.degree)] for el in range(self.finite_elements)]
+        result.other_data['nu']['values'] = [[self.unvec(self.nu[el])[:, d] for d in range(self.degree)] for el in
+                                             range(self.finite_elements)]
         result.other_data['nu']['times'] = self.time_interpolation_nu
         return result
-
-    # ==============================================================================
-    #     PLOT/SIMULATE
-    # ==============================================================================
-
-    def simulate(self, x, u, sub_elements=5, t_0=None, t_f=None, p=None, theta=None, integrator_type='implicit',
-                 time_division='linear'):
-        if theta is None:
-            theta = {}
-        if p is None:
-            p = []
-        if t_0 is None:
-            t_0 = self.problem.t_0
-        if t_f is None:
-            t_f = self.problem.t_f
-
-        par = vertcat(p, self.mu)
-        nu_theta = self.join_nu_to_theta(theta, self.nu)
-
-        micro_x, micro_y, micro_u, micro_t = self.ocp_solver.simulate(x, u, sub_elements, t_0, t_f, par, nu_theta,
-                                                                      integrator_type=integrator_type)
-        return micro_x, micro_y, micro_u, micro_t
