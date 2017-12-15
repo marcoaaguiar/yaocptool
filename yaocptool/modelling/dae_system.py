@@ -1,4 +1,4 @@
-from casadi import vertcat, integrator, Function, SX, DM
+from casadi import vertcat, integrator, Function, SX, DM, substitute
 
 from yaocptool import convert_expr_from_tau_to_time, config
 
@@ -55,6 +55,20 @@ class DAESystem:
 
         self.alg = convert_expr_from_tau_to_time(expr=self.alg, t_sym=self.t, tau_sym=self.tau, t_k=t_k, t_kp1=t_kp1)
         self.ode = convert_expr_from_tau_to_time(expr=self.ode, t_sym=self.t, tau_sym=self.tau, t_k=t_k, t_kp1=t_kp1)
+
+    def substitute_variable(self, old_var, new_var):
+        self.ode = substitute(self.ode, old_var, new_var)
+        self.alg = substitute(self.alg, old_var, new_var)
+        self.x = substitute(self.x, old_var, new_var)
+        self.y = substitute(self.y, old_var, new_var)
+        self.p = substitute(self.p, old_var, new_var)
+
+    def join(self, dae_sys):
+        self.ode = vertcat(self.ode, dae_sys.ode)
+        self.alg = vertcat(self.alg, dae_sys.alg)
+        self.x = vertcat(self.x, dae_sys.x)
+        self.y = vertcat(self.y, dae_sys.y)
+        self.p = vertcat(self.p, dae_sys.p)
 
     ##############
     #  Simulate  #

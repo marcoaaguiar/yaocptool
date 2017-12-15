@@ -1,6 +1,6 @@
 from __future__ import print_function
 import sys
-from helper import *
+from util import *
 
 sys.path.append(r"C:\coinhsl-win32-openblas-2014.01.10")
 # sys.path.append(r"C:\casadi-py27-np1.9.1-v3.2.3")
