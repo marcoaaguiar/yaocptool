@@ -7,7 +7,7 @@ Created on Wed Nov 16 15:27:37 2016
 
 SOLVER_OPTIONS = {
     'nlpsol_options': {
-        "ipopt.linear_solver": "ma27",
+        # "ipopt.linear_solver": "ma27",
         'ipopt.max_iter': 400,
         # 'ipopt.print_level': 0,
         # 'print_time': False,
