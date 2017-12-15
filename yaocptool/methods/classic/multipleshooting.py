@@ -6,7 +6,7 @@ Created on Thu Jul 13 17:08:34 2017
 """
 from collections import defaultdict
 
-from casadi import DM, MX, vertcat, Function, repmat
+from casadi import DM, MX, vertcat, Function, repmat, is_equal, inf
 # noinspection PyUnresolvedReferences
 from typing import Dict, List
 
@@ -101,7 +101,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         return x, y, u
 
-    def discretize(self, x_0=None, p=None, theta=None):
+    def discretize(self, x_0=None, p=None, theta=None, last_u=None):
         if p is None:
             p = []
 
@@ -114,8 +114,11 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         # Create NLP symbolic variables
         all_decision_vars, x_var, yz_var, u_var, eta = self.create_nlp_symbolic_variables()
         y = []
+
         cost = 0
         constraint_list = []
+        lbg = []
+        ubg = []
 
         # Create "simulations" time_dict, a dict informing the simulation points in each finite elem. for each variable
         time_dict = self._create_time_dict_for_multiple_shooting()
@@ -123,6 +126,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         # Initial time constraint/initial condition
         f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
         constraint_list.append(f_h_initial(x_var[0][0], x_0))
+        lbg.append(DM.zeros(constraint_list[-1].shape))
+        ubg.append(DM.zeros(constraint_list[-1].shape))
 
         # Multiple Shooting "simulation"
         results = self.get_system_at_given_times(x_var, y, u_var, time_dict, p, theta)
@@ -135,10 +140,32 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 x_at_el_p_1 = vertcat(*x_at_el_p_1)
                 cost += results[el]['x'][0][-1]
             constraint_list.append(x_at_el_p_1 - x_var[el + 1][0])
+            lbg.append(DM.zeros(constraint_list[-1].shape))
+            ubg.append(DM.zeros(constraint_list[-1].shape))
+
+            # Implement the constraint on delta_u
+            if self.problem.has_delta_u:
+                if el > 0:
+                    for i in range(self.model.n_u):
+                        if not is_equal(self.problem.delta_u_max[i], inf) or not is_equal(self.problem.delta_u_min[i],
+                                                                                          -inf):
+                            constraint_list.append(u_var[el][0][i] - u_var[el - 1][0][i])
+                            lbg.append(self.problem.delta_u_min[i])
+                            ubg.append(self.problem.delta_u_max[i])
+
+                elif el == 0 and last_u is not None:
+                    for i in range(self.model.n_u):
+                        if not is_equal(self.problem.delta_u_max[i], inf) or not is_equal(self.problem.delta_u_min[i],
+                                                                                          -inf):
+                            constraint_list.append(u_var[el][0][i] - last_u[i])
+                            lbg.append(self.problem.delta_u_min[i])
+                            ubg.append(self.problem.delta_u_max[i])
 
         # Final time constraint
         f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
         constraint_list.append(f_h_final(x_var[-1][0], eta))
+        lbg.append(DM.zeros(constraint_list[-1].shape))
+        ubg.append(DM.zeros(constraint_list[-1].shape))
 
         if self.solution_method.solution_class == 'direct':
             if not self.solution_method.cost_as_a_sum:
@@ -148,8 +175,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                     'x': all_decision_vars,
                     'f': cost}
 
-        lbg = DM.zeros(nlp_prob['g'].shape)
-        ubg = DM.zeros(nlp_prob['g'].shape)
+        lbg = vertcat(*lbg)
+        ubg = vertcat(*ubg)
         vars_lb, vars_ub = self._create_variables_bound_vectors()
 
         nlp_call = {'lbx': vars_lb,

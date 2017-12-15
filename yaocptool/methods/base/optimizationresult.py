@@ -125,14 +125,6 @@ class OptimizationResult:
                     line = self._plot_entry(t_u, u_values, l, label=self.u_names[l], plot_style=plot_style)
                     lines.append(line)
 
-            # Set the legends
-            # if 'x' in entry:
-            #     plt.legend([self.x_names[l] for l in entry['x']])
-            # if 'y' in entry:
-            #     plt.legend([self.y_names[l] for l in entry['y']])
-            # if 'u' in entry:
-            #     plt.legend([self.u_names[l] for l in entry['u']])
-
             # Plot optimization any other data included in the OptimizationResult
             for key in set(entry.keys()).difference(['x', 'y', 'u']):
                 for l in entry[key]:

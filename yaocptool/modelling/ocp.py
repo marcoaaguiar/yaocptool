@@ -28,11 +28,13 @@ class OptimalControlProblem:
         self.y_max = repmat(inf, self.model.n_y)
         self.z_max = repmat(inf, self.model.n_z)
         self.u_max = repmat(inf, self.model.n_u)
+        self.delta_u_max = repmat(inf, self.model.n_u)
 
         self.x_min = repmat(-inf, self.model.n_x)
         self.y_min = repmat(-inf, self.model.n_y)
         self.z_min = repmat(-inf, self.model.n_z)
         self.u_min = repmat(-inf, self.model.n_u)
+        self.delta_u_min = repmat(-inf, self.model.n_u)
 
         self.h_initial = self.model.x_sym - self.model.x_0_sym
         self.h_final = vertcat([])
@@ -41,6 +43,8 @@ class OptimalControlProblem:
         self.L = DM(0.)  # type: DM # Integral cost
         self.V = DM(0.)  # type: DM # Final cost
         self.H = DM(0.)
+
+        self.last_u = None
 
         self.eta = SX()
 
@@ -79,6 +83,14 @@ class OptimalControlProblem:
     def yz_min(self):
         return vertcat(self.y_min, self.z_min)
 
+    @property
+    def has_delta_u(self):
+        has_element_diff_from_inf = False
+        for i in range(self.model.n_u):
+            has_element_diff_from_inf = (not is_equal(self.delta_u_max[i], inf)) or has_element_diff_from_inf
+            has_element_diff_from_inf = (not is_equal(self.delta_u_min[i], -inf)) or has_element_diff_from_inf
+        return has_element_diff_from_inf
+
     def check_integrity(self):
         # Check if Objective Function was provided
         if self.L.is_zero() and self.V.is_zero() and not self.NULL_OBJ:
@@ -102,13 +114,12 @@ class OptimalControlProblem:
         self.check_integrity()
 
         # Check if the initial condition has the same number of elements of the model
-        attributes = ['x_0', 'x_max', 'y_max', 'z_max', 'u_max', 'x_min', 'y_min', 'z_min', 'u_min']
-        attr_to_compare = ['n_x', 'n_x', 'n_y', 'n_z', 'n_u', 'n_x', 'n_y', 'n_z', 'n_u']
+        attributes = ['x_0', 'x_max', 'y_max', 'z_max', 'u_max', 'x_min', 'y_min', 'z_min', 'u_min', 'delta_u_max', 'delta_u_min']
+        attr_to_compare = ['n_x', 'n_x', 'n_y', 'n_z', 'n_u', 'n_x', 'n_y', 'n_z', 'n_u', 'n_u', 'n_u']
         for i, attr in enumerate(attributes):
             if not getattr(self, attr).numel() == getattr(self.model, attr_to_compare[i]):
-                raise Exception(
-                    'The size of "self.{}" is not equal to the number of states "model.{}",'
-                    + ' {} != {}'.format(attr, attr_to_compare[i], self.x_0.numel(), self.model.n_x))
+                raise Exception('The size of "self.{}" is not equal to the number of states "model.{}", '
+                                '{} != {}'.format(attr, attr_to_compare[i], self.x_0.numel(), self.model.n_x))
         return True
 
     def _fix_types(self):
@@ -116,11 +127,13 @@ class OptimalControlProblem:
         self.y_max = vertcat(self.y_max)
         self.z_max = vertcat(self.z_max)
         self.u_max = vertcat(self.u_max)
+        self.delta_u_max = vertcat(self.delta_u_max)
 
         self.x_min = vertcat(self.x_min)
         self.y_min = vertcat(self.y_min)
         self.z_min = vertcat(self.z_min)
         self.u_min = vertcat(self.u_min)
+        self.delta_u_min = vertcat(self.delta_u_min)
 
         self.x_0 = vertcat(self.x_0)
 

@@ -1,5 +1,6 @@
 from warnings import warn
 
+import copy
 from casadi import SX, MX, DM, vertcat, collocation_points, \
     vec, nlpsol, \
     dot, gradient, jacobian, mtimes, \
@@ -14,6 +15,8 @@ from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 
 
 # TODO: fix PEP 8
+from yaocptool.modelling import OptimalControlProblem
+
 
 class SolutionMethodsBase(object):
     def __init__(self, problem, **kwargs):
@@ -25,8 +28,10 @@ class SolutionMethodsBase(object):
         :param discretization_scheme: str
         """
         self.solver = None
+        # self._problem = problem  # type: OptimalControlProblem
+        # self.problem = None  # type: OptimalControlProblem
+        # self.reset_working_problem()
         self.problem = problem
-        # self.problem = copy.copy(self._problem)  # type: OptimalControlProblem
         self.integrator_type = 'implicit'
         self.solution_class = ''
         self.degree = 3
@@ -34,7 +39,6 @@ class SolutionMethodsBase(object):
         self.finite_elements = 10
         self.prepared = False
         self.discretization_scheme = 'multiple-shooting'
-        # self.discretization_scheme = 'collocation'
         self.discretizer = None  # type: DiscretizationSchemeBase
         self.initial_condition_as_parameter = False
         self.parametrized_control = False
@@ -84,6 +88,9 @@ class SolutionMethodsBase(object):
             return [0] + collocation_points(degree, cp)  # All collocation time points
         else:
             return collocation_points(degree, cp)  # All collocation time points
+
+    def reset_working_problem(self):
+        self.problem = copy.copy(self._problem)
 
     def create_lagrangian_polynomial_basis(self, degree, starting_index=0, tau=None):
         if tau is None:
@@ -218,7 +225,7 @@ class SolutionMethodsBase(object):
 
     def create_solver(self, initial_condition_as_parameter):
         self.initial_condition_as_parameter = initial_condition_as_parameter
-        if self.model.n_p + self.model.n_theta > 0 or self.initial_condition_as_parameter:
+        if self.model.n_p + self.model.n_theta > 0 or self.initial_condition_as_parameter or self.problem.last_u is not None:
             p_mx = MX.sym('p', self.model.n_p)
 
             theta_mx = MX.sym('theta_', self.model.n_theta, self.finite_elements)
@@ -231,7 +238,13 @@ class SolutionMethodsBase(object):
             else:
                 p_mx_x_0 = None
 
-            nlp_prob, nlp_call = self.discretizer.discretize(p=p_mx, x_0=p_mx_x_0, theta=theta)
+            if self.problem.last_u is not None:
+                p_last_u = MX.sym('last_u', self.model.n_u)
+                all_mx = vertcat(all_mx, p_last_u)
+            else:
+                p_last_u = None
+
+            nlp_prob, nlp_call = self.discretizer.discretize(p=p_mx, x_0=p_mx_x_0, theta=theta, last_u=p_last_u)
 
             nlp_prob['p'] = all_mx
         else:
@@ -243,7 +256,7 @@ class SolutionMethodsBase(object):
         solver = nlpsol('solver', 'ipopt', nlp_prob, self.nlpsol_opts)
         return solver
 
-    def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None):
+    def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
         if x_0 is None:
             x_0 = []
         if p is None:
@@ -257,11 +270,18 @@ class SolutionMethodsBase(object):
             par = p
         if self.initial_condition_as_parameter:
             par = vertcat(par, x_0)
+        if last_u is not None:
+            if isinstance(last_u, list):
+                last_u = vertcat(*last_u)
+            par = vertcat(par, last_u)
+        elif self.problem.last_u is not None:
+            par = vertcat(par, self.problem.last_u)
+
         sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
                           lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
         return sol
 
-    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None):
+    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
         if p is None:
             p = []
         if theta is None:
@@ -272,10 +292,10 @@ class SolutionMethodsBase(object):
             self.prepare()
             self.prepared = True
 
-        solution_dict = self.get_solver()(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0)
+        solution_dict = self.get_solver()(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0, last_u=last_u)
         return solution_dict
 
-    def solve(self, initial_guess=None, p=None, theta=None, x_0=None):
+    def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
         # type: (object, list, dict, list) -> OptimizationResult
         if p is None:
             p = []
@@ -283,7 +303,7 @@ class SolutionMethodsBase(object):
             theta = {}
         if x_0 is None:
             x_0 = []
-        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0)
+        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0, last_u=last_u)
         return self.create_optimization_result(raw_solution_dict, p, theta, x_0=x_0)
 
     def create_optimization_result(self, raw_solution_dict, p=None, theta=None, x_0=None):

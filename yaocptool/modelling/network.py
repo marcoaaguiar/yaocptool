@@ -8,8 +8,6 @@ Created on Fri Jul 07 16:05:50 2017
 from casadi import vertcat, depends_on
 
 
-# TODO: fix PEP 8
-
 class Network:
     def __init__(self, nodes, connections_settings_dict):
         """

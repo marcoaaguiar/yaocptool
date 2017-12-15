@@ -11,6 +11,11 @@ class DiscretizationSchemeBase:
         """
         self.solution_method = solution_method
 
+        if self.solution_method.degree_control > 1 and self.solution_method.problem.has_delta_u:
+            raise Exception(
+                'Maximum and minimum value for Delta u only defined for "degree_control" == 1. '
+                'Current "degree_control":{}'.format(self.solution_method.degree_control))
+
     @property
     def model(self):
         return self.solution_method.model
