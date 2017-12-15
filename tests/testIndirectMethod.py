@@ -8,7 +8,6 @@ import sys
 from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 
-from yaocptool.problems.cartpendulum import *
 from yaocptool.methods import IndirectMethod
 
 model = PendulumCart() 

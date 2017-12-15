@@ -11,6 +11,7 @@ from casadi import DM, MX, repmat, vertcat, Function, jacobian
 from itertools import chain
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
+# TODO: implement cost_as_a_sum
 
 class CollocationScheme(DiscretizationSchemeBase):
     @property

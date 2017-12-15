@@ -1,7 +1,7 @@
-from casadi import Function, vertcat, pi
+from casadi import Function, vertcat
 
-from yaocptool.problems.budinis_compressor import create_compressor
-from yaocptool.methods import DirectMethod, AugmentedLagrangian, IndirectMethod
+from scripts.problems import create_compressor
+from yaocptool.methods import DirectMethod
 
 model, problem = create_compressor()
 
