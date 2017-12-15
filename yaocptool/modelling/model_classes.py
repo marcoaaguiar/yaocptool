@@ -441,7 +441,7 @@ class SystemModel:
             p = []
         dae_sys = self.get_dae_system()
         return dae_sys.simulate(x_0=x_0, t_f=t_f, t_0=t_0, p=p,
-                                integrator_type=integrator_type, integrator_options = integrator_options)
+                                integrator_type=integrator_type, integrator_options=integrator_options)
 
     # endregion
 

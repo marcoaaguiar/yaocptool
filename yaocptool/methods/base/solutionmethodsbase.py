@@ -1,19 +1,16 @@
 from warnings import warn
 
-import matplotlib.pyplot as plt
 from casadi import SX, MX, DM, vertcat, collocation_points, \
     vec, nlpsol, \
-    Function, linspace, horzcat, dot, gradient, jacobian, mtimes, \
+    dot, gradient, jacobian, mtimes, \
     reshape
 from typing import List, Tuple
-import copy
 
-from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 from yaocptool import config, create_constant_theta, join_thetas
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
-from yaocptool.modelling.ocp import OptimalControlProblem
+from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 
 
 # TODO: fix PEP 8

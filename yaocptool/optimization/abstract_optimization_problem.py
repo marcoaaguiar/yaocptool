@@ -39,9 +39,9 @@ class AbstractOptimizationProblem(object):
 
     def create_variable(self, name, size, lb=-inf, ub=inf):
         if isinstance(lb, Number):
-            lb = [lb]*size
+            lb = [lb] * size
         if isinstance(ub, Number):
-            ub = [ub]*size
+            ub = [ub] * size
 
         new_x = MX.sym(name, size)
         self.x = vertcat(self.x, new_x)
@@ -83,7 +83,7 @@ class AbstractOptimizationProblem(object):
         self.g_ub = vertcat(self.g_ub, lhs)
 
     def get_problem_dict(self):
-        return {'f': self.f, 'g': self.g, 'x':self.x, 'p':self.p}
+        return {'f': self.f, 'g': self.g, 'x': self.x, 'p': self.p}
 
     def get_solver(self):
         if self._solver is None:

@@ -9,8 +9,8 @@ from collections import defaultdict
 from casadi import DM, MX, vertcat, Function, repmat
 # noinspection PyUnresolvedReferences
 from typing import Dict, List
+
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
-from yaocptool import find_variables_indices_in_vector
 
 
 class MultipleShootingScheme(DiscretizationSchemeBase):

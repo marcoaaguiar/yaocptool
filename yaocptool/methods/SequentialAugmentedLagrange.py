@@ -20,8 +20,8 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
         self.network = network
         self.problems = self.network.problems
         self.Nproblems = len(self.problems)
-        self.con = self.network.getConnectionEquations()
-        self.con_z = self.network.getConnectionDefinedZ()
+        self.con = self.network.get_connection_equations()
+        self.con_z = self.network.get_connection_defined_z()
         self.approximation_data = {}
         self.used_approximation_data = {}
         for (k, v) in kwargs.items():
@@ -103,13 +103,13 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
                         set(self.problems_dict[p]['associated_problems']))
                     self.problems_dict[p]['associated_problems'].remove(p)
 
-        ## initializaiton        
+        # initializaiton
         self.includeAugmentedLagrangianTermInTheObjective()
         self.transformFreeZInControl()
         self.parametrizeVariablesInProblems()
         self.initializeApproximationData()
         self.initialize_nu_values()
-        ## itialized ocp solver        
+        # itialized ocp solver
         for p in self.problems_dict:
             self.problems_dict[p]['ocp_solver'] = ocp_solver_class(self.problems_dict[p]['problem'], **solver_options)
 
@@ -273,7 +273,7 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
         for k in self.con_dict:
             for z_sym in self.con_dict[k]['associated_z_sym']:
                 self.approximation_data[z_sym] = self.create_constant_theta(constant=0,
-                                                                            dimension=1*self.degree,
+                                                                            dimension=1 * self.degree,
                                                                             finite_elements=self.finite_elements)
 
     def saveUsedApproximationData(self, problem_id, approximation_data):

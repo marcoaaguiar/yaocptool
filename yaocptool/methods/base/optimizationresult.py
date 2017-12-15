@@ -70,7 +70,7 @@ class OptimizationResult:
         return True
 
     # Plot
-    def plot(self, plot_list, interpolation_data=None):
+    def plot(self, plot_list):
         if isinstance(plot_list, dict):
             plot_list = [plot_list]
 

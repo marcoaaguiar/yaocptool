@@ -20,7 +20,7 @@ class OptimalControlProblem:
             self.x_0 = DM([])
 
         self.name = ''
-        self.model = None # type: SystemModel
+        self.model = None  # type: SystemModel
         self._model = model  # type: SystemModel
         self.reset_working_model()
 

@@ -31,9 +31,9 @@ class Network:
             self.nodes_dict[node.node_id] = node
 
         self.connection_dict = {}
-        self.createConnections()
+        self.create_connections()
 
-    def createConnections(self):
+    def create_connections(self):
         for connection_id in self.connections_settings_dict:
             nodes = [self.nodes_dict[node_id] for node_id in self.connections_settings_dict[connection_id]]
             z_sym_indices_list = self.connections_settings_dict[connection_id].values()
@@ -54,13 +54,13 @@ class Network:
             problems.append(node.problem)
         return problems
 
-    def getConnectionEquations(self):
+    def get_connection_equations(self):
         eqs = []
         for connection in self.connection_dict.values():
             eqs.append(connection.equation)
         return vertcat(*eqs)
 
-    def getConnectionDefinedZ(self):
+    def get_connection_defined_z(self):
         zs = []
         for connection in self.connection_dict.values():
             zs.append(connection.defined_z_sym)
