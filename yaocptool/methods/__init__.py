@@ -1,4 +1,3 @@
 from yaocptool.methods.augmented_lagrangian import AugmentedLagrangian
-from .SequentialAugmentedLagrange import SequentialAugmentedLagrange
 from yaocptool.methods.classic.directmethod import DirectMethod
 from yaocptool.methods.classic.indirectmethod import IndirectMethod

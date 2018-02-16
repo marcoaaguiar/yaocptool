@@ -45,4 +45,3 @@ class DirectMethod(SolutionMethodsBase):
         super(DirectMethod, self).prepare()
         self._parametrize_control()
         self._create_cost_state()
-        # self.problem.make_final_cost_function()

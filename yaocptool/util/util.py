@@ -44,6 +44,7 @@ def join_thetas(*args):
 
     return new_theta
 
-def convert_expr_from_tau_to_time(expr, t_sym, tau_sym,  t_k, t_kp1):
+
+def convert_expr_from_tau_to_time(expr, t_sym, tau_sym, t_k, t_kp1):
     h = t_kp1 - t_k
     return substitute(expr, tau_sym, (t_sym - t_k) / h)

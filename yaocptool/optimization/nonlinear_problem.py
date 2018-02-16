@@ -4,7 +4,7 @@ from yaocptool.optimization.abstract_optimization_problem import AbstractOptimiz
 
 
 class NonlinearOptimizationProblem(AbstractOptimizationProblem):
-    def __init__(self, n_x=0, **kwargs):
+    def __init__(self, **kwargs):
         """ Abstract Optimization Problem class
             Optimization problem
 
@@ -14,11 +14,10 @@ class NonlinearOptimizationProblem(AbstractOptimizationProblem):
                         g_ineq <= 0
             Object attributes:
             x -> optimization variables
-            g -> contraint
+            g -> constraint
 
-        :param n_x: int
         """
-        super(NonlinearOptimizationProblem, self).__init__(n_x, **kwargs)
+        super(NonlinearOptimizationProblem, self).__init__(**kwargs)
 
     def _create_solver(self):
         problem_dict = self.get_problem_dict()

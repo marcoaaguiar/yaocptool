@@ -114,7 +114,8 @@ class OptimalControlProblem:
         self.check_integrity()
 
         # Check if the initial condition has the same number of elements of the model
-        attributes = ['x_0', 'x_max', 'y_max', 'z_max', 'u_max', 'x_min', 'y_min', 'z_min', 'u_min', 'delta_u_max', 'delta_u_min']
+        attributes = ['x_0', 'x_max', 'y_max', 'z_max', 'u_max', 'x_min', 'y_min', 'z_min', 'u_min', 'delta_u_max',
+                      'delta_u_min']
         attr_to_compare = ['n_x', 'n_x', 'n_y', 'n_z', 'n_u', 'n_x', 'n_y', 'n_z', 'n_u', 'n_u', 'n_u']
         for i, attr in enumerate(attributes):
             if not getattr(self, attr).numel() == getattr(self.model, attr_to_compare[i]):
@@ -148,18 +149,9 @@ class OptimalControlProblem:
             x_min = -inf
 
         self.include_state(x_c, self.L, x_0=0, x_min=x_min)
-        #        self.include_state(x_c, self.L, x_0 = 0)
-        #        self.h_initial = vertcat(self.h_initial, x_c)
         self.model.x_c = x_c
         self.L = DM(0)
         self.V += x_c
-
-    def make_final_cost_function(self, p=None):
-        raise Exception('To be removed')
-        # if p != None:
-        #     self.V_function = Function('FinalCost', [self.model.x_sym, p],[self.V])
-        # else:
-        #     self.V_function = Function('FinalCost', [self.model.x_sym],[self.V])
 
     def create_quadratic_cost(self, par_dict):
         self.L = DM(0)
@@ -216,7 +208,7 @@ class OptimalControlProblem:
             x_max = DM.inf(var.numel())
 
         if x_0 is None and h_initial is None and not suppress:
-            raise Exception('No intial condition given')
+            raise Exception('No initial condition given')
 
         x_0_sym = self.model.include_state(var, ode, x_0_sym)
 

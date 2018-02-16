@@ -4,7 +4,7 @@ from casadi import vertcat, MX, inf, DM
 
 
 class AbstractOptimizationProblem(object):
-    def __init__(self, n_x=0, **kwargs):
+    def __init__(self, **kwargs):
         """ Abstract Optimization Problem class
             Optimization problem
 
@@ -14,7 +14,7 @@ class AbstractOptimizationProblem(object):
                         g
             Object attributes:
             x -> optimization variables
-            g -> contraint
+            g -> constraint
 
         :param n_x: int
         """

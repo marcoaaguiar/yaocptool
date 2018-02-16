@@ -271,8 +271,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 p_i = vertcat(p, theta[el], self.vectorize(u_var[el]))
 
                 # Do the simulation
-                sim_result = dae_sys.simulate(x_init, t_0=t_init, t_f=t_next, p=p_i,
-                                              integrator_type=self.solution_method.integrator_type)
+                sim_result = dae_sys.simulate_raw(x_init, t_0=t_init, t_f=t_next, p=p_i,
+                                                  integrator_type=self.solution_method.integrator_type)
 
                 # Fetch values from results
                 x_t, yz_t = sim_result['xf'], sim_result['zf']

@@ -1,6 +1,5 @@
 from warnings import warn
 
-import copy
 from casadi import SX, MX, DM, vertcat, collocation_points, \
     vec, nlpsol, \
     dot, gradient, jacobian, mtimes, \
@@ -15,7 +14,6 @@ from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 
 
 # TODO: fix PEP 8
-from yaocptool.modelling import OptimalControlProblem
 
 
 class SolutionMethodsBase(object):
@@ -88,9 +86,6 @@ class SolutionMethodsBase(object):
             return [0] + collocation_points(degree, cp)  # All collocation time points
         else:
             return collocation_points(degree, cp)  # All collocation time points
-
-    def reset_working_problem(self):
-        self.problem = copy.copy(self._problem)
 
     def create_lagrangian_polynomial_basis(self, degree, starting_index=0, tau=None):
         if tau is None:
@@ -225,7 +220,9 @@ class SolutionMethodsBase(object):
 
     def create_solver(self, initial_condition_as_parameter):
         self.initial_condition_as_parameter = initial_condition_as_parameter
-        if self.model.n_p + self.model.n_theta > 0 or self.initial_condition_as_parameter or self.problem.last_u is not None:
+        if self.model.n_p + self.model.n_theta > 0 \
+                or self.initial_condition_as_parameter \
+                or self.problem.last_u is not None:
             p_mx = MX.sym('p', self.model.n_p)
 
             theta_mx = MX.sym('theta_', self.model.n_theta, self.finite_elements)

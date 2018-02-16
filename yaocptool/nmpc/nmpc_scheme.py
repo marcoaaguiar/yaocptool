@@ -52,7 +52,7 @@ class NMPCScheme:
     def get_controls(self, X, U, t_0, t_f, p=None, theta=None, sub_elements=1):
         if p is None:
             p = []
-        x, u, t = self.ocp_solver.simulate(X[:2], U[:1], sub_elements, t_0, t_f, p, theta)
+        x, u, t = self.ocp_solver.simulate_raw(X[:2], U[:1], sub_elements, t_0, t_f, p, theta)
         return u[0]
 
     def plot(self, X, U, plot_list, t_states):
@@ -89,8 +89,8 @@ class NMPCScheme:
             # simulate
             if self.verbose >= 3:
                 print('simulating')
-            x_f_sim = self.plant.simulate(x_0=x_0[:self.plant.n_x], t_f=t + self.dt, t_0=t, p=control,
-                                          integrator_type='implicit')
+            x_f_sim = self.plant.simulate_raw(x_0=x_0[:self.plant.n_x], t_f=t + self.dt, t_0=t, p=control,
+                                              integrator_type='implicit')
             if self.verbose >= 3:
                 print('simulated')
             x_0 = x[1]

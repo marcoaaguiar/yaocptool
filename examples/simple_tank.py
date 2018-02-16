@@ -25,11 +25,18 @@ print(model)
 
 # Do a simple simulation
 x_0 = DM([0.101211, 0.101211])
-x_f = model.simulate(x_0=x_0, t_f=100., p=[1.1 * 1e-5])
-print(x_f['xf'])
+sim_result = model.simulate(x_0=x_0, t_f=[i*0.2 for i in range(1, 201)], p=[1.1 * 1e-5])
+
+# sim_result is a SimulationResult object
+# To plot the results of the simulation use the .plot function
+# It takes as input a list of dictionaries, each dictionary represents a plot
+# In the dictionary use keyword 'x' to specify which states you want to print
+# The value should be a list of state to be printed.
+# The keywords that are acceptable are: 'x', 'y', 'u'
+sim_result.plot([{'x': [0]}])
 
 # Linearize the model at a given point
 linearized_model = model.linearize(x_bar=x_0, u_bar=[1e-5])
 x_f2 = linearized_model.simulate(x_0=[0, 0], t_f=100., p=[0.1 * 1e-5])
 
-print(x_0 + x_f2['xf'])
+# print(x_0 + x_f2['xf'])

@@ -177,7 +177,6 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
             nu_alg = self.con_dict[k]['nu_sym']
             nu_pol, nu_par = self.create_variable_polynomial_approximation(1,
                                                                            self.degree, 'nu_par_' + con_z.name(),
-                                                                           # 2                                                                        tau = self.problems_dict[p]['problem'].model.tau_sym
                                                                            )
             self.con_dict[k]['nu_pol'] = nu_pol
             self.con_dict[k]['nu_tau_sym'] = self.model.tau_sym
@@ -285,9 +284,9 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
         if theta is None:
             theta = {}
         micro_X, micro_Y, micro_U, micro_t = \
-            self.problems_dict[problem_id]['ocp_solver'].simulate(X, U, p=p,
-                                                                  theta=theta, sub_elements=self.degree,
-                                                                  time_division='radau')
+            self.problems_dict[problem_id]['ocp_solver'].simulate_raw(X, U, p=p,
+                                                                      theta=theta, sub_elements=self.degree,
+                                                                      time_division='radau')
 
         # For all z defined by the system equations
         for n_z in range(self.problems_dict[problem_id]['problem'].model.n_z):
@@ -413,14 +412,15 @@ class SequentialAugmentedLagrange(AugmentedLagrangian):
             problem_theta = self.join_thetas(theta, self.used_approximation_data[problem_id],
                                              self.getProblemNus(problem_id))
 
-            micro_X, micro_Y, micro_U, micro_t = self.problems_dict[problem_id]['ocp_solver'].simulate(x[problem_id],
-                                                                                                       u[problem_id],
-                                                                                                       sub_elements=sub_elements,
-                                                                                                       t_0=t_0, t_f=t_f,
-                                                                                                       p=problem_p,
-                                                                                                       theta=problem_theta,
-                                                                                                       integrator_type=integrator_type,
-                                                                                                       time_division=time_division)
+            micro_X, micro_Y, micro_U, micro_t = self.problems_dict[problem_id]['ocp_solver'].simulate_raw(
+                x[problem_id],
+                u[problem_id],
+                sub_elements=sub_elements,
+                t_0=t_0, t_f=t_f,
+                p=problem_p,
+                theta=problem_theta,
+                integrator_type=integrator_type,
+                time_division=time_division)
             for i in range(len(micro_X)):
                 all_micro_X[i] = vertcat(all_micro_X[i], micro_X[i])
             for i in range(len(micro_Y)):

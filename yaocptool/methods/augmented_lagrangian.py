@@ -330,7 +330,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         # self.nu = new_nu
         # self.mu = self.mu_0
 
-    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None):
+    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
         if x_0 is None:
             x_0 = []
         if theta is None:
@@ -353,7 +353,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         while True:
             theta_k = self.join_nu_to_theta(theta, self.nu)
             p_k = vertcat(p, self.mu)
-            raw_solution_dict = solver(initial_guess, p=p_k, theta=theta_k, x_0=x_0)
+            raw_solution_dict = solver(initial_guess, p=p_k, theta=theta_k, x_0=x_0, last_u=last_u)
             initial_guess = raw_solution_dict['x']
             x, u = self.split_x_and_u(initial_guess)
             it += 1
