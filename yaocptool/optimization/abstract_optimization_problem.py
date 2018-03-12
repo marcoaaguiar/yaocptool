@@ -64,23 +64,40 @@ class AbstractOptimizationProblem(object):
             raise Exception("Given expression is not a vector, number of columns is {}".format(expr.size2()))
         if lb is None:
             lb = -inf * DM.ones(expr.size1())
-
+        else:
+            if not expr.shape == lb.shape:
+                msg = "Expression and lower bound does not have the same size: expr.shape={}, lb.shape=={}".format(
+                    expr.shape, lb.shape)
+                raise ValueError(msg)
         if ub is None:
             ub = inf * DM.ones(expr.size1())
+        else:
+            if not expr.shape == ub.shape:
+                msg = "Expression and upper bound does not have the same size: expr.shape={}, ub.shape=={}".format(
+                    expr.shape, ub.shape)
+                raise ValueError(msg)
 
         self.g = vertcat(self.g, expr)
         self.g_lb = vertcat(self.g_lb, lb)
         self.g_ub = vertcat(self.g_ub, ub)
 
-    def include_equality(self, expr, lhs=0):
+    def include_equality(self, expr, rhs=None):
         if isinstance(expr, list):
             expr = vertcat(expr)
         if expr.size2() > 1:
             raise Exception("Given expression is not a vector, number of columns is {}".format(expr.size2()))
 
+        if rhs is None:
+            rhs = DM.zeros(expr.shape)
+        else:
+            if not expr.shape == rhs.shape:
+                msg = "Expression and the right hand side does not have the same size: " \
+                      "expr.shape={}, rhs.shape=={}".format(expr.shape, rhs.shape)
+                raise ValueError(msg)
+
         self.g = vertcat(self.g, expr)
-        self.g_lb = vertcat(self.g_lb, lhs)
-        self.g_ub = vertcat(self.g_ub, lhs)
+        self.g_lb = vertcat(self.g_lb, rhs)
+        self.g_ub = vertcat(self.g_ub, rhs)
 
     def get_problem_dict(self):
         return {'f': self.f, 'g': self.g, 'x': self.x, 'p': self.p}

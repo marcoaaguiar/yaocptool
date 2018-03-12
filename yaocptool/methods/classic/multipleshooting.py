@@ -271,8 +271,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 p_i = vertcat(p, theta[el], self.vectorize(u_var[el]))
 
                 # Do the simulation
-                sim_result = dae_sys.simulate_raw(x_init, t_0=t_init, t_f=t_next, p=p_i,
-                                                  integrator_type=self.solution_method.integrator_type)
+                sim_result = dae_sys.simulate(x_init, t_0=t_init, t_f=t_next, p=p_i, y_0=self.problem.y_guess,
+                                              integrator_type=self.solution_method.integrator_type)
 
                 # Fetch values from results
                 x_t, yz_t = sim_result['xf'], sim_result['zf']
@@ -305,11 +305,23 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         return results
 
     def create_initial_guess(self):
-        base_x0 = self.problem.x_0
-        base_x0 = vertcat(base_x0, repmat(DM([0] * self.model.n_u), self.degree_control))
-        x0 = vertcat(repmat(base_x0, self.finite_elements), self.problem.x_0)
-        x0 = vertcat(x0, DM.zeros(self.problem.n_eta))
-        return x0
+        x_init = repmat(self.problem.x_0, self.finite_elements + 1)
+
+        # if self.problem.y_guess is not None:
+        #     y_init = repmat(self.problem.y_guess, self.degree * self.finite_elements)
+        # else:
+        #     y_init = repmat(DM.zeros(self.model.n_y), self.degree * self.finite_elements)
+
+        y_init = []
+
+        if self.problem.u_guess is not None:
+            u_init = repmat(self.problem.u_guess, self.degree_control * self.finite_elements)
+        else:
+            u_init = repmat(DM.zeros(self.model.n_u), self.degree_control * self.finite_elements)
+
+        eta_init = DM.zeros(self.problem.n_eta, 1)
+
+        return vertcat(x_init, y_init, u_init, eta_init)
 
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
         """

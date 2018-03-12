@@ -36,12 +36,10 @@ class OptimizationResult:
         self.z_names = []
         self.u_names = []
 
-        self.x_breakpoints_data = {'values': [], 'time': []}
-        self.y_breakpoints_data = {'values': [], 'time': []}
-        self.u_breakpoints_data = {'values': [], 'time': []}
         self.x_interpolation_data = {'values': [], 'time': []}
         self.y_interpolation_data = {'values': [], 'time': []}
         self.u_interpolation_data = {'values': [], 'time': []}
+
         self.other_data = defaultdict(lambda: {'values': [], 'time': []})
 
         self.x_0 = []
@@ -78,6 +76,14 @@ class OptimizationResult:
             return plt.plot(t_vector.T, data_vector[row, :].T, label=label)
         elif plot_style == 'step':
             return plt.step(t_vector.T, data_vector[row, :].T, label=label, where='post')
+
+    def first_control(self):
+        """Return the first element of the control vector
+
+        :rtype: DM
+        """
+        u_0 = self.u_interpolation_data['values'][0]
+        return u_0
 
     def plot(self, plot_list):
         """Plot the optimization result.

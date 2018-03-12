@@ -380,8 +380,16 @@ class CollocationScheme(DiscretizationSchemeBase):
 
     def create_initial_guess(self):
         x_init = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
-        y_init = DM.zeros(self.model.n_yz * self.degree * self.finite_elements, 1)
-        u_init = DM.zeros(self.model.n_u * self.degree_control * self.finite_elements, 1)
+        if self.problem.y_guess is not None:
+            y_init = repmat(self.problem.y_guess, self.degree * self.finite_elements)
+        else:
+            y_init = repmat(DM.zeros(self.model.n_y), self.degree * self.finite_elements)
+
+        if self.problem.u_guess is not None:
+            u_init = repmat(self.problem.u_guess, self.degree_control * self.finite_elements)
+        else:
+            u_init = repmat(DM.zeros(self.model.n_u), self.degree_control * self.finite_elements)
+
         eta_init = DM.zeros(self.problem.n_eta, 1)
 
         base_x0 = vertcat(x_init, y_init, u_init, eta_init)
@@ -405,14 +413,6 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         optimization_result.objective = raw_solution_dict['f']
         optimization_result.constraint_values = raw_solution_dict['g']
-
-        optimization_result.x_breakpoints_data['values'] = x_breakpoints_values
-        optimization_result.y_breakpoints_data['values'] = y_breakpoints_values
-        optimization_result.u_breakpoints_data['values'] = u_breakpoints_values
-
-        optimization_result.x_breakpoints_data['time'] = self.time_breakpoints
-        optimization_result.y_breakpoints_data['time'] = self.time_breakpoints[:-1]
-        optimization_result.u_breakpoints_data['time'] = self.time_breakpoints[:-1]
 
         optimization_result.x_interpolation_data['values'] = x_interpolation_values
         optimization_result.y_interpolation_data['values'] = y_interpolation_values

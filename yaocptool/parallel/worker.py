@@ -1,10 +1,6 @@
 from __future__ import print_function
-from __future__ import print_function
-from __future__ import print_function
 import multiprocessing
 import sys
-sys.path.append(r"C:\casadi-py27-np1.9.1-v3.1.1")
-sys.path.append(r"C:\coinhsl-win32-openblas-2014.01.10")
 
 from casadi import SX, DM, Function, nlpsol, dot, vertcat, tan, sum1
 import time

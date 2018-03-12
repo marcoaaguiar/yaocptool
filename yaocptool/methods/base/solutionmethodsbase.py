@@ -4,8 +4,6 @@ from casadi import SX, MX, DM, vertcat, collocation_points, \
     vec, nlpsol, \
     dot, gradient, jacobian, mtimes, \
     reshape
-from typing import List, Tuple
-
 from yaocptool import config, create_constant_theta, join_thetas
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
@@ -81,7 +79,6 @@ class SolutionMethodsBase(object):
 
     @staticmethod
     def collocation_points(degree, cp='radau', with_zero=False):
-        # type: (int, str, bool) -> List[int]
         if with_zero:
             return [0] + collocation_points(degree, cp)  # All collocation time points
         else:
@@ -106,7 +103,6 @@ class SolutionMethodsBase(object):
         return tau, l_list
 
     def create_variable_polynomial_approximation(self, size, degree, name='var_appr', tau=None, point_at_t0=False):
-        # type: (int, int, str, SX, bool) -> Tuple[DM, DM]
         if tau is None:
             tau = self.model.tau_sym  # Collocation point
 
@@ -274,6 +270,8 @@ class SolutionMethodsBase(object):
         elif self.problem.last_u is not None:
             par = vertcat(par, self.problem.last_u)
 
+        print('par', par)
+
         sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
                           lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
         return sol
@@ -285,11 +283,17 @@ class SolutionMethodsBase(object):
             theta = {}
         if x_0 is None:
             x_0 = []
+
+        initial_condition_as_parameter = False
+        if x_0 is not None:
+            initial_condition_as_parameter = True
+
         if not self.prepared:
             self.prepare()
             self.prepared = True
 
-        solution_dict = self.get_solver()(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0, last_u=last_u)
+        solution_dict = self.get_solver(initial_condition_as_parameter)(initial_guess=initial_guess, p=p, theta=theta,
+                                                                        x_0=x_0, last_u=last_u)
         return solution_dict
 
     def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):

@@ -1,5 +1,4 @@
 # noinspection PyUnresolvedReferences
-from typing import List
 from casadi import DM, vertcat
 
 

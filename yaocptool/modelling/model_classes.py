@@ -180,9 +180,11 @@ class SystemModel:
 
     def create_state(self, name='x', size=1):
         """
-        Create a new state with the name "name" and size "size"
+        Create a new state with the name "name" and size "size".
+        Size can be an int or a tuple (e.g. (2,2)). However, the new state will be vectorized (casadi.vec) to be
+        included in the state vector (model.x_sym).
         :param name: str
-        :param size: int
+        :param size: int|tuple
         :return:
         """
         new_x = SX.sym(name, size)
@@ -192,24 +194,28 @@ class SystemModel:
 
     def create_algebraic_variable(self, name='y', size=1):
         """
-        Create a new algebraic variable with the name "name" and size "size"
+        Create a new algebraic variable with the name "name" and size "size".
+        Size can be an int or a tuple (e.g. (2,2)). However, the new algebraic variable will be vectorized (casadi.vec)
+        to be included in the algebraic vector (model.y_sym).
         :param name: str
         :param size: int or tuple
         :return:
         """
         new_y = SX.sym(name, size)
-        self.include_algebraic(new_y)
+        self.include_algebraic(vec(new_y))
         return new_y
 
     def create_control(self, name='u', size=1):
         """
-        Create a new control variable name "name" and size "size"
+        Create a new control variable name "name" and size "size".
+        Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
+        to be included in the control vector (model.u_sym).
         :param name: str
         :param size: int
         :return:
         """
         new_u = SX.sym(name, size)
-        self.include_control(new_u)
+        self.include_control(vec(new_u))
         return new_u
 
     def create_parameter(self, name='p', size=1):
@@ -272,8 +278,7 @@ class SystemModel:
     def include_algebraic(self, var, alg=None):
         self.y_sym = vertcat(self.y_sym, var)
 
-        if alg is None:
-            self.include_system_equations(alg=alg)
+        self.include_system_equations(alg=alg)
 
     def include_external_algebraic(self, var, alg_z=None):
         if alg_z is None:
@@ -302,7 +307,7 @@ class SystemModel:
     # region REMOVE
 
     def remove_variables_from_vector(self, var, vector):
-        to_remove = self.find_variables_indices_in_vector(var, vector)
+        to_remove = find_variables_indices_in_vector(var, vector)
         to_remove.sort(reverse=True)
         for it in to_remove:
             vector.remove([it], [])
@@ -323,7 +328,7 @@ class SystemModel:
         self.remove_variables_from_vector(eq, self.con)
 
     def remove_control(self, var):
-        to_remove = self.find_variables_indices_in_vector(var, self.u_sym)
+        to_remove = find_variables_indices_in_vector(var, self.u_sym)
         to_remove.sort(reverse=True)
 
         for it in to_remove:
@@ -416,6 +421,10 @@ class SystemModel:
     # ==============================================================================
 
     def get_dae_system(self):
+        """ Return a DAESystem object with the model equations.
+
+        :return: DAESystem
+        """
         if self.system_type == 'ode':
             kwargs = {'x': self.x_sym, 'ode': self.ode, 't': self.t_sym, 'tau': self.tau_sym}
         else:
@@ -424,8 +433,7 @@ class SystemModel:
         if self.n_p + self.n_theta + self.u_par.numel() > 0:
             kwargs['p'] = vertcat(self.p_sym, self.theta_sym, self.u_par)
 
-        dae_sys = DAESystem(**kwargs)
-        return dae_sys
+        return DAESystem(**kwargs)
 
     def simulate(self, x_0, t_f, t_0=0.0, u=None, p=None, theta=None, y_0=None, integrator_type='implicit',
                  integrator_options=None):
@@ -579,12 +587,6 @@ class SystemModel:
         rf = rootfinder('rf_equilibrium', 'nlpsol', f_eqs, rootfinder_options)
         res = rf(guess)
         return res[:self.n_x], res[self.n_x:self.n_x + self.n_y], res[self.n_x + self.n_y:]
-
-    @staticmethod
-    def find_variables_indices_in_vector(var, vector):
-        warn('Use yaocptool.find_variables_indices_in_vector')
-        index = find_variables_indices_in_vector(var, vector)
-        return index
 
 
 #######################################################################

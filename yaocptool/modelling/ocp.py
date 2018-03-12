@@ -7,6 +7,7 @@ Created on Mon Apr 03 11:15:03 2017
 
 import copy
 from casadi import DM, repmat, vertcat, substitute, mtimes, is_equal, SX, inf
+from yaocptool import find_variables_indices_in_vector
 from yaocptool.modelling import SystemModel
 
 
@@ -48,6 +49,9 @@ class OptimalControlProblem:
 
         self.eta = SX()
 
+        self.y_guess = None
+        self.u_guess = None
+
         self.parametrized_control = False
         self.positive_objective = False
         self.NULL_OBJ = False
@@ -63,9 +67,6 @@ class OptimalControlProblem:
             setattr(self, k, v)
 
         self.x_0 = DM(self.x_0)
-
-        # Treat Initialization
-        self.check_integrity()
 
     @property
     def n_h_final(self):
@@ -91,7 +92,9 @@ class OptimalControlProblem:
             has_element_diff_from_inf = (not is_equal(self.delta_u_min[i], -inf)) or has_element_diff_from_inf
         return has_element_diff_from_inf
 
-    def check_integrity(self):
+    def pre_solve_check(self):
+        self._fix_types()
+
         # Check if Objective Function was provided
         if self.L.is_zero() and self.V.is_zero() and not self.NULL_OBJ:
             raise Exception('No objective')
@@ -107,11 +110,6 @@ class OptimalControlProblem:
         if not self.V.numel() == 1:
             raise Exception(
                 'Size of final cost (ocp.V) is different from 1, provided size is: {}'.format(self.L.numel()))
-        return True
-
-    def pre_solve_check(self):
-        self._fix_types()
-        self.check_integrity()
 
         # Check if the initial condition has the same number of elements of the model
         attributes = ['x_0', 'x_max', 'y_max', 'z_max', 'u_max', 'x_min', 'y_min', 'z_min', 'u_min', 'delta_u_max',
@@ -137,6 +135,10 @@ class OptimalControlProblem:
         self.delta_u_min = vertcat(self.delta_u_min)
 
         self.x_0 = vertcat(self.x_0)
+        if self.y_guess is not None:
+            self.y_guess = vertcat(self.y_guess)
+        if self.u_guess is not None:
+            self.u_guess = vertcat(self.u_guess)
 
     def reset_working_model(self):
         self.model = copy.copy(self._model)
@@ -246,7 +248,7 @@ class OptimalControlProblem:
         self.u_max = vertcat(self.u_max, u_max)
 
     def remove_algebraic(self, var, eq=None):
-        to_remove = self.model.find_variables_indices_in_vector(var, self.model.y_sym)
+        to_remove = find_variables_indices_in_vector(var, self.model.y_sym)
         to_remove.reverse()
 
         for it in to_remove:
@@ -255,7 +257,7 @@ class OptimalControlProblem:
         self.model.remove_algebraic(var, eq)
 
     def remove_external_algebraic(self, var, eq=None):
-        to_remove = self.model.find_variables_indices_in_vector(var, self.model.z_sym)
+        to_remove = find_variables_indices_in_vector(var, self.model.z_sym)
         to_remove.reverse()
         for it in to_remove:
             self.z_max.remove([it], [])
