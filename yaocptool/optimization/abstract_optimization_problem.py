@@ -37,7 +37,18 @@ class AbstractOptimizationProblem(object):
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-    def create_variable(self, name, size, lb=-inf, ub=inf):
+    def create_variable(self, name, size=1, lb=-inf, ub=inf):
+        """Create an optimization variable
+
+        :param str name: Name of the optimization variable.
+        :param int size: Size of the variable (default = 1)
+        :param lb: Lower bound of the variable. If the given 'size' is greater than one but a scalar is passed as lower
+        bound, a vector of lb of size 'size' will be used as a lower bound. (default = [-inf]*size)
+        :param ub: Upper bound of the variable. If the given 'size' is greater than one but a scalar is passed as upper
+        bound, a vector of ub of size 'size' will be used as a upper bound. (default = [inf]*size)
+        :return: Return the variable
+        :rtype: MX
+        """
         if isinstance(lb, Number):
             lb = [lb] * size
         if isinstance(ub, Number):
@@ -49,7 +60,7 @@ class AbstractOptimizationProblem(object):
         self.x_ub = vertcat(self.x_ub, ub)
         return new_x
 
-    def create_parameter(self, name, size):
+    def create_parameter(self, name, size=1):
         new_p = MX.sym(name, size)
         self.p = vertcat(self.p, new_p)
         return new_p

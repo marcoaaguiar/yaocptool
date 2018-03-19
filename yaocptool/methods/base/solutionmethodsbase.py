@@ -3,7 +3,7 @@ from warnings import warn
 from casadi import SX, MX, DM, vertcat, collocation_points, \
     vec, nlpsol, \
     dot, gradient, jacobian, mtimes, \
-    reshape
+    reshape, repmat
 from yaocptool import config, create_constant_theta, join_thetas
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
@@ -50,6 +50,7 @@ class SolutionMethodsBase(object):
                 self.nlpsol_opts[k] = config.SOLVER_OPTIONS['nlpsol_options'][k]
 
         if self.discretization_scheme == 'multiple-shooting':
+            self.degree = 1
             self.discretizer = MultipleShootingScheme(self)
         elif self.discretization_scheme == 'collocation':
             self.discretizer = CollocationScheme(self)
@@ -84,7 +85,7 @@ class SolutionMethodsBase(object):
         else:
             return collocation_points(degree, cp)  # All collocation time points
 
-    def create_lagrangian_polynomial_basis(self, degree, starting_index=0, tau=None):
+    def _create_lagrangian_polynomial_basis(self, degree, starting_index=0, tau=None):
         if tau is None:
             tau = self.model.tau_sym  # symbolic variable
 
@@ -113,11 +114,11 @@ class SolutionMethodsBase(object):
         else:
             if point_at_t0:
                 points = SX.sym(name, size, degree + 1)
-                tau, ell_list = self.create_lagrangian_polynomial_basis(degree, 0, tau=tau)
+                tau, ell_list = self._create_lagrangian_polynomial_basis(degree, 0, tau=tau)
                 u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree + 1)])
             else:
                 points = SX.sym(name, size, degree)
-                tau, ell_list = self.create_lagrangian_polynomial_basis(degree, 1, tau=tau)
+                tau, ell_list = self._create_lagrangian_polynomial_basis(degree, 1, tau=tau)
                 u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree)])
             par = vec(points)
 
@@ -163,14 +164,6 @@ class SolutionMethodsBase(object):
                                        - mtimes(jacobian(self.problem.h_final, self.model.x_sys_sym).T,
                                                 self.problem.eta))
 
-    def join_x_and_u(self, x, u):
-        v = []
-        for k in range(self.finite_elements + 1):
-            v.append(x[k])
-            if k != self.finite_elements:
-                v.append(u[k])
-        return vertcat(*v)
-
     def unvec(self, vector, degree=None):
         """
         Unvectorize 'vector' a vectorized matrix, assuming that it was a matrix with 'degree' number of columns
@@ -198,7 +191,7 @@ class SolutionMethodsBase(object):
     # ==============================================================================
 
     def prepare(self):
-        self.problem.pre_solve_check()
+        self.problem._pre_solve_check()
 
     def get_solver(self, initial_condition_as_parameter=False):
         """
@@ -225,7 +218,7 @@ class SolutionMethodsBase(object):
             theta = dict([(i, vec(theta_mx[:, i])) for i in range(self.finite_elements)])
 
             all_mx = vertcat(p_mx, vec(theta_mx))
-            if initial_condition_as_parameter:
+            if self.initial_condition_as_parameter:
                 p_mx_x_0 = MX.sym('x_0_p', self.model.n_x)
                 all_mx = vertcat(all_mx, p_mx_x_0)
             else:
@@ -251,9 +244,13 @@ class SolutionMethodsBase(object):
 
     def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
         if x_0 is None:
-            x_0 = []
+            x_0 = self.problem.x_0
         if p is None:
-            p = []
+            if self.problem.n_p_opt == self.model.n_p:
+                p = repmat(0, self.problem.n_p_opt)
+            else:
+                raise Exception("A parameter 'p' of size {} should be given".format(self.problem.n_p_opt))
+
         if initial_guess is None:
             initial_guess = self.discretizer.create_initial_guess()
 
@@ -277,13 +274,6 @@ class SolutionMethodsBase(object):
         return sol
 
     def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
-        if p is None:
-            p = []
-        if theta is None:
-            theta = {}
-        if x_0 is None:
-            x_0 = []
-
         initial_condition_as_parameter = False
         if x_0 is not None:
             initial_condition_as_parameter = True
@@ -298,12 +288,6 @@ class SolutionMethodsBase(object):
 
     def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
         # type: (object, list, dict, list) -> OptimizationResult
-        if p is None:
-            p = []
-        if theta is None:
-            theta = {}
-        if x_0 is None:
-            x_0 = []
         raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0, last_u=last_u)
         return self.create_optimization_result(raw_solution_dict, p, theta, x_0=x_0)
 

@@ -45,6 +45,8 @@ class OptimizationResult:
         self.x_0 = []
         self.theta = {}
         self.p = []
+        self.p_opt = []
+        self.eta = []
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -82,7 +84,7 @@ class OptimizationResult:
 
         :rtype: DM
         """
-        u_0 = self.u_interpolation_data['values'][0]
+        u_0 = self.u_interpolation_data['values'][0][0]
         return u_0
 
     def plot(self, plot_list):
@@ -117,19 +119,28 @@ class OptimizationResult:
                 lines = []
                 # Plot optimization x data
                 if 'x' in entry:
-                    for l in entry['x']:
+                    x_indices = entry['x']
+                    if x_indices == 'all':
+                        x_indices = range(x_values.shape[0])
+                    for l in x_indices:
                         line = self._plot_entry(t_x, x_values, l, label=self.x_names[l], plot_style='plot')
                         lines.append(line)
 
                 # Plot optimization y data
                 if 'y' in entry:
-                    for l in entry['y']:
+                    y_indices = entry['y']
+                    if y_indices == 'all':
+                        y_indices = range(y_values.shape[0])
+                    for l in y_indices:
                         line = self._plot_entry(t_y, y_values, l, label=self.y_names[l], plot_style='plot')
                         lines.append(line)
 
                 # Plot optimization u data
                 if 'u' in entry:
-                    for l in entry['u']:
+                    u_indices = entry['u']
+                    if u_indices == 'all':
+                        u_indices = range(u_values.shape[0])
+                    for l in u_indices:
                         plot_style = 'step' if self.degree_control == 1 else 'plot'
                         line = self._plot_entry(t_u, u_values, l, label=self.u_names[l], plot_style=plot_style)
                         lines.append(line)

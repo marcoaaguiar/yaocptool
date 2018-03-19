@@ -1,6 +1,8 @@
 # noinspection PyUnresolvedReferences
 from casadi import DM, vertcat
 
+from yaocptool.modelling import OptimalControlProblem
+
 
 class DiscretizationSchemeBase:
     def __init__(self, solution_method):
@@ -21,6 +23,9 @@ class DiscretizationSchemeBase:
 
     @property
     def problem(self):
+        """
+        :return: OptimalControlProblem
+        """
         return self.solution_method.problem
 
     @property
@@ -87,4 +92,16 @@ class DiscretizationSchemeBase:
         :type optimization_result: yaocptool.methods.optimizationresult.OptimizationResult
         :type raw_solution_dict: dict
         """
+        raise NotImplementedError
+
+    def unpack_decision_variables(self, decision_variables):
+        """Return a structured data from the decision variables vector
+
+        Returns:
+        (x_data, y_data, u_data, p_opt, eta)
+
+        :param decision_variables: DM
+        :return: tuple
+        """
+
         raise NotImplementedError

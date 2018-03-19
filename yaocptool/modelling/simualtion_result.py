@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from casadi import horzcat
+from casadi import horzcat, vertcat
 
 
 class SimulationResult:
@@ -30,6 +30,32 @@ class SimulationResult:
         """
         return self.x[-1][-1], self.y[-1][-1], self.u[-1][-1]
 
+    def extend(self, other_sim_result):
+        """Extend this SimulationResult with other SimulationResult.
+        It is only implemented for the case where the other simulation result starts at the end of this
+        simulation. That is this.t_f == other_sim_result.t_0 .
+
+        :param SimulationResult other_sim_result:
+        :return:
+        """
+        list_of_attributes_to_check = ['n_x', 'n_y', 'n_u']
+        for attr in list_of_attributes_to_check:
+            if not getattr(self, attr) == getattr(other_sim_result, attr):
+                raise Exception(
+                    "Attribute {} is no equal for both SimulationResults: {}!={}".format(attr, getattr(self, attr),
+                                                                                         getattr(other_sim_result,
+                                                                                                 attr)))
+        if not other_sim_result.t_0 >= self.t_f:
+            raise Exception("Merge method only implemented for merging simulation results that are subsequent")
+
+        self.t_f = other_sim_result.t_f
+        self.finite_elements += other_sim_result.finite_elements
+
+        self.x.extend(other_sim_result.x)
+        self.y.extend(other_sim_result.y)
+        self.u.extend(other_sim_result.u)
+        self.t = vertcat(self.t, other_sim_result.t[1:])
+
     def plot(self, plot_list):
         """Plot the simulation results.
         It takes as input a list of dictionaries, each dictionary represents a plot.  In the dictionary use keyword 'x'
@@ -54,19 +80,28 @@ class SimulationResult:
             lines = []
             # Plot optimization x data
             if 'x' in entry:
-                for l in entry['x']:
+                x_indices = entry['x']
+                if x_indices == 'all':
+                    x_indices = range(x_values.shape[0])
+                for l in x_indices:
                     line = self._plot_entry(self.t, x_values, l, label=self.x_names[l], plot_style='plot')
                     lines.append(line)
 
             # Plot optimization y data
             if 'y' in entry:
-                for l in entry['y']:
+                y_indices = entry['y']
+                if y_indices == 'all':
+                    y_indices = range(y_values.shape[0])
+                for l in y_indices:
                     line = self._plot_entry(self.t[1:], y_values, l, label=self.y_names[l], plot_style='plot')
                     lines.append(line)
 
             # Plot optimization u data
             if 'u' in entry:
-                for l in entry['u']:
+                u_indices = entry['u']
+                if u_indices == 'all':
+                    u_indices = range(u_values.shape[0])
+                for l in u_indices:
                     plot_style = 'step'
                     line = self._plot_entry(self.t[:-1], u_values, l, label=self.u_names[l], plot_style=plot_style)
                     lines.append(line)
@@ -75,7 +110,7 @@ class SimulationResult:
             axes = fig.axes
             axes[0].ticklabel_format(useOffset=False)
             plt.legend()
-        plt.show()
+            plt.show()
 
     @staticmethod
     def _plot_entry(t_vector, data_vector, row, label='', plot_style='plot'):

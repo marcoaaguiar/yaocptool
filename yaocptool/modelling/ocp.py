@@ -12,6 +12,25 @@ from yaocptool.modelling import SystemModel
 
 
 class OptimalControlProblem:
+    """ Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)
+    It has the following form:
+
+    .. math::
+    \min J &= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\theta)
+    \textnormal{s.t.:}\,& \dot{x} = f(x,y,u,t,p,\\theta) \\
+    & g(x,y,u,t,p,\\theta) = 0 \\
+    & g_eq (x,y,u,t,p,\\theta) = 0 \\
+    & g_ineq(x,y,u,t,p,\\theta) \leq 0 \\
+    & x_{min} \leq x \leq x_{max} \\
+    & y_{min} \leq y \leq y_{max} \\
+    & u_{min} \leq u \leq u_{max} \\
+    & \Delta u_{min} \leq \Delta u \leq \Delta u_{max} \\
+    & h_{initial} (x_(t_0), t_0, p, \theta) = 0 \\
+    & h_{final} (x_(t_f), t_f, p, \theta) = 0
+    & h (p) = 0 \\
+
+    """
+
     def __init__(self, model, **kwargs):
         if not hasattr(self, 't_0'):
             self.t_0 = 0.
@@ -25,20 +44,28 @@ class OptimalControlProblem:
         self._model = model  # type: SystemModel
         self.reset_working_model()
 
+        self.eta = SX()
+        self.p_opt = vertcat([])
+
         self.x_max = repmat(inf, self.model.n_x)
         self.y_max = repmat(inf, self.model.n_y)
         self.z_max = repmat(inf, self.model.n_z)
         self.u_max = repmat(inf, self.model.n_u)
         self.delta_u_max = repmat(inf, self.model.n_u)
+        self.p_opt_max = repmat(inf, self.n_p_opt)
 
         self.x_min = repmat(-inf, self.model.n_x)
         self.y_min = repmat(-inf, self.model.n_y)
         self.z_min = repmat(-inf, self.model.n_z)
         self.u_min = repmat(-inf, self.model.n_u)
         self.delta_u_min = repmat(-inf, self.model.n_u)
+        self.p_opt_min = repmat(-inf, self.n_p_opt)
 
+        self.h = vertcat([])
         self.h_initial = self.model.x_sym - self.model.x_0_sym
         self.h_final = vertcat([])
+
+        self.g_eq = vertcat([])
         self.g_ineq = vertcat([])
 
         self.L = DM(0.)  # type: DM # Integral cost
@@ -46,8 +73,6 @@ class OptimalControlProblem:
         self.H = DM(0.)
 
         self.last_u = None
-
-        self.eta = SX()
 
         self.y_guess = None
         self.u_guess = None
@@ -77,6 +102,12 @@ class OptimalControlProblem:
         return self.eta.size1()
 
     @property
+    def n_p_opt(self):
+        if isinstance(self.p_opt, list):
+            self.p_opt = vertcat(*self.p_opt)
+        return self.p_opt.size1()
+
+    @property
     def yz_max(self):
         return vertcat(self.y_max, self.z_max)
 
@@ -92,7 +123,7 @@ class OptimalControlProblem:
             has_element_diff_from_inf = (not is_equal(self.delta_u_min[i], -inf)) or has_element_diff_from_inf
         return has_element_diff_from_inf
 
-    def pre_solve_check(self):
+    def _pre_solve_check(self):
         self._fix_types()
 
         # Check if Objective Function was provided
@@ -117,11 +148,14 @@ class OptimalControlProblem:
         attr_to_compare = ['n_x', 'n_x', 'n_y', 'n_z', 'n_u', 'n_x', 'n_y', 'n_z', 'n_u', 'n_u', 'n_u']
         for i, attr in enumerate(attributes):
             if not getattr(self, attr).numel() == getattr(self.model, attr_to_compare[i]):
-                raise Exception('The size of "self.{}" is not equal to the number of states "model.{}", '
-                                '{} != {}'.format(attr, attr_to_compare[i], self.x_0.numel(), self.model.n_x))
+                raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
+                                '{} != {}'.format(attr, attr_to_compare[i], getattr(self, attr).numel(),
+                                                  getattr(self.model, attr_to_compare[i])))
         return True
 
     def _fix_types(self):
+        """Transform attributes in casadi types.
+        """
         self.x_max = vertcat(self.x_max)
         self.y_max = vertcat(self.y_max)
         self.z_max = vertcat(self.z_max)
@@ -134,6 +168,10 @@ class OptimalControlProblem:
         self.u_min = vertcat(self.u_min)
         self.delta_u_min = vertcat(self.delta_u_min)
 
+        self.h_final = vertcat(self.h_final)
+        self.h_initial = vertcat(self.h_initial)
+        self.h = vertcat(self.h)
+
         self.x_0 = vertcat(self.x_0)
         if self.y_guess is not None:
             self.y_guess = vertcat(self.y_guess)
@@ -144,6 +182,12 @@ class OptimalControlProblem:
         self.model = copy.copy(self._model)
 
     def create_cost_state(self):
+        """Transforms the integral \int_{t_0}^{t_f} L(...) dt into a dynamic cost state:
+        \dot{x}_c = L(...)
+        and include x_c(t_f) into the final time cost (V(t_f) += x_c(t_f)).
+
+        :rtype: object
+        """
         x_c = SX.sym('x_c')
         if self.positive_objective:
             x_min = 0
@@ -199,9 +243,26 @@ class OptimalControlProblem:
 
             self.model.merge([problem.model])
 
-            # ==============================================================================
-            # INCLUDE VARIABLES
-            # ==============================================================================
+    # ==============================================================================
+    # INCLUDE VARIABLES
+    # ==============================================================================
+
+    def create_optimization_parameter(self, name, size, p_opt_min=None, p_opt_max=None):
+        new_p_opt = self.model.create_parameter(name=name, size=size)
+
+        self.set_parameter_as_optimization_parameter(new_p_opt, new_p_opt_min=p_opt_min, new_p_opt_max=p_opt_max)
+        return new_p_opt
+
+    def set_parameter_as_optimization_parameter(self, new_p_opt, new_p_opt_min=None, new_p_opt_max=None):
+        if new_p_opt_min is None:
+            new_p_opt_min = -DM.inf(new_p_opt.numel())
+        if new_p_opt_max is None:
+            new_p_opt_max = DM.inf(new_p_opt.numel())
+
+        self.p_opt = vertcat(self.p_opt, new_p_opt)
+        self.p_opt_min = vertcat(self.p_opt_min, new_p_opt_min)
+        self.p_opt_max = vertcat(self.p_opt_max, new_p_opt_max)
+        return new_p_opt
 
     def include_state(self, var, ode, x_0=None, x_min=None, x_max=None, h_initial=None, x_0_sym=None, suppress=False):
         if x_min is None:
@@ -247,6 +308,46 @@ class OptimalControlProblem:
         self.u_min = vertcat(self.u_min, u_min)
         self.u_max = vertcat(self.u_max, u_max)
 
+    def include_optimization_parameter(self, var, p_opt_min=None, p_opt_max=None):
+        if p_opt_min is None:
+            p_opt_min = -DM.inf(var.numel())
+        if p_opt_max is None:
+            p_opt_max = DM.inf(var.numel())
+
+        self.model.include_parameter(var)
+        self.p_opt_min = vertcat(self.u_min, p_opt_min)
+        self.p_opt_max = vertcat(self.u_max, p_opt_max)
+
+    def include_initial_time_equality(self, eq):
+        """Include initial time equality. Equality that is evaluated at t=t_0.
+        The equality is concatenated to "h_initial"
+
+        :param eq: initial equality constraint
+        """
+        if isinstance(eq, list):
+            eq = vertcat(*eq)
+        self.h_initial = vertcat(self.h_initial, eq)
+
+    def include_final_time_equality(self, eq):
+        """Include final time equality. Equality that is evaluated at t=t_f.
+        The equality is concatenated to "h_final"
+
+        :param eq: final equality constraint
+        """
+        if isinstance(eq, list):
+            eq = vertcat(*eq)
+        self.h_final = vertcat(self.h_final, eq)
+
+    def include_equality(self, eq):
+        """Include time independent equality.
+        Equality is concatenated "h".
+
+        :param eq: time independent equality
+        """
+        if isinstance(eq, list):
+            eq = vertcat(*eq)
+        self.h = vertcat(self.h, eq)
+
     def remove_algebraic(self, var, eq=None):
         to_remove = find_variables_indices_in_vector(var, self.model.y_sym)
         to_remove.reverse()
@@ -287,6 +388,9 @@ class OptimalControlProblem:
             self.V = substitute(self.V, original, replacement)
 
         self.model.replace_variable(original, replacement, variable_type)
+
+    def get_p_opt_indices(self):
+        return find_variables_indices_in_vector(self.p_opt, self.model.p_sym)
 
 
 class SuperOCP(OptimalControlProblem):

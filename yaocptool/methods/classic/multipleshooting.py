@@ -5,10 +5,7 @@ Created on Thu Jul 13 17:08:34 2017
 @author: marco
 """
 from collections import defaultdict
-
 from casadi import DM, MX, vertcat, Function, repmat, is_equal, inf
-# noinspection PyUnresolvedReferences
-from typing import Dict, List
 
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
@@ -29,13 +26,22 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         for k in range(self.finite_elements + 1):
             vars_lb.append(self.problem.x_min)
             vars_ub.append(self.problem.x_max)
-        # for k in range(self.finite_elements):
-        #         vars_lb.append(self.problem.yz_min)
-        #         vars_ub.append(self.problem.yz_max)
+
+        for k in range(self.finite_elements):
+            vars_lb.append(self.problem.y_min)
+            vars_ub.append(self.problem.y_max)
+
         for k in range(self.finite_elements):
             for j in range(self.degree_control):
                 vars_lb.append(self.problem.u_min)
                 vars_ub.append(self.problem.u_max)
+
+        vars_lb.append(-DM.inf(self.problem.n_eta))
+        vars_ub.append(DM.inf(self.problem.n_eta))
+
+        vars_lb.append(self.problem.p_opt_min)
+        vars_ub.append(self.problem.p_opt_max)
+
         vars_lb = vertcat(*vars_lb)
         vars_ub = vertcat(*vars_ub)
         return vars_lb, vars_ub
@@ -43,9 +49,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
     def create_nlp_symbolic_variables(self):
         """
        Create the symbolic variables that will be used by the NLP problem
-       :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX)
+       :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX, MX)
        """
-        eta = MX.sym('eta', self.problem.n_eta)
         x_var, y_var, u_var = [], [], []
 
         for el in range(self.finite_elements + 1):
@@ -53,8 +58,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             x_var.append(x_k)
 
         for el in range(self.finite_elements):
-            # y_k = [MX.sym('yz_' + repr(el), self.model.n_yz)]
-            y_k = []
+            y_k = [MX.sym('y_' + repr(el), self.model.n_y)]
             y_var.append(y_k)
 
         for el in range(self.finite_elements):
@@ -63,12 +67,15 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 u_k.append(MX.sym('u_' + repr(el) + '_' + repr(n), self.model.n_u))
             u_var.append(u_k)
 
+        eta = MX.sym('eta', self.problem.n_eta)
+        p_opt = MX.sym('p_opt', self.problem.n_p_opt)
+
         v_x = self.vectorize(x_var)
         v_y = self.vectorize(y_var)
         v_u = self.vectorize(u_var)
-        v = vertcat(v_x, v_y, v_u, eta)
+        v = vertcat(v_x, v_y, v_u, eta, p_opt)
 
-        return v, x_var, y_var, u_var, eta
+        return v, x_var, y_var, u_var, eta, p_opt
 
     def split_x_y_and_u(self, results_vector, all_subinterval=False):
         """
@@ -76,49 +83,68 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         :param results_vector: DM
         :return: X, Y, and U -> list with a DM for each element
         """
-        assert (results_vector.__class__ == DM)
-        x, y, u = [], [], []
+        x, y, u, _, _ = self.unpack_decision_variables(results_vector)
+
+        return x, y, u
+
+    def unpack_decision_variables(self, decision_variables):
+        """Return a structured data from the decision variables vector
+
+        Returns:
+        (x_data, y_data, u_data, p_opt, eta)
+
+        :param decision_variables: DM
+        :return: tuple
+        """
+        x, y, u, eta, p_opt = [], [], [], [], []
         v_offset = 0
 
-        if self.problem.n_eta > 0:
-            results_vector = results_vector[:-self.problem.n_eta]
-
         for k in range(self.finite_elements + 1):
-            x.append([results_vector[v_offset:v_offset + self.model.n_x]])
+            x.append([decision_variables[v_offset:v_offset + self.model.n_x]])
             v_offset = v_offset + self.model.n_x
 
         for k in range(self.finite_elements):
-            y.append([DM([])])
+            y.append([decision_variables[v_offset:v_offset + self.model.n_y]])
+            v_offset = v_offset + self.model.n_y
 
         for k in range(self.finite_elements):
             u_k = []
             for i in range(self.degree_control):
-                u_k.append(results_vector[v_offset:v_offset + self.model.n_u])
+                u_k.append(decision_variables[v_offset:v_offset + self.model.n_u])
                 v_offset += self.model.n_u
             u.append(u_k)
 
-        assert v_offset == results_vector.numel()
+        if self.problem.n_eta > 0:
+            eta = decision_variables[v_offset:v_offset + self.problem.n_eta]
+            v_offset += self.problem.n_eta
 
-        return x, y, u
+        if self.problem.n_p_opt > 0:
+            p_opt = decision_variables[v_offset:v_offset + self.problem.n_p_opt]
+            v_offset += self.problem.n_p_opt
+
+        assert v_offset == decision_variables.numel()
+
+        return x, y, u, eta, p_opt
 
     def discretize(self, x_0=None, p=None, theta=None, last_u=None):
         if p is None:
             p = []
-
         if theta is None:
             theta = dict([(i, []) for i in range(self.finite_elements)])
-
         if x_0 is None:
             x_0 = self.problem.x_0
 
         # Create NLP symbolic variables
-        all_decision_vars, x_var, yz_var, u_var, eta = self.create_nlp_symbolic_variables()
-        y = []
+        all_decision_vars, x_var, y_var, u_var, eta, p_opt = self.create_nlp_symbolic_variables()
 
         cost = 0
         constraint_list = []
         lbg = []
         ubg = []
+
+        # Put the symbolic optimization parameters in the parameter vector
+        for i, p_opt_index in enumerate(self.problem.get_p_opt_indices()):
+            p[p_opt_index] = p_opt[i]
 
         # Create "simulations" time_dict, a dict informing the simulation points in each finite elem. for each variable
         time_dict = self._create_time_dict_for_multiple_shooting()
@@ -130,16 +156,27 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         ubg.append(DM.zeros(constraint_list[-1].shape))
 
         # Multiple Shooting "simulation"
-        results = self.get_system_at_given_times(x_var, y, u_var, time_dict, p, theta)
+        results = self.get_system_at_given_times(x_var, y_var, u_var, time_dict, p, theta)
+
+        # with the results of the simulation create the constraints
         for el in range(self.finite_elements):
             x_at_el_p_1 = results[el]['x'][0]
+            y_end_el = results[el]['y'][0]
 
+            # cost function as a sum of cost at each element
             if self.solution_method.solution_class == 'direct' and self.solution_method.cost_as_a_sum:
                 x_at_el_p_1 = [x_at_el_p_1[n] for n in range(self.model.n_x)]
                 x_at_el_p_1[-1] = 0
                 x_at_el_p_1 = vertcat(*x_at_el_p_1)
                 cost += results[el]['x'][0][-1]
+
+            # Continuity constraint for defininig x
             constraint_list.append(x_at_el_p_1 - x_var[el + 1][0])
+            lbg.append(DM.zeros(constraint_list[-1].shape))
+            ubg.append(DM.zeros(constraint_list[-1].shape))
+
+            # Defining y
+            constraint_list.append(y_end_el - y_var[el][0])
             lbg.append(DM.zeros(constraint_list[-1].shape))
             ubg.append(DM.zeros(constraint_list[-1].shape))
 
@@ -162,8 +199,14 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                             ubg.append(self.problem.delta_u_max[i])
 
         # Final time constraint
-        f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta], [self.problem.h_final])
-        constraint_list.append(f_h_final(x_var[-1][0], eta))
+        f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta, self.model.p_sym], [self.problem.h_final])
+        constraint_list.append(f_h_final(x_var[-1][0], eta, p))
+        lbg.append(DM.zeros(constraint_list[-1].shape))
+        ubg.append(DM.zeros(constraint_list[-1].shape))
+
+        # Time independent constraints
+        f_h = Function('h', [self.model.p_sym], [self.problem.h])
+        constraint_list.append(f_h(p))
         lbg.append(DM.zeros(constraint_list[-1].shape))
         ubg.append(DM.zeros(constraint_list[-1].shape))
 
@@ -192,6 +235,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             time_dict[el]['t_0'] = self.time_breakpoints[el]
             time_dict[el]['t_f'] = self.time_breakpoints[el + 1]
             time_dict[el]['x'] = [self.time_breakpoints[el + 1]]
+            time_dict[el]['y'] = [self.time_breakpoints[el + 1]]
 
         return time_dict
 
@@ -281,9 +325,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 # Save to the result vector
                 if 'x' in time_dict[el] and t in time_dict[el]['x']:
                     results[el]['x'].append(x_t)
-                if 'y' in time_dict and t in time_dict[el]['y']:
+                if 'y' in time_dict[el] and t in time_dict[el]['y']:
                     results[el]['y'].append(yz_t)
-                if 'u' in time_dict and t in time_dict[el]['u']:
+                if 'u' in time_dict[el] and t in time_dict[el]['u']:
                     if self.solution_method.solution_class == 'direct':
                         results[el]['u'].append(f_u(t, self.vectorize(u_var[el])))
                     else:
@@ -307,12 +351,10 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
     def create_initial_guess(self):
         x_init = repmat(self.problem.x_0, self.finite_elements + 1)
 
-        # if self.problem.y_guess is not None:
-        #     y_init = repmat(self.problem.y_guess, self.degree * self.finite_elements)
-        # else:
-        #     y_init = repmat(DM.zeros(self.model.n_y), self.degree * self.finite_elements)
-
-        y_init = []
+        if self.problem.y_guess is not None:
+            y_init = repmat(self.problem.y_guess, self.degree * self.finite_elements)
+        else:
+            y_init = repmat(DM.zeros(self.model.n_y), self.degree * self.finite_elements)
 
         if self.problem.u_guess is not None:
             u_init = repmat(self.problem.u_guess, self.degree_control * self.finite_elements)
@@ -320,8 +362,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             u_init = repmat(DM.zeros(self.model.n_u), self.degree_control * self.finite_elements)
 
         eta_init = DM.zeros(self.problem.n_eta, 1)
+        p_init = DM.zeros(self.problem.n_p_opt, 1)
 
-        return vertcat(x_init, y_init, u_init, eta_init)
+        return vertcat(x_init, y_init, u_init, eta_init, p_init)
 
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
         """
@@ -336,22 +379,21 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         optimization_result.objective = raw_solution_dict['f']
         optimization_result.constraint_values = raw_solution_dict['g']
 
-        x_breakpoints_values, y_breakpoints_values, u_breakpoints_values = self.split_x_y_and_u(raw_solution_dict['x'])
+        x_values, y_values, u_values, eta, p_opt = self.unpack_decision_variables(raw_solution_dict['x'])
 
-        optimization_result.x_breakpoints_data['values'] = x_breakpoints_values
-        optimization_result.y_breakpoints_data['values'] = y_breakpoints_values
-        optimization_result.u_breakpoints_data['values'] = u_breakpoints_values
+        optimization_result.p_opt = p_opt
+        optimization_result.eta = eta
 
-        optimization_result.x_breakpoints_data['time'] = self.time_breakpoints
-        optimization_result.y_breakpoints_data['time'] = self.time_breakpoints[:-1]
-        optimization_result.u_breakpoints_data['time'] = self.time_breakpoints[:-1]
-
-        optimization_result.x_interpolation_data['values'] = x_breakpoints_values
-        optimization_result.y_interpolation_data['values'] = y_breakpoints_values
-        optimization_result.u_interpolation_data['values'] = u_breakpoints_values
+        optimization_result.x_interpolation_data['values'] = x_values
+        optimization_result.y_interpolation_data['values'] = y_values
+        optimization_result.u_interpolation_data['values'] = u_values
 
         optimization_result.x_interpolation_data['time'] = [[t] for t in self.time_breakpoints]
-        optimization_result.y_interpolation_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
-        optimization_result.u_interpolation_data['time'] = [
-            [t + self.delta_t * col for col in self.solution_method.collocation_points(self.degree_control)] for t in
-            self.time_breakpoints[:-1]]
+        optimization_result.y_interpolation_data['time'] = [[t] for t in self.time_breakpoints[1:]]
+        if self.degree_control == 1:
+            optimization_result.u_interpolation_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
+        else:
+            optimization_result.u_interpolation_data['time'] = [
+                [t + self.delta_t * col for col in self.solution_method.collocation_points(self.degree_control)] for t
+                in
+                self.time_breakpoints[:-1]]

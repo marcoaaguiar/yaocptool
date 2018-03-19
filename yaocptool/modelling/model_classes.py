@@ -404,6 +404,8 @@ class SystemModel:
             models_list = [models_list]
 
         for model in models_list:
+            model.replace_variable(model.t_sym, self.t_sym)
+            model.replace_variable(model.tau_sym, self.tau_sym)
             self.include_state(model.x_sym, model.ode, model.x_0_sym)
             self.include_algebraic(model.y_sym, model.alg)
             self.include_external_algebraic(model.z_sym, model.alg_z)
