@@ -7,6 +7,7 @@ Created on Thu Jul 13 17:08:34 2017
 from collections import defaultdict
 from casadi import DM, MX, vertcat, Function, repmat, is_equal, inf
 
+from yaocptool import convert_expr_from_tau_to_time
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
@@ -155,8 +156,23 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         lbg.append(DM.zeros(constraint_list[-1].shape))
         ubg.append(DM.zeros(constraint_list[-1].shape))
 
+        # Create functions to be evaluated
+        functions = defaultdict(dict)
+        for el in range(self.finite_elements):
+            g_ineq_el = convert_expr_from_tau_to_time(self.problem.g_ineq, self.model.t_sym, self.model.tau_sym,
+                                                      self.time_breakpoints[el], self.time_breakpoints[el + 1])
+
+            g_eq_el = convert_expr_from_tau_to_time(self.problem.g_eq, self.model.t_sym, self.model.tau_sym,
+                                                    self.time_breakpoints[el], self.time_breakpoints[el + 1])
+
+            f_g_ineq = Function('f_g_ineq_' + repr(el), self.model.all_sym, [g_ineq_el])
+            f_g_eq = Function('f_g_eq_' + repr(el), self.model.all_sym, [g_eq_el])
+
+            functions['g_ineq'][el] = f_g_ineq
+            functions['g_eq'][el] = f_g_eq
+
         # Multiple Shooting "simulation"
-        results = self.get_system_at_given_times(x_var, y_var, u_var, time_dict, p, theta)
+        results = self.get_system_at_given_times(x_var, y_var, u_var, time_dict, p, theta, functions=functions)
 
         # with the results of the simulation create the constraints
         for el in range(self.finite_elements):
@@ -198,6 +214,16 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                             lbg.append(self.problem.delta_u_min[i])
                             ubg.append(self.problem.delta_u_max[i])
 
+            # Time dependent inequalities
+            constraint_list.append(results[el]['g_ineq'][0])
+            lbg.append(-DM.inf(constraint_list[-1].shape))
+            ubg.append(DM.zeros(constraint_list[-1].shape))
+
+            # Time dependent equalities
+            constraint_list.append(results[el]['g_eq'][0])
+            lbg.append(DM.zeros(constraint_list[-1].shape))
+            ubg.append(DM.zeros(constraint_list[-1].shape))
+
         # Final time constraint
         f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta, self.model.p_sym], [self.problem.h_final])
         constraint_list.append(f_h_final(x_var[-1][0], eta, p))
@@ -236,6 +262,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             time_dict[el]['t_f'] = self.time_breakpoints[el + 1]
             time_dict[el]['x'] = [self.time_breakpoints[el + 1]]
             time_dict[el]['y'] = [self.time_breakpoints[el + 1]]
+
+            time_dict[el]['g_ineq'] = [self.time_breakpoints[el + 1]]
+            time_dict[el]['g_eq'] = [self.time_breakpoints[el + 1]]
 
         return time_dict
 

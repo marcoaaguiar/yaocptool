@@ -9,6 +9,8 @@ from collections import defaultdict
 from typing import List, Dict
 from casadi import DM, MX, repmat, vertcat, Function, jacobian, is_equal, inf
 from itertools import chain
+
+from yaocptool import convert_expr_from_tau_to_time
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
@@ -194,7 +196,6 @@ class CollocationScheme(DiscretizationSchemeBase):
         # Create NLP symbolic variables
         all_decision_vars, x_var, yz_var, u_var, eta, p_opt = self.create_nlp_symbolic_variables()
 
-        cost = 0
         constraint_list = []
         lbg = []
         ubg = []
@@ -228,11 +229,21 @@ class CollocationScheme(DiscretizationSchemeBase):
             dae_sys.convert_from_tau_to_time(self.time_breakpoints[el],
                                              self.time_breakpoints[el + 1])
 
+            g_ineq_el = convert_expr_from_tau_to_time(self.problem.g_ineq, self.model.t_sym, self.model.tau_sym,
+                                                      self.time_breakpoints[el], self.time_breakpoints[el + 1])
+
+            g_eq_el = convert_expr_from_tau_to_time(self.problem.g_eq, self.model.t_sym, self.model.tau_sym,
+                                                    self.time_breakpoints[el], self.time_breakpoints[el + 1])
+
             f_ode = Function('f_ode_' + repr(el), self.model.all_sym, [dae_sys.ode])
             f_alg = Function('f_alg_' + repr(el), self.model.all_sym, [dae_sys.alg])
+            f_g_ineq = Function('f_g_ineq_' + repr(el), self.model.all_sym, [g_ineq_el])
+            f_g_eq = Function('f_g_eq_' + repr(el), self.model.all_sym, [g_eq_el])
 
             functions['ode'][el] = f_ode
             functions['alg'][el] = f_alg
+            functions['g_ineq'][el] = f_g_ineq
+            functions['g_eq'][el] = f_g_eq
 
         # Obtain the "simulation" results
         results = self.get_system_at_given_times(x_var, yz_var, u_var, time_dict, p, theta, functions=functions)
@@ -278,7 +289,13 @@ class CollocationScheme(DiscretizationSchemeBase):
                             lbg.append(self.problem.delta_u_min[i])
                             ubg.append(self.problem.delta_u_max[i])
 
-        # Final constraint
+            # Time dependent inequalities
+            for col_point in range(self.degree):
+                constraint_list.append(results[el]['g_ineq'][col_point])
+                lbg.append(-DM.inf(constraint_list[-1].shape))
+                ubg.append(DM.zeros(constraint_list[-1].shape))
+
+        # Final time constraint
         x_f = results[self.finite_elements - 1]['x'][-1]
         f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta, self.model.p_sym], [self.problem.h_final])
         constraint_list.append(f_h_final(x_f, eta, p))
@@ -413,6 +430,9 @@ class CollocationScheme(DiscretizationSchemeBase):
 
             time_dict[el]['ode'] = self.time_interpolation_states[el]
             time_dict[el]['alg'] = self.time_interpolation_algebraics[el]
+
+            time_dict[el]['g_ineq'] = self.time_interpolation_algebraics[el]
+            time_dict[el]['g_eq'] = self.time_interpolation_algebraics[el]
 
         return time_dict
 

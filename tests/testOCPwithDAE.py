@@ -26,12 +26,14 @@ problem.t_f = 10
 problem.L = mtimes(x.T, x) + u ** 2
 problem.x_0 = [0, 1]
 problem.set_parameter_as_optimization_parameter(b, -.5, .5)
-problem.include_equality(problem.p_opt + 0.25)
+# problem.include_equality(problem.p_opt + 0.25)
+problem.include_time_inequality(-u - 0.05)
 
 # instantiate a solution method
 solution_method = DirectMethod(problem,
-                               # discretization_scheme='collocation'
+                               discretization_scheme='collocation',
+                               degree_control=3,
                                )
 solution = solution_method.solve(p=[1, 2])
 
-# solution.plot([{'x': [0, 1]}, {'y': [0, 1]}, {'u': [0]}])
+solution.plot([{'x': [0, 1]}, {'y': [0, 1]}, {'u': [0]}])

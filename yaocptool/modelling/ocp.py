@@ -98,6 +98,18 @@ class OptimalControlProblem:
         return self.h_final.size1()
 
     @property
+    def n_h_initial(self):
+        return self.h_initial.size1()
+
+    @property
+    def n_g_ineq(self):
+        return self.g_ineq.size1()
+
+    @property
+    def n_g_eq(self):
+        return self.g_eq.size1()
+
+    @property
     def n_eta(self):
         return self.eta.size1()
 
@@ -171,6 +183,9 @@ class OptimalControlProblem:
         self.h_final = vertcat(self.h_final)
         self.h_initial = vertcat(self.h_initial)
         self.h = vertcat(self.h)
+
+        self.g_eq = vertcat(self.g_eq)
+        self.g_ineq = vertcat(self.g_ineq)
 
         self.x_0 = vertcat(self.x_0)
         if self.y_guess is not None:
@@ -328,6 +343,30 @@ class OptimalControlProblem:
             eq = vertcat(*eq)
         self.h_initial = vertcat(self.h_initial, eq)
 
+    def include_time_inequality(self, eq):
+        """Include time dependent inequality.
+        g_ineq(..., t) <= 0, for t \in [t_0, t_f]
+
+        The inequality is concatenated to "g_ineq"
+
+        :param eq: inequality
+        """
+        if isinstance(eq, list):
+            eq = vertcat(*eq)
+        self.g_ineq = vertcat(self.g_ineq, eq)
+
+    def include_time_equality(self, eq):
+        """Include time dependent equality.
+        g_eq(..., t) = 0, for t \in [t_0, t_f]
+
+        The inequality is concatenated to "g_ineq"
+
+        :param eq: equality
+        """
+        if isinstance(eq, list):
+            eq = vertcat(*eq)
+        self.g_eq = vertcat(self.g_eq, eq)
+
     def include_final_time_equality(self, eq):
         """Include final time equality. Equality that is evaluated at t=t_f.
         The equality is concatenated to "h_final"
@@ -386,6 +425,12 @@ class OptimalControlProblem:
         self.L = substitute(self.L, original, replacement)
         if variable_type == 'p':
             self.V = substitute(self.V, original, replacement)
+
+        self.h_initial = substitute(self.h_initial, original, replacement)
+        self.h_final = substitute(self.h_final, original, replacement)
+        self.g_ineq = substitute(self.g_ineq, original, replacement)
+        self.g_eq = substitute(self.g_eq, original, replacement)
+        self.h = substitute(self.h, original, replacement)
 
         self.model.replace_variable(original, replacement, variable_type)
 
