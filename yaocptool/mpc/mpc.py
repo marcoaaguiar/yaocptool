@@ -21,18 +21,12 @@ class MPC:
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-    def run(self, iterations=0, simulation_results=None):
+    def run(self, iterations=0):
         """Starts computing control and sending it to the plant.
         It cna receive two arguments
 
         :param int iterations: the number of iterations that the MPC will run. To run it indefinitely use iterations = 0
-        :param SimulationResult simulation_results: a simulation result which the MPC should continue inserting data.
         """
-        # TODO: Receive a SimulationResult to continue from and return a SimulationResult.
-        if simulation_results is None:
-            simulation_results = SimulationResult(name=self.plant.name,
-                                                  t_0=self.plant.t,
-                                                  )
 
         for k in itertools.count(0):
             print(' Iteration {} '.format(k).center(30, '='))

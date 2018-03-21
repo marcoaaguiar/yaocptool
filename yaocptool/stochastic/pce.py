@@ -56,7 +56,7 @@ def sample_parameter_log_normal_distribution(mean, covariance, n_samples=1):
     return samples
 
 
-def get_ls_factor(n_uncertain, n_samples, pc_order):
+def get_ls_factor(n_uncertain, n_samples, pc_order, lamb=0):
     # Uncertain parameter design
     sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, 5)
     sobol_samples = np.transpose(sobol_design)
@@ -97,7 +97,7 @@ def get_ls_factor(n_uncertain, n_samples, pc_order):
         for j in range(SX.size(PSI)[0]):
             PSImatrix[i, j] = PSIa[j]
 
-    PSITPSI = mtimes(PSImatrix.T, PSImatrix)
+    PSITPSI = mtimes(PSImatrix.T, PSImatrix) + lamb*DM.eye(nparameter)
     cholPSITPSI = chol(PSITPSI)
     invcholPSITPSI = solve(cholPSITPSI, SX.eye(nparameter))
     invPSITPSI = mtimes(invcholPSITPSI, invcholPSITPSI.T)
@@ -111,7 +111,7 @@ def get_ls_factor(n_uncertain, n_samples, pc_order):
     PSIsquaredsum = DM.zeros(SX.size(PSI)[0])
     for i in range(nsample):
         PSIsquaredsum += PSIfcn(Xsample[i, :]) ** 2
-    Expectationvector = MX(PSIsquaredsum / nsample)
+    Expectationvector = PSIsquaredsum / nsample
     #    Expectationvector = MX([1.,1.,2.,1.,1.,2.])
 
     return LSfactor, Expectationvector, PSIfcn

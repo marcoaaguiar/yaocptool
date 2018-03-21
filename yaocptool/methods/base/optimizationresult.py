@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import partial
 
 import matplotlib.pyplot as plt
 from casadi import horzcat, DM
@@ -40,7 +41,7 @@ class OptimizationResult:
         self.y_interpolation_data = {'values': [], 'time': []}
         self.u_interpolation_data = {'values': [], 'time': []}
 
-        self.other_data = defaultdict(lambda: {'values': [], 'time': []})
+        self.other_data = defaultdict(partial(defaultdict, {'values': [], 'time': []}))
 
         self.x_0 = []
         self.theta = {}
@@ -71,13 +72,13 @@ class OptimizationResult:
 
     # Plot
     @staticmethod
-    def _plot_entry(t_vector, data_vector, row, label='', plot_style='plot'):
+    def _plot_entry(t_vector, data_vector, row, label='', plot_style='plot', **kwargs):
         if plot_style not in ['plot', 'step']:
             raise ValueError('Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(plot_style))
         if plot_style == 'plot':
-            return plt.plot(t_vector.T, data_vector[row, :].T, label=label)
+            return plt.plot(t_vector.T, data_vector[row, :].T, label=label, **kwargs)
         elif plot_style == 'step':
-            return plt.step(t_vector.T, data_vector[row, :].T, label=label, where='post')
+            return plt.step(t_vector.T, data_vector[row, :].T, label=label, where='post', **kwargs)
 
     def first_control(self):
         """Return the first element of the control vector
@@ -157,5 +158,5 @@ class OptimizationResult:
                 plt.grid()
                 axes = fig.axes
                 axes[0].ticklabel_format(useOffset=False)
-                plt.legend()
+                plt.legend(ncol=4)
             plt.show()

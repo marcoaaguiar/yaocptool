@@ -268,6 +268,16 @@ class OptimalControlProblem:
         self.set_parameter_as_optimization_parameter(new_p_opt, new_p_opt_min=p_opt_min, new_p_opt_max=p_opt_max)
         return new_p_opt
 
+    def create_state(self, name, size, ode=None, x_0=None, var_max=None, var_min=None, h_initial=None):
+        var = SX.sym(name, size)
+        self.include_state(var, ode=ode, x_0=x_0, x_min=var_min, x_max=var_max, h_initial=h_initial)
+        return var
+
+    def create_algebraic(self, name, size, alg=None, y_max=None, y_min=None, y_guess=None):
+        var = SX.sym(name, size)
+        self.include_algebraic(var, alg=alg, y_min=y_min, y_max=y_max, y_guess=y_guess)
+        return var
+
     def set_parameter_as_optimization_parameter(self, new_p_opt, new_p_opt_min=None, new_p_opt_max=None):
         if new_p_opt_min is None:
             new_p_opt_min = -DM.inf(new_p_opt.numel())
@@ -279,7 +289,11 @@ class OptimalControlProblem:
         self.p_opt_max = vertcat(self.p_opt_max, new_p_opt_max)
         return new_p_opt
 
-    def include_state(self, var, ode, x_0=None, x_min=None, x_max=None, h_initial=None, x_0_sym=None, suppress=False):
+    def include_system_equations(self, ode=None, alg=None, alg_z=None, con=None):
+        self.model.include_system_equations(ode=ode, alg=alg, alg_z=alg_z, con=con)
+
+    def include_state(self, var, ode=None, x_0=None, x_min=None, x_max=None, h_initial=None, x_0_sym=None,
+                      suppress=False):
         if x_min is None:
             x_min = -DM.inf(var.numel())
         if x_max is None:
@@ -303,11 +317,16 @@ class OptimalControlProblem:
         self.x_min = vertcat(self.x_min, x_min)
         self.x_max = vertcat(self.x_max, x_max)
 
-    def include_algebraic(self, var, alg, y_min=None, y_max=None):
+    def include_algebraic(self, var, alg=None, y_min=None, y_max=None, y_guess=None):
         if y_min is None:
             y_min = -DM.inf(var.numel())
         if y_max is None:
             y_max = DM.inf(var.numel())
+        if self.y_guess is not None:
+            if y_guess is None:
+                self.y_guess = vertcat(self.y_guess, DM.zeros(var.numel()))
+            else:
+                self.y_guess = vertcat(self.y_guess, y_guess)
 
         self.model.include_algebraic(var, alg)
         self.y_min = vertcat(self.y_min, y_min)
