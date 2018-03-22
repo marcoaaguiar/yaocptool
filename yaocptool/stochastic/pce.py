@@ -7,13 +7,8 @@ from sobol import sobol_seq
 import numpy as np
 
 
-def sample_parameter_normal_distribution(mean, variance, seed=None):
-    raise NotImplementedError
-
-
-def sample_parameter_log_normal_distribution_without_exponentiating(mean, covariance, n_samples=1):
-    """Sample parameter using Sobol sampling with a log-normal distribution, but return without exponentiating
-    the sample, that is no exp(sample).
+def sample_parameter_normal_distribution(mean, covariance, n_samples=1):
+    """Sample parameter using Sobol sampling with a normal distribution.
 
     :param mean:
     :param covariance:
@@ -24,7 +19,6 @@ def sample_parameter_log_normal_distribution_without_exponentiating(mean, covari
         mean = vertcat(*mean)
 
     n_uncertain = mean.size1()
-    mean_log = log(mean)
 
     # Uncertain parameter design
     sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, math.ceil(np.log2(n_samples)))
@@ -36,29 +30,31 @@ def sample_parameter_log_normal_distribution_without_exponentiating(mean, covari
     std = sqrt(diag(covariance))
     for i in range(n_samples):
         for j in range(n_uncertain):
-            log_samples[i, j] = mean_log[j] + sobol_samples[i, j] * std[j]
+            log_samples[i, j] = mean[j] + sobol_samples[i, j] * std[j]
 
     return log_samples
 
 
 def sample_parameter_log_normal_distribution(mean, covariance, n_samples=1):
-    """Sample parameter using Sobol sampling with a log-normal distribution, but return without exponentiating
-    the sample, that is no exp(sample).
+    """Sample parameter using Sobol sampling with a log-normal distribution.
 
     :param mean:
     :param covariance:
     :param n_samples:
     :return:
     """
+    if isinstance(mean, list):
+        mean = vertcat(*mean)
 
-    log_samples = sample_parameter_log_normal_distribution_without_exponentiating(mean, covariance, n_samples)
+    mean_log = log(mean)
+    log_samples = sample_parameter_normal_distribution(mean_log, covariance, n_samples)
     samples = exp(log_samples)
     return samples
 
 
 def get_ls_factor(n_uncertain, n_samples, pc_order, lamb=0):
     # Uncertain parameter design
-    sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, 5)
+    sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, math.ceil(np.log2(n_samples)))
     sobol_samples = np.transpose(sobol_design)
     for i in range(n_uncertain):
         sobol_samples[:, i] = norm(loc=0., scale=1.).ppf(sobol_samples[:, i])

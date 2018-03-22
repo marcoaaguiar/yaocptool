@@ -242,7 +242,7 @@ class SolutionMethodsBase(object):
         solver = nlpsol('solver', 'ipopt', nlp_prob, self.nlpsol_opts)
         return solver
 
-    def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
+    def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         if x_0 is None:
             x_0 = self.problem.x_0
         if p is None:
@@ -269,11 +269,20 @@ class SolutionMethodsBase(object):
 
         print('par', par)
 
-        sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
-                          lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
+        if initial_guess_dict is None:
+            sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
+                              lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
+        else:
+            print("Using initial_guess_dict as initial guess: ")
+            print(initial_guess_dict)
+            sol = self.solver(x0=initial_guess_dict['x'], lam_x0=initial_guess_dict['lam_x'],
+                              lam_g0=initial_guess_dict['lam_g'],
+                              p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
+                              lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
+
         return sol
 
-    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
+    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         initial_condition_as_parameter = False
         if x_0 is not None:
             initial_condition_as_parameter = True
@@ -283,12 +292,14 @@ class SolutionMethodsBase(object):
             self.prepared = True
 
         solution_dict = self.get_solver(initial_condition_as_parameter)(initial_guess=initial_guess, p=p, theta=theta,
-                                                                        x_0=x_0, last_u=last_u)
+                                                                        x_0=x_0, last_u=last_u,
+                                                                        initial_guess_dict=initial_guess_dict)
         return solution_dict
 
-    def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
+    def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         # type: (object, list, dict, list) -> OptimizationResult
-        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0, last_u=last_u)
+        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0, last_u=last_u,
+                                           initial_guess_dict=initial_guess_dict)
         return self.create_optimization_result(raw_solution_dict, p, theta, x_0=x_0)
 
     def create_optimization_result(self, raw_solution_dict, p=None, theta=None, x_0=None):
