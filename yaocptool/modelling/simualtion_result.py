@@ -1,4 +1,7 @@
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    print('Failed to import matplotlib. Make sure that is properly installed')
 from casadi import horzcat, vertcat
 
 

@@ -1,9 +1,7 @@
 from warnings import warn
 
 from casadi import SX, MX, DM, vertcat, collocation_points, \
-    vec, nlpsol, \
-    dot, gradient, jacobian, mtimes, \
-    reshape, repmat
+    vec, nlpsol, dot, gradient, jacobian, mtimes, reshape, repmat
 from yaocptool import config, create_constant_theta, join_thetas
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
@@ -245,6 +243,9 @@ class SolutionMethodsBase(object):
     def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         if x_0 is None:
             x_0 = self.problem.x_0
+        if not vertcat(x_0).numel() == self.model.n_x :
+            raise Exception('Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, '
+                            'x_0.numel() = {}, model.n_x = {}'.format(vertcat(x_0).numel(), self.model.n_x))
         if p is None:
             if self.problem.n_p_opt == self.model.n_p:
                 p = repmat(0, self.problem.n_p_opt)
