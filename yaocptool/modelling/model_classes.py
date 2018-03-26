@@ -9,7 +9,7 @@ from warnings import warn
 
 from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec
 
-from yaocptool import find_variables_indices_in_vector
+from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector
 from yaocptool.modelling import DAESystem
 # TODO: Check linearize method
 # TODO: Create find_equilibrium method
@@ -17,7 +17,7 @@ from yaocptool.modelling.simualtion_result import SimulationResult
 
 
 class SystemModel:
-    def __init__(self, n_x=0, n_y=0, n_z=0, n_u=0, n_p=0, n_theta=0, **kwargs):
+    def __init__(self, name='model', n_x=0, n_y=0, n_z=0, n_u=0, n_p=0, n_theta=0, **kwargs):
         """
             x - states
             y - (internal) algebraic
@@ -29,6 +29,7 @@ class SystemModel:
 
             Note: when vectorizing the parameters order is [ p; theta; u_par]
         """
+        self.name = name
 
         self.ode = vertcat([])  # ODE
         self.alg = vertcat([])  # Algebraic equations
@@ -39,8 +40,6 @@ class SystemModel:
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-        if not hasattr(self, 'name'):
-            self.name = 'model'
         if 'x_names' in kwargs and n_x == 0:
             self.x_sym = []
             for name_tuple in kwargs['x_names']:
@@ -306,26 +305,24 @@ class SystemModel:
 
     # region REMOVE
 
-    def remove_variables_from_vector(self, var, vector):
-        to_remove = find_variables_indices_in_vector(var, vector)
-        to_remove.sort(reverse=True)
-        for it in to_remove:
-            vector.remove([it], [])
-        return vector
+    @staticmethod
+    def remove_variables_from_vector(var, vector):
+        warn('model.remove_variables_from_vector is deprecated, use yaocptool.remove_variables_from_vector instead')
+        return remove_variables_from_vector(var, vector)
 
     def remove_algebraic(self, var, eq=None):
-        self.remove_variables_from_vector(var, self.y_sym)
+        remove_variables_from_vector(var, self.y_sym)
         if eq is not None:
-            self.remove_variables_from_vector(eq, self.alg)
+            remove_variables_from_vector(eq, self.alg)
 
     def remove_external_algebraic(self, var, eq=None):
-        self.remove_variables_from_vector(var, self.z_sym)
+        remove_variables_from_vector(var, self.z_sym)
         if eq is not None:
-            self.remove_variables_from_vector(eq, self.alg_z)
+            remove_variables_from_vector(eq, self.alg_z)
 
     def remove_connecting_equations(self, var, eq):
-        self.remove_variables_from_vector(var, self.z_sym)
-        self.remove_variables_from_vector(eq, self.con)
+        remove_variables_from_vector(var, self.z_sym)
+        remove_variables_from_vector(eq, self.con)
 
     def remove_control(self, var):
         to_remove = find_variables_indices_in_vector(var, self.u_sym)

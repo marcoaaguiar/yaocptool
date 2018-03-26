@@ -243,7 +243,7 @@ class SolutionMethodsBase(object):
     def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         if x_0 is None:
             x_0 = self.problem.x_0
-        if not vertcat(x_0).numel() == self.model.n_x :
+        if not vertcat(x_0).numel() == self.model.n_x:
             raise Exception('Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, '
                             'x_0.numel() = {}, model.n_x = {}'.format(vertcat(x_0).numel(), self.model.n_x))
         if p is None:
@@ -292,9 +292,10 @@ class SolutionMethodsBase(object):
             self.prepare()
             self.prepared = True
 
-        solution_dict = self.get_solver(initial_condition_as_parameter)(initial_guess=initial_guess, p=p, theta=theta,
-                                                                        x_0=x_0, last_u=last_u,
-                                                                        initial_guess_dict=initial_guess_dict)
+        solver = self.get_solver(initial_condition_as_parameter)
+        solution_dict = solver(initial_guess=initial_guess, p=p, theta=theta,
+                               x_0=x_0, last_u=last_u,
+                               initial_guess_dict=initial_guess_dict)
         return solution_dict
 
     def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):

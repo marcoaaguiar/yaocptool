@@ -1,5 +1,7 @@
 import itertools
 
+from casadi import vertcat
+
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 from yaocptool.modelling.simualtion_result import SimulationResult
 from yaocptool.mpc.plant import Plant, PlantSimulation
@@ -54,10 +56,13 @@ class MPC:
         :param x_k: DM
         :param u_k: DM
         """
-        solution = self.solution_method.solve(initial_guess=self.solution_method_initial_guess, x_0=x_k)
-        self.solution_method_initial_guess = solution.raw_decision_variables
+        solutions = self.solution_method.solve(initial_guess=self.solution_method_initial_guess, x_0=x_k)
+        if not isinstance(solutions, list):
+            solutions = [solutions]
 
-        return solution.first_control()
+        self.solution_method_initial_guess = [solution.raw_decision_variables for solution in solutions]
+        control = [solution.first_control() for solution in solutions]
+        return vertcat(*control)
 
     def get_measurement(self):
         """Get measurements from the plant. It will return a tuple with the current measurement and the current control

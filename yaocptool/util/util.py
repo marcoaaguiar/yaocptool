@@ -10,6 +10,14 @@ def find_variables_indices_in_vector(var, vector):
     return index
 
 
+def remove_variables_from_vector(var, vector):
+    to_remove = find_variables_indices_in_vector(var, vector)
+    to_remove.sort(reverse=True)
+    for it in to_remove:
+        vector.remove([it], [])
+    return vector
+
+
 def create_constant_theta(constant, dimension, finite_elements):
     theta = {}
     for i in range(finite_elements):

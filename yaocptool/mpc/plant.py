@@ -79,5 +79,5 @@ class PlantSimulation(Plant):
         print(u, type(u))
         if not u.size1() == self.model.n_u:
             raise ValueError("Given control does not have the same size of the plant."
-                             "Plant control size: {}, given control size", )
+                             "Plant control size: {}, given control size: {}".format(self.model.n_u, u.size1()))
         self.u = u
