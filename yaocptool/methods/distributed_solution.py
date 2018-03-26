@@ -66,12 +66,12 @@ class DistributedSolution:
                 if (r, s) in self.connection_list:
                     self.queues_in[s][r].put(None)
 
-    def solve(self, x_0, initial_guess=None):
-        if initial_guess is None:
-            initial_guess = [None] * self.n_subsystems
+    def solve(self, x_0, initial_guess_dict=None):
+        if initial_guess_dict is None:
+            initial_guess_dict = [None] * self.n_subsystems
 
         for s in range(self.n_subsystems):
-            self.external_queue[s].put([x_0, initial_guess[s]])
+            self.external_queue[s].put([x_0, initial_guess_dict[s]])
 
         solution = []
         for s in range(self.n_subsystems):

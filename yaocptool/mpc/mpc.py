@@ -56,11 +56,11 @@ class MPC:
         :param x_k: DM
         :param u_k: DM
         """
-        solutions = self.solution_method.solve(initial_guess=self.solution_method_initial_guess, x_0=x_k)
+        solutions = self.solution_method.solve(x_0=x_k, initial_guess_dict=self.solution_method_initial_guess)
         if not isinstance(solutions, list):
             solutions = [solutions]
 
-        self.solution_method_initial_guess = [solution.raw_decision_variables for solution in solutions]
+        self.solution_method_initial_guess = [solution.raw_solution_dict for solution in solutions]
         control = [solution.first_control() for solution in solutions]
         return vertcat(*control)
 
