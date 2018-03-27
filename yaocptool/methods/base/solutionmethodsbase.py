@@ -123,6 +123,12 @@ class SolutionMethodsBase(object):
         return u_pol, par
 
     def create_control_approximation(self):
+        """Parametrize the control variable, accordingly to the 'degree_control' attribute.
+        If degree_control == 1, then a piecewise constant control will be used (most common).
+        If degree_control > 1, then a piecewise polynomial approximation will be used with order 'degree_control'.
+
+        :return:
+        """
         degree = self.degree_control
         if not self.parametrized_control:
             if type(degree) == dict:

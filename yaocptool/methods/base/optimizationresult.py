@@ -51,6 +51,7 @@ class OptimizationResult:
         self.theta = {}
         self.p = []
         self.p_opt = []
+        self.theta_opt = []
         self.eta = []
 
         for (k, v) in kwargs.items():
@@ -122,6 +123,7 @@ class OptimizationResult:
             for k, entry in enumerate(plot_list):
                 fig = plt.figure(k)
                 lines = []
+
                 # Plot optimization x data
                 if 'x' in entry:
                     x_indices = entry['x']

@@ -46,6 +46,7 @@ class OptimalControlProblem:
 
         self.eta = SX()
         self.p_opt = vertcat([])
+        self.theta_opt = vertcat([])
 
         self.x_max = repmat(inf, self.model.n_x)
         self.y_max = repmat(inf, self.model.n_y)
@@ -53,6 +54,7 @@ class OptimalControlProblem:
         self.u_max = repmat(inf, self.model.n_u)
         self.delta_u_max = repmat(inf, self.model.n_u)
         self.p_opt_max = repmat(inf, self.n_p_opt)
+        self.theta_opt_max = repmat(inf, self.n_theta_opt)
 
         self.x_min = repmat(-inf, self.model.n_x)
         self.y_min = repmat(-inf, self.model.n_y)
@@ -60,6 +62,7 @@ class OptimalControlProblem:
         self.u_min = repmat(-inf, self.model.n_u)
         self.delta_u_min = repmat(-inf, self.model.n_u)
         self.p_opt_min = repmat(-inf, self.n_p_opt)
+        self.theta_opt_min = repmat(-inf, self.n_theta_opt)
 
         self.h = vertcat([])
         self.h_initial = self.model.x_sym - self.model.x_0_sym
@@ -67,6 +70,9 @@ class OptimalControlProblem:
 
         self.g_eq = vertcat([])
         self.g_ineq = vertcat([])
+
+        self.time_g_eq = []
+        self.time_g_ineq = []
 
         self.L = DM(0.)  # type: DM # Integral cost
         self.V = DM(0.)  # type: DM # Final cost
@@ -118,6 +124,12 @@ class OptimalControlProblem:
         if isinstance(self.p_opt, list):
             self.p_opt = vertcat(*self.p_opt)
         return self.p_opt.size1()
+
+    @property
+    def n_theta_opt(self):
+        if isinstance(self.theta_opt, list):
+            self.theta_opt = vertcat(*self.theta_opt)
+        return self.theta_opt.size1()
 
     @property
     def yz_max(self):
@@ -262,12 +274,6 @@ class OptimalControlProblem:
     # INCLUDE VARIABLES
     # ==============================================================================
 
-    def create_optimization_parameter(self, name, size, p_opt_min=None, p_opt_max=None):
-        new_p_opt = self.model.create_parameter(name=name, size=size)
-
-        self.set_parameter_as_optimization_parameter(new_p_opt, new_p_opt_min=p_opt_min, new_p_opt_max=p_opt_max)
-        return new_p_opt
-
     def create_state(self, name, size, ode=None, x_0=None, var_max=None, var_min=None, h_initial=None):
         var = SX.sym(name, size)
         self.include_state(var, ode=ode, x_0=x_0, x_min=var_min, x_max=var_max, h_initial=h_initial)
@@ -277,6 +283,19 @@ class OptimalControlProblem:
         var = SX.sym(name, size)
         self.include_algebraic(var, alg=alg, y_min=y_min, y_max=y_max, y_guess=y_guess)
         return var
+
+    def create_optimization_parameter(self, name, size, p_opt_min=None, p_opt_max=None):
+        new_p_opt = self.model.create_parameter(name=name, size=size)
+
+        self.set_parameter_as_optimization_parameter(new_p_opt, new_p_opt_min=p_opt_min, new_p_opt_max=p_opt_max)
+        return new_p_opt
+
+    def create_optimization_theta(self, name, size, new_theta_opt_min=None, new_theta_opt_max=None):
+        new_theta_opt = self.model.create_theta(name=name, size=size)
+
+        self.set_parameter_as_optimization_parameter(new_theta_opt, new_p_opt_min=new_theta_opt_min,
+                                                     new_p_opt_max=new_theta_opt_max)
+        return new_theta_opt
 
     def set_parameter_as_optimization_parameter(self, new_p_opt, new_p_opt_min=None, new_p_opt_max=None):
         if new_p_opt_min is None:
@@ -288,6 +307,17 @@ class OptimalControlProblem:
         self.p_opt_min = vertcat(self.p_opt_min, new_p_opt_min)
         self.p_opt_max = vertcat(self.p_opt_max, new_p_opt_max)
         return new_p_opt
+
+    def set_theta_as_optimization_theta(self, new_theta_opt, new_theta_opt_min=None, new_theta_opt_max=None):
+        if new_theta_opt_min is None:
+            new_theta_opt_min = -DM.inf(new_theta_opt.numel())
+        if new_theta_opt_max is None:
+            new_theta_opt_max = DM.inf(new_theta_opt.numel())
+
+        self.theta_opt = vertcat(self.theta_opt, new_theta_opt)
+        self.theta_opt_min = vertcat(self.theta_opt_min, new_theta_opt_min)
+        self.theta_opt_max = vertcat(self.theta_opt_max, new_theta_opt_max)
+        return new_theta_opt
 
     def include_system_equations(self, ode=None, alg=None, alg_z=None, con=None):
         self.model.include_system_equations(ode=ode, alg=alg, alg_z=alg_z, con=con)
@@ -349,8 +379,16 @@ class OptimalControlProblem:
             p_opt_max = DM.inf(var.numel())
 
         self.model.include_parameter(var)
-        self.p_opt_min = vertcat(self.u_min, p_opt_min)
-        self.p_opt_max = vertcat(self.u_max, p_opt_max)
+        self.set_parameter_as_optimization_parameter(var, p_opt_min, p_opt_max)
+
+    def include_optimization_theta(self, var, theta_opt_min=None, theta_opt_max=None):
+        if theta_opt_min is None:
+            theta_opt_min = -DM.inf(var.numel())
+        if theta_opt_max is None:
+            theta_opt_max = DM.inf(var.numel())
+
+        self.model.include_theta(var)
+        self.set_theta_as_optimization_theta(var, new_theta_opt_min=theta_opt_min, new_theta_opt_max=theta_opt_max)
 
     def include_initial_time_equality(self, eq):
         """Include initial time equality. Equality that is evaluated at t=t_0.
@@ -362,29 +400,44 @@ class OptimalControlProblem:
             eq = vertcat(*eq)
         self.h_initial = vertcat(self.h_initial, eq)
 
-    def include_time_inequality(self, eq):
+    def include_time_inequality(self, eq, when='default'):
         """Include time dependent inequality.
         g_ineq(..., t) <= 0, for t \in [t_0, t_f]
 
         The inequality is concatenated to "g_ineq"
+
+        :param str when: Can be 'default', 'end', 'start'.
+                         'start' - the constraint will be evaluated at the start of every finite element
+                         'end' - the constraint will be evaluated at the end of every finite element
+                         'default' - will be evaluated at each collocation point of every finite element.
+                                For the multiple shooting, the constraint will be evaluated at the end of each
+                                finite element
 
         :param eq: inequality
         """
         if isinstance(eq, list):
             eq = vertcat(*eq)
         self.g_ineq = vertcat(self.g_ineq, eq)
+        self.time_g_ineq.extend([when] * eq.numel())
 
-    def include_time_equality(self, eq):
+    def include_time_equality(self, eq, when='default'):
         """Include time dependent equality.
         g_eq(..., t) = 0, for t \in [t_0, t_f]
 
         The inequality is concatenated to "g_ineq"
 
         :param eq: equality
+        :param str when: Can be 'default', 'end', 'start'.
+                 'start' - the constraint will be evaluated at the start of every finite element
+                 'end' - the constraint will be evaluated at the end of every finite element
+                 'default' - will be evaluated at each collocation point of every finite element.
+                        For the multiple shooting, the constraint will be evaluated at the end of each
+                        finite element
         """
         if isinstance(eq, list):
             eq = vertcat(*eq)
         self.g_eq = vertcat(self.g_eq, eq)
+        self.time_g_eq.extend([when] * eq.numel())
 
     def include_final_time_equality(self, eq):
         """Include final time equality. Equality that is evaluated at t=t_f.
@@ -455,6 +508,9 @@ class OptimalControlProblem:
 
     def get_p_opt_indices(self):
         return find_variables_indices_in_vector(self.p_opt, self.model.p_sym)
+
+    def get_theta_opt_indices(self):
+        return find_variables_indices_in_vector(self.theta_opt, self.model.theta_sym)
 
 
 class SuperOCP(OptimalControlProblem):

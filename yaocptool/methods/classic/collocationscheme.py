@@ -43,16 +43,6 @@ class CollocationScheme(DiscretizationSchemeBase):
                + self.model.n_u * self.finite_elements * self.degree_control \
                + self.problem.n_eta
 
-    def _create_nlp_symbolic_variables_and_bound_vectors(self):
-        """
-        Create the symbolic variables that will be used by the NLP problem
-        :rtype: (DM, List(List(DM)), List(List(DM)), List(DM), DM, DM, DM)
-        """
-        v, x, y, u, eta = self.create_nlp_symbolic_variables()
-        vars_lb, vars_ub = self._create_variables_bound_vectors()
-
-        return v, x, y, u, eta, vars_lb, vars_ub
-
     def _create_variables_bound_vectors(self):
         """
         Return two items: the vector of lower bounds and upperbounds
@@ -81,6 +71,10 @@ class CollocationScheme(DiscretizationSchemeBase):
         vars_lb.append(self.problem.p_opt_min)
         vars_ub.append(self.problem.p_opt_max)
 
+        for el in range(self.finite_elements):
+            vars_lb.append(self.problem.theta_opt_min)
+            vars_ub.append(self.problem.theta_opt_max)
+
         vars_lb = vertcat(*vars_lb)
         vars_ub = vertcat(*vars_ub)
         return vars_lb, vars_ub
@@ -88,7 +82,7 @@ class CollocationScheme(DiscretizationSchemeBase):
     def create_nlp_symbolic_variables(self):
         """
         Create the symbolic variables that will be used by the NLP problem
-        :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX, MX)
+        :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX, MX, List[MX])
         """
         x_var = []
         y_var = []
@@ -114,12 +108,18 @@ class CollocationScheme(DiscretizationSchemeBase):
         eta = MX.sym('eta', self.problem.n_eta)
         p_opt = MX.sym('p_opt', self.problem.n_p_opt)
 
+        theta_opt = []
+        for el in range(self.finite_elements):
+            theta_opt.append(MX.sym('theta_opt_' + str(el), self.problem.n_theta_opt))
+
         v_x = self.vectorize(x_var)
         v_y = self.vectorize(y_var)
         v_u = self.vectorize(u_var)
-        v = vertcat(v_x, v_y, v_u, eta, p_opt)
+        v_theta_opt = vertcat(*theta_opt)
 
-        return v, x_var, y_var, u_var, eta, p_opt
+        v = vertcat(v_x, v_y, v_u, eta, p_opt, v_theta_opt)
+
+        return v, x_var, y_var, u_var, eta, p_opt, theta_opt
 
     def split_x_y_and_u(self, decision_variables, all_subinterval=False):
         """
@@ -128,7 +128,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         :return: X, Y, and U -> list with a DM for each element
         """
 
-        x, y, u, _, _ = self.unpack_decision_variables(decision_variables, all_subinterval=all_subinterval)
+        x, y, u, _, _, _ = self.unpack_decision_variables(decision_variables, all_subinterval=all_subinterval)
         return x, y, u
 
     def unpack_decision_variables(self, decision_variables, all_subinterval=True):
@@ -181,9 +181,14 @@ class CollocationScheme(DiscretizationSchemeBase):
             p_opt = decision_variables[v_offset:v_offset + self.problem.n_p_opt]
             v_offset += self.problem.n_p_opt
 
+        theta_opt = []
+        for k in range(self.finite_elements):
+            theta_opt.append(decision_variables[v_offset:v_offset + self.problem.n_theta_opt])
+            v_offset += self.problem.n_theta_opt
+
         assert v_offset == decision_variables.numel()
 
-        return x, y, u, eta, p_opt
+        return x, y, u, eta, p_opt, theta_opt
 
     def discretize(self, x_0=None, p=None, theta=None, last_u=None):
         if p is None:
@@ -194,7 +199,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             x_0 = self.problem.x_0
 
         # Create NLP symbolic variables
-        all_decision_vars, x_var, yz_var, u_var, eta, p_opt = self.create_nlp_symbolic_variables()
+        all_decision_vars, x_var, yz_var, u_var, eta, p_opt, theta_opt = self.create_nlp_symbolic_variables()
 
         constraint_list = []
         lbg = []
@@ -203,6 +208,11 @@ class CollocationScheme(DiscretizationSchemeBase):
         # Put the symbolic optimization parameters in the parameter vector
         for i, p_opt_index in enumerate(self.problem.get_p_opt_indices()):
             p[p_opt_index] = p_opt[i]
+
+        # Put the symbolic theta_opt in the theta vector
+        for i, theta_opt_index in enumerate(self.problem.get_theta_opt_indices()):
+            for el in range(self.finite_elements):
+                theta[el][theta_opt_index] = theta_opt[el][i]
 
         # Create "simulations" time_dict, a dict informing the simulation points in each finite elem. for each variable
         time_dict = self._create_time_dict_for_collocation()
@@ -237,13 +247,17 @@ class CollocationScheme(DiscretizationSchemeBase):
 
             f_ode = Function('f_ode_' + repr(el), self.model.all_sym, [dae_sys.ode])
             f_alg = Function('f_alg_' + repr(el), self.model.all_sym, [dae_sys.alg])
-            f_g_ineq = Function('f_g_ineq_' + repr(el), self.model.all_sym, [g_ineq_el])
-            f_g_eq = Function('f_g_eq_' + repr(el), self.model.all_sym, [g_eq_el])
 
             functions['ode'][el] = f_ode
             functions['alg'][el] = f_alg
-            functions['g_ineq'][el] = f_g_ineq
-            functions['g_eq'][el] = f_g_eq
+
+            for i in range(self.problem.n_g_ineq):
+                f_g_ineq = Function('f_g_ineq_' + str(i) + '_' + str(el), self.model.all_sym, [g_ineq_el[i]])
+                functions['g_ineq_' + str(i)][el] = f_g_ineq
+
+            for i in range(self.problem.n_g_eq):
+                f_g_eq = Function('f_g_eq_' + str(i) + '_' + str(el), self.model.all_sym, [g_eq_el[i]])
+                functions['g_eq_' + str(i)][el] = f_g_eq
 
         # Obtain the "simulation" results
         results = self.get_system_at_given_times(x_var, yz_var, u_var, time_dict, p, theta, functions=functions)
@@ -290,10 +304,16 @@ class CollocationScheme(DiscretizationSchemeBase):
                             ubg.append(self.problem.delta_u_max[i])
 
             # Time dependent inequalities
-            for col_point in range(self.degree):
-                constraint_list.append(results[el]['g_ineq'][col_point])
-                lbg.append(-DM.inf(constraint_list[-1].shape))
-                ubg.append(DM.zeros(constraint_list[-1].shape))
+            for i in range(self.problem.n_g_ineq):
+                for collocation_point in range(len(results[el]['g_ineq_' + str(i)])):
+                    constraint_list.append(results[el]['g_ineq_' + str(i)][collocation_point])
+                    lbg.append(-DM.inf(constraint_list[-1].shape))
+                    ubg.append(DM.zeros(constraint_list[-1].shape))
+            for i in range(self.problem.n_g_eq):
+                for collocation_point in range(len(results[el]['g_eq_' + str(i)])):
+                    constraint_list.append(results[el]['g_eq_' + str(i)][collocation_point])
+                    lbg.append(DM.zeros(constraint_list[-1].shape))
+                    ubg.append(DM.zeros(constraint_list[-1].shape))
 
         # Final time constraint
         x_f = results[self.finite_elements - 1]['x'][-1]
@@ -431,8 +451,21 @@ class CollocationScheme(DiscretizationSchemeBase):
             time_dict[el]['ode'] = self.time_interpolation_states[el]
             time_dict[el]['alg'] = self.time_interpolation_algebraics[el]
 
-            time_dict[el]['g_ineq'] = self.time_interpolation_algebraics[el]
-            time_dict[el]['g_eq'] = self.time_interpolation_algebraics[el]
+            for i in range(self.problem.n_g_ineq):
+                if self.problem.time_g_ineq[i] == 'start':
+                    time_dict[el]['g_ineq_' + str(i)] = [self.time_breakpoints[el]]
+                if self.problem.time_g_ineq[i] == 'end':
+                    time_dict[el]['g_ineq_' + str(i)] = [self.time_breakpoints[el + 1]]
+                if self.problem.time_g_ineq[i] == 'default':
+                    time_dict[el]['g_ineq_' + str(i)] = self.time_interpolation_algebraics[el]
+
+            for i in range(self.problem.n_g_eq):
+                if self.problem.time_g_eq[i] == 'start':
+                    time_dict[el]['g_eq_' + str(i)] = [self.time_breakpoints[el]]
+                if self.problem.time_g_eq[i] == 'end':
+                    time_dict[el]['g_eq_' + str(i)] = [self.time_breakpoints[el + 1]]
+                if self.problem.time_g_eq[i] == 'default':
+                    time_dict[el]['g_eq_' + str(i)] = self.time_interpolation_algebraics[el]
 
         return time_dict
 
@@ -450,8 +483,9 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         eta_init = DM.zeros(self.problem.n_eta, 1)
         p_init = DM.zeros(self.problem.n_p_opt, 1)
+        theta_init = DM.zeros(self.problem.n_theta_opt * self.finite_elements, 1)
 
-        return vertcat(x_init, y_init, u_init, eta_init, p_init)
+        return vertcat(x_init, y_init, u_init, eta_init, p_init, theta_init)
 
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
         """
@@ -467,10 +501,11 @@ class CollocationScheme(DiscretizationSchemeBase):
         x_interpolation_values, y_interpolation_values, u_interpolation_values \
             = self.split_x_y_and_u(raw_data, all_subinterval=True)
 
-        x_values, y_values, u_values, eta, p_opt = self.unpack_decision_variables(raw_solution_dict['x'])
+        x_values, y_values, u_values, eta, p_opt, theta_opt = self.unpack_decision_variables(raw_solution_dict['x'])
 
         optimization_result.p_opt = p_opt
         optimization_result.eta = eta
+        optimization_result.theta_opt = theta_opt
 
         optimization_result.objective = raw_solution_dict['f']
         optimization_result.constraint_values = raw_solution_dict['g']
