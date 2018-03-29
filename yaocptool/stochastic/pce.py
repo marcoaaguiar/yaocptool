@@ -26,7 +26,7 @@ def sample_parameter_normal_distribution(mean, covariance, n_samples=1):
     for i in range(n_uncertain):
         sobol_samples[:, i] = norm(loc=0., scale=1.).ppf(sobol_samples[:, i])
 
-    log_samples = DM.zeros(n_samples, n_uncertain)
+    log_samples = SX.zeros(n_samples, n_uncertain)
     std = sqrt(diag(covariance))
     for i in range(n_samples):
         for j in range(n_uncertain):

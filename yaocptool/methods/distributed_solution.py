@@ -4,7 +4,7 @@ from yaocptool.parallel.worker import Worker
 
 
 class DistributedSolution:
-    def __init__(self, subsystem_classes_list, parameters_list, connection_list, main_to_subsystems_list=None):
+    def __init__(self, subsystem_classes_list, parameters_list, connection_list, main_to_subsystems_list=None, **kwargs):
         if main_to_subsystems_list is None:
             main_to_subsystems_list = []
 
@@ -29,8 +29,8 @@ class DistributedSolution:
         for connection in connection_list:
             from_index, to_index = connection
             queue = Queue()
-            self.queues_in[to_index][from_index](queue)
-            self.queues_out[from_index][to_index](queue)
+            self.queues_in[to_index][from_index] = queue
+            self.queues_out[from_index][to_index] = queue
 
         # Create queues between subsystems and main process
         for s in range(self.n_subsystems):
