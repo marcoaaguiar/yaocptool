@@ -469,7 +469,7 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         return time_dict
 
-    def create_initial_guess(self):
+    def create_initial_guess(self, p=None, theta=None):
         x_init = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
         if self.problem.y_guess is not None:
             y_init = repmat(self.problem.y_guess, self.degree * self.finite_elements)
@@ -482,10 +482,19 @@ class CollocationScheme(DiscretizationSchemeBase):
             u_init = repmat(DM.zeros(self.model.n_u), self.degree_control * self.finite_elements)
 
         eta_init = DM.zeros(self.problem.n_eta, 1)
-        p_init = DM.zeros(self.problem.n_p_opt, 1)
-        theta_init = DM.zeros(self.problem.n_theta_opt * self.finite_elements, 1)
+        p_opt_init = DM.zeros(self.problem.n_p_opt, 1)
+        theta_opt_init = DM.zeros(self.problem.n_theta_opt * self.finite_elements, 1)
 
-        return vertcat(x_init, y_init, u_init, eta_init, p_init, theta_init)
+        if p is not None:
+            for k, ind in enumerate(self.problem.get_p_opt_indices()):
+                p_opt_init[k] = p[ind]
+
+        if theta is not None:
+            for el in range(self.finite_elements):
+                for k, ind in enumerate(self.problem.get_theta_opt_indices()):
+                    theta_opt_init[k + el*self.problem.n_theta_opt] = theta[el][ind]
+
+        return vertcat(x_init, y_init, u_init, eta_init, p_opt_init, theta_opt_init)
 
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
         """

@@ -293,8 +293,8 @@ class OptimalControlProblem:
     def create_optimization_theta(self, name, size, new_theta_opt_min=None, new_theta_opt_max=None):
         new_theta_opt = self.model.create_theta(name=name, size=size)
 
-        self.set_parameter_as_optimization_parameter(new_theta_opt, new_p_opt_min=new_theta_opt_min,
-                                                     new_p_opt_max=new_theta_opt_max)
+        self.set_theta_as_optimization_theta(new_theta_opt, new_theta_opt_min=new_theta_opt_min,
+                                             new_theta_opt_max=new_theta_opt_max)
         return new_theta_opt
 
     def set_parameter_as_optimization_parameter(self, new_p_opt, new_p_opt_min=None, new_p_opt_max=None):

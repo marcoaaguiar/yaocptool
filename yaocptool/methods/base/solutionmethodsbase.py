@@ -258,9 +258,6 @@ class SolutionMethodsBase(object):
             else:
                 raise Exception("A parameter 'p' of size {} should be given".format(self.problem.n_p_opt))
 
-        if initial_guess is None:
-            initial_guess = self.discretizer.create_initial_guess()
-
         if theta is not None:
             par = vertcat(p, *theta.values())
         else:
@@ -276,12 +273,16 @@ class SolutionMethodsBase(object):
 
         print('par', par)
 
+        for i in range(self.model.n_theta):
+            print(self.model.theta_sym[i], theta[0][i])
+
         if initial_guess_dict is None:
+            if initial_guess is None:
+                initial_guess = self.discretizer.create_initial_guess(p, theta)
+
             sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
                               lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
         else:
-            print("Using initial_guess_dict as initial guess: ")
-            print(initial_guess_dict)
             sol = self.solver(x0=initial_guess_dict['x'], lam_x0=initial_guess_dict['lam_x'],
                               lam_g0=initial_guess_dict['lam_g'],
                               p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
