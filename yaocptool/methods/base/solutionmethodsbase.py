@@ -26,19 +26,25 @@ class SolutionMethodsBase(object):
         # self.problem = None  # type: OptimalControlProblem
         # self.reset_working_problem()
         self.problem = problem
-        self.integrator_type = 'implicit'
         self.solution_class = ''
+        self.prepared = False
+        self.discretizer = None  # type: DiscretizationSchemeBase
+
+        # Options
         self.degree = 3
         self.degree_control = 1
         self.finite_elements = 10
-        self.prepared = False
+        self.integrator_type = 'implicit'
         self.discretization_scheme = 'multiple-shooting'
-        self.discretizer = None  # type: DiscretizationSchemeBase
         self.initial_condition_as_parameter = False
+        self.nlpsol_opts = {}
+        self.initial_guess_heuristic = 'simulation'  # 'problem_info'
+
+        # Internal variables
         self.parametrized_control = False
+
         self.nlp_prob = {}
         self.nlp_call = {}
-        self.nlpsol_opts = {}
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -278,7 +284,13 @@ class SolutionMethodsBase(object):
 
         if initial_guess_dict is None:
             if initial_guess is None:
-                initial_guess = self.discretizer.create_initial_guess(p, theta)
+                if self.initial_guess_heuristic == 'simulation':
+                    initial_guess = self.discretizer.create_initial_guess_with_simulation(p=p, theta=theta)
+                elif self.initial_guess_heuristic == 'problem_info':
+                    initial_guess = self.discretizer.create_initial_guess(p, theta)
+                else:
+                    raise ValueError('initial_guess_heuristic did not recognized, avaliablee options: "simulation" and '
+                                     '"problem_info". Given: {}'.format(self.initial_guess_heuristic))
 
             sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
                               lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])

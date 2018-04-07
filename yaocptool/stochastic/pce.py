@@ -22,15 +22,14 @@ def sample_parameter_normal_distribution(mean, covariance, n_samples=1):
 
     # Uncertain parameter design
     sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, math.ceil(np.log2(n_samples)))
-    sobol_samples = sobol_design.T
+    sobol_samples = DM(sobol_design.T)
     for i in range(n_uncertain):
         sobol_samples[:, i] = norm(loc=0., scale=1.).ppf(sobol_samples[:, i])
 
     log_samples = SX.zeros(n_samples, n_uncertain)
     std = sqrt(diag(covariance))
     for i in range(n_samples):
-        for j in range(n_uncertain):
-            log_samples[i, j] = mean[j] + sobol_samples[i, j] * std[j]
+        log_samples[i, :] = mean + mtimes(sobol_samples[i, :], chol(covariance)).T
 
     return log_samples
 
@@ -93,7 +92,7 @@ def get_ls_factor(n_uncertain, n_samples, pc_order, lamb=0):
         for j in range(SX.size(PSI)[0]):
             PSImatrix[i, j] = PSIa[j]
 
-    PSITPSI = mtimes(PSImatrix.T, PSImatrix) + lamb*DM.eye(nparameter)
+    PSITPSI = mtimes(PSImatrix.T, PSImatrix) + lamb * DM.eye(nparameter)
     cholPSITPSI = chol(PSITPSI)
     invcholPSITPSI = solve(cholPSITPSI, SX.eye(nparameter))
     invPSITPSI = mtimes(invcholPSITPSI, invcholPSITPSI.T)

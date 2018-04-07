@@ -16,18 +16,32 @@ class OptimalControlProblem:
     It has the following form:
 
     .. math::
-    \min J &= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\theta)
-    \textnormal{s.t.:}\,& \dot{x} = f(x,y,u,t,p,\\theta) \\
-    & g(x,y,u,t,p,\\theta) = 0 \\
-    & g_eq (x,y,u,t,p,\\theta) = 0 \\
-    & g_ineq(x,y,u,t,p,\\theta) \leq 0 \\
-    & x_{min} \leq x \leq x_{max} \\
-    & y_{min} \leq y \leq y_{max} \\
-    & u_{min} \leq u \leq u_{max} \\
-    & \Delta u_{min} \leq \Delta u \leq \Delta u_{max} \\
-    & h_{initial} (x_(t_0), t_0, p, \theta) = 0 \\
-    & h_{final} (x_(t_f), t_f, p, \theta) = 0
-    & h (p) = 0 \\
+       \\min J &= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\\theta)
+        + \sum_{k} S(x(t_k), y(t_k), u(t_k), t_k, p, \\theta_k)
+
+       \\textnormal{s.t.:}\,& \dot{x} = f(x,y,u,t,p,\\theta)
+
+       & g(x,y,u,t,p,\\theta) = 0
+
+       & g_eq (x,y,u,t,p,\\theta) = 0
+
+       & g_ineq(x,y,u,t,p,\\theta) \leq 0
+
+       & x_{min} \leq x \leq x_{max}
+
+       & y_{min} \leq y \leq y_{max}
+
+       & u_{min} \leq u \leq u_{max}
+
+       & \Delta u_{min} \leq \Delta u \leq \Delta u_{max}
+
+       & h_{initial} (x_(t_0), t_0, p, \theta) = 0
+
+       & h_{final} (x_(t_f), t_f, p, \theta) = 0
+
+       & h (p) = 0
+
+    where  :math:`t_k` is final time in each finite element.
 
     """
 
@@ -76,6 +90,7 @@ class OptimalControlProblem:
 
         self.L = DM(0.)  # type: DM # Integral cost
         self.V = DM(0.)  # type: DM # Final cost
+        self.S = DM(0.)  # type: DM # Finite element final cost
         self.H = DM(0.)
 
         self.last_u = None
@@ -151,12 +166,8 @@ class OptimalControlProblem:
         self._fix_types()
 
         # Check if Objective Function was provided
-        if self.L.is_zero() and self.V.is_zero() and not self.NULL_OBJ:
-            raise Exception('No objective')
-        elif not hasattr(self, 'L'):
-            self.L = DM(0.)
-        elif not hasattr(self, 'V'):
-            self.V = DM(0.)
+        if self.L.is_zero() and self.V.is_zero() and self.S.is_zero() and not self.NULL_OBJ:
+            raise Exception('No objective, if this is intentional use problem.NULL_OBJ = True')
 
         # Check if the objective function has the proper size
         if not self.L.numel() == 1:
@@ -175,6 +186,16 @@ class OptimalControlProblem:
                 raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
                                 '{} != {}'.format(attr, attr_to_compare[i], getattr(self, attr).numel(),
                                                   getattr(self.model, attr_to_compare[i])))
+        # Check if the initial condition has the same number of elements of the model
+        attributes_ocp = ['p_opt_max', 'p_opt_min', 'theta_opt_min', 'theta_opt_max']
+        attr_to_compare_in_ocp = ['n_p_opt', 'n_p_opt', 'n_theta_opt', 'n_theta_opt']
+        for i, attr in enumerate(attributes_ocp):
+            if not getattr(self, attr).numel() == getattr(self, attr_to_compare_in_ocp[i]):
+                raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
+                                '{} != {}'.format(attr, attr_to_compare_in_ocp[i], getattr(self, attr).numel(),
+                                                  getattr(self, attr_to_compare_in_ocp[i])))
+
+
         return True
 
     def _fix_types(self):
@@ -302,6 +323,15 @@ class OptimalControlProblem:
             new_p_opt_min = -DM.inf(new_p_opt.numel())
         if new_p_opt_max is None:
             new_p_opt_max = DM.inf(new_p_opt.numel())
+        new_p_opt = vertcat(new_p_opt)
+        new_p_opt_min = vertcat(new_p_opt_min)
+        new_p_opt_max = vertcat(new_p_opt_max)
+        if not new_p_opt.numel() == new_p_opt_max.numel():
+            raise ValueError('Size of "new_p_opt" and "new_p_opt_max" differ. new_p_opt.numel()={} '
+                             'and new_p_opt_max.numel()={}'.format(new_p_opt.numel(), new_p_opt_max.numel()))
+        if not new_p_opt.numel() == new_p_opt_min.numel():
+            raise ValueError('Size of "new_p_opt" and "new_p_opt_min" differ. new_p_opt.numel()={} '
+                             'and new_p_opt_min.numel()={}'.format(new_p_opt.numel(), new_p_opt_min.numel()))
 
         self.p_opt = vertcat(self.p_opt, new_p_opt)
         self.p_opt_min = vertcat(self.p_opt_min, new_p_opt_min)
@@ -313,6 +343,15 @@ class OptimalControlProblem:
             new_theta_opt_min = -DM.inf(new_theta_opt.numel())
         if new_theta_opt_max is None:
             new_theta_opt_max = DM.inf(new_theta_opt.numel())
+        new_theta_opt = vertcat(new_theta_opt)
+        new_theta_opt_min = vertcat(new_theta_opt_min)
+        new_theta_opt_max = vertcat(new_theta_opt_max)
+        if not new_theta_opt.numel() == new_theta_opt_max.numel():
+            raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
+                             'and new_theta_opt_max.numel()={}'.format(new_theta_opt.numel(), new_theta_opt_max.numel()))
+        if not new_theta_opt.numel() == new_theta_opt_min.numel():
+            raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
+                             'and new_theta_opt_min.numel()={}'.format(new_theta_opt.numel(), new_theta_opt_min.numel()))
 
         self.theta_opt = vertcat(self.theta_opt, new_theta_opt)
         self.theta_opt_min = vertcat(self.theta_opt_min, new_theta_opt_min)
@@ -328,9 +367,22 @@ class OptimalControlProblem:
             x_min = -DM.inf(var.numel())
         if x_max is None:
             x_max = DM.inf(var.numel())
-
         if x_0 is None and h_initial is None and not suppress:
             raise Exception('No initial condition given')
+        var = vertcat(var)
+        x_0 = vertcat(x_0)
+        x_min = vertcat(x_min)
+        x_max = vertcat(x_max)
+
+        if not var.numel() == x_max.numel():
+            raise ValueError('Size of "x" and "x_max" differ. x.numel()={} '
+                             'and x_max.numel()={}'.format(var.numel(), x_max.numel()))
+        if not var.numel() == x_min.numel():
+            raise ValueError('Size of "x" and "x_min" differ. x.numel()={} '
+                             'and x_min.numel()={}'.format(var.numel(), x_min.numel()))
+        if not var.numel() == x_min.numel():
+            raise ValueError('Size of "x" and "x_0" differ. x.numel()={} '
+                             'and x_0.numel()={}'.format(var.numel(), x_0.numel()))
 
         x_0_sym = self.model.include_state(var, ode, x_0_sym)
 

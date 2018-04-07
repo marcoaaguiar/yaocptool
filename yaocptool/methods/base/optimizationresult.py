@@ -3,7 +3,7 @@ from functools import partial
 
 try:
     import matplotlib.pyplot as plt
-except ImportError:
+except:
     print('Failed to import matplotlib. Make sure that is properly installed')
 
 from casadi import horzcat, DM

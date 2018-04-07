@@ -239,29 +239,28 @@ class CollocationScheme(DiscretizationSchemeBase):
             dae_sys.convert_from_tau_to_time(self.time_breakpoints[el],
                                              self.time_breakpoints[el + 1])
 
-            g_ineq_el = convert_expr_from_tau_to_time(self.problem.g_ineq, self.model.t_sym, self.model.tau_sym,
-                                                      self.time_breakpoints[el], self.time_breakpoints[el + 1])
-
-            g_eq_el = convert_expr_from_tau_to_time(self.problem.g_eq, self.model.t_sym, self.model.tau_sym,
-                                                    self.time_breakpoints[el], self.time_breakpoints[el + 1])
-
             f_ode = Function('f_ode_' + repr(el), self.model.all_sym, [dae_sys.ode])
             f_alg = Function('f_alg_' + repr(el), self.model.all_sym, [dae_sys.alg])
 
             functions['ode'][el] = f_ode
             functions['alg'][el] = f_alg
 
-            for i in range(self.problem.n_g_ineq):
-                f_g_ineq = Function('f_g_ineq_' + str(i) + '_' + str(el), self.model.all_sym, [g_ineq_el[i]])
-                functions['g_ineq_' + str(i)][el] = f_g_ineq
+        for i in range(self.problem.n_g_ineq):
+            functions['g_ineq_' + str(i)] = self._create_function_from_expression('f_g_ineq_' + str(i),
+                                                                                  self.problem.g_ineq[i])
 
-            for i in range(self.problem.n_g_eq):
-                f_g_eq = Function('f_g_eq_' + str(i) + '_' + str(el), self.model.all_sym, [g_eq_el[i]])
-                functions['g_eq_' + str(i)][el] = f_g_eq
+        for i in range(self.problem.n_g_eq):
+            functions['g_eq_' + str(i)] = self._create_function_from_expression('f_g_eq_' + str(i),
+                                                                                self.problem.g_eq[i])
+
+        functions['f_s_cost'] = self._create_function_from_expression('f_s_cost',
+                                                                      self.problem.S)
 
         # Obtain the "simulation" results
         results = self.get_system_at_given_times(x_var, yz_var, u_var, time_dict, p, theta, functions=functions)
 
+        # Build the NLP
+        s_cost = 0
         for el in range(self.finite_elements):
             dt = self.solution_method.delta_t
 
@@ -284,6 +283,9 @@ class CollocationScheme(DiscretizationSchemeBase):
                 constraint_list.append(results[el]['alg'][col_point])
                 lbg.append(DM.zeros(constraint_list[-1].shape))
                 ubg.append(DM.zeros(constraint_list[-1].shape))
+
+            # S cost
+            s_cost += results[el]['f_s_cost'][-1]
 
             # Implement the constraint on delta_u
             if self.problem.has_delta_u:
@@ -330,7 +332,9 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         # Cost function
         if self.solution_method.solution_class == 'direct':
-            cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])(x_f, p)
+            f_final_cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])
+            cost = f_final_cost(x_f, p)
+            cost += s_cost
         else:
             cost = 0
 
@@ -451,6 +455,8 @@ class CollocationScheme(DiscretizationSchemeBase):
             time_dict[el]['ode'] = self.time_interpolation_states[el]
             time_dict[el]['alg'] = self.time_interpolation_algebraics[el]
 
+            time_dict[el]['f_s_cost'] = [self.time_breakpoints[el + 1]]
+
             for i in range(self.problem.n_g_ineq):
                 if self.problem.time_g_ineq[i] == 'start':
                     time_dict[el]['g_ineq_' + str(i)] = [self.time_breakpoints[el]]
@@ -470,6 +476,14 @@ class CollocationScheme(DiscretizationSchemeBase):
         return time_dict
 
     def create_initial_guess(self, p=None, theta=None):
+        """Create an initial guess for the optimal control problem using problem.x_0, problem.y_guess, problem.u_guess,
+        and a given p and theta (for p_opt and theta_opt) if they are given.
+        If y_guess or u_guess are None the initial guess uses a vector of zeros of appropriate size.
+
+        :param p: Optimization parameters
+        :param theta: Optimization theta
+        :return:
+        """
         x_init = repmat(self.problem.x_0, (self.degree + 1) * self.finite_elements)
         if self.problem.y_guess is not None:
             y_init = repmat(self.problem.y_guess, self.degree * self.finite_elements)
@@ -492,7 +506,65 @@ class CollocationScheme(DiscretizationSchemeBase):
         if theta is not None:
             for el in range(self.finite_elements):
                 for k, ind in enumerate(self.problem.get_theta_opt_indices()):
-                    theta_opt_init[k + el*self.problem.n_theta_opt] = theta[el][ind]
+                    theta_opt_init[k + el * self.problem.n_theta_opt] = theta[el][ind]
+
+        return vertcat(x_init, y_init, u_init, eta_init, p_opt_init, theta_opt_init)
+
+    def create_initial_guess_with_simulation(self, u=None, p=None, theta=None):
+        """Create an initial guess for the optimal control problem using by simulating with a given control u,
+        and a given p and theta (for p_opt and theta_opt) if they are given.
+        If no u is given the value of problem.u_guess is used, or problem.last_u, then a vector of zeros of appropriate
+        size is used.
+        If no p or theta is given, an vector of zeros o appropriate size is used.
+
+        :param u:
+        :param p: Optimization parameters
+        :param theta: Optimization theta
+        :return:
+        """
+        x_init = []
+        y_init = []
+        u_init = []
+
+        # Simulation
+
+        if u is None:
+            if self.problem.u_guess is not None:
+                u = self.problem.u_guess
+            elif self.problem.last_u is not None:
+                u = self.problem.last_u
+            else:
+                u = DM.zeros(self.model.n_u)
+
+        x_0 = self.problem.x_0
+        for el in range(self.finite_elements):
+            simulation_results = self.model.simulate(x_0, t_f=self.time_interpolation_states[el][1:],
+                                                     t_0=self.time_interpolation_states[0][0],
+                                                     u=u, p=p, theta=theta, y_0=self.problem.y_guess)
+
+            x_init.append(simulation_results.x)
+            y_init.append(simulation_results.y)
+            u_init.append(simulation_results.u[:self.degree_control])
+            x_0 = simulation_results.x[-1][-1]
+
+        x_init = self.vectorize(x_init)
+        y_init = self.vectorize(y_init)
+        u_init = self.vectorize(u_init)
+
+        # Other variables
+
+        eta_init = DM.zeros(self.problem.n_eta, 1)
+        p_opt_init = DM.zeros(self.problem.n_p_opt, 1)
+        theta_opt_init = DM.zeros(self.problem.n_theta_opt * self.finite_elements, 1)
+
+        if p is not None:
+            for k, ind in enumerate(self.problem.get_p_opt_indices()):
+                p_opt_init[k] = p[ind]
+
+        if theta is not None:
+            for el in range(self.finite_elements):
+                for k, ind in enumerate(self.problem.get_theta_opt_indices()):
+                    theta_opt_init[k + el * self.problem.n_theta_opt] = theta[el][ind]
 
         return vertcat(x_init, y_init, u_init, eta_init, p_opt_init, theta_opt_init)
 

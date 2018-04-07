@@ -75,6 +75,9 @@ class DAESystem:
     ##############
 
     def simulate(self, x_0, t_f, t_0=0, p=None, y_0=None, integrator_type='implicit', integrator_options=None):
+        if t_f == t_0:
+            raise ValueError("Initial time and final time must be different, t_0!=t_f. t_0={}, t_f={}".format(t_0, t_f))
+
         if integrator_options is None:
             integrator_options = {}
         if p is None:
