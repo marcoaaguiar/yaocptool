@@ -10,6 +10,21 @@ def find_variables_indices_in_vector(var, vector):
     return index
 
 
+def remove_variables_from_vector(var, vector):
+    """
+        Returns a vector with items removed
+    :param var: items to be removed
+    :param vector: vector which will have items removed
+    :return:
+    """
+    vector = vector[:]
+    to_remove = find_variables_indices_in_vector(var, vector)
+    to_remove.sort(reverse=True)
+    for it in to_remove:
+        vector.remove([it], [])
+    return vector
+
+
 def create_constant_theta(constant, dimension, finite_elements):
     theta = {}
     for i in range(finite_elements):
@@ -44,6 +59,28 @@ def join_thetas(*args):
 
     return new_theta
 
-def convert_expr_from_tau_to_time(expr, t_sym, tau_sym,  t_k, t_kp1):
+
+def convert_expr_from_tau_to_time(expr, t_sym, tau_sym, t_k, t_kp1):
     h = t_kp1 - t_k
     return substitute(expr, tau_sym, (t_sym - t_k) / h)
+
+
+def blockdiag(matrices_list):
+    """Receives a list of matrices and return a block diagonal.
+
+    :param list matrices_list: list of matrices
+    """
+
+    size_1 = sum([m.size1() for m in matrices_list])
+    size_2 = sum([m.size2() for m in matrices_list])
+
+    matrix = DM.zeros(size_1, size_2)
+    index_1 = 0
+    index_2 = 0
+
+    for m in matrices_list:
+        matrix[index_1: index_1 + m.size1(), index_2: index_2 + m.size2()] = m
+        index_1 += m.size1()
+        index_2 += m.size2()
+
+    return matrix

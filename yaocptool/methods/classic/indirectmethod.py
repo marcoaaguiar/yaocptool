@@ -56,7 +56,7 @@ class IndirectMethod(SolutionMethodsBase):
     def calculate_optimal_control(self):
         dd_h_dudu, d_h_du = hessian(self.problem.H, self.model.u_sym)
         if is_equal(dd_h_dudu, DM.zeros(self.model.n_u, self.model.n_u)):
-            # TODO: Implement the case where the controls are linear on the Hamiltonina ("Bang-Bang" control)
+            # TODO: Implement the case where the controls are linear on the Hamiltonian ("Bang-Bang" control)
             raise Exception('The Hamiltonian "H" is not strictly convex with respect to the control "u". '
                             + 'The obtained hessian d^2 H/du^2 = 0')
         # if not ddH_dudu.is_constant():

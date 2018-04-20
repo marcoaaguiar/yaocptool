@@ -8,8 +8,6 @@ Created on Fri Jul 07 16:05:50 2017
 from casadi import vertcat, depends_on
 
 
-# TODO: fix PEP 8
-
 class Network:
     def __init__(self, nodes, connections_settings_dict):
         """
@@ -38,7 +36,7 @@ class Network:
             nodes = [self.nodes_dict[node_id] for node_id in self.connections_settings_dict[connection_id]]
             z_sym_indices_list = self.connections_settings_dict[connection_id].values()
             self.connection_dict[connection_id] = Connection(connection_id=connection_id, nodes=nodes,
-                                                             z_sym_indeces_list=z_sym_indices_list)
+                                                             z_sym_indices_list=z_sym_indices_list)
 
     @property
     def models(self):
@@ -68,21 +66,21 @@ class Network:
 
 
 class Connection:
-    def __init__(self, connection_id, nodes=None, z_sym_indeces_list=None):
+    def __init__(self, connection_id, nodes=None, z_sym_indices_list=None):
         """
             Connection class for Network systems
         :type nodes: list
-        :type z_sym_indeces_list: dict
+        :type z_sym_indices_list: dict
         :type connection_id: int
         """
-        if z_sym_indeces_list is None:
-            z_sym_indeces_list = {}
+        if z_sym_indices_list is None:
+            z_sym_indices_list = {}
         if nodes is None:
             nodes = []
         self.connection_id = connection_id
         self.nodes = nodes
-        self.associated_z_sym = [nodes[0].model.z_sym[z_sym_indeces_list[0]],
-                                 nodes[1].model.z_sym[z_sym_indeces_list[1]]]
+        self.associated_z_sym = [nodes[0].model.z_sym[z_sym_indices_list[0]],
+                                 nodes[1].model.z_sym[z_sym_indices_list[1]]]
 
         self.equation = vertcat(self.associated_z_sym[0] - self.associated_z_sym[1])
         for node in self.nodes:

@@ -10,6 +10,7 @@ from collections import defaultdict
 
 from casadi import SX, DM, inf, vertcat, dot, vec, Function, MX, horzcat
 
+from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
@@ -158,8 +159,8 @@ class AugmentedLagrangian(SolutionMethodsBase):
         self.Nr += self.model.alg_z.size1()
 
         self._save_relaxed_equation(self.model.alg_z)
-        z_without_con_z = self.model.remove_variables_from_vector(self.model.con_z, vertcat(self.model.z_sym))
-        z_without_con_z_indices = self.model.find_variables_indices_in_vector(z_without_con_z, self.model.z_sym)
+        z_without_con_z = remove_variables_from_vector(self.model.con_z, vertcat(self.model.z_sym))
+        z_without_con_z_indices = find_variables_indices_in_vector(z_without_con_z, self.model.z_sym)
 
         self.problem.include_control(z_without_con_z, u_max=self.problem.z_max[z_without_con_z_indices],
                                      u_min=self.problem.z_min[z_without_con_z_indices])
@@ -173,7 +174,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         self.Nr += self.model.con.size1()
 
         self._save_relaxed_equation(self.model.con)
-        con_z_ind = self.model.find_variables_indices_in_vector(self.model.con_z, self.model.z_sym)
+        con_z_ind = find_variables_indices_in_vector(self.model.con_z, self.model.z_sym)
 
         self.problem.include_control(self.model.con_z, u_max=self.problem.z_max[con_z_ind],
                                      u_min=self.problem.z_min[con_z_ind])
@@ -330,7 +331,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         # self.nu = new_nu
         # self.mu = self.mu_0
 
-    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None):
+    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
         if x_0 is None:
             x_0 = []
         if theta is None:
@@ -353,7 +354,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         while True:
             theta_k = self.join_nu_to_theta(theta, self.nu)
             p_k = vertcat(p, self.mu)
-            raw_solution_dict = solver(initial_guess, p=p_k, theta=theta_k, x_0=x_0)
+            raw_solution_dict = solver(initial_guess, p=p_k, theta=theta_k, x_0=x_0, last_u=last_u)
             initial_guess = raw_solution_dict['x']
             x, u = self.split_x_and_u(initial_guess)
             it += 1

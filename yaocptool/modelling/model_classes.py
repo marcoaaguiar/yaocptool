@@ -4,20 +4,19 @@ Created on Thu Jun 09 10:50:48 2016
 
 @author: marco
 """
-from warnings import warn
-
+import collections
+import copy
 from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec
 
-from yaocptool import find_variables_indices_in_vector
+from yaocptool import remove_variables_from_vector
 from yaocptool.modelling import DAESystem
-
-
 # TODO: Check linearize method
 # TODO: Create find_equilibrium method
+from yaocptool.modelling.simualtion_result import SimulationResult
 
 
 class SystemModel:
-    def __init__(self, n_x=0, n_y=0, n_z=0, n_u=0, n_p=0, n_theta=0, **kwargs):
+    def __init__(self, name='model', n_x=0, n_y=0, n_z=0, n_u=0, n_p=0, n_theta=0, **kwargs):
         """
             x - states
             y - (internal) algebraic
@@ -29,13 +28,7 @@ class SystemModel:
 
             Note: when vectorizing the parameters order is [ p; theta; u_par]
         """
-
-        # Number of states
-        # Number of (internal) algebraic
-        # Number of external algebraic
-        # Number of control
-        # Number of parameters
-        # Number of parameters that depend on the finite element
+        self.name = name
 
         self.ode = vertcat([])  # ODE
         self.alg = vertcat([])  # Algebraic equations
@@ -46,8 +39,6 @@ class SystemModel:
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-        if not hasattr(self, 'name'):
-            self.name = 'model'
         if 'x_names' in kwargs and n_x == 0:
             self.x_sym = []
             for name_tuple in kwargs['x_names']:
@@ -187,9 +178,11 @@ class SystemModel:
 
     def create_state(self, name='x', size=1):
         """
-        Create a new state with the name "name" and size "size"
+        Create a new state with the name "name" and size "size".
+        Size can be an int or a tuple (e.g. (2,2)). However, the new state will be vectorized (casadi.vec) to be
+        included in the state vector (model.x_sym).
         :param name: str
-        :param size: int
+        :param size: int|tuple
         :return:
         """
         new_x = SX.sym(name, size)
@@ -199,24 +192,28 @@ class SystemModel:
 
     def create_algebraic_variable(self, name='y', size=1):
         """
-        Create a new algebraic variable with the name "name" and size "size"
+        Create a new algebraic variable with the name "name" and size "size".
+        Size can be an int or a tuple (e.g. (2,2)). However, the new algebraic variable will be vectorized (casadi.vec)
+        to be included in the algebraic vector (model.y_sym).
         :param name: str
         :param size: int or tuple
         :return:
         """
         new_y = SX.sym(name, size)
-        self.include_algebraic(new_y)
+        self.include_algebraic(vec(new_y))
         return new_y
 
     def create_control(self, name='u', size=1):
         """
-        Create a new control variable name "name" and size "size"
+        Create a new control variable name "name" and size "size".
+        Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
+        to be included in the control vector (model.u_sym).
         :param name: str
         :param size: int
         :return:
         """
         new_u = SX.sym(name, size)
-        self.include_control(new_u)
+        self.include_control(vec(new_u))
         return new_u
 
     def create_parameter(self, name='p', size=1):
@@ -279,8 +276,7 @@ class SystemModel:
     def include_algebraic(self, var, alg=None):
         self.y_sym = vertcat(self.y_sym, var)
 
-        if alg is None:
-            self.include_system_equations(alg=alg)
+        self.include_system_equations(alg=alg)
 
     def include_external_algebraic(self, var, alg_z=None):
         if alg_z is None:
@@ -308,34 +304,22 @@ class SystemModel:
 
     # region REMOVE
 
-    def remove_variables_from_vector(self, var, vector):
-        to_remove = self.find_variables_indices_in_vector(var, vector)
-        to_remove.sort(reverse=True)
-        for it in to_remove:
-            vector.remove([it], [])
-        return vector
-
     def remove_algebraic(self, var, eq=None):
-        self.remove_variables_from_vector(var, self.y_sym)
+        self.y_sym = remove_variables_from_vector(var, self.y_sym)
         if eq is not None:
-            self.remove_variables_from_vector(eq, self.alg)
+            self.alg = remove_variables_from_vector(eq, self.alg)
 
     def remove_external_algebraic(self, var, eq=None):
-        self.remove_variables_from_vector(var, self.z_sym)
+        self.z_sym = remove_variables_from_vector(var, self.z_sym)
         if eq is not None:
-            self.remove_variables_from_vector(eq, self.alg_z)
+            self.alg_z = remove_variables_from_vector(eq, self.alg_z)
 
     def remove_connecting_equations(self, var, eq):
-        self.remove_variables_from_vector(var, self.z_sym)
-        self.remove_variables_from_vector(eq, self.con)
+        self.z_sym = remove_variables_from_vector(var, self.z_sym)
+        self.con = remove_variables_from_vector(eq, self.con)
 
     def remove_control(self, var):
-        to_remove = self.find_variables_indices_in_vector(var, self.u_sym)
-        to_remove.sort(reverse=True)
-
-        for it in to_remove:
-            self.u_sym.remove([it], [])
-            self.u_par.remove([it], [])
+        self.u_sym = remove_variables_from_vector(var, self.u_sym)
 
     # endregion
     # ==============================================================================
@@ -376,19 +360,17 @@ class SystemModel:
     # region # TIME
     # ==============================================================================
 
-    def convert_from_time_to_tau(self, dae_sys, t_k, t_kp1):
-        raise Exception('Method not implemented')
+    def convert_expr_from_time_to_tau(self, expr, t_k, t_kp1):
+        t = self.t_sym
+        tau = self.tau_sym
+        h = t_kp1 - t_k
+        return substitute(expr, t, tau * h + t_k)
 
     def convert_expr_from_tau_to_time(self, expr, t_k, t_kp1):
         t = self.t_sym
         tau = self.tau_sym
         h = t_kp1 - t_k
         return substitute(expr, tau, (t - t_k) / h)
-
-    def convert_dae_sys_from_tau_to_time(self, dae_sys, t_k, t_kp1):
-        dae_sys['ode'] = self.convert_expr_from_tau_to_time(dae_sys['ode'], t_k, t_kp1)
-        if 'alg' in dae_sys:
-            dae_sys['alg'] = self.convert_expr_from_tau_to_time(dae_sys['alg'], t_k, t_kp1)
 
     # endregion
     # ==============================================================================
@@ -406,6 +388,8 @@ class SystemModel:
             models_list = [models_list]
 
         for model in models_list:
+            model.replace_variable(model.t_sym, self.t_sym)
+            model.replace_variable(model.tau_sym, self.tau_sym)
             self.include_state(model.x_sym, model.ode, model.x_0_sym)
             self.include_algebraic(model.y_sym, model.alg)
             self.include_external_algebraic(model.z_sym, model.alg_z)
@@ -415,6 +399,13 @@ class SystemModel:
 
         self.include_connecting_equations(connecting_equations, associated_z)
 
+    def get_copy(self):
+        """
+            Get a copy of this model
+        :return:
+        """
+        return copy.copy(self)
+
     # endregion
     # ==============================================================================
 
@@ -423,25 +414,118 @@ class SystemModel:
     # ==============================================================================
 
     def get_dae_system(self):
+        """ Return a DAESystem object with the model equations.
+
+        :return: DAESystem
+        """
         if self.system_type == 'ode':
             kwargs = {'x': self.x_sym, 'ode': self.ode, 't': self.t_sym, 'tau': self.tau_sym}
         else:
-            kwargs = {'x': self.x_sym, 'z': vertcat(self.y_sym, self.z_sym), 'ode': self.ode,
+            kwargs = {'x': self.x_sym, 'y': vertcat(self.y_sym, self.z_sym), 'ode': self.ode,
                       'alg': vertcat(self.alg, self.alg_z, self.con), 't': self.t_sym, 'tau': self.tau_sym}
         if self.n_p + self.n_theta + self.u_par.numel() > 0:
             kwargs['p'] = vertcat(self.p_sym, self.theta_sym, self.u_par)
 
-        dae_sys = DAESystem(**kwargs)
-        return dae_sys
+        return DAESystem(**kwargs)
 
-    def simulate(self, x_0, t_f, t_0=0, p=None, integrator_type='implicit', integrator_options=None):
+    def simulate(self, x_0, t_f, t_0=0.0, u=None, p=None, theta=None, y_0=None, integrator_type='implicit',
+                 integrator_options=None):
+        """ Simulate model.
+            If t_f is a float, then only one simulation will be done. If t_f is a list of times, then a sequence of
+            simulations will be done, that each t_f is the end of a finite element.
+
+        :param list||DM x_0: Initial condition
+        :param float||list t_f: Final time of the simulation, can be a list of final times for sequential simulation
+        :param float t_0: Initial time
+        :param list u: Controls of the system to be simulated
+        :param DM||SX||list p: Simulation parameters
+        :param dict theta: Parameters theta, which varies for each simulation for sequential simulations.
+                           If t_f is a list then theta has to have one entry for each k in [0,...,len(t_f)]
+        :param y_0: Initial guess for the algebraic variables
+        :param str integrator_type: 'implicit' or 'explicit'
+        :param dict integrator_options: options to be passed to the integrator
+
+        :rtype: SimulationResult
+        """
+
+        if isinstance(x_0, collections.Iterable):
+            x_0 = vertcat(x_0)
+        if not isinstance(t_f, collections.Iterable):
+            t_f = [t_f]
+
+        if theta is None:
+            theta = dict([(k, []) for k in range(len(t_f))])
         if integrator_options is None:
             integrator_options = {}
         if p is None:
             p = []
+
+        if u is None:  # if control is not given
+            u = [[]] * len(t_f)
+        elif not isinstance(u, (list, tuple)):  # if control is given as number or a casadi object
+            u = [u] * len(t_f)
+
+        if len(t_f) > 1 and not len(u) == len(t_f):
+            raise ValueError('If "t_f" is a list, the parameter "u" should be a list with same length of "t_f"')
+
         dae_sys = self.get_dae_system()
-        return dae_sys.simulate(x_0=x_0, t_f=t_f, t_0=t_0, p=p,
-                                integrator_type=integrator_type, integrator_options=integrator_options)
+
+        t_list = [t_0]
+        x_list = [[x_0]]
+        y_list = []
+        u_list = []
+        t_k = t_0
+        x_k = x_0
+        y_k = y_0
+        for k, t_kpp in enumerate(t_f):
+            p_k = vertcat(p, theta[k], u[k])
+            result = dae_sys.simulate(x_0=x_k, t_f=t_kpp, t_0=t_k, p=p_k, y_0=y_k,
+                                      integrator_type=integrator_type, integrator_options=integrator_options)
+            t_list.append(t_kpp)
+            x_list.append([result['xf']])
+            y_list.append([result['zf']])
+            u_list.append([u[k]])
+
+            t_k = t_kpp
+            x_k = result['xf']
+            y_k = result['zf']
+        t_list = vertcat(t_list)
+
+        simulation_result = SimulationResult(model_name=self.name, t_0=t_0, t_f=t_f[-1],
+                                             x=x_list, y=y_list, u=u_list, t=t_list, finite_elements=len(t_f))
+
+        simulation_result.x_names = [self.x_sym[i].name() for i in range(self.n_x)]
+        simulation_result.y_names = [self.y_sym[i].name() for i in range(self.n_y)]
+        simulation_result.z_names = [self.z_sym[i].name() for i in range(self.n_z)]
+        simulation_result.u_names = [self.u_sym[i].name() for i in range(self.n_u)]
+
+        return simulation_result
+
+    def simulate_raw(self, x_0, t_f, t_0=0.0, p=None, y_0=None, integrator_type='implicit',
+                     integrator_options=None):
+        """ Perform a single simulation.
+
+        :param list||DM x_0: Initial condition
+        :param float t_f: Final time of the simulation
+        :param float t_0: Initial time
+        :param DM||SX||list p: Simulation parameters
+        :param y_0: Initial guess for the algebraic variables
+        :param str integrator_type: 'implicit' or 'explicit'
+        :param dict integrator_options: options to be passed to the integrator
+        """
+
+        if integrator_options is None:
+            integrator_options = {}
+        if p is None:
+            p = []
+        if isinstance(x_0, collections.Iterable):
+            x_0 = vertcat(x_0)
+
+        dae_sys = self.get_dae_system()
+
+        result = dae_sys.simulate(x_0=x_0, t_f=t_f, t_0=t_0, p=p, y_0=y_0,
+                                  integrator_type=integrator_type, integrator_options=integrator_options)
+        return result
 
     # endregion
 
@@ -462,7 +546,7 @@ class SystemModel:
 
         return linear_model
 
-    def find_equilibrium(self, additional_eqs, guess=None, t_0=0.):
+    def find_equilibrium(self, additional_eqs, guess=None, t_0=0., rootfinder_options=None):
         """Find a equilibrium point for the model.
         This method solves the root finding problem:
 
@@ -477,11 +561,14 @@ class SystemModel:
 
         Returns x_0, y_0, u_0
 
+        :param dict rootfinder_options: options to be passed to rootfinder
         :param additional_eqs: SX
         :param guess: DM
         :param t_0: float
         :return: (DM, DM, DM)
         """
+        if rootfinder_options is None:
+            rootfinder_options = dict(nlpsol='ipopt', nlpsol_options={})
         if guess is None:
             guess = [1] * (self.n_x + self.n_y + self.n_u)
         if isinstance(additional_eqs, list):
@@ -492,15 +579,9 @@ class SystemModel:
         eqs = substitute(eqs, self.tau_sym, 0)
         f_eqs = Function('f_equilibrium', [vertcat(*self.all_sym[1:-1])], [eqs])
 
-        rf = rootfinder('rf_equilibrium', 'newton', f_eqs)
+        rf = rootfinder('rf_equilibrium', 'nlpsol', f_eqs, rootfinder_options)
         res = rf(guess)
         return res[:self.n_x], res[self.n_x:self.n_x + self.n_y], res[self.n_x + self.n_y:]
-
-    @staticmethod
-    def find_variables_indices_in_vector(var, vector):
-        warn('Use yaocptool.find_variables_indices_in_vector')
-        index = find_variables_indices_in_vector(var, vector)
-        return index
 
 
 #######################################################################
