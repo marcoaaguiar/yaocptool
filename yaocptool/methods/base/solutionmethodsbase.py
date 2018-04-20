@@ -264,6 +264,12 @@ class SolutionMethodsBase(object):
             else:
                 raise Exception("A parameter 'p' of size {} should be given".format(self.problem.n_p_opt))
 
+        if theta is None:
+            if self.problem.n_theta_opt == self.model.n_theta:
+                theta = create_constant_theta(0, self.problem.n_theta_opt, self.finite_elements)
+            else:
+                raise Exception("A parameter 'theta' of size {} should be given".format(self.problem.n_p_opt))
+
         if theta is not None:
             par = vertcat(p, *theta.values())
         else:
@@ -276,11 +282,6 @@ class SolutionMethodsBase(object):
             par = vertcat(par, last_u)
         elif self.problem.last_u is not None:
             par = vertcat(par, self.problem.last_u)
-
-        print('par', par)
-
-        for i in range(self.model.n_theta):
-            print(self.model.theta_sym[i], theta[0][i])
 
         if initial_guess_dict is None:
             if initial_guess is None:
@@ -304,6 +305,8 @@ class SolutionMethodsBase(object):
 
     def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         initial_condition_as_parameter = False
+        if isinstance(x_0, list):
+            x_0 = vertcat(x_0)
         if x_0 is not None:
             initial_condition_as_parameter = True
 
@@ -355,6 +358,8 @@ class SolutionMethodsBase(object):
         optimization_result.y_names = [self.model.y_sym[i].name() for i in range(self.model.n_y)]
         optimization_result.z_names = [self.model.z_sym[i].name() for i in range(self.model.n_z)]
         optimization_result.u_names = [self.model.u_sym[i].name() for i in range(self.model.n_u)]
+        optimization_result.theta_opt_names = [self.problem.theta_opt[i].name()
+                                               for i in range(self.problem.n_theta_opt)]
 
         self.discretizer.set_data_to_optimization_result_from_raw_data(optimization_result, raw_solution_dict)
 

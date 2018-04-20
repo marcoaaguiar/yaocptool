@@ -11,6 +11,13 @@ def find_variables_indices_in_vector(var, vector):
 
 
 def remove_variables_from_vector(var, vector):
+    """
+        Returns a vector with items removed
+    :param var: items to be removed
+    :param vector: vector which will have items removed
+    :return:
+    """
+    vector = vector[:]
     to_remove = find_variables_indices_in_vector(var, vector)
     to_remove.sort(reverse=True)
     for it in to_remove:

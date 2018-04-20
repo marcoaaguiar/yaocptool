@@ -77,3 +77,7 @@ class DistributedSolution:
         for s in range(self.n_subsystems):
             solution.append(self.queue_listener[s].get(block=True))
         return solution
+
+    def kill(self):
+        for worker in self.workers:
+            worker.terminate()

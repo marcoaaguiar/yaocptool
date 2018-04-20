@@ -40,6 +40,7 @@ class OptimizationResult:
         self.y_names = []
         self.z_names = []
         self.u_names = []
+        self.theta_opt_names = []
 
         self.x_interpolation_data = {'values': [], 'time': []}
         self.y_interpolation_data = {'values': [], 'time': []}
@@ -93,15 +94,19 @@ class OptimizationResult:
         u_0 = self.u_interpolation_data['values'][0][0]
         return u_0
 
-    def plot(self, plot_list):
+    def plot(self, plot_list, figures=None, show=True):
         """Plot the optimization result.
         It takes as input a list of dictionaries, each dictionary represents a plot.  In the dictionary use keyword 'x'
         to specify which states you want to print, the value of the dictionary should be a list of state to be printed.
         The keywords that are accepted are: 'x', 'y', 'u'
         :param list plot_list: List of dictionaries to generate the plots.
+        :param list figures: OPTIONAL: list of figures to be plotted in. If not provided it will create new figures.
+        :param bool show: OPTIONAL: select if matplotlib.pyplot.show should be applied after the plots.
         """
         if isinstance(plot_list, dict):
             plot_list = [plot_list]
+
+        used_figures = []
 
         if self.is_valid:
             x_values = self.x_interpolation_data['values']
@@ -111,6 +116,7 @@ class OptimizationResult:
             x_values = horzcat(*[horzcat(*x_values[l]) for l in range(self.finite_elements)])
             y_values = horzcat(*[horzcat(*y_values[l]) for l in range(self.finite_elements)])
             u_values = horzcat(*[horzcat(*u_values[l]) for l in range(self.finite_elements)])
+            theta_opt_values = horzcat(*self.theta_opt)
 
             t_x = self.x_interpolation_data['time']
             t_y = self.y_interpolation_data['time']
@@ -121,7 +127,13 @@ class OptimizationResult:
             t_u = horzcat(*[horzcat(*t_u[l]) for l in range(self.finite_elements)])
 
             for k, entry in enumerate(plot_list):
-                fig = plt.figure(k)
+                if figures is not None:
+                    fig = plt.figure(figures[k].number)
+                else:
+                    fig = plt.figure(k)
+
+                used_figures.append(fig)
+
                 lines = []
 
                 # Plot optimization x data
@@ -129,6 +141,10 @@ class OptimizationResult:
                     x_indices = entry['x']
                     if x_indices == 'all':
                         x_indices = range(x_values.shape[0])
+                    # for ind, value in enumerate(x_indices):
+                    #     if isinstance(value, str) and not value == 'all':
+                    #         x_indices.insert(self.x_names.index(value), x_indices.index(value))
+
                     for l in x_indices:
                         line = self._plot_entry(t_x, x_values, l, label=self.x_names[l], plot_style='plot')
                         lines.append(line)
@@ -152,8 +168,21 @@ class OptimizationResult:
                         line = self._plot_entry(t_u, u_values, l, label=self.u_names[l], plot_style=plot_style)
                         lines.append(line)
 
+                # Plot theta_op
+                if 'theta_opt' in entry:
+                    theta_indices = entry['theta_opt']
+                    if theta_indices == 'all':
+                        theta_indices = range(theta_opt_values.shape[0])
+
+                    for l in theta_indices:
+                        plot_style = 'step'
+                        line = self._plot_entry(horzcat(*self.time_breakpoints[:-1]), theta_opt_values, l,
+                                                label=self.theta_opt_names[l],
+                                                plot_style=plot_style)
+                        lines.append(line)
+
                 # Plot optimization any other data included in the OptimizationResult
-                for key in set(entry.keys()).difference(['x', 'y', 'u']):
+                for key in set(entry.keys()).difference(['x', 'y', 'u', 'theta_opt']):
                     for l in entry[key]:
                         entry_time = horzcat(
                             *[horzcat(*self.other_data[key]['times'][i]) for i in range(self.finite_elements)])
@@ -165,4 +194,8 @@ class OptimizationResult:
                 axes = fig.axes
                 axes[0].ticklabel_format(useOffset=False)
                 plt.legend(ncol=4)
-            plt.show()
+
+            if show:
+                plt.show()
+
+        return used_figures

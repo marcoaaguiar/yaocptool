@@ -113,7 +113,7 @@ class SimulationResult:
             axes = fig.axes
             axes[0].ticklabel_format(useOffset=False)
             plt.legend()
-            plt.show()
+        plt.show()
 
     @staticmethod
     def _plot_entry(t_vector, data_vector, row, label='', plot_style='plot'):

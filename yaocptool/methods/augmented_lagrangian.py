@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from casadi import SX, DM, inf, vertcat, dot, vec, Function, MX, horzcat
 
-from yaocptool import find_variables_indices_in_vector
+from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
@@ -159,7 +159,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         self.Nr += self.model.alg_z.size1()
 
         self._save_relaxed_equation(self.model.alg_z)
-        z_without_con_z = self.model.remove_variables_from_vector(self.model.con_z, vertcat(self.model.z_sym))
+        z_without_con_z = remove_variables_from_vector(self.model.con_z, vertcat(self.model.z_sym))
         z_without_con_z_indices = find_variables_indices_in_vector(z_without_con_z, self.model.z_sym)
 
         self.problem.include_control(z_without_con_z, u_max=self.problem.z_max[z_without_con_z_indices],

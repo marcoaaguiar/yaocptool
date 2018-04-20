@@ -186,6 +186,7 @@ class OptimalControlProblem:
                 raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
                                 '{} != {}'.format(attr, attr_to_compare[i], getattr(self, attr).numel(),
                                                   getattr(self.model, attr_to_compare[i])))
+
         # Check if the initial condition has the same number of elements of the model
         attributes_ocp = ['p_opt_max', 'p_opt_min', 'theta_opt_min', 'theta_opt_max']
         attr_to_compare_in_ocp = ['n_p_opt', 'n_p_opt', 'n_theta_opt', 'n_theta_opt']
@@ -305,13 +306,13 @@ class OptimalControlProblem:
         self.include_algebraic(var, alg=alg, y_min=y_min, y_max=y_max, y_guess=y_guess)
         return var
 
-    def create_optimization_parameter(self, name, size, p_opt_min=None, p_opt_max=None):
+    def create_optimization_parameter(self, name, size=1, p_opt_min=None, p_opt_max=None):
         new_p_opt = self.model.create_parameter(name=name, size=size)
 
         self.set_parameter_as_optimization_parameter(new_p_opt, new_p_opt_min=p_opt_min, new_p_opt_max=p_opt_max)
         return new_p_opt
 
-    def create_optimization_theta(self, name, size, new_theta_opt_min=None, new_theta_opt_max=None):
+    def create_optimization_theta(self, name, size=1, new_theta_opt_min=None, new_theta_opt_max=None):
         new_theta_opt = self.model.create_theta(name=name, size=size)
 
         self.set_theta_as_optimization_theta(new_theta_opt, new_theta_opt_min=new_theta_opt_min,

@@ -5,11 +5,10 @@ Created on Thu Jun 09 10:50:48 2016
 @author: marco
 """
 import collections
-from warnings import warn
-
+import copy
 from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec
 
-from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector
+from yaocptool import remove_variables_from_vector
 from yaocptool.modelling import DAESystem
 # TODO: Check linearize method
 # TODO: Create find_equilibrium method
@@ -305,32 +304,22 @@ class SystemModel:
 
     # region REMOVE
 
-    @staticmethod
-    def remove_variables_from_vector(var, vector):
-        warn('model.remove_variables_from_vector is deprecated, use yaocptool.remove_variables_from_vector instead')
-        return remove_variables_from_vector(var, vector)
-
     def remove_algebraic(self, var, eq=None):
-        remove_variables_from_vector(var, self.y_sym)
+        self.y_sym = remove_variables_from_vector(var, self.y_sym)
         if eq is not None:
-            remove_variables_from_vector(eq, self.alg)
+            self.alg = remove_variables_from_vector(eq, self.alg)
 
     def remove_external_algebraic(self, var, eq=None):
-        remove_variables_from_vector(var, self.z_sym)
+        self.z_sym = remove_variables_from_vector(var, self.z_sym)
         if eq is not None:
-            remove_variables_from_vector(eq, self.alg_z)
+            self.alg_z = remove_variables_from_vector(eq, self.alg_z)
 
     def remove_connecting_equations(self, var, eq):
-        remove_variables_from_vector(var, self.z_sym)
-        remove_variables_from_vector(eq, self.con)
+        self.z_sym = remove_variables_from_vector(var, self.z_sym)
+        self.con = remove_variables_from_vector(eq, self.con)
 
     def remove_control(self, var):
-        to_remove = find_variables_indices_in_vector(var, self.u_sym)
-        to_remove.sort(reverse=True)
-
-        for it in to_remove:
-            self.u_sym.remove([it], [])
-            self.u_par.remove([it], [])
+        self.u_sym = remove_variables_from_vector(var, self.u_sym)
 
     # endregion
     # ==============================================================================
@@ -371,19 +360,17 @@ class SystemModel:
     # region # TIME
     # ==============================================================================
 
-    def convert_from_time_to_tau(self, dae_sys, t_k, t_kp1):
-        raise Exception('Method not implemented')
+    def convert_expr_from_time_to_tau(self, expr, t_k, t_kp1):
+        t = self.t_sym
+        tau = self.tau_sym
+        h = t_kp1 - t_k
+        return substitute(expr, t, tau * h + t_k)
 
     def convert_expr_from_tau_to_time(self, expr, t_k, t_kp1):
         t = self.t_sym
         tau = self.tau_sym
         h = t_kp1 - t_k
         return substitute(expr, tau, (t - t_k) / h)
-
-    def convert_dae_sys_from_tau_to_time(self, dae_sys, t_k, t_kp1):
-        dae_sys['ode'] = self.convert_expr_from_tau_to_time(dae_sys['ode'], t_k, t_kp1)
-        if 'alg' in dae_sys:
-            dae_sys['alg'] = self.convert_expr_from_tau_to_time(dae_sys['alg'], t_k, t_kp1)
 
     # endregion
     # ==============================================================================
@@ -411,6 +398,13 @@ class SystemModel:
             self.include_theta(model.theta_sym)
 
         self.include_connecting_equations(connecting_equations, associated_z)
+
+    def get_copy(self):
+        """
+            Get a copy of this model
+        :return:
+        """
+        return copy.copy(self)
 
     # endregion
     # ==============================================================================
@@ -450,6 +444,8 @@ class SystemModel:
         :param y_0: Initial guess for the algebraic variables
         :param str integrator_type: 'implicit' or 'explicit'
         :param dict integrator_options: options to be passed to the integrator
+
+        :rtype: SimulationResult
         """
 
         if isinstance(x_0, collections.Iterable):
