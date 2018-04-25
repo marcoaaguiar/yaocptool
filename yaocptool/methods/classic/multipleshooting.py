@@ -5,9 +5,9 @@ Created on Thu Jul 13 17:08:34 2017
 @author: marco
 """
 from collections import defaultdict
+
 from casadi import DM, MX, vertcat, Function, repmat, is_equal, inf
 
-from yaocptool import convert_expr_from_tau_to_time
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
@@ -205,7 +205,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 x_at_el_p_1 = vertcat(*x_at_el_p_1)
                 cost += results[el]['x'][0][-1]
 
-            # Continuity constraint for defininig x
+            # Continuity constraint for defining x
             constraint_list.append(x_at_el_p_1 - x_var[el + 1][0])
             lbg.append(DM.zeros(constraint_list[-1].shape))
             ubg.append(DM.zeros(constraint_list[-1].shape))

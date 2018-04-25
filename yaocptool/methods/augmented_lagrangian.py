@@ -331,7 +331,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         # self.nu = new_nu
         # self.mu = self.mu_0
 
-    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
+    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         if x_0 is None:
             x_0 = []
         if theta is None:

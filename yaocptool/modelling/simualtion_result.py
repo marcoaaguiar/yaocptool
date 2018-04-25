@@ -54,7 +54,7 @@ class SimulationResult:
         self.t_f = other_sim_result.t_f
         self.finite_elements += other_sim_result.finite_elements
 
-        self.x.extend(other_sim_result.x)
+        self.x.extend(other_sim_result.x[1:])
         self.y.extend(other_sim_result.y)
         self.u.extend(other_sim_result.u)
         self.t = vertcat(self.t, other_sim_result.t[1:])

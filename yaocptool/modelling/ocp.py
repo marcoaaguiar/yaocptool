@@ -196,7 +196,6 @@ class OptimalControlProblem:
                                 '{} != {}'.format(attr, attr_to_compare_in_ocp[i], getattr(self, attr).numel(),
                                                   getattr(self, attr_to_compare_in_ocp[i])))
 
-
         return True
 
     def _fix_types(self):
@@ -349,10 +348,12 @@ class OptimalControlProblem:
         new_theta_opt_max = vertcat(new_theta_opt_max)
         if not new_theta_opt.numel() == new_theta_opt_max.numel():
             raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
-                             'and new_theta_opt_max.numel()={}'.format(new_theta_opt.numel(), new_theta_opt_max.numel()))
+                             'and new_theta_opt_max.numel()={}'.format(new_theta_opt.numel(),
+                                                                       new_theta_opt_max.numel()))
         if not new_theta_opt.numel() == new_theta_opt_min.numel():
             raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
-                             'and new_theta_opt_min.numel()={}'.format(new_theta_opt.numel(), new_theta_opt_min.numel()))
+                             'and new_theta_opt_min.numel()={}'.format(new_theta_opt.numel(),
+                                                                       new_theta_opt_min.numel()))
 
         self.theta_opt = vertcat(self.theta_opt, new_theta_opt)
         self.theta_opt_min = vertcat(self.theta_opt_min, new_theta_opt_min)

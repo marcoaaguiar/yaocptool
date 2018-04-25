@@ -4,7 +4,8 @@ from yaocptool.parallel.worker import Worker
 
 
 class DistributedSolution:
-    def __init__(self, subsystem_classes_list, parameters_list, connection_list, main_to_subsystems_list=None, **kwargs):
+    def __init__(self, subsystem_classes_list, parameters_list, connection_list,
+                 main_to_subsystems_list=None, **kwargs):
         if main_to_subsystems_list is None:
             main_to_subsystems_list = []
 

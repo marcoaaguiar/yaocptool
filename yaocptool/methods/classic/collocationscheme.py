@@ -5,12 +5,12 @@ Created on Thu Jul 13 17:08:34 2017
 @author: marco
 """
 from collections import defaultdict
-# noinspection PyUnresolvedReferences
-from typing import List, Dict
-from casadi import DM, MX, repmat, vertcat, Function, jacobian, is_equal, inf
 from itertools import chain
 
-from yaocptool import convert_expr_from_tau_to_time
+from casadi import DM, MX, repmat, vertcat, Function, jacobian, is_equal, inf
+# noinspection PyUnresolvedReferences
+from typing import List, Dict
+
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 

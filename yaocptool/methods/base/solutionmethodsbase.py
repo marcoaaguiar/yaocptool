@@ -1,7 +1,8 @@
 from warnings import warn
 
-from casadi import SX, MX, DM, vertcat, collocation_points, \
+from casadi import SX, MX, vertcat, collocation_points, \
     vec, nlpsol, dot, gradient, jacobian, mtimes, reshape, repmat
+
 from yaocptool import config, create_constant_theta, join_thetas
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
@@ -161,10 +162,10 @@ class SolutionMethodsBase(object):
 
         self.problem.H = self.problem.L + dot(lamb, self.model.ode) + dot(nu, self.model.all_alg)
 
-        ldot = -gradient(self.problem.H, self.model.x_sym)
+        l_dot = -gradient(self.problem.H, self.model.x_sym)
         alg_eq = gradient(self.problem.H, self.model.yz_sym)
 
-        self.problem.include_state(lamb, ldot, suppress=True)
+        self.problem.include_state(lamb, l_dot, suppress=True)
         self.model.hasAdjointVariables = True
 
         self.problem.include_algebraic(nu, alg_eq)
@@ -177,7 +178,7 @@ class SolutionMethodsBase(object):
     def unvec(self, vector, degree=None):
         """
         Unvectorize 'vector' a vectorized matrix, assuming that it was a matrix with 'degree' number of columns
-        :type vector: DM a vecotr (flattened matrix)
+        :type vector: DM a vector (flattened matrix)
         :type degree: int
         """
         if degree is None:
@@ -290,7 +291,7 @@ class SolutionMethodsBase(object):
                 elif self.initial_guess_heuristic == 'problem_info':
                     initial_guess = self.discretizer.create_initial_guess(p, theta)
                 else:
-                    raise ValueError('initial_guess_heuristic did not recognized, avaliablee options: "simulation" and '
+                    raise ValueError('initial_guess_heuristic did not recognized, available options: "simulation" and '
                                      '"problem_info". Given: {}'.format(self.initial_guess_heuristic))
 
             sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
