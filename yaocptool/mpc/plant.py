@@ -57,6 +57,11 @@ class PlantSimulation(Plant):
         self.c_matrix = None
         self.d_matrix = None
 
+        # Noise
+        self.has_noise = True
+        self.r_n = 0.
+        self.r_v = 0.
+
         self.integrator_options = None
 
         self.simulation_results = None

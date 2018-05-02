@@ -25,6 +25,20 @@ def remove_variables_from_vector(var, vector):
     return vector
 
 
+def remove_variables_from_vector_by_indices(vector, indices):
+    """
+        Returns a vector with items removed
+    :param vector: vector which will have items removed
+    :param list indices: list of indices for which the variables need to be removed.
+    :return:
+    """
+    vector = vector[:]
+    indices.sort(reverse=True)
+    for it in indices:
+        vector.remove([it], [])
+    return vector
+
+
 def create_constant_theta(constant, dimension, finite_elements):
     theta = {}
     for i in range(finite_elements):

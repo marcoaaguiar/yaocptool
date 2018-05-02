@@ -1,59 +1,318 @@
-import math
+from math import factorial, ceil
 from itertools import product
 
 import numpy as np
-from casadi import DM, SX, Function, mtimes, chol, solve, vertcat, log, exp
+from casadi import DM, SX, Function, mtimes, chol, solve, vertcat, substitute, repmat, depends_on, inf, is_equal, sqrt, \
+    fmax
 from scipy.stats.distributions import norm
 from sobol import sobol_seq
 
+from yaocptool.modelling import OptimalControlProblem, SystemModel, StochasticOCP
+from yaocptool.stochastic import sample_parameter_normal_distribution_with_sobol
 
-def sample_parameter_normal_distribution(mean, covariance, n_samples=1):
-    """Sample parameter using Sobol sampling with a normal distribution.
 
-    :param mean:
-    :param covariance:
-    :param n_samples:
-    :return:
-    """
-    if isinstance(mean, list):
-        mean = vertcat(*mean)
+class PCEConverter:
+    def __init__(self, socp, **kwargs):
+        """
 
-    n_uncertain = mean.size1()
+        :param StochasticOCP socp: Stochastic Optimal Control Problem
+        :param int n_samples: number of samples of the parameters. If none is provided, the minimum number of samples
+        will be used, depending on the number of uncertain parameters and polynomial order
+        :param int pc_order: order of the polynomial, for the polynomial approximation. (default: 3)
 
+        """
+        self.socp = socp
+        self.n_samples = None
+        self.pc_order = 2
+        self.lamb = 0.0
+
+        self.variable_type = 'theta'
+        self.stochastic_variables = []
+
+        self.model = None  # type: SystemModel
+        self.problem = None  # type: OptimalControlProblem
+        self.sampled_parameters = None
+
+        for (k, v) in kwargs.items():
+            setattr(self, k, v)
+
+        if self.n_samples is None:
+            self.n_samples = self.n_pol_parameters
+
+    @property
+    def n_uncertain(self):
+        return self.socp.n_p_unc
+
+    @property
+    def n_pol_parameters(self):
+        n_pol_parameters = factorial(self.n_uncertain + self.pc_order) / (
+                factorial(self.n_uncertain) * factorial(self.pc_order))
+        return n_pol_parameters
+
+    def _sample_parameters(self):
+        n_samples = self.n_samples
+        n_uncertain = self.socp.p_unc_mean.numel()
+
+        mean = self.socp.p_unc_mean
+        covariance = self.socp.p_unc_var
+        dist = self.socp.p_unc_dist
+
+        for d in dist:
+            if not d == 'normal':
+                raise NotImplementedError('Distribution "{}" not implemented, only "normal" is available.'.format(d))
+
+        sampled_epsilon = sample_parameter_normal_distribution_with_sobol(DM.zeros(mean.shape),
+                                                                          DM.eye(covariance.shape[0]),
+                                                                          n_samples).T
+        sampled_parameters = SX.zeros(n_uncertain, n_samples)
+        for i in range(n_samples):
+            sampled_parameters[:, i] = mean + mtimes(sampled_epsilon[:, i].T, chol(covariance)).T
+        return sampled_parameters
+
+    def _create_cost_ode_of_sample(self, model_s):
+        cost = self.socp.L
+
+        original_vars = vertcat(self.socp.model.x_sym, self.socp.model.y_sym,
+                                self.socp.model.u_sym, self.socp.model.p_sym,
+                                self.socp.model.theta_sym, self.socp.model.t_sym,
+                                self.socp.model.tau_sym, self.socp.model.x_0_sym)
+
+        new_vars = vertcat(model_s.x_sym, model_s.y_sym,
+                           model_s.u_sym, model_s.p_sym,
+                           model_s.theta_sym, model_s.t_sym,
+                           model_s.tau_sym, model_s.x_0_sym)
+
+        cost = substitute(cost, original_vars, new_vars)
+
+        return cost
+
+    def convert_socp_to_ocp_with_pce(self):
+        # Sample Parameters
+        self.sampled_parameters = self._sample_parameters()
+
+        # Build the model
+        self.model, cost_list = self._create_model(self.sampled_parameters)
+
+        # Build the problem
+        self.problem = self._create_problem(self.model)
+
+        # Get PCE parameters
+        ls_factor, exp_phi, psi_fcn = self._get_ls_factor()
+
+        # Include the stochastic objective function
+        self._construct_stochastic_objective(cost_list, exp_phi, ls_factor, self.problem)
+
+        # uncertain constraints
+        self._include_statistics_eqs_of_stochastics_variables(exp_phi, ls_factor, self.model, self.problem)
+
+        return self.problem
+
+    def _include_statistics_eqs_of_stochastics_variables(self, exp_phi, ls_factor, model, problem):
+        self.stochastic_variables = vertcat(*self.stochastic_variables)
+
+        for i in range(self.stochastic_variables.numel()):
+            var = self.stochastic_variables[i]
+            if var.is_symbolic():
+                name = var.name()
+            else:
+                name = 'stoch_var_' + str(i)
+            [stoch_ineq_mean, stoch_ineq_var,
+             stoch_ineq_param] = self._include_statistics_of_expression(var, name, exp_phi, ls_factor, model, problem)
+
+        for i in range(self.socp.n_g_stochastic):
+            var = self.socp.g_stochastic_ineq[i]
+            rhs = self.socp.g_stochastic_rhs[i]
+
+            name = 'stoch_constr_' + str(i)
+            [stoch_ineq_mean, stoch_ineq_var,
+             stoch_ineq_param] = self._include_statistics_of_expression(var, name, exp_phi, ls_factor, model, problem)
+
+            stoch_cosntr_viol_prob = problem.create_optimization_theta('viol_prob_' + name, new_theta_opt_max=0.0)
+            k_viol = sqrt(self.socp.g_stochastic_prob[i] / (1 - self.socp.g_stochastic_prob[i]))
+
+            problem.include_time_equality(stoch_cosntr_viol_prob
+                                          - (k_viol * sqrt(fmax(1e-6, stoch_ineq_var)) + stoch_ineq_mean - rhs),
+                                          when='end')
+
+    def _include_statistics_of_expression(self, expr, name, exp_phi, ls_factor, model, problem):
+        if self.variable_type == 'algebraic':
+            raise NotImplementedError("stochastic variables as algebraic variables are not implemented")
+
+        if self.variable_type == 'theta':
+            var_vector = self._get_expression_in_each_scenario(expr, model)
+
+            stochastic_var_mean = problem.create_optimization_theta(name + '_mean', 1)
+            stochastic_var_var = problem.create_optimization_theta(name + '_var', 1)
+            stochastic_var_par = problem.create_optimization_theta(name + '_par', self.n_pol_parameters)
+
+            problem.include_time_equality(stochastic_var_par - mtimes(ls_factor, var_vector), when='end')
+            problem.include_time_equality(stochastic_var_mean - stochastic_var_par[0], when='end')
+            problem.include_time_equality(
+                stochastic_var_var - mtimes((stochastic_var_par[1:] ** 2).T, exp_phi[1:]), when='end')
+
+            return stochastic_var_mean, stochastic_var_var, stochastic_var_par
+
+    def _construct_stochastic_objective(self, cost_list, exp_phi, ls_factor, problem):
+        # Exp(J) and Var(J)
+        cost_pol_par = problem.create_optimization_parameter('cost_pol_par', self.n_pol_parameters)
+        mean_cost = problem.create_optimization_parameter('cost_mean', 1)
+        var_cost = problem.create_optimization_parameter('cost_var', 1)
+        problem.include_final_time_equality(cost_pol_par - mtimes(ls_factor, cost_list))
+        problem.include_final_time_equality(var_cost - mtimes((cost_pol_par[1:] ** 2).T, exp_phi[1:]))
+        problem.include_final_time_equality(mean_cost - cost_pol_par[0])
+        problem.V = cost_pol_par[0]
+
+    def _create_problem(self, model):
+        # Problem
+        problem = OptimalControlProblem(model)
+        problem.name = self.socp.name + '_PCE'
+
+        problem.p_opt = substitute(self.socp.p_opt, self.socp.get_p_without_p_unc(), problem.model.p_sym)
+        problem.theta_opt = substitute(self.socp.theta_opt, self.socp.model.theta_sym, problem.model.theta_sym)
+
+        problem.x_max = repmat(vertcat(self.socp.x_max, inf), self.n_samples)
+        problem.y_max = repmat(self.socp.y_max, self.n_samples)
+        problem.z_max = repmat(self.socp.z_max, self.n_samples)
+        problem.u_max = self.socp.u_max
+        problem.delta_u_max = self.socp.delta_u_max
+        problem.p_opt_max = self.socp.p_opt_max
+        problem.theta_opt_max = self.socp.theta_opt_max
+
+        problem.x_min = repmat(vertcat(self.socp.x_min, -inf), self.n_samples)
+        problem.y_min = repmat(self.socp.y_min, self.n_samples)
+        problem.z_min = repmat(self.socp.z_min, self.n_samples)
+        problem.u_min = self.socp.u_min
+        problem.delta_u_min = self.socp.delta_u_min
+        problem.p_opt_min = self.socp.p_opt_min
+        problem.theta_opt_min = self.socp.theta_opt_min
+
+        problem.t_f = self.socp.t_f
+
+        if depends_on(self.socp.g_eq, self.socp.model.x_sym) or depends_on(self.socp.g_eq, self.socp.model.y_sym):
+            raise NotImplementedError('Case where "g_eq" depends on "model.x_sym" or "model.y_sym" is not implemented ')
+
+        if depends_on(self.socp.g_ineq, self.socp.model.x_sym) or depends_on(self.socp.g_ineq, self.socp.model.y_sym):
+            raise NotImplementedError('Case where "g_ineq" depends on "model.x_sym" '
+                                      'or "model.y_sym" is not implemented ')
+
+        original_vars = vertcat(self.socp.model.u_sym, self.socp.get_p_without_p_unc(),
+                                self.socp.model.theta_sym, self.socp.model.t_sym,
+                                self.socp.model.tau_sym)
+
+        new_vars = vertcat(problem.model.u_sym, problem.model.p_sym,
+                           problem.model.theta_sym, problem.model.t_sym,
+                           problem.model.tau_sym)
+
+        if not self.socp.n_h_initial == self.socp.model.n_x:
+            problem.h_initial = vertcat(problem.h_initial, substitute(self.socp.h_initial[:self.socp.model.n_x],
+                                                                      original_vars, new_vars))
+        problem.h_final = substitute(self.socp.h_final, original_vars, new_vars)
+
+        problem.g_eq = substitute(self.socp.g_eq, original_vars, new_vars)
+        problem.g_ineq = substitute(self.socp.g_ineq, original_vars, new_vars)
+        problem.time_g_eq = self.socp.time_g_eq
+        problem.time_g_ineq = self.socp.time_g_ineq
+
+        problem.last_u = self.socp.last_u
+
+        problem.y_guess = repmat(self.socp.y_guess, self.n_samples) if self.socp.y_guess is not None else None
+        problem.u_guess = self.socp.u_guess
+        problem.x_0 = repmat(vertcat(self.socp.x_0, 0), self.n_samples) if self.socp.x_0 is not None else None
+
+        problem.parametrized_control = self.socp.parametrized_control
+        problem.positive_objective = self.socp.parametrized_control
+        problem.NULL_OBJ = self.socp.NULL_OBJ
+
+        if not is_equal(self.socp.S, 0) or not is_equal(self.socp.V, 0):
+            raise NotImplementedError
+
+        return problem
+
+    def _create_model(self, sampled_parameters):
+        model = SystemModel(name=self.socp.model.name + '_PCE')
+        u_global = vertcat([])
+        p_global = vertcat([])
+        theta_global = vertcat([])
+
+        model.include_control(self.socp.model.u_sym)
+        model.include_parameter(self.socp.get_p_without_p_unc())
+        model.include_theta(self.socp.model.theta_sym)
+
+        u_global = model.u_sym
+        p_global = model.p_sym
+        theta_global = model.theta_sym
+
+        t_global = model.t_sym
+        tau_global = model.t_sym
+
+        cost_list = []
+        for s in range(self.n_samples):
+            model_s = self.socp.model.get_hardcopy()
+
+            # cost of sample
+            cost_ode = self._create_cost_ode_of_sample(model_s)
+            cost_s = model_s.create_state('cost_' + str(s))
+            model_s.include_system_equations(ode=cost_ode)
+
+            # replace the parameter variable with the sampled variable
+            p_unc_s = model_s.p_sym.get(False, self.socp.get_p_unc_indices())
+            p_other_s = model_s.p_sym.get(False,
+                                          [i for i in range(model_s.n_p) if i not in self.socp.get_p_unc_indices()])
+            model_s.replace_variable(p_unc_s, sampled_parameters[:, s])
+            model_s.remove_parameter(p_unc_s)
+
+            # replace the model variables with the global variables
+            model_s.replace_variable(model_s.u_sym, u_global)
+            model_s.replace_variable(model_s.p_sym, p_global)
+            model_s.replace_variable(model_s.theta_sym, theta_global)
+            model_s.remove_control(model_s.u_sym)
+            model_s.remove_parameter(model_s.p_sym)
+            model_s.remove_theta(model_s.theta_sym)
+            model_s.t_sym = t_global
+            model_s.tau_sym = tau_global
+
+            # merge the sample model in the unique model
+            model.merge(model_s)
+
+            # collect the sample cost
+            cost_list.append(cost_s)
+
+        cost_list = vertcat(*cost_list)
+        return model, cost_list
+
+    def _get_ls_factor(self):
+        return get_ls_factor(self.n_uncertain, self.n_samples, self.pc_order, self.lamb)
+
+    def _get_expression_in_each_scenario(self, expr, model):
+        """
+
+        :param SystemModel model:
+        """
+        expr_list = []
+        for s in range(self.n_samples):
+            x_s = model.x_sym[s * (self.socp.model.n_x + 1):(s + 1) * (self.socp.model.n_x + 1)][:self.socp.model.n_x]
+            x_0_s = model.x_0_sym[s * (self.socp.model.n_x + 1):
+                                  (s + 1) * (self.socp.model.n_x + 1)][:self.socp.model.n_x]
+            y_s = model.x_sym[s * self.socp.model.n_y:(s + 1) * self.socp.model.n_y]
+
+            original_vars = vertcat(self.socp.model.x_sym, self.socp.model.y_sym,
+                                    self.socp.model.u_sym, self.socp.get_p_without_p_unc(),
+                                    self.socp.model.theta_sym, self.socp.model.t_sym,
+                                    self.socp.model.tau_sym, self.socp.model.x_0_sym, self.socp.p_unc)
+
+            new_vars = vertcat(x_s, y_s,
+                               model.u_sym, model.p_sym,
+                               model.theta_sym, model.t_sym,
+                               model.tau_sym, x_0_s, self.sampled_parameters[:, s])
+
+            new_exp = substitute(expr, original_vars, new_vars)
+            expr_list.append(new_exp)
+        return vertcat(*expr_list)
+
+
+def get_ls_factor(n_uncertain, n_samples, pc_order, lamb=0.0):
     # Uncertain parameter design
-    sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, math.ceil(np.log2(n_samples)))
-    sobol_samples = DM(sobol_design.T)
-    for i in range(n_uncertain):
-        sobol_samples[:, i] = norm(loc=0., scale=1.).ppf(sobol_samples[:, i])
-
-    log_samples = SX.zeros(n_samples, n_uncertain)
-
-    for i in range(n_samples):
-        log_samples[i, :] = mean + mtimes(sobol_samples[i, :], chol(covariance)).T
-
-    return log_samples
-
-
-def sample_parameter_log_normal_distribution(mean, covariance, n_samples=1):
-    """Sample parameter using Sobol sampling with a log-normal distribution.
-
-    :param mean:
-    :param covariance:
-    :param n_samples:
-    :return:
-    """
-    if isinstance(mean, list):
-        mean = vertcat(*mean)
-
-    mean_log = log(mean)
-    log_samples = sample_parameter_normal_distribution(mean_log, covariance, n_samples)
-    samples = exp(log_samples)
-    return samples
-
-
-def get_ls_factor(n_uncertain, n_samples, pc_order, lamb=0):
-    # Uncertain parameter design
-    sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, math.ceil(np.log2(n_samples)))
+    sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, ceil(np.log2(n_samples)))
     sobol_samples = np.transpose(sobol_design)
     for i in range(n_uncertain):
         sobol_samples[:, i] = norm(loc=0., scale=1.).ppf(sobol_samples[:, i])
@@ -79,7 +338,7 @@ def get_ls_factor(n_uncertain, n_samples, pc_order, lamb=0):
     exps.next()
     exps = list(exps)
 
-    psi = SX.ones(math.factorial(n_uncertain + pc_order) / (math.factorial(n_uncertain) * math.factorial(pc_order)))
+    psi = SX.ones(factorial(n_uncertain + pc_order) / (factorial(n_uncertain) * factorial(pc_order)))
     for i in range(len(exps)):
         for j in range(n_uncertain):
             psi[i + 1] *= helist[exps[i][j]](xu[j])

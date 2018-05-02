@@ -52,6 +52,7 @@ class UnscentedKalmanFilter(EstimatorAbstract):
 
         self.p = None
         self.theta = None
+        self.y_guess = None
 
         self._types_fixed = False
         self._checked = False
@@ -148,7 +149,7 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         for i in range(self.n_sigma_points):
             x_0_i = sigma_points[i]
             simulation_results_i = self.model.simulate(x_0=x_0_i, t_0=self.t, t_f=self.t + self.t_s,
-                                                       u=u, p=p, theta=theta)
+                                                       u=u, p=p, theta=theta, y_0=self.y_guess)
             simulation_results.append(simulation_results_i)
             x_cal_x_k_at_k_minus_1.append(simulation_results_i.final_condition()[0])
             y_alg_cal_x_k_at_k_minus_1.append(simulation_results[i].final_condition()[1])

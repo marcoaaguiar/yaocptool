@@ -8,3 +8,4 @@ Created on Mon Jul 10 14:27:21 2017
 from .dae_system import DAESystem
 from .model_classes import SystemModel
 from .ocp import OptimalControlProblem
+from .stochastic_ocp import StochasticOCP

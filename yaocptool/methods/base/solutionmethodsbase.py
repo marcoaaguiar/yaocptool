@@ -8,19 +8,18 @@ from yaocptool.methods.base.discretizationschemebase import DiscretizationScheme
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
 from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
-
-
-# TODO: fix PEP 8
+from yaocptool.modelling import OptimalControlProblem
 
 
 class SolutionMethodsBase(object):
     def __init__(self, problem, **kwargs):
         """
-        :param problem: OptimalControlProblem
-        :param integrator_type: str
-        :param solution_method: str
-        :param degree: int
-        :param discretization_scheme: str
+        :param OptimalControlProblem problem:
+        :param str integrator_type: str
+        :param str solution_method: str
+        :param str degree: int
+        :param str discretization_scheme: str
+        :param str initial_guess_heuristic: 'simulation' or 'problem_info'
         """
         self.solver = None
         # self._problem = problem  # type: OptimalControlProblem
@@ -262,13 +261,13 @@ class SolutionMethodsBase(object):
         if p is None:
             if self.problem.n_p_opt == self.model.n_p:
                 p = repmat(0, self.problem.n_p_opt)
-            else:
+            elif self.problem.model.n_p > 0:
                 raise Exception("A parameter 'p' of size {} should be given".format(self.problem.n_p_opt))
 
         if theta is None:
             if self.problem.n_theta_opt == self.model.n_theta:
                 theta = create_constant_theta(0, self.problem.n_theta_opt, self.finite_elements)
-            else:
+            elif self.problem.model.n_theta > 0:
                 raise Exception("A parameter 'theta' of size {} should be given".format(self.problem.n_p_opt))
 
         if theta is not None:

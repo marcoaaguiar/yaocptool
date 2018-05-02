@@ -218,7 +218,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         self.nu_pol = vertcat(self.nu_pol, nu_pol)
         self.nu_par = vertcat(self.nu_par, nu_par)
 
-        self.problem.replace_variable(nu_sym, nu_pol, 'other')
+        self.problem.replace_variable(nu_sym, nu_pol)
         self.problem.model.include_theta(vec(nu_par))
 
         return nu_pol, nu_par

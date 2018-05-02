@@ -53,7 +53,7 @@ class OptimalControlProblem:
         if not hasattr(self, 'x_0'):
             self.x_0 = DM([])
 
-        self.name = ''
+        self.name = 'OCP'
         self.model = None  # type: SystemModel
         self._model = model  # type: SystemModel
         self.reset_working_model()
@@ -84,7 +84,6 @@ class OptimalControlProblem:
 
         self.g_eq = vertcat([])
         self.g_ineq = vertcat([])
-
         self.time_g_eq = []
         self.time_g_ineq = []
 
@@ -558,7 +557,7 @@ class OptimalControlProblem:
         self.g_eq = substitute(self.g_eq, original, replacement)
         self.h = substitute(self.h, original, replacement)
 
-        self.model.replace_variable(original, replacement, variable_type)
+        self.model.replace_variable(original, replacement)
 
     def get_p_opt_indices(self):
         return find_variables_indices_in_vector(self.p_opt, self.model.p_sym)
