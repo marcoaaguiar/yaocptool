@@ -304,6 +304,10 @@ class OptimalControlProblem:
         self.include_algebraic(var, alg=alg, y_min=y_min, y_max=y_max, y_guess=y_guess)
         return var
 
+    def create_parameter(self, name, size=1):
+        new_p = self.model.create_parameter(name=name, size=size)
+        return new_p
+
     def create_optimization_parameter(self, name, size=1, p_opt_min=None, p_opt_max=None):
         new_p_opt = self.model.create_parameter(name=name, size=size)
 

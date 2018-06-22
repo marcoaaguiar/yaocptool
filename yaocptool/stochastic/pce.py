@@ -2,8 +2,8 @@ from math import factorial, ceil
 from itertools import product
 
 import numpy as np
-from casadi import DM, SX, Function, mtimes, chol, solve, vertcat, substitute, repmat, depends_on, inf, is_equal, sqrt, \
-    fmax
+from casadi import DM, SX, Function, mtimes, chol, solve, vertcat, substitute, repmat, depends_on, inf, is_equal, \
+    sqrt, fmax, diagcat
 from scipy.stats.distributions import norm
 from sobol import sobol_seq
 
@@ -23,7 +23,7 @@ class PCEConverter:
         """
         self.socp = socp
         self.n_samples = None
-        self.pc_order = 2
+        self.pc_order = 3
         self.lamb = 0.0
 
         self.variable_type = 'theta'
@@ -41,7 +41,7 @@ class PCEConverter:
 
     @property
     def n_uncertain(self):
-        return self.socp.n_p_unc
+        return self.socp.n_p_unc + self.socp.n_uncertain_initial_condition
 
     @property
     def n_pol_parameters(self):
@@ -51,11 +51,22 @@ class PCEConverter:
 
     def _sample_parameters(self):
         n_samples = self.n_samples
-        n_uncertain = self.socp.p_unc_mean.numel()
+        n_uncertain = self.n_uncertain
 
-        mean = self.socp.p_unc_mean
-        covariance = self.socp.p_unc_var
-        dist = self.socp.p_unc_dist
+        mean = vertcat(self.socp.p_unc_mean, self.socp.uncertain_initial_conditions_mean)
+
+        if self.socp.n_p_unc > 0 and self.socp.n_uncertain_initial_condition > 0:
+            covariance = diagcat(self.socp.p_unc_cov, self.socp.uncertain_initial_conditions_cov)
+        elif self.socp.n_p_unc > 0:
+            covariance = self.socp.p_unc_cov
+        elif self.socp.n_uncertain_initial_condition > 0:
+            covariance = self.socp.uncertain_initial_conditions_cov
+        else:
+            raise ValueError("No uncertanties found n_p_unc = {}, "
+                             "n_uncertain_initial_condition={}".format(self.socp.n_p_unc,
+                                                                       self.socp.n_uncertain_initial_condition))
+
+        dist = self.socp.p_unc_dist + self.socp.uncertain_initial_conditions_distribution
 
         for d in dist:
             if not d == 'normal':
@@ -63,10 +74,10 @@ class PCEConverter:
 
         sampled_epsilon = sample_parameter_normal_distribution_with_sobol(DM.zeros(mean.shape),
                                                                           DM.eye(covariance.shape[0]),
-                                                                          n_samples).T
+                                                                          n_samples)
         sampled_parameters = SX.zeros(n_uncertain, n_samples)
-        for i in range(n_samples):
-            sampled_parameters[:, i] = mean + mtimes(sampled_epsilon[:, i].T, chol(covariance)).T
+        for s in range(n_samples):
+            sampled_parameters[:, s] = mean + mtimes(sampled_epsilon[:, s].T, chol(covariance)).T
         return sampled_parameters
 
     def _create_cost_ode_of_sample(self, model_s):
@@ -94,7 +105,7 @@ class PCEConverter:
         self.model, cost_list = self._create_model(self.sampled_parameters)
 
         # Build the problem
-        self.problem = self._create_problem(self.model)
+        self.problem = self._create_problem(self.model, self.sampled_parameters)
 
         # Get PCE parameters
         ls_factor, exp_phi, psi_fcn = self._get_ls_factor()
@@ -116,8 +127,8 @@ class PCEConverter:
                 name = var.name()
             else:
                 name = 'stoch_var_' + str(i)
-            [stoch_ineq_mean, stoch_ineq_var,
-             stoch_ineq_param] = self._include_statistics_of_expression(var, name, exp_phi, ls_factor, model, problem)
+
+            _, _, _ = self._include_statistics_of_expression(var, name, exp_phi, ls_factor, model, problem)
 
         for i in range(self.socp.n_g_stochastic):
             var = self.socp.g_stochastic_ineq[i]
@@ -162,7 +173,7 @@ class PCEConverter:
         problem.include_final_time_equality(mean_cost - cost_pol_par[0])
         problem.V = cost_pol_par[0]
 
-    def _create_problem(self, model):
+    def _create_problem(self, model, sampled_parameter):
         # Problem
         problem = OptimalControlProblem(model)
         problem.name = self.socp.name + '_PCE'
@@ -213,6 +224,15 @@ class PCEConverter:
         problem.time_g_eq = self.socp.time_g_eq
         problem.time_g_ineq = self.socp.time_g_ineq
 
+        for i in range(self.socp.n_uncertain_initial_condition):
+            ind = self.socp.get_uncertain_initial_cond_indices()[i]
+            x_ind_s = problem.model.x_0_sym[ind::(self.socp.model.n_x+1)]
+            problem.h_initial = substitute(problem.h_initial, x_ind_s, sampled_parameter[self.socp.n_p_unc + i, :].T)
+            problem.h_final = substitute(problem.h_final, x_ind_s, sampled_parameter[self.socp.n_p_unc + i, :].T)
+
+            problem.g_eq = substitute(problem.g_eq, x_ind_s, sampled_parameter[self.socp.n_p_unc + i, :].T)
+            problem.g_ineq = substitute(problem.g_ineq, x_ind_s, sampled_parameter[self.socp.n_p_unc + i, :].T)
+
         problem.last_u = self.socp.last_u
 
         problem.y_guess = repmat(self.socp.y_guess, self.n_samples) if self.socp.y_guess is not None else None
@@ -229,6 +249,7 @@ class PCEConverter:
         return problem
 
     def _create_model(self, sampled_parameters):
+        sampled_parameters_p_unc = sampled_parameters[:self.socp.n_p_unc, :]
         model = SystemModel(name=self.socp.model.name + '_PCE')
         u_global = vertcat([])
         p_global = vertcat([])
@@ -243,7 +264,7 @@ class PCEConverter:
         theta_global = model.theta_sym
 
         t_global = model.t_sym
-        tau_global = model.t_sym
+        tau_global = model.tau_sym
 
         cost_list = []
         for s in range(self.n_samples):
@@ -258,7 +279,7 @@ class PCEConverter:
             p_unc_s = model_s.p_sym.get(False, self.socp.get_p_unc_indices())
             p_other_s = model_s.p_sym.get(False,
                                           [i for i in range(model_s.n_p) if i not in self.socp.get_p_unc_indices()])
-            model_s.replace_variable(p_unc_s, sampled_parameters[:, s])
+            model_s.replace_variable(p_unc_s, sampled_parameters_p_unc[:, s])
             model_s.remove_parameter(p_unc_s)
 
             # replace the model variables with the global variables
@@ -293,7 +314,7 @@ class PCEConverter:
             x_s = model.x_sym[s * (self.socp.model.n_x + 1):(s + 1) * (self.socp.model.n_x + 1)][:self.socp.model.n_x]
             x_0_s = model.x_0_sym[s * (self.socp.model.n_x + 1):
                                   (s + 1) * (self.socp.model.n_x + 1)][:self.socp.model.n_x]
-            y_s = model.x_sym[s * self.socp.model.n_y:(s + 1) * self.socp.model.n_y]
+            y_s = model.y_sym[s * self.socp.model.n_y:(s + 1) * self.socp.model.n_y]
 
             original_vars = vertcat(self.socp.model.x_sym, self.socp.model.y_sym,
                                     self.socp.model.u_sym, self.socp.get_p_without_p_unc(),

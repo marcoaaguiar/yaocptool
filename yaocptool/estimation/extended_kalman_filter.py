@@ -1,6 +1,7 @@
+from casadi import DM, mtimes, jacobian, Function, vertcat, reshape, vec, inv, solve
+
+from yaocptool.modelling import SystemModel, DataSet
 from .estimator_abstract import EstimatorAbstract
-from casadi import DM, mtimes, mac, jacobian, MX, Function, vertcat, reshape, vec, inv, solve
-from yaocptool.modelling import SystemModel
 
 
 class ExtendedKalmanFilter(EstimatorAbstract):
@@ -34,6 +35,14 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         self._p_k_aug = DM.eye(self.model.n_x + self.model.n_y)
         self._p_k_aug[:self.model.n_x, :self.model.n_x] = self.p_k
         self.augmented_model = self._create_augmented_model(model)
+
+        self.dataset = DataSet(name=self.model.name)
+        self.dataset.data['x']['size'] = self.model.n_x
+        self.dataset.data['x']['names'] = ['est_' + self.model.x_sym[i].name() for i in range(self.model.n_x)]
+
+        self.dataset.data['P']['size'] = self.model.n_x ** 2
+        self.dataset.data['P']['names'] = ['P_' + str(i) + str(j) for i in range(self.model.n_x) for j in
+                                           range(self.model.n_x)]
 
     def _create_augmented_model(self, model):
         """
@@ -89,12 +98,15 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         x_mean = x_aug_hat_minus + mtimes(k_gain, (y_k - y_hat_minus))
         p_k = mtimes(DM.eye(self.model.n_x + self.model.n_y) - mtimes(k_gain, dh_dx_aug),
                      mtimes(p_hat_minus,
-                            (DM.eye(self.model.n_x + self.model.n_y) - mtimes(k_gain, dh_dx_aug)).T)) \
-              + mtimes(k_gain, mtimes(self.r_n, k_gain.T))
+                            (DM.eye(self.model.n_x + self.model.n_y) - mtimes(k_gain, dh_dx_aug)).T)
+                     ) + mtimes(k_gain, mtimes(self.r_n, k_gain.T))
 
         self.x_mean = x_mean[:self.model.n_x]
         self._p_k_aug = p_k
         self.p_k = p_k[:self.model.n_x, :self.model.n_x]
+
+        self.dataset.insert_data('x', self.x_mean, t_k)
+        self.dataset.insert_data('P', vec(self.p_k), t_k)
 
         return self.x_mean, self.p_k
 

@@ -1,6 +1,7 @@
 import math
+
 import numpy as np
-from casadi import DM, SX, Function, mtimes, chol, solve, vertcat, log, exp
+from casadi import DM, SX, mtimes, chol, vertcat, log, exp
 from scipy.stats.distributions import norm
 from sobol import sobol_seq
 
@@ -24,12 +25,12 @@ def sample_parameter_normal_distribution_with_sobol(mean, covariance, n_samples=
     for i in range(n_uncertain):
         sobol_samples[:, i] = norm(loc=0., scale=1.).ppf(sobol_samples[:, i])
 
-    log_samples = SX.zeros(n_samples, n_uncertain)
+    unscaled_sample = SX.zeros(n_uncertain, n_samples)
 
     for i in range(n_samples):
-        log_samples[i, :] = mean + mtimes(sobol_samples[i, :], chol(covariance)).T
+        unscaled_sample[:, i] = mean + mtimes(sobol_samples[i, :], chol(covariance)).T
 
-    return log_samples
+    return unscaled_sample
 
 
 def sample_parameter_log_normal_distribution_with_sobol(mean, covariance, n_samples=1):

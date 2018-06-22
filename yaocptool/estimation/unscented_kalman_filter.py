@@ -1,8 +1,8 @@
 # coding=utf-8
-from casadi import chol, mtimes, vertcat, Linsol, inv, solve, DM
+from casadi import chol, mtimes, vertcat, solve, DM, vec
 
 from yaocptool.estimation.estimator_abstract import EstimatorAbstract
-from yaocptool.modelling import SystemModel
+from yaocptool.modelling import SystemModel, DataSet
 
 
 class UnscentedKalmanFilter(EstimatorAbstract):
@@ -56,7 +56,16 @@ class UnscentedKalmanFilter(EstimatorAbstract):
 
         self._types_fixed = False
         self._checked = False
+
         EstimatorAbstract.__init__(self, **kwargs)
+
+        self.dataset = DataSet(name=self.model.name)
+        self.dataset.data['x']['size'] = self.model.n_x
+        self.dataset.data['x']['names'] = ['est_' + self.model.x_sym[i].name() for i in range(self.model.n_x)]
+
+        self.dataset.data['P']['size'] = self.model.n_x ** 2
+        self.dataset.data['P']['names'] = ['P_' + str(i) + str(j) for i in range(self.model.n_x) for j in
+                                           range(self.model.n_x)]
 
     def _fix_types(self):
         self.x_mean = vertcat(self.x_mean)
@@ -95,6 +104,10 @@ class UnscentedKalmanFilter(EstimatorAbstract):
 
         self.x_mean = x_mean
         self.p_k = p_k
+
+        self.dataset.insert_data('x', self.x_mean, t_k)
+        self.dataset.insert_data('P', vec(self.p_k), t_k)
+
         return x_mean, p_k
 
     def _get_measurement_from_prediction(self, x, y, u):
@@ -196,11 +209,7 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         return x_hat_k, p_k
 
     def _estimate_square_root_ukf(self, t_k, y_k, u_k):
-        x_mean = self.x_mean
-        x_cov = self.p_k
-
-        sigma_points, weights_m, weights_c = self._get_sigma_points_and_weights(x_mean, x_cov)
-        return x_mean, p_k
+        raise NotImplementedError
 
     def cholupdate(self, R, x, sign):
         import numpy as np

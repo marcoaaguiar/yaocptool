@@ -9,3 +9,4 @@ from .dae_system import DAESystem
 from .model_classes import SystemModel
 from .ocp import OptimalControlProblem
 from .stochastic_ocp import StochasticOCP
+from .dataset import DataSet

@@ -195,7 +195,7 @@ class OptimizationResult:
                 axes[0].ticklabel_format(useOffset=False)
                 plt.legend(ncol=4)
 
-            if show:
-                plt.show()
+        if show:
+            plt.show()
 
         return used_figures

@@ -1,2 +1,3 @@
 from .unscented_kalman_filter import UnscentedKalmanFilter
 from .extended_kalman_filter import ExtendedKalmanFilter
+from .pce_kalman_filter import PCEKalmanFilter

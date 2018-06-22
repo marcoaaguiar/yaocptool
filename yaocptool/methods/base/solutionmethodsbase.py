@@ -262,13 +262,13 @@ class SolutionMethodsBase(object):
             if self.problem.n_p_opt == self.model.n_p:
                 p = repmat(0, self.problem.n_p_opt)
             elif self.problem.model.n_p > 0:
-                raise Exception("A parameter 'p' of size {} should be given".format(self.problem.n_p_opt))
+                raise Exception("A parameter 'p' of size {} should be given".format(self.problem.model.n_p))
 
         if theta is None:
             if self.problem.n_theta_opt == self.model.n_theta:
                 theta = create_constant_theta(0, self.problem.n_theta_opt, self.finite_elements)
             elif self.problem.model.n_theta > 0:
-                raise Exception("A parameter 'theta' of size {} should be given".format(self.problem.n_p_opt))
+                raise Exception("A parameter 'theta' of size {} should be given".format(self.problem.model.n_theta))
 
         if theta is not None:
             par = vertcat(p, *theta.values())

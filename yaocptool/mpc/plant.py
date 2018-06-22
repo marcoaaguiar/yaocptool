@@ -1,9 +1,6 @@
-from numbers import Number
-
 from casadi import DM, vertcat, mtimes
-
-from yaocptool.modelling import SystemModel
-
+import numpy
+from yaocptool.modelling import SystemModel, DataSet
 
 class Plant:
     def __init__(self):
@@ -57,14 +54,20 @@ class PlantSimulation(Plant):
         self.c_matrix = None
         self.d_matrix = None
 
+        self.p = None
+        self.theta = None
+
         # Noise
-        self.has_noise = True
-        self.r_n = 0.
-        self.r_v = 0.
+        self.has_noise = False
+        self.r_n = DM(0.)
+        self.r_v = DM(0.)
 
         self.integrator_options = None
 
         self.simulation_results = None
+        self.dataset = DataSet(name='Plant')
+
+        self.seed = None
 
         if 't_0' in kwargs:
             self.t = kwargs['t_0']
@@ -77,6 +80,26 @@ class PlantSimulation(Plant):
         if self.d_matrix is None:
             self.d_matrix = DM(0.)
 
+        self._initialize_dataset()
+
+        if self.has_noise:
+            if self.seed is not None:
+                numpy.random.seed(self.seed)
+            self._include_noise_in_the_model()
+
+    def _initialize_dataset(self):
+        self.dataset.data['x']['size'] = self.model.n_x
+        self.dataset.data['x']['names'] = [self.model.x_sym[i].name() for i in range(self.model.n_x)]
+
+        self.dataset.data['y']['size'] = self.model.n_y
+        self.dataset.data['y']['names'] = [self.model.y_sym[i].name() for i in range(self.model.n_y)]
+
+        self.dataset.data['u']['size'] = self.model.n_u
+        self.dataset.data['u']['names'] = [self.model.u_sym[i].name() for i in range(self.model.n_u)]
+
+        self.dataset.data['meas']['size'] = self.c_matrix.size1()
+        self.dataset.data['meas']['names'] = ['meas_' + str(i) for i in range(self.model.n_x)]
+
     @property
     def n_x(self):
         return self.model.n_x
@@ -88,17 +111,40 @@ class PlantSimulation(Plant):
         :return: tuple
         """
         # perform the simulation
+        if self.has_noise:
+            v_rand = DM(numpy.random.multivariate_normal([0] * self.r_v.size1(), self.r_v))
+            if self.p is None:
+                p = v_rand
+            else:
+                p = vertcat(self.p, v_rand)
+        else:
+            p = self.p
+
         sim_result = self.model.simulate(x_0=self.x,
                                          t_0=self.t,
                                          t_f=self.t + self.t_s,
                                          y_0=self.y_guess,
                                          u=self.u,
+                                         p=p,
+                                         theta=self.theta,
                                          integrator_options=self.integrator_options)
 
-        self.t += self.t_s
         x, y, u = sim_result.final_condition()
+        self.t += self.t_s
         self.x = x
-        measurement = mtimes(self.c_matrix, vertcat(x, y))
+        measurement_wo_noise = mtimes(self.c_matrix, vertcat(x, y))
+        if self.has_noise:
+            n_rand = DM(numpy.random.multivariate_normal([0] * self.r_n.size1(), self.r_n))
+            measurement = measurement_wo_noise + n_rand
+        else:
+            measurement = measurement_wo_noise
+
+        self.dataset.insert_data('x', x, self.t)
+        self.dataset.insert_data('y', y, self.t)
+        self.dataset.insert_data('u', u, self.t)
+        self.dataset.insert_data('meas', measurement, self.t)
+        self.dataset.insert_data('meas_wo_noise', measurement_wo_noise, self.t)
+
         print('Real state: {}'.format(x))
 
         if self.simulation_results is None:
@@ -120,3 +166,7 @@ class PlantSimulation(Plant):
             raise ValueError("Given control does not have the same size of the plant."
                              "Plant control size: {}, given control size: {}".format(self.model.n_u, u.shape[0]))
         self.u = u
+
+    def _include_noise_in_the_model(self):
+        v = self.model.create_parameter('v', self.r_v.size1())
+        self.model.ode[:self.r_v.size1()] = self.model.ode[:self.r_v.size1()] + v
