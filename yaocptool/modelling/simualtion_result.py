@@ -1,7 +1,7 @@
 try:
     import matplotlib.pyplot as plt
 except:
-    print('Failed to import matplotlib. Make sure that is properly installed')
+    print('Failed to import matplotlib. Make sure that it is properly installed')
 from casadi import horzcat, vertcat
 
 

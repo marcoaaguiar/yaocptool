@@ -8,10 +8,9 @@ import collections
 import copy
 from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec
 
-from yaocptool import remove_variables_from_vector
+from yaocptool import remove_variables_from_vector, config
 from yaocptool.modelling import DAESystem
 # TODO: Check linearize method
-# TODO: Create find_equilibrium method
 from yaocptool.modelling.simualtion_result import SimulationResult
 
 
@@ -578,6 +577,28 @@ class SystemModel:
 
     # endregion
 
+    def find_algebraic_variable(self, x, u, guess=None, t=0.0, p=None, theta_value=None, rootfinder_options=None):
+        if guess is None:
+            guess = [1] * self.n_y
+        if rootfinder_options is None:
+            rootfinder_options = dict(nlpsol='ipopt', nlpsol_options=config.SOLVER_OPTIONS['nlpsol_options'])
+        if p is None:
+            p = []
+        if theta_value is None:
+            theta_value = []
+
+        # replace known variables
+        alg = self.alg
+        known_var = vertcat(self.t_sym, self.x_sym, self.u_sym, self.p_sym, self.theta_sym)
+        known_var_values = vertcat(t, x, u, p, theta_value)
+        alg = substitute(alg, known_var, known_var_values)
+
+        f_alg = Function('f_alg', [self.y_sym], [alg])
+
+        rf = rootfinder('rf_algebraic_variable', 'nlpsol', f_alg, rootfinder_options)
+        res = rf(guess)
+        return res
+
     def linearize(self, x_bar, u_bar):
         """
         Returns a linearized model at a given points (X_BAR, U_BAR)
@@ -617,7 +638,7 @@ class SystemModel:
         :return: (DM, DM, DM)
         """
         if rootfinder_options is None:
-            rootfinder_options = dict(nlpsol='ipopt', nlpsol_options={})
+            rootfinder_options = dict(nlpsol='ipopt', nlpsol_options=config.SOLVER_OPTIONS['nlpsol_options'])
         if guess is None:
             guess = [1] * (self.n_x + self.n_y + self.n_u)
         if isinstance(additional_eqs, list):

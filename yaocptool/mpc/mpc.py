@@ -1,7 +1,7 @@
 import itertools
 import time
 
-from casadi import vertcat, DM, vec
+from casadi import vertcat, DM
 
 from yaocptool.estimation.estimator_abstract import EstimatorAbstract
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
@@ -173,8 +173,7 @@ class MPC:
         """
         Run the plant with a fixed control, can be used for initialization purposes.
 
-        :param list|DM|float
-        |int u: control value
+        :param list|DM|float |int u: control value
         :param int iterations: the number of iterations that the MPC will run.
         :param verbosity: indicates if it should print information about the iterations
         """
@@ -214,7 +213,7 @@ class MPC:
             t_k, y_k, u_k = self.get_measurement()
 
             # estimate the states out of the measurement
-            x_k = self.get_states(t_k, y_k, u_k)
+            x_k, p_k = self.get_states(t_k, y_k, u_k)
             if verbosity:
                 print('Measurement: {}'.format(y_k))
                 print('Estimated state: {}'.format(x_k))

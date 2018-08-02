@@ -59,13 +59,45 @@ class UnscentedKalmanFilter(EstimatorAbstract):
 
         EstimatorAbstract.__init__(self, **kwargs)
 
+        # Data set
         self.dataset = DataSet(name=self.model.name)
         self.dataset.data['x']['size'] = self.model.n_x
-        self.dataset.data['x']['names'] = ['est_' + self.model.x_sym[i].name() for i in range(self.model.n_x)]
+        self.dataset.data['x']['names'] = ['ukf_' + self.model.x_sym[i].name() for i in range(self.model.n_x)]
+
+        self.dataset.data['y']['size'] = self.model.n_y
+        self.dataset.data['y']['names'] = ['ukf_' + self.model.y_sym[i].name() for i in range(self.model.n_y)]
 
         self.dataset.data['P']['size'] = self.model.n_x ** 2
-        self.dataset.data['P']['names'] = ['P_' + str(i) + str(j) for i in range(self.model.n_x) for j in
+        self.dataset.data['P']['names'] = ['ukf_P_' + str(i) + str(j) for i in range(self.model.n_x) for j in
                                            range(self.model.n_x)]
+
+        self.dataset.data['P_y']['size'] = self.model.n_y ** 2
+        self.dataset.data['P_y']['names'] = ['ukf_P_y_' + str(i) + str(j) for i in range(self.model.n_y) for j in
+                                             range(self.model.n_y)]
+
+        self.dataset.data['meas']['size'] = self.n_meas
+        self.dataset.data['meas']['names'] = ['ukf_meas_' + str(i) for i in range(self.n_meas)]
+
+        # Choose the UKF implementation
+        if self.implementation == 'standard':
+            self.estimate = self._estimate_standard_ukf
+        else:
+            self.estimate = self._estimate_square_root_ukf
+
+    @property
+    def n_meas(self):
+        """ Number of measurements
+
+        :rtype: int
+        :return: Number of measurements
+        """
+        if self.h_function is not None:
+            return self.h_function.numel_out()
+        elif self.c_matrix is not None:
+            return self.c_matrix.shape[0]
+        else:
+            raise Exception("The estimator has no measurements information, neither 'h_function' or 'c_matrix' "
+                            "were given.")
 
     def _fix_types(self):
         self.x_mean = vertcat(self.x_mean)
@@ -90,6 +122,9 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         return True
 
     def estimate(self, t_k, y_k, u_k):
+        raise Exception('This function should have been replaced')
+
+    def _estimate_standard_ukf(self, t_k, y_k, u_k):
         if not self._checked:
             self._check()
             self._checked = True
@@ -97,28 +132,108 @@ class UnscentedKalmanFilter(EstimatorAbstract):
             self._fix_types()
             self._types_fixed = True
 
-        if self.implementation == 'standard':
-            x_mean, p_k = self._estimate_standard_ukf(t_k, y_k, u_k)
-        else:
-            x_mean, p_k = self._estimate_square_root_ukf(t_k, y_k, u_k)
+        x_mean = self.x_mean
+        x_cov = self.p_k
+
+        # obtain the weights
+        sigma_points, weights_m, weights_c = self._get_sigma_points_and_weights(x_mean, x_cov)
+
+        # Obtain the unscented transformation points via simulation
+        simulation_results = []
+        x_ut_list = []
+        y_ut_list = []
+        x_aug_ut_list = []
+        meas_ut_list = []
+        for i in range(self.n_sigma_points):
+            x_0_i = sigma_points[i]
+            simulation_results_i = self.model.simulate(x_0=x_0_i, t_0=self.t, t_f=self.t + self.t_s,
+                                                       u=u_k, p=self.p, theta=self.theta, y_0=self.y_guess)
+            simulation_results.append(simulation_results_i)
+            x_ut_list.append(simulation_results_i.final_condition()[0])
+            y_ut_list.append(simulation_results[i].final_condition()[1])
+            x_aug_ut_list.append(vertcat(x_ut_list[-1], y_ut_list[-1]))
+
+            meas_ut_list.append(self._get_measurement_from_prediction(x_ut_list[i],
+                                                                      y_ut_list[i], u_k))
+
+        # Obtain the means
+        x_aug_pred = sum([weights_m[i] * x_aug_ut_list[i] for i in range(self.n_sigma_points)])
+        x_pred = x_aug_pred[:self.model.n_x]
+        y_pred = x_aug_pred[self.model.n_y:]
+        meas_pred = sum([weights_m[i] * meas_ut_list[i] for i in range(self.n_sigma_points)])
+
+        # Compute the covariances
+        cov_x_aug_pred = sum(
+            [weights_c[i] * mtimes((x_aug_ut_list[i] - x_aug_pred),
+                                   (x_aug_ut_list[i] - x_aug_pred).T)
+             for i in range(self.n_sigma_points)])
+        cov_x_aug_pred[:self.model.n_x, :self.model.n_x] += self.r_v
+
+        cov_meas_pred = sum([weights_c[i] * mtimes((meas_ut_list[i] - meas_pred),
+                                                   (meas_ut_list[i] - meas_pred).T)
+                             for i in range(self.n_sigma_points)]) + self.r_n
+
+        cov_xmeas_pred = sum([weights_c[i] * mtimes((x_aug_ut_list[i] - x_aug_pred),
+                                                    (meas_ut_list[i] - meas_pred).T)
+                              for i in range(self.n_sigma_points)])
+
+        # Calculate the gain
+        k_gain = solve(cov_meas_pred.T, cov_xmeas_pred.T).T
+
+        # Correct prediction of the state estimation
+        x_mean = x_aug_pred + mtimes(k_gain, (y_k - meas_pred))
+        meas_corr = self._get_measurement_from_prediction(x_mean[:self.model.n_x], x_mean[self.model.n_x:], u_k)
+        print('Predicted state: {}'.format(x_pred))
+        print('Prediction error: {}'.format(y_k - meas_pred))
+        print('Correction: {}'.format(mtimes(k_gain, (y_k - meas_pred))))
+        print('Corrected state: {}'.format(x_mean))
+        print('Measurement: {}'.format(y_k))
+        print('Corrected Meas.: {}'.format(meas_corr))
+
+        # Correct covariance prediction
+        cov_x_aug = cov_x_aug_pred - mtimes(k_gain, mtimes(cov_meas_pred, k_gain.T))
 
         self.x_mean = x_mean
-        self.p_k = p_k
+        self.p_k = cov_x_aug
 
+        # Save variables in local object
+        self._x_aug = x_mean
+        self.x_mean = x_mean[:self.model.n_x]
+        self._p_k_aug = cov_x_aug_pred
+        self.p_k = cov_x_aug[:self.model.n_x, :self.model.n_x]
+
+        # Save in the data set
         self.dataset.insert_data('x', self.x_mean, t_k)
+        self.dataset.insert_data('y', x_mean[self.model.n_x:], t_k)
+        self.dataset.insert_data('meas', meas_corr, t_k)
         self.dataset.insert_data('P', vec(self.p_k), t_k)
+        self.dataset.insert_data('P_y', cov_x_aug[self.model.n_x:, self.model.n_x:], t_k)
 
-        return x_mean, p_k
+        return x_mean, cov_x_aug
 
-    def _get_measurement_from_prediction(self, x, y, u):
-        if self.h_function is not None:
-            measurement_prediction = self.h_function(x, y, u)
-        elif self.c_matrix is not None:
-            d_matrix = 0. if self.d_matrix is None else self.d_matrix
-            measurement_prediction = mtimes(self.c_matrix, vertcat(x, y)) + mtimes(d_matrix, u)
-        else:
-            raise ValueError('Neither a measurement function "h_function" or a measurement matrix "c_matrix" was given')
-        return measurement_prediction
+    def _estimate_square_root_ukf(self, t_k, y_k, u_k):
+        raise NotImplementedError
+
+    def cholupdate(self, R, x, sign):
+        import numpy as np
+        p = np.size(x)
+        x = x.T
+        for k in range(p):
+            if sign == '+':
+                r = np.sqrt(R[k, k] ** 2 + x[k] ** 2)
+            elif sign == '-':
+                r = np.sqrt(R[k, k] ** 2 - x[k] ** 2)
+            else:
+                raise ValueError("sign can be '-' or '+', value given = {}".format(sign))
+            c = r / R[k, k]
+            s = x[k] / R[k, k]
+            R[k, k] = r
+            if sign == '+':
+                R[k, k + 1:p] = (R[k, k + 1:p] + s * x[k + 1:p]) / c
+            elif sign == '-':
+                R[k, k + 1:p] = (R[k, k + 1:p] - s * x[k + 1:p]) / c
+            x[k + 1:p] = c * x[k + 1:p] - s * R[k, k + 1:p]
+        return R
 
     def _get_sigma_points_and_weights(self, x_mean, x_cov):
         # Initialize variables
@@ -151,81 +266,13 @@ class UnscentedKalmanFilter(EstimatorAbstract):
 
         return sigma_points, weights_m, weights_c
 
-    def _priori_update_standard(self, x_mean, x_cov, u, p, theta):
-        # obtain the weights
-        sigma_points, weights_m, weights_c = self._get_sigma_points_and_weights(x_mean, x_cov)
-
-        # Perform predictions via simulation
-        simulation_results = []
-        x_cal_x_k_at_k_minus_1 = []
-        y_alg_cal_x_k_at_k_minus_1 = []
-        for i in range(self.n_sigma_points):
-            x_0_i = sigma_points[i]
-            simulation_results_i = self.model.simulate(x_0=x_0_i, t_0=self.t, t_f=self.t + self.t_s,
-                                                       u=u, p=p, theta=theta, y_0=self.y_guess)
-            simulation_results.append(simulation_results_i)
-            x_cal_x_k_at_k_minus_1.append(simulation_results_i.final_condition()[0])
-            y_alg_cal_x_k_at_k_minus_1.append(simulation_results[i].final_condition()[1])
-
-        # Obtain the statistics
-        x_hat_k_minus = sum([weights_m[i] * x_cal_x_k_at_k_minus_1[i] for i in range(self.n_sigma_points)])
-
-        p_k_minus = sum(
-            [weights_c[i] * mtimes((x_cal_x_k_at_k_minus_1[i] - x_hat_k_minus),
-                                   (x_cal_x_k_at_k_minus_1[i] - x_hat_k_minus).T)
-             for i in range(self.n_sigma_points)]) + self.r_v
-
-        y_cal_k_at_k_minus_1 = []
-        for i in range(self.n_sigma_points):
-            y_cal_k_at_k_minus_1.append(self._get_measurement_from_prediction(x_cal_x_k_at_k_minus_1[i],
-                                                                              y_alg_cal_x_k_at_k_minus_1[i], u))
-
-        y_hat_k_minus = sum([weights_m[i] * y_cal_k_at_k_minus_1[i] for i in range(self.n_sigma_points)])
-
-        p_yk_yk = sum([weights_c[i] * mtimes((y_cal_k_at_k_minus_1[i] - y_hat_k_minus),
-                                             (y_cal_k_at_k_minus_1[i] - y_hat_k_minus).T)
-                       for i in range(self.n_sigma_points)]) + self.r_n
-
-        p_xk_yk = sum([weights_c[i] * mtimes((x_cal_x_k_at_k_minus_1[i] - x_hat_k_minus),
-                                             (y_cal_k_at_k_minus_1[i] - y_hat_k_minus).T)
-                       for i in range(self.n_sigma_points)])
-
-        # k_gain = mtimes(p_xk_yk, inv(p_yk_yk))
-        k_gain = solve(p_yk_yk.T, p_xk_yk.T).T
-
-        return x_hat_k_minus, p_k_minus, y_hat_k_minus, p_yk_yk, k_gain
-
-    def _estimate_standard_ukf(self, t_k, y_k, u_k):
-        x_mean = self.x_mean
-        x_cov = self.p_k
-
-        (x_hat_k_minus, p_k_minus,
-         y_hat_k_minus, p_yk_yk, k_gain) = self._priori_update_standard(x_mean, x_cov, u=u_k,
-                                                                        p=self.p, theta=self.theta)
-
-        x_hat_k = x_hat_k_minus + mtimes(k_gain, (y_k - y_hat_k_minus))
-        p_k = p_k_minus - mtimes(k_gain, mtimes(p_yk_yk, k_gain.T))
-
-        return x_hat_k, p_k
-
-    def _estimate_square_root_ukf(self, t_k, y_k, u_k):
-        raise NotImplementedError
-
-    def cholupdate(self, R, x, sign):
-        import numpy as np
-        p = np.size(x)
-        x = x.T
-        for k in range(p):
-            if sign == '+':
-                r = np.sqrt(R[k, k] ** 2 + x[k] ** 2)
-            elif sign == '-':
-                r = np.sqrt(R[k, k] ** 2 - x[k] ** 2)
-            c = r / R[k, k]
-            s = x[k] / R[k, k]
-            R[k, k] = r
-            if sign == '+':
-                R[k, k + 1:p] = (R[k, k + 1:p] + s * x[k + 1:p]) / c
-            elif sign == '-':
-                R[k, k + 1:p] = (R[k, k + 1:p] - s * x[k + 1:p]) / c
-            x[k + 1:p] = c * x[k + 1:p] - s * R[k, k + 1:p]
-        return R
+    def _get_measurement_from_prediction(self, x, y, u):
+        if self.h_function is not None:
+            measurement_prediction = self.h_function(x, y, u)
+        elif self.c_matrix is not None:
+            measurement_prediction = mtimes(self.c_matrix, vertcat(x, y))
+            if self.d_matrix is not None:
+                measurement_prediction = measurement_prediction + mtimes(self.d_matrix, u)
+        else:
+            raise ValueError('Neither a measurement function "h_function" or a measurement matrix "c_matrix" was given')
+        return measurement_prediction

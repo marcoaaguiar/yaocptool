@@ -1,14 +1,15 @@
-from yaocptool.estimation.unscented_kalman_filter import UnscentedKalmanFilter
+from casadi import sqrt, DM
+
+from yaocptool.estimation.extended_kalman_filter import ExtendedKalmanFilter
 from yaocptool.methods import DirectMethod
 from yaocptool.modelling import SystemModel, OptimalControlProblem
-from casadi import sqrt, DM, diag
 from yaocptool.mpc import PlantSimulation, MPC
 
 ######################
 #  Main Variables    #
 ######################
 # Measurement matrix
-c_matrix = DM([[0, 1]])
+c_matrix = DM([[1, 0]])
 
 # initial state and control
 x_0 = DM([1, 1])
@@ -17,7 +18,7 @@ initial_control = [0.01]
 # Prediction window, finite elements, and sampling time
 prediction_window = 20.
 finite_elements = 20
-t_s = prediction_window/finite_elements
+t_s = prediction_window / finite_elements
 
 ######################
 #      Model         #
@@ -81,12 +82,12 @@ solution_method = DirectMethod(problem,
 estimator_model = model.get_copy()
 
 # Create the estimator
-estimator = UnscentedKalmanFilter(model=estimator_model, t_s=t_s,
-                                  p_k=0.0001 * DM.eye(estimator_model.n_x),
-                                  x_mean=x_0 * 1.1, c_matrix=c_matrix,
-                                  r_v=0.00001 * DM.eye(estimator_model.n_x),
-                                  r_n=0.00001 * DM.eye(1),
-                                  )
+estimator = ExtendedKalmanFilter(model=estimator_model, t_s=t_s,
+                                 p_k=0.0001 * DM.eye(estimator_model.n_x),
+                                 x_mean=x_0 * 1.1, c_matrix=c_matrix,
+                                 r_v=0.00001 * DM.eye(estimator_model.n_x),
+                                 r_n=0.00001 * DM.eye(1),
+                                 )
 
 ######################
 #      Plant         #
@@ -112,4 +113,5 @@ mpc.run_fixed_control_with_estimator(initial_control, 20)
 # Run the plant with estimator and calculating the control
 mpc.run(100)
 
-mpc.plant.simulation_results.plot([{'x': 'all'}, {'u': 'all'}])
+figs = plant.dataset.plot([{'x': 'all'}, {'u': 'all'}])
+estimator.dataset.plot({'x': 'all'}, figures=figs)

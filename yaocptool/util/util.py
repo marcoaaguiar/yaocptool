@@ -1,4 +1,4 @@
-from casadi import is_equal, DM, vec, vertcat, substitute
+from casadi import is_equal, DM, vec, vertcat, substitute, SX, mtimes, horzcat, integrator
 
 
 def find_variables_indices_in_vector(var, vector):
@@ -98,3 +98,27 @@ def blockdiag(matrices_list):
         index_2 += m.size2()
 
     return matrix
+
+
+def expm(a_matrix):
+    """Since casadi does not have native support for matrix exponential, this is a trick to computing it.
+    It can be quite expensive, specially for large matrices.
+    THIS ONLY SUPPORT NUMERIC MATRICES, DOES NOT SUPPORT SYMBOLIC VARIABLES.
+
+    :param DM a_matrix: matrix
+    :return:
+    """
+    dim = a_matrix.shape[1]
+
+    # Create the integrator
+    x = SX.sym('x', a_matrix.shape[1])
+    ode = mtimes(a_matrix, x)
+    dae_system_dict = {'x': x, 'ode': ode}
+    integrator_ = integrator("integrator", "cvodes", dae_system_dict, {'tf': 1})
+
+    res = []
+    for col in range(a_matrix.shape[1]):
+        x_0 = DM.eye(dim)[:, col]
+        res.append(integrator_(x0=x_0)['xf'])
+
+    return horzcat(*res)

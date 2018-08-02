@@ -87,9 +87,9 @@ class OptimalControlProblem:
         self.time_g_eq = []
         self.time_g_ineq = []
 
-        self.L = DM(0.)  # type: DM # Integral cost
-        self.V = DM(0.)  # type: DM # Final cost
-        self.S = DM(0.)  # type: DM # Finite element final cost
+        self.L = DM(0.)  # Integral cost
+        self.V = DM(0.)  # Final cost
+        self.S = DM(0.)  # Finite element final cost
         self.H = DM(0.)
 
         self.last_u = None
@@ -115,35 +115,35 @@ class OptimalControlProblem:
 
     @property
     def n_h_final(self):
-        return self.h_final.size1()
+        return self.h_final.shape[0]
 
     @property
     def n_h_initial(self):
-        return self.h_initial.size1()
+        return self.h_initial.shape[0]
 
     @property
     def n_g_ineq(self):
-        return self.g_ineq.size1()
+        return self.g_ineq.shape[0]
 
     @property
     def n_g_eq(self):
-        return self.g_eq.size1()
+        return self.g_eq.shape[0]
 
     @property
     def n_eta(self):
-        return self.eta.size1()
+        return self.eta.shape[0]
 
     @property
     def n_p_opt(self):
         if isinstance(self.p_opt, list):
             self.p_opt = vertcat(*self.p_opt)
-        return self.p_opt.size1()
+        return self.p_opt.shape[0]
 
     @property
     def n_theta_opt(self):
         if isinstance(self.theta_opt, list):
             self.theta_opt = vertcat(*self.theta_opt)
-        return self.theta_opt.size1()
+        return self.theta_opt.shape[0]
 
     @property
     def yz_max(self):

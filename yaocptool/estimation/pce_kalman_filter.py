@@ -130,8 +130,9 @@ class PCEKalmanFilter(EstimatorAbstract):
         if self.h_function is not None:
             measurement_prediction = self.h_function(x, y, u)
         elif self.c_matrix is not None:
-            d_matrix = 0. if self.d_matrix is None else self.d_matrix
-            measurement_prediction = mtimes(self.c_matrix, vertcat(x, y)) + mtimes(d_matrix, u)
+            measurement_prediction = mtimes(self.c_matrix, vertcat(x, y))
+            if self.d_matrix is not None:
+                measurement_prediction = measurement_prediction + mtimes(self.d_matrix, u)
         else:
             raise ValueError('Neither a measurement function "h_function" or a measurement matrix "c_matrix" was given')
         return measurement_prediction

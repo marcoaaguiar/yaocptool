@@ -77,7 +77,7 @@ pce_converter = PCEConverter(problem)
 pce_converter.stochastic_variables.append(a * sqrt(2 * g * h_1))
 pce_converter.stochastic_variables.append(h_1)
 
-# Transform the SOCP into a OCP
+# Transform the Stochastic OCP into a OCP
 pce_problem = pce_converter.convert_socp_to_ocp_with_pce()
 
 ######################

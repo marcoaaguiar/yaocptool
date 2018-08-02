@@ -2,6 +2,7 @@ from casadi import DM, vertcat, mtimes
 import numpy
 from yaocptool.modelling import SystemModel, DataSet
 
+
 class Plant:
     def __init__(self):
         self.name = 'Plant'
@@ -33,11 +34,16 @@ class PlantSimulation(Plant):
 
         :param SystemModel model: simulation model
         :param DM x_0: initial condition
-        :param DM t_s: (default: 0) sampling time
+        :param DM t_s: (default: 1) sampling time
         :param DM u: (default: 0) initial control
         :param DM y_guess: initial guess for algebraic variables for simulation
         :param DM t_0: (default: 0) initial time
         :param dict integrator_options: integrator options
+        :param bool has_noise: Turn on/off the process/measurement noise
+        :param DM r_n: Measurement noise covariance matrix
+        :param DM r_v: Process noise covariance matrix
+        :param noise_seed: Seed for the random number generator used to create noise. Use the same seed for the
+        repeatability in the experiments.
         """
         Plant.__init__(self)
         self.model = model
@@ -61,13 +67,12 @@ class PlantSimulation(Plant):
         self.has_noise = False
         self.r_n = DM(0.)
         self.r_v = DM(0.)
+        self.noise_seed = None
 
         self.integrator_options = None
 
         self.simulation_results = None
         self.dataset = DataSet(name='Plant')
-
-        self.seed = None
 
         if 't_0' in kwargs:
             self.t = kwargs['t_0']
@@ -83,8 +88,8 @@ class PlantSimulation(Plant):
         self._initialize_dataset()
 
         if self.has_noise:
-            if self.seed is not None:
-                numpy.random.seed(self.seed)
+            if self.noise_seed is not None:
+                numpy.random.seed(self.noise_seed)
             self._include_noise_in_the_model()
 
     def _initialize_dataset(self):
@@ -112,29 +117,38 @@ class PlantSimulation(Plant):
         """
         # perform the simulation
         if self.has_noise:
-            v_rand = DM(numpy.random.multivariate_normal([0] * self.r_v.size1(), self.r_v))
+            v_rand = DM(numpy.random.multivariate_normal([0] * self.r_v.shape[0], self.r_v))
             if self.p is None:
                 p = v_rand
             else:
                 p = vertcat(self.p, v_rand)
         else:
+            v_rand = None
             p = self.p
 
-        sim_result = self.model.simulate(x_0=self.x,
-                                         t_0=self.t,
-                                         t_f=self.t + self.t_s,
-                                         y_0=self.y_guess,
-                                         u=self.u,
-                                         p=p,
-                                         theta=self.theta,
-                                         integrator_options=self.integrator_options)
+        # Simulation (Try to do the simulation with disturbance, if not able to use the disturbance, try again without)
+        try:
+            sim_result = self.model.simulate(x_0=self.x, t_0=self.t, t_f=self.t + self.t_s, y_0=self.y_guess, u=self.u,
+                                             p=p, theta=self.theta, integrator_options=self.integrator_options)
+        except RuntimeError as error:
+            if self.has_noise:
+                if self.p is None:
+                    p = 0 * v_rand
+                else:
+                    p = vertcat(self.p, 0 * v_rand)
+
+                sim_result = self.model.simulate(x_0=self.x, t_0=self.t, t_f=self.t + self.t_s, y_0=self.y_guess,
+                                                 u=self.u, p=p, theta=self.theta,
+                                                 integrator_options=self.integrator_options)
+            else:
+                raise error
 
         x, y, u = sim_result.final_condition()
         self.t += self.t_s
         self.x = x
         measurement_wo_noise = mtimes(self.c_matrix, vertcat(x, y))
         if self.has_noise:
-            n_rand = DM(numpy.random.multivariate_normal([0] * self.r_n.size1(), self.r_n))
+            n_rand = DM(numpy.random.multivariate_normal([0] * self.r_n.shape[0], self.r_n))
             measurement = measurement_wo_noise + n_rand
         else:
             measurement = measurement_wo_noise
@@ -168,5 +182,7 @@ class PlantSimulation(Plant):
         self.u = u
 
     def _include_noise_in_the_model(self):
-        v = self.model.create_parameter('v', self.r_v.size1())
-        self.model.ode[:self.r_v.size1()] = self.model.ode[:self.r_v.size1()] + v
+        v = self.model.create_parameter('v', self.r_v.shape[0])
+        ode = self.model.ode[:]
+        ode[:self.r_v.shape[0]] = ode[:self.r_v.shape[0]] + v
+        self.model.ode = ode

@@ -4,13 +4,11 @@ from functools import partial
 try:
     import matplotlib.pyplot as plt
 except:
-    print('Failed to import matplotlib. Make sure that is properly installed')
+    print('Failed to import matplotlib. Make sure that it is properly installed')
 
 from casadi import horzcat, DM
 from typing import List
 
-
-# TODO: Fix plot u data
 
 class OptimizationResult:
     def __init__(self, **kwargs):

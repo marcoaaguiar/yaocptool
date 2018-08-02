@@ -321,7 +321,16 @@ class SolutionMethodsBase(object):
         return solution_dict
 
     def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
-        # type: (object, list, dict, list) -> OptimizationResult
+        """
+
+        :param initial_guess: Initial guess
+        :param p: Parameters values
+        :param theta: Theta values
+        :param x_0: Initial condition value
+        :param last_u: Last control value
+        :param initial_guess_dict: Initial guess as dict
+        :return: OptimizationResult
+        """
         raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0, last_u=last_u,
                                            initial_guess_dict=initial_guess_dict)
         return self.create_optimization_result(raw_solution_dict, p, theta, x_0=x_0)

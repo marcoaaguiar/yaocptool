@@ -5,6 +5,17 @@ from yaocptool import convert_expr_from_tau_to_time, config
 
 class DAESystem:
     def __init__(self, **kwargs):
+        """
+
+        :param ode: ODE equations
+        :param alg: Algebraic equations
+        :param x: State variables
+        :param y: Algebraic variables
+        :param p: Parameters
+        :param t: Time variable
+        :param tau: Tau variable
+        """
+
         self.ode = vertcat([])
         self.alg = vertcat([])
         self.x = vertcat([])
@@ -89,7 +100,7 @@ class DAESystem:
 
         integrator_ = self._create_integrator(opts, integrator_type)
         call = {'x0': x_0, 'p': p}
-        if y_0 is not None:
+        if self.is_dae and y_0 is not None:
             call['z0'] = y_0
 
         return integrator_(**call)
@@ -102,17 +113,24 @@ class DAESystem:
             if k not in options:
                 options[k] = config.INTEGRATOR_OPTIONS[k]
 
-        if integrator_type == 'implicit':
+        if (integrator_type == 'implicit' and self.is_ode) or integrator_type == 'cvodes':
+            integrator_ = integrator("integrator", "cvodes", self.dae_system_dict, options)
+        elif (integrator_type == 'implicit' and self.is_dae) or integrator_type == 'idas':
+            integrator_ = integrator("integrator", "idas", self.dae_system_dict, options)
+        elif integrator_type == 'rk':
+            integrator_ = integrator("integrator", "rk", self.dae_system_dict, options)
+        elif integrator_type == 'collocation':
+            integrator_ = integrator("integrator", "collocation", self.dae_system_dict, options)
+        elif integrator_type == 'explicit':
             if self.is_ode:
-                integrator_ = integrator("integrator", "cvodes", self.dae_system_dict, options)
-            else:
-                integrator_ = integrator("integrator", "idas", self.dae_system_dict, options)
-        else:
-            if self.is_ode:
-                integrator_ = self._create_explicit_integrator('explicitIntegrator', 'rk4', self.dae_system_dict,
+                integrator_ = self._create_explicit_integrator('explicit_integrator', 'rk4', self.dae_system_dict,
                                                                options)
             else:
-                raise Exception('explicit integrator not implemented')
+                raise Exception('Explicit integrator not implemented for DAE systems')
+        else:
+            raise ValueError("'integrator_type'={} not available. Options available are: 'cvodes', 'idas', implicit "
+                             "(default, auto-select between 'idas' and 'cvodes'), 'rk', 'collocation', 'explicit' "
+                             "(own 4th order Runge-Kutta implementation).")
         return integrator_
 
     @staticmethod

@@ -5,7 +5,7 @@ try:
     import matplotlib.pyplot as plt
 except:
     print('Failed to import matplotlib. Make sure that is properly installed')
-from casadi import horzcat, vertcat
+from casadi import horzcat, vertcat, DM
 
 
 class DataSet:
@@ -18,7 +18,7 @@ class DataSet:
         ('plot' | 'step')
         """
         self.name = name
-        self.data = defaultdict(partial(dict, [('time', []), ('names', None), ('values', []), ('size', None)]))
+        self.data = defaultdict(partial(dict, [('time', DM([])), ('names', None), ('values', DM([])), ('size', None)]))
         self.plot_style = 'step'
 
         for (k, v) in kwargs.items():
@@ -27,8 +27,13 @@ class DataSet:
     def insert_data(self, entry, value, time):
         value = vertcat(value)
 
-        self.data[entry]['values'] = horzcat(self.data[entry]['values'], value)
-        self.data[entry]['time'] = horzcat(self.data[entry]['time'], time)
+        # TODO: Here is a correction for a BUG on CASADI horzcat with DM([]), refactor when CASADI corrects this
+        if self.data[entry]['values'].numel() > 0:
+            self.data[entry]['values'] = horzcat(self.data[entry]['values'], value)
+            self.data[entry]['time'] = horzcat(self.data[entry]['time'], time)
+        else:
+            self.data[entry]['values'] = value
+            self.data[entry]['time'] = time
 
         if self.data[entry]['size'] is None:
             self.data['entry']['size'] = value.size1()
