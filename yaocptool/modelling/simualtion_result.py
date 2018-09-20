@@ -1,7 +1,7 @@
 try:
     import matplotlib.pyplot as plt
 except:
-    print('Failed to import matplotlib. Make sure that is properly installed')
+    print('Failed to import matplotlib. Make sure that it is properly installed')
 from casadi import horzcat, vertcat
 
 
@@ -54,21 +54,25 @@ class SimulationResult:
         self.t_f = other_sim_result.t_f
         self.finite_elements += other_sim_result.finite_elements
 
-        self.x.extend(other_sim_result.x)
+        self.x.extend(other_sim_result.x[1:])
         self.y.extend(other_sim_result.y)
         self.u.extend(other_sim_result.u)
         self.t = vertcat(self.t, other_sim_result.t[1:])
 
-    def plot(self, plot_list):
+    def plot(self, plot_list, figures=None, show=True):
         """Plot the simulation results.
         It takes as input a list of dictionaries, each dictionary represents a plot.  In the dictionary use keyword 'x'
         to specify which states you want to print, the value of the dictionary should be a list of state to be printed.
         The keywords that are accepted are: 'x', 'y', 'u'
         :param list plot_list: List of dictionaries to generate the plots.
+        :param list figures: list of figures to be plotted on top (optional)
+        :param bool show: if the plotted figures should be shown after plotting (optional, default=True).
         """
 
         if isinstance(plot_list, dict):
             plot_list = [plot_list]
+
+        used_figures = []
 
         x_values = self.x
         y_values = self.y
@@ -79,7 +83,13 @@ class SimulationResult:
         u_values = horzcat(*[horzcat(*u_values[l]) for l in range(self.finite_elements)])
 
         for k, entry in enumerate(plot_list):
-            fig = plt.figure(k)
+            if figures is not None:
+                fig = plt.figure(figures[k].number)
+            else:
+                fig = plt.figure(k)
+
+            used_figures.append(fig)
+
             lines = []
             # Plot optimization x data
             if 'x' in entry:
@@ -113,7 +123,11 @@ class SimulationResult:
             axes = fig.axes
             axes[0].ticklabel_format(useOffset=False)
             plt.legend()
-        plt.show()
+        plt.interactive(True)
+        if show:
+            plt.show()
+
+        return used_figures
 
     @staticmethod
     def _plot_entry(t_vector, data_vector, row, label='', plot_style='plot'):

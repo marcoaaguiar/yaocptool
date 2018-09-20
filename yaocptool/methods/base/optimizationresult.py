@@ -4,19 +4,16 @@ from functools import partial
 try:
     import matplotlib.pyplot as plt
 except:
-    print('Failed to import matplotlib. Make sure that is properly installed')
+    print('Failed to import matplotlib. Make sure that it is properly installed')
 
 from casadi import horzcat, DM
-from typing import List
 
-
-# TODO: Fix plot u data
 
 class OptimizationResult:
     def __init__(self, **kwargs):
         # Raw Information
         self.raw_solution_dict = {}
-        self.raw_decision_variables = None  # type: List[DM]
+        self.raw_decision_variables = None  # type: list
 
         # Data from the method
         self.method_name = ''  # type: str
@@ -195,7 +192,7 @@ class OptimizationResult:
                 axes[0].ticklabel_format(useOffset=False)
                 plt.legend(ncol=4)
 
-            if show:
-                plt.show()
+        if show:
+            plt.show()
 
         return used_figures

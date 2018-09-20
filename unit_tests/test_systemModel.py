@@ -177,9 +177,6 @@ class TestSystemModel(TestCase):
     def test_convert_expr_from_tau_to_time(self):
         pass
 
-    def test_convert_dae_sys_from_tau_to_time(self):
-        pass
-
     def test_merge(self):
         pass
 

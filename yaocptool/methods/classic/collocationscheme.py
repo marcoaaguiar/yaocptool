@@ -5,12 +5,10 @@ Created on Thu Jul 13 17:08:34 2017
 @author: marco
 """
 from collections import defaultdict
-# noinspection PyUnresolvedReferences
-from typing import List, Dict
-from casadi import DM, MX, repmat, vertcat, Function, jacobian, is_equal, inf
 from itertools import chain
 
-from yaocptool import convert_expr_from_tau_to_time
+from casadi import DM, MX, repmat, vertcat, Function, jacobian, is_equal, inf
+
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 
@@ -82,7 +80,7 @@ class CollocationScheme(DiscretizationSchemeBase):
     def create_nlp_symbolic_variables(self):
         """
         Create the symbolic variables that will be used by the NLP problem
-        :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX, MX, List[MX])
+        :rtype: tuple
         """
         x_var = []
         y_var = []
@@ -356,17 +354,17 @@ class CollocationScheme(DiscretizationSchemeBase):
     def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None,
                                   start_at_t_0=False):
         """
-        :param x: List[List[MX]]
-        :param y: List[List[MX]]
-        :param u: List[List[MX]]
-        :type time_dict: Dict(int, List(float)) Dictionary of simulations times, where the KEY is the
+        :param list x:
+        :param list y:
+        :param list u:
+        :param dict time_dict:  Dictionary of simulations times, where the KEY is the
                                                 finite_element and the VALUE list a list of desired times
                                                 example : {1:{'t_0': 0.0, 'x':[0.0, 0.1, 0.2], y:[0.2]}}
         :param p: list
         :param theta: dict
         :param start_at_t_0: bool If TRUE the simulations in each finite_element will start at the element t_0,
                                   Otherwise the simulation will start the end of the previous element
-        :param functions: Dict[str, Function|Dict[int] dictionary of Functions to be evaluated, KEY is the function
+        :param dict functions: Dictionary of Functions to be evaluated, KEY is the function
                                               identifier, VALUE is a CasADi Function with model.all_sym as input
          """
 

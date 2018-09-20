@@ -1,25 +1,25 @@
 from warnings import warn
 
-from casadi import SX, MX, DM, vertcat, collocation_points, \
+from casadi import SX, MX, vertcat, collocation_points, \
     vec, nlpsol, dot, gradient, jacobian, mtimes, reshape, repmat
+
 from yaocptool import config, create_constant_theta, join_thetas
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
 from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
-
-
-# TODO: fix PEP 8
+from yaocptool.modelling import OptimalControlProblem
 
 
 class SolutionMethodsBase(object):
     def __init__(self, problem, **kwargs):
         """
-        :param problem: OptimalControlProblem
-        :param integrator_type: str
-        :param solution_method: str
-        :param degree: int
-        :param discretization_scheme: str
+        :param OptimalControlProblem problem:
+        :param str integrator_type: str
+        :param str solution_method: str
+        :param str degree: int
+        :param str discretization_scheme: str
+        :param str initial_guess_heuristic: 'simulation' or 'problem_info'
         """
         self.solver = None
         # self._problem = problem  # type: OptimalControlProblem
@@ -161,10 +161,10 @@ class SolutionMethodsBase(object):
 
         self.problem.H = self.problem.L + dot(lamb, self.model.ode) + dot(nu, self.model.all_alg)
 
-        ldot = -gradient(self.problem.H, self.model.x_sym)
+        l_dot = -gradient(self.problem.H, self.model.x_sym)
         alg_eq = gradient(self.problem.H, self.model.yz_sym)
 
-        self.problem.include_state(lamb, ldot, suppress=True)
+        self.problem.include_state(lamb, l_dot, suppress=True)
         self.model.hasAdjointVariables = True
 
         self.problem.include_algebraic(nu, alg_eq)
@@ -177,7 +177,7 @@ class SolutionMethodsBase(object):
     def unvec(self, vector, degree=None):
         """
         Unvectorize 'vector' a vectorized matrix, assuming that it was a matrix with 'degree' number of columns
-        :type vector: DM a vecotr (flattened matrix)
+        :type vector: DM a vector (flattened matrix)
         :type degree: int
         """
         if degree is None:
@@ -261,14 +261,14 @@ class SolutionMethodsBase(object):
         if p is None:
             if self.problem.n_p_opt == self.model.n_p:
                 p = repmat(0, self.problem.n_p_opt)
-            else:
-                raise Exception("A parameter 'p' of size {} should be given".format(self.problem.n_p_opt))
+            elif self.problem.model.n_p > 0:
+                raise Exception("A parameter 'p' of size {} should be given".format(self.problem.model.n_p))
 
         if theta is None:
             if self.problem.n_theta_opt == self.model.n_theta:
                 theta = create_constant_theta(0, self.problem.n_theta_opt, self.finite_elements)
-            else:
-                raise Exception("A parameter 'theta' of size {} should be given".format(self.problem.n_p_opt))
+            elif self.problem.model.n_theta > 0:
+                raise Exception("A parameter 'theta' of size {} should be given".format(self.problem.model.n_theta))
 
         if theta is not None:
             par = vertcat(p, *theta.values())
@@ -290,7 +290,7 @@ class SolutionMethodsBase(object):
                 elif self.initial_guess_heuristic == 'problem_info':
                     initial_guess = self.discretizer.create_initial_guess(p, theta)
                 else:
-                    raise ValueError('initial_guess_heuristic did not recognized, avaliablee options: "simulation" and '
+                    raise ValueError('initial_guess_heuristic did not recognized, available options: "simulation" and '
                                      '"problem_info". Given: {}'.format(self.initial_guess_heuristic))
 
             sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
@@ -321,7 +321,16 @@ class SolutionMethodsBase(object):
         return solution_dict
 
     def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
-        # type: (object, list, dict, list) -> OptimizationResult
+        """
+
+        :param initial_guess: Initial guess
+        :param p: Parameters values
+        :param theta: Theta values
+        :param x_0: Initial condition value
+        :param last_u: Last control value
+        :param initial_guess_dict: Initial guess as dict
+        :return: OptimizationResult
+        """
         raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0, last_u=last_u,
                                            initial_guess_dict=initial_guess_dict)
         return self.create_optimization_result(raw_solution_dict, p, theta, x_0=x_0)

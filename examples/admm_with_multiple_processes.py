@@ -19,7 +19,6 @@ The ADMM steps are:
 """
 from multiprocessing import Queue
 
-import time
 from casadi import exp, vertcat
 from matplotlib import pyplot
 
@@ -95,9 +94,9 @@ class Updater:
         self.max_iterations = MAX_ITERATIONS
         self.stop = False
 
-    def update(self, nlp1_sol, nlp2_sol):
-        x = nlp1_sol
-        z = nlp2_sol
+    def update(self, solution_nlp1, solution_nlp2):
+        x = solution_nlp1
+        z = solution_nlp2
 
         new_lamb = self.lamb + self.mu * (x - z)
         self.lamb = new_lamb
@@ -109,8 +108,9 @@ class Updater:
 
         return self.mu, self.lamb
 
-
-if __name__ == '__main__':
+print(__name__)
+if __name__ == '__builtin__':
+    print("AAAAAAAAAA")
     # Create the Queues for communication between processes
     queue12 = Queue()
     queue13 = Queue()

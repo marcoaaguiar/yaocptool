@@ -53,7 +53,7 @@ class OptimalControlProblem:
         if not hasattr(self, 'x_0'):
             self.x_0 = DM([])
 
-        self.name = ''
+        self.name = 'OCP'
         self.model = None  # type: SystemModel
         self._model = model  # type: SystemModel
         self.reset_working_model()
@@ -84,13 +84,12 @@ class OptimalControlProblem:
 
         self.g_eq = vertcat([])
         self.g_ineq = vertcat([])
-
         self.time_g_eq = []
         self.time_g_ineq = []
 
-        self.L = DM(0.)  # type: DM # Integral cost
-        self.V = DM(0.)  # type: DM # Final cost
-        self.S = DM(0.)  # type: DM # Finite element final cost
+        self.L = DM(0.)  # Integral cost
+        self.V = DM(0.)  # Final cost
+        self.S = DM(0.)  # Finite element final cost
         self.H = DM(0.)
 
         self.last_u = None
@@ -116,35 +115,35 @@ class OptimalControlProblem:
 
     @property
     def n_h_final(self):
-        return self.h_final.size1()
+        return self.h_final.shape[0]
 
     @property
     def n_h_initial(self):
-        return self.h_initial.size1()
+        return self.h_initial.shape[0]
 
     @property
     def n_g_ineq(self):
-        return self.g_ineq.size1()
+        return self.g_ineq.shape[0]
 
     @property
     def n_g_eq(self):
-        return self.g_eq.size1()
+        return self.g_eq.shape[0]
 
     @property
     def n_eta(self):
-        return self.eta.size1()
+        return self.eta.shape[0]
 
     @property
     def n_p_opt(self):
         if isinstance(self.p_opt, list):
             self.p_opt = vertcat(*self.p_opt)
-        return self.p_opt.size1()
+        return self.p_opt.shape[0]
 
     @property
     def n_theta_opt(self):
         if isinstance(self.theta_opt, list):
             self.theta_opt = vertcat(*self.theta_opt)
-        return self.theta_opt.size1()
+        return self.theta_opt.shape[0]
 
     @property
     def yz_max(self):
@@ -195,7 +194,6 @@ class OptimalControlProblem:
                 raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
                                 '{} != {}'.format(attr, attr_to_compare_in_ocp[i], getattr(self, attr).numel(),
                                                   getattr(self, attr_to_compare_in_ocp[i])))
-
 
         return True
 
@@ -306,6 +304,10 @@ class OptimalControlProblem:
         self.include_algebraic(var, alg=alg, y_min=y_min, y_max=y_max, y_guess=y_guess)
         return var
 
+    def create_parameter(self, name, size=1):
+        new_p = self.model.create_parameter(name=name, size=size)
+        return new_p
+
     def create_optimization_parameter(self, name, size=1, p_opt_min=None, p_opt_max=None):
         new_p_opt = self.model.create_parameter(name=name, size=size)
 
@@ -349,10 +351,12 @@ class OptimalControlProblem:
         new_theta_opt_max = vertcat(new_theta_opt_max)
         if not new_theta_opt.numel() == new_theta_opt_max.numel():
             raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
-                             'and new_theta_opt_max.numel()={}'.format(new_theta_opt.numel(), new_theta_opt_max.numel()))
+                             'and new_theta_opt_max.numel()={}'.format(new_theta_opt.numel(),
+                                                                       new_theta_opt_max.numel()))
         if not new_theta_opt.numel() == new_theta_opt_min.numel():
             raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
-                             'and new_theta_opt_min.numel()={}'.format(new_theta_opt.numel(), new_theta_opt_min.numel()))
+                             'and new_theta_opt_min.numel()={}'.format(new_theta_opt.numel(),
+                                                                       new_theta_opt_min.numel()))
 
         self.theta_opt = vertcat(self.theta_opt, new_theta_opt)
         self.theta_opt_min = vertcat(self.theta_opt_min, new_theta_opt_min)
@@ -557,7 +561,7 @@ class OptimalControlProblem:
         self.g_eq = substitute(self.g_eq, original, replacement)
         self.h = substitute(self.h, original, replacement)
 
-        self.model.replace_variable(original, replacement, variable_type)
+        self.model.replace_variable(original, replacement)
 
     def get_p_opt_indices(self):
         return find_variables_indices_in_vector(self.p_opt, self.model.p_sym)

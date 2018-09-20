@@ -8,10 +8,9 @@ import collections
 import copy
 from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec
 
-from yaocptool import remove_variables_from_vector
+from yaocptool import remove_variables_from_vector, config
 from yaocptool.modelling import DAESystem
 # TODO: Check linearize method
-# TODO: Create find_equilibrium method
 from yaocptool.modelling.simualtion_result import SimulationResult
 
 
@@ -153,28 +152,31 @@ class SystemModel:
         s += '=' * 20 + '\n'
         return s
 
-    def replace_variable(self, original, replacement, variable_type='other'):
+    def replace_variable(self, original, replacement):
         """
             Replace a variable or parameter by an variable or expression.
             :param replacement:
-            :param variable_type:
             :param original: SX: and replacement, and also variable type which
             describes which type of variable is being remove to it from the
             counters. Types: 'x', 'y', 'u', 'p', 'ignore'
         """
+        original = vertcat(original)
+        replacement = vertcat(replacement)
+        if not original.numel() == replacement.numel():
+            raise ValueError("Original and replacement must have the same number of elements!"
+                             "original.numel()={}, replacement.numel()={}".format(original.numel(),
+                                                                                  replacement.numel()))
 
-        self.ode = substitute(self.ode, original, replacement)
-        self.alg = substitute(self.alg, original, replacement)
-        self.alg_z = substitute(self.alg_z, original, replacement)
-        self.con = substitute(self.con, original, replacement)
-        self.relaxed_alg = substitute(self.relaxed_alg, original, replacement)
+        if original.numel() > 0:
+            print('Replacing: {} with {}'.format(original, replacement))
+            self.ode = substitute(self.ode, original, replacement)
+            self.alg = substitute(self.alg, original, replacement)
+            self.alg_z = substitute(self.alg_z, original, replacement)
+            self.con = substitute(self.con, original, replacement)
+            self.relaxed_alg = substitute(self.relaxed_alg, original, replacement)
 
-        if variable_type == 'u':
-            pass
-        elif variable_type == 'other':
-            pass
-        else:
-            raise Exception('Not implemented')
+            self.u_par = substitute(self.u_par, original, replacement)
+            self.u_func = substitute(self.u_func, original, replacement)
 
     def create_state(self, name='x', size=1):
         """
@@ -224,7 +226,7 @@ class SystemModel:
         :return:
         """
         new_p = SX.sym(name, size)
-        self.include_parameter(new_p)
+        self.include_parameter(vec(new_p))
         return new_p
 
     def create_theta(self, name='theta', size=1):
@@ -235,7 +237,7 @@ class SystemModel:
         :return:
         """
         new_theta = SX.sym(name, size)
-        self.include_theta(new_theta)
+        self.include_theta(vec(new_theta))
         return new_theta
 
     # region INCLUDES
@@ -321,6 +323,12 @@ class SystemModel:
     def remove_control(self, var):
         self.u_sym = remove_variables_from_vector(var, self.u_sym)
 
+    def remove_parameter(self, var):
+        self.p_sym = remove_variables_from_vector(var, self.p_sym)
+
+    def remove_theta(self, var):
+        self.theta_sym = remove_variables_from_vector(var, self.theta_sym)
+
     # endregion
     # ==============================================================================
     # region # Standard Function Call
@@ -402,9 +410,49 @@ class SystemModel:
     def get_copy(self):
         """
             Get a copy of this model
-        :return:
+        :rtype: SystemModel
         """
         return copy.copy(self)
+
+    def get_hardcopy(self):
+        """
+            Get a hard copy of this model, differently from "get_copy", the variables of the original copy and the
+            hard copy will not be the same, i.e. model.x_sym != copy.x_sym
+
+        :rtype: SystemModel
+        """
+        model_copy = SystemModel(name=self.name)
+        x_copy = vertcat([])
+        y_copy = vertcat([])
+        u_copy = vertcat([])
+        p_copy = vertcat([])
+        theta_copy = vertcat([])
+
+        if self.n_x > 0:
+            x_copy = vertcat(*[model_copy.create_state(self.x_sym[i].name()) for i in range(self.n_x)])
+        if self.n_y > 0:
+            y_copy = vertcat(*[model_copy.create_algebraic_variable(self.y_sym[i].name()) for i in range(self.n_y)])
+        if self.n_u > 0:
+            u_copy = vertcat(*[model_copy.create_control(self.u_sym[i].name()) for i in range(self.n_u)])
+
+        if self.n_p > 0:
+            p_copy = vertcat(*[model_copy.create_parameter(self.p_sym[i].name()) for i in range(self.n_p)])
+        if self.n_theta > 0:
+            theta_copy = vertcat(*[model_copy.create_theta(self.theta_sym[i].name()) for i in range(self.n_theta)])
+
+        model_copy.include_system_equations(ode=self.ode, alg=self.alg)
+        model_copy.u_func = self.u_func
+        model_copy.u_par = self.u_par
+
+        model_copy.replace_variable(self.x_sym, x_copy)
+        model_copy.replace_variable(self.y_sym, y_copy)
+        model_copy.replace_variable(self.u_sym, u_copy)
+        model_copy.replace_variable(self.p_sym, p_copy)
+        model_copy.replace_variable(self.theta_sym, theta_copy)
+
+        model_copy.hasAdjointVariables = self.hasAdjointVariables
+
+        return model_copy
 
     # endregion
     # ==============================================================================
@@ -529,6 +577,28 @@ class SystemModel:
 
     # endregion
 
+    def find_algebraic_variable(self, x, u, guess=None, t=0.0, p=None, theta_value=None, rootfinder_options=None):
+        if guess is None:
+            guess = [1] * self.n_y
+        if rootfinder_options is None:
+            rootfinder_options = dict(nlpsol='ipopt', nlpsol_options=config.SOLVER_OPTIONS['nlpsol_options'])
+        if p is None:
+            p = []
+        if theta_value is None:
+            theta_value = []
+
+        # replace known variables
+        alg = self.alg
+        known_var = vertcat(self.t_sym, self.x_sym, self.u_sym, self.p_sym, self.theta_sym)
+        known_var_values = vertcat(t, x, u, p, theta_value)
+        alg = substitute(alg, known_var, known_var_values)
+
+        f_alg = Function('f_alg', [self.y_sym], [alg])
+
+        rf = rootfinder('rf_algebraic_variable', 'nlpsol', f_alg, rootfinder_options)
+        res = rf(guess)
+        return res
+
     def linearize(self, x_bar, u_bar):
         """
         Returns a linearized model at a given points (X_BAR, U_BAR)
@@ -568,7 +638,7 @@ class SystemModel:
         :return: (DM, DM, DM)
         """
         if rootfinder_options is None:
-            rootfinder_options = dict(nlpsol='ipopt', nlpsol_options={})
+            rootfinder_options = dict(nlpsol='ipopt', nlpsol_options=config.SOLVER_OPTIONS['nlpsol_options'])
         if guess is None:
             guess = [1] * (self.n_x + self.n_y + self.n_u)
         if isinstance(additional_eqs, list):

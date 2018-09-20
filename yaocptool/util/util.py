@@ -1,4 +1,4 @@
-from casadi import is_equal, DM, vec, vertcat, substitute
+from casadi import is_equal, DM, vec, vertcat, substitute, mtimes, integrator, MX, repmat
 
 
 def find_variables_indices_in_vector(var, vector):
@@ -21,6 +21,20 @@ def remove_variables_from_vector(var, vector):
     to_remove = find_variables_indices_in_vector(var, vector)
     to_remove.sort(reverse=True)
     for it in to_remove:
+        vector.remove([it], [])
+    return vector
+
+
+def remove_variables_from_vector_by_indices(vector, indices):
+    """
+        Returns a vector with items removed
+    :param vector: vector which will have items removed
+    :param list indices: list of indices for which the variables need to be removed.
+    :return:
+    """
+    vector = vector[:]
+    indices.sort(reverse=True)
+    for it in indices:
         vector.remove([it], [])
     return vector
 
@@ -84,3 +98,27 @@ def blockdiag(matrices_list):
         index_2 += m.size2()
 
     return matrix
+
+
+def expm(a_matrix):
+    """Since casadi does not have native support for matrix exponential, this is a trick to computing it.
+    It can be quite expensive, specially for large matrices.
+    THIS ONLY SUPPORT NUMERIC MATRICES, DOES NOT SUPPORT SX SYMBOLIC VARIABLES.
+
+    :param DM a_matrix: matrix
+    :return:
+    """
+    dim = a_matrix.shape[1]
+
+    # Create the integrator
+    x = MX.sym('x', a_matrix.shape[1])
+    a_mx = MX.sym('x', a_matrix.shape)
+    ode = mtimes(a_mx, x)
+    dae_system_dict = {'x': x, 'ode': ode, 'p': vec(a_mx)}
+
+    integrator_ = integrator("integrator", "cvodes", dae_system_dict, {'tf': 1})
+    integrator_MAP = integrator_.map(a_matrix.shape[1], 'thread')
+
+    res = integrator_MAP(x0=DM.eye(dim), p=repmat(vec(a_matrix), (1, a_matrix.shape[1])))['xf']
+
+    return res

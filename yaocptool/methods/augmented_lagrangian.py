@@ -218,7 +218,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         self.nu_pol = vertcat(self.nu_pol, nu_pol)
         self.nu_par = vertcat(self.nu_par, nu_par)
 
-        self.problem.replace_variable(nu_sym, nu_pol, 'other')
+        self.problem.replace_variable(nu_sym, nu_pol)
         self.problem.model.include_theta(vec(nu_par))
 
         return nu_pol, nu_par
@@ -331,7 +331,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
         # self.nu = new_nu
         # self.mu = self.mu_0
 
-    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
+    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         if x_0 is None:
             x_0 = []
         if theta is None:
