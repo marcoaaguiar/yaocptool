@@ -1,3 +1,4 @@
+import copy
 from collections import defaultdict
 from functools import partial
 
@@ -37,6 +38,12 @@ class DataSet:
 
         if self.data[entry]['size'] is None:
             self.data['entry']['size'] = value.size1()
+
+    def get_copy(self):
+        dataset_copy = copy.copy(self)
+        dataset_copy.data = copy.deepcopy(self.data)
+
+        return dataset_copy
 
     @staticmethod
     def _plot_entry(t_vector, data_vector, row, label='', plot_style='plot'):

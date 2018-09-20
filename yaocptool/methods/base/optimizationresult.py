@@ -7,14 +7,13 @@ except:
     print('Failed to import matplotlib. Make sure that it is properly installed')
 
 from casadi import horzcat, DM
-from typing import List
 
 
 class OptimizationResult:
     def __init__(self, **kwargs):
         # Raw Information
         self.raw_solution_dict = {}
-        self.raw_decision_variables = None  # type: List[DM]
+        self.raw_decision_variables = None  # type: list
 
         # Data from the method
         self.method_name = ''  # type: str

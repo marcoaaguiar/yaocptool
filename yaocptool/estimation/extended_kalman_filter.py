@@ -40,6 +40,8 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         self.theta = None
         self.y_guess = None
 
+        self.verbosity = 1
+
         self._types_fixed = False
         self._checked = False
 
@@ -158,12 +160,13 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         # Correct prediction of the state estimation
         x_mean = x_aug_f + mtimes(k_gain, (y_k - meas_pred))
         meas_corr = self._get_measurement_from_prediction(x_mean[:self.model.n_x], x_mean[self.model.n_x:], u_f)
-        print('Predicted state: {}'.format(x_pred))
-        print('Prediction error: {}'.format(y_k - meas_pred))
-        print('Correction: {}'.format(mtimes(k_gain, (y_k - meas_pred))))
-        print('Corrected state: {}'.format(x_mean))
-        print('Measurement: {}'.format(y_k))
-        print('Corrected Meas.: {}'.format(meas_corr))
+        if self.verbosity > 1:
+            print('Predicted state: {}'.format(x_pred))
+            print('Prediction error: {}'.format(y_k - meas_pred))
+            print('Correction: {}'.format(mtimes(k_gain, (y_k - meas_pred))))
+            print('Corrected state: {}'.format(x_mean))
+            print('Measurement: {}'.format(y_k))
+            print('Corrected Meas.: {}'.format(meas_corr))
 
         # Correct covariance prediction
         p_k = mtimes(DM.eye(self.augmented_model.n_x) - mtimes(k_gain, g_matrix), p_pred)
