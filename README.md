@@ -1,6 +1,12 @@
 # yaocptool
 (YAOCPTool) Yet Another Optimal Control Tool
 
+## Required Packages
+
+```commandline
+pip install casadi numpy scipy sobol matplotlib typing
+```
+
 ## How to use
 The objective of this tool is to make easier to use the state-of-the-art CasADi, at the same time allowing for researchers to propose new methods.
 

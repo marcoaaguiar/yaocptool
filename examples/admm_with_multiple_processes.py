@@ -108,8 +108,9 @@ class Updater:
 
         return self.mu, self.lamb
 
-
-if __name__ == '__main__':
+print(__name__)
+if __name__ == '__builtin__':
+    print("AAAAAAAAAA")
     # Create the Queues for communication between processes
     queue12 = Queue()
     queue13 = Queue()
