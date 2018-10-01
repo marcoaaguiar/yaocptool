@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from casadi import SX, DM, inf, vertcat, dot, vec, Function, MX, horzcat
 
-from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector
+from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector, join_thetas, create_constant_theta
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
@@ -226,7 +226,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
     def create_nu_initial_guess(self, n_r=None):
         if n_r is None:
             n_r = self.Nr
-        nu = self.create_constant_theta(constant=0, dimension=n_r * self.degree, finite_elements=self.finite_elements)
+        nu = create_constant_theta(constant=0, dimension=n_r * self.degree, finite_elements=self.finite_elements)
         return nu
 
     def _create_nu_update_func(self):
@@ -297,7 +297,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
     def join_nu_to_theta(self, theta, nu):
         if theta is not None:
-            return self.join_thetas(theta, nu)
+            return join_thetas(theta, nu)
         else:
             return nu
 
@@ -318,18 +318,6 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
     def get_ocp_solver(self, initial_condition_as_parameter=False):
         self.solver = self.ocp_solver.get_solver(initial_condition_as_parameter=initial_condition_as_parameter)
-
-    def step_forward(self):
-        raise NotImplementedError
-        # X, U = self.last_solution
-        # error = self._update_nu(self.mu, self.nu, raw_solution_dict=raw_solution_dict)
-        # self.mu = min(self.mu_max, self.mu * self.beta)
-        # new_nu = {}
-        # for i in range(1, self.finite_elements):
-        #     new_nu[i - 1] = self.nu[i]
-        # new_nu[self.finite_elements - 1] = self.nu[self.finite_elements - 1]
-        # self.nu = new_nu
-        # self.mu = self.mu_0
 
     def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         if x_0 is None:

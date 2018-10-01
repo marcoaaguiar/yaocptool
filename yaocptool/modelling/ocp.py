@@ -161,7 +161,7 @@ class OptimalControlProblem:
             has_element_diff_from_inf = (not is_equal(self.delta_u_min[i], -inf)) or has_element_diff_from_inf
         return has_element_diff_from_inf
 
-    def _pre_solve_check(self):
+    def pre_solve_check(self):
         self._fix_types()
 
         # Check if Objective Function was provided

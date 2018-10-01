@@ -1,9 +1,6 @@
-from warnings import warn
+from casadi import SX, MX, vertcat, collocation_points, vec, reshape, repmat
 
-from casadi import SX, MX, vertcat, collocation_points, \
-    vec, nlpsol, dot, gradient, jacobian, mtimes, reshape, repmat
-
-from yaocptool import config, create_constant_theta, join_thetas
+from yaocptool import config, create_constant_theta
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
@@ -17,14 +14,12 @@ class SolutionMethodsBase(object):
         :param OptimalControlProblem problem:
         :param str integrator_type: str
         :param str solution_method: str
-        :param str degree: int
-        :param str discretization_scheme: str
+        :param int degree: discretization polynomial degree
+        :param int degree_control:
+        :param str discretization_scheme: ('multiple-shooting' | 'collocation')
         :param str initial_guess_heuristic: 'simulation' or 'problem_info'
         """
-        self.solver = None
-        # self._problem = problem  # type: OptimalControlProblem
-        # self.problem = None  # type: OptimalControlProblem
-        # self.reset_working_problem()
+        self.opt_problem = None
         self.problem = problem
         self.solution_class = ''
         self.prepared = False
@@ -36,7 +31,7 @@ class SolutionMethodsBase(object):
         self.finite_elements = 10
         self.integrator_type = 'implicit'
         self.discretization_scheme = 'multiple-shooting'
-        self.initial_condition_as_parameter = False
+        self.initial_condition_as_parameter = True
         self.nlpsol_opts = {}
         self.initial_guess_heuristic = 'simulation'  # 'problem_info'
 
@@ -147,33 +142,6 @@ class SolutionMethodsBase(object):
 
         return u_pol
 
-    def _create_cost_state(self):
-        if not self.hasCostState:
-            self.problem.create_cost_state()
-            self.hasCostState = True
-
-    def include_adjoint_states(self):
-
-        lamb = SX.sym('lamb', self.model.n_x)
-        nu = SX.sym('nu', self.model.n_yz)
-
-        self.problem.eta = SX.sym('eta', self.problem.n_h_final)
-
-        self.problem.H = self.problem.L + dot(lamb, self.model.ode) + dot(nu, self.model.all_alg)
-
-        l_dot = -gradient(self.problem.H, self.model.x_sym)
-        alg_eq = gradient(self.problem.H, self.model.yz_sym)
-
-        self.problem.include_state(lamb, l_dot, suppress=True)
-        self.model.hasAdjointVariables = True
-
-        self.problem.include_algebraic(nu, alg_eq)
-
-        self.problem.h_final = vertcat(self.problem.h_final,
-                                       self.model.lamb_sym - gradient(self.problem.V, self.model.x_sys_sym)
-                                       - mtimes(jacobian(self.problem.h_final, self.model.x_sys_sym).T,
-                                                self.problem.eta))
-
     def unvec(self, vector, degree=None):
         """
         Unvectorize 'vector' a vectorized matrix, assuming that it was a matrix with 'degree' number of columns
@@ -185,43 +153,22 @@ class SolutionMethodsBase(object):
         n_lines = vector.numel() / degree
         return reshape(vector, n_lines, degree)
 
-    @staticmethod
-    def join_thetas(*args):
-        warn('Use yaocptool.join_theta')
-        return join_thetas(*args)
-
-    def create_constant_theta(self, constant=0, dimension=1, finite_elements=None):
-        if finite_elements is None:
-            finite_elements = self.finite_elements
-
-        return create_constant_theta(constant, dimension, finite_elements)
-
     # ==============================================================================
     # SOLVE
     # ==============================================================================
 
     def prepare(self):
-        self.problem._pre_solve_check()
+        self.problem.pre_solve_check()
 
-    def get_solver(self, initial_condition_as_parameter=False):
-        """
-            all_mx = [p, theta, x_0]
-        """
-
+    def create_optimization_problem(self):
         if not self.prepared:
             self.prepare()
             self.prepared = True
 
-        if self.solver is None:
-            self.solver = self.create_solver(initial_condition_as_parameter)
-
-        return self.call_solver
-
-    def create_solver(self, initial_condition_as_parameter):
-        self.initial_condition_as_parameter = initial_condition_as_parameter
-        if self.model.n_p + self.model.n_theta > 0 \
-                or self.initial_condition_as_parameter \
-                or self.problem.last_u is not None:
+        has_parameters = (self.model.n_p + self.model.n_theta > 0 or self.initial_condition_as_parameter
+                          or self.problem.last_u is not None)
+        args = {}
+        if has_parameters:
             p_mx = MX.sym('p', self.model.n_p)
 
             theta_mx = MX.sym('theta_', self.model.n_theta, self.finite_elements)
@@ -240,21 +187,23 @@ class SolutionMethodsBase(object):
             else:
                 p_last_u = None
 
-            nlp_prob, nlp_call = self.discretizer.discretize(p=p_mx, x_0=p_mx_x_0, theta=theta, last_u=p_last_u)
+            args = dict(p=p_mx, x_0=p_mx_x_0, theta=theta, last_u=p_last_u)
 
-            nlp_prob['p'] = all_mx
-        else:
-            nlp_prob, nlp_call = self.discretizer.discretize()
+        # Discretize the problem
+        opt_problem = self.discretizer.discretize(**args)
 
-        self.nlp_prob = nlp_prob
-        self.nlp_call = nlp_call
+        if has_parameters:
+            opt_problem.include_parameter(all_mx)
 
-        solver = nlpsol('solver', 'ipopt', nlp_prob, self.nlpsol_opts)
-        return solver
+        self.opt_problem = opt_problem
 
     def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
+        if self.opt_problem is None:
+            self.create_optimization_problem()
+
         if x_0 is None:
             x_0 = self.problem.x_0
+
         if not vertcat(x_0).numel() == self.model.n_x:
             raise Exception('Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, '
                             'x_0.numel() = {}, model.n_x = {}'.format(vertcat(x_0).numel(), self.model.n_x))
@@ -292,33 +241,22 @@ class SolutionMethodsBase(object):
                 else:
                     raise ValueError('initial_guess_heuristic did not recognized, available options: "simulation" and '
                                      '"problem_info". Given: {}'.format(self.initial_guess_heuristic))
-
-            sol = self.solver(x0=initial_guess, p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
-                              lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
+            args = dict(initial_guess=initial_guess, p=par)
         else:
-            sol = self.solver(x0=initial_guess_dict['x'], lam_x0=initial_guess_dict['lam_x'],
-                              lam_g0=initial_guess_dict['lam_g'],
-                              p=par, lbg=self.nlp_call['lbg'], ubg=self.nlp_call['ubg'],
-                              lbx=self.nlp_call['lbx'], ubx=self.nlp_call['ubx'])
+            args = dict(initial_guess=initial_guess_dict['x'], p=par,
+                        lam_x=initial_guess_dict['lam_x'], lam_g=initial_guess_dict['lam_g'])
 
+        sol = self.opt_problem.solve(**args)
         return sol
 
-    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
-        initial_condition_as_parameter = False
-        if isinstance(x_0, list):
-            x_0 = vertcat(x_0)
-        if x_0 is not None:
-            initial_condition_as_parameter = True
-
-        if not self.prepared:
-            self.prepare()
-            self.prepared = True
-
-        solver = self.get_solver(initial_condition_as_parameter)
-        solution_dict = solver(initial_guess=initial_guess, p=p, theta=theta,
-                               x_0=x_0, last_u=last_u,
-                               initial_guess_dict=initial_guess_dict)
-        return solution_dict
+    # def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
+    #     if isinstance(x_0, list):
+    #         x_0 = vertcat(x_0)
+    #
+    #     solution_dict = self.call_solver(initial_guess=initial_guess, p=p, theta=theta,
+    #                                      x_0=x_0, last_u=last_u,
+    #                                      initial_guess_dict=initial_guess_dict)
+    #     return solution_dict
 
     def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         """
@@ -331,8 +269,13 @@ class SolutionMethodsBase(object):
         :param initial_guess_dict: Initial guess as dict
         :return: OptimizationResult
         """
-        raw_solution_dict = self.solve_raw(initial_guess=initial_guess, p=p, theta=theta, x_0=x_0, last_u=last_u,
-                                           initial_guess_dict=initial_guess_dict)
+        if isinstance(x_0, list):
+            x_0 = vertcat(x_0)
+
+        raw_solution_dict = self.call_solver(initial_guess=initial_guess, p=p, theta=theta,
+                                             x_0=x_0, last_u=last_u,
+                                             initial_guess_dict=initial_guess_dict)
+
         return self.create_optimization_result(raw_solution_dict, p, theta, x_0=x_0)
 
     def create_optimization_result(self, raw_solution_dict, p=None, theta=None, x_0=None):
@@ -373,6 +316,3 @@ class SolutionMethodsBase(object):
         self.discretizer.set_data_to_optimization_result_from_raw_data(optimization_result, raw_solution_dict)
 
         return optimization_result
-
-    def step_forward(self):
-        pass

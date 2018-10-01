@@ -41,6 +41,11 @@ class DirectMethod(SolutionMethodsBase):
             self.g = g
         return u_pol
 
+    def _create_cost_state(self):
+        if not self.hasCostState:
+            self.problem.create_cost_state()
+            self.hasCostState = True
+
     def prepare(self):
         super(DirectMethod, self).prepare()
         self._parametrize_control()
