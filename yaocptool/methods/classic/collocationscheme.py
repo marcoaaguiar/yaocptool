@@ -487,7 +487,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             x_init.append(simulation_results.x)
             y_init.append(simulation_results.y)
             u_init.append(simulation_results.u[:self.degree_control])
-            x_0 = simulation_results.x[-1][-1]
+            x_0, _, _ = simulation_results.final_condition()
 
         x_init = self.vectorize(x_init)
         y_init = self.vectorize(y_init)

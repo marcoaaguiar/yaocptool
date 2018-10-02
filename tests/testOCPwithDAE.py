@@ -1,5 +1,6 @@
 from casadi import mtimes
 
+from yaocptool import create_constant_theta
 from yaocptool.methods import DirectMethod
 from yaocptool.modelling import SystemModel, OptimalControlProblem
 
@@ -10,7 +11,7 @@ x = model.create_state('x', 2)
 y = model.create_algebraic_variable('y', 2)
 u = model.create_control('u')
 a = model.create_parameter('a')
-b = model.create_parameter('b')
+b = model.create_theta('b')
 
 model.include_system_equations(ode=[
     -a * x[0] + b * y[0],
@@ -23,17 +24,22 @@ model.include_system_equations(ode=[
 # create ocp
 problem = OptimalControlProblem(model)
 problem.t_f = 10
-problem.L = mtimes(x.T, x) + u ** 2
+# problem.L = mtimes(x.T, x) + u ** 2
+problem.S = mtimes(x.T, x) + u ** 2 + b**2
 problem.x_0 = [0, 1]
-problem.set_parameter_as_optimization_parameter(b, -.5, .5)
+problem.set_theta_as_optimization_theta(b, -.5, .5)
 # problem.include_equality(problem.p_opt + 0.25)
-problem.include_time_inequality(-u - 0.05)
+problem.include_time_inequality(+u + x[0], when='end')
 
 # instantiate a solution method
 solution_method = DirectMethod(problem,
                                discretization_scheme='collocation',
-                               degree_control=3,
+                               degree_control=1,
                                )
-solution = solution_method.solve(p=[1, 2])
+# theta = create_constant_theta(1, 1, 10)
 
-solution.plot([{'x': [0, 1]}, {'y': [0, 1]}, {'u': [0]}])
+# initial_guess = solution_method.discretizer.create_initial_guess_with_simulation(p=[1])
+# solution = solution_method.solve(p=[1], theta=theta, initial_guess=initial_guess)
+solution = solution_method.solve(p=[1],x_0=[2,3,0])
+
+solution.plot([{'x': [0, 1]}, {'y': [0, 1]}, {'x': [0,1], 'u': [0]}, {'theta_opt':[0]}])

@@ -1,12 +1,13 @@
 import copy
 from collections import defaultdict
 from functools import partial
+from casadi import horzcat, vertcat, DM
 
 try:
     import matplotlib.pyplot as plt
-except:
-    print('Failed to import matplotlib. Make sure that is properly installed')
-from casadi import horzcat, vertcat, DM
+except ImportError:
+    print('Failed to import matplotlib. Make sure that it is properly installed')
+    plt = None
 
 
 class DataSet:
@@ -24,6 +25,12 @@ class DataSet:
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
+
+    def create_entry(self, entry, size, names=None):
+        if names is None:
+            names = [entry + '_' + str(i) for i in range(size)]
+        self.data[entry]['size'] = size
+        self.data[entry]['names'] = names
 
     def insert_data(self, entry, value, time):
         value = vertcat(value)
@@ -44,6 +51,18 @@ class DataSet:
         dataset_copy.data = copy.deepcopy(self.data)
 
         return dataset_copy
+
+    def sort(self, entries=None):
+        if entries is None:
+            entries = self.data.keys()
+
+        for entry in entries:
+            time = [self.data[entry]['time'][i] for i in range(self.data[entry]['time'].shape[1])]
+            values = [self.data[entry]['values'][:,i] for i in range(self.data[entry]['values'].shape[1])]
+            time, values = (list(t) for t in zip(*sorted(zip(time, values), key=lambda point: point[0])))
+            self.data[entry]['time'] = horzcat(*time)
+            self.data[entry]['values'] = horzcat(*values)
+
 
     @staticmethod
     def _plot_entry(t_vector, data_vector, row, label='', plot_style='plot'):
@@ -91,6 +110,7 @@ class DataSet:
             axes = fig.axes
             axes[0].ticklabel_format(useOffset=False)
             plt.legend()
+
         plt.interactive(True)
         if show:
             plt.show()
