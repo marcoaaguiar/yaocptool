@@ -140,11 +140,11 @@ class PlantSimulation(Plant):
         else:
             measurement = measurement_wo_noise
 
-        self.dataset.insert_data('x', x, self.t)
-        self.dataset.insert_data('y', y, self.t)
-        self.dataset.insert_data('u', u, self.t)
-        self.dataset.insert_data('meas', measurement, self.t)
-        self.dataset.insert_data('meas_wo_noise', measurement_wo_noise, self.t)
+        self.dataset.insert_data('x', self.t, x)
+        self.dataset.insert_data('y', self.t, y)
+        self.dataset.insert_data('u', self.t, u)
+        self.dataset.insert_data('meas', self.t, measurement)
+        self.dataset.insert_data('meas_wo_noise', self.t, measurement_wo_noise)
 
         if self.verbosity >= 1:
             print('Real state: {}'.format(x))

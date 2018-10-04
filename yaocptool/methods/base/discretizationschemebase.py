@@ -86,20 +86,21 @@ class DiscretizationSchemeBase:
     def split_x_y_and_u(self, v, all_subinterval=False):
         raise NotImplementedError
 
-    def discretize(self, x_0=None, p=None, theta=None):
+    def discretize(self, x_0=None, p=None, theta=None, last_u=None):
+        """Discretize the OCP, returning a Optimization Problem
+
+        :param x_0: initial condition
+        :param p: parameters
+        :param theta: theta parameters
+        :param last_u: last applied control
+        :return:
+        """
         raise NotImplementedError
 
-    def create_nlp_symbolic_variables(self):
+    def create_nlp_symbolic_variables(self, nlp):
         """
         Create the symbolic variables that will be used by the NLP problem
         :rtype: (DM, List[List[DM]], List(List(DM)), List(DM), DM, DM, DM)
-        """
-        raise NotImplementedError
-
-    def _create_variables_bound_vectors(self):
-        """
-        Return two items: the vector of lower bounds and upper bounds
-        :rtype: (DM, DM)
         """
         raise NotImplementedError
 

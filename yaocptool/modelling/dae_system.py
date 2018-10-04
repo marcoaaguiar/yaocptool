@@ -102,25 +102,28 @@ class DAESystem:
         call = {'x0': x_0, 'p': p}
         if self.is_dae and y_0 is not None:
             call['z0'] = y_0
-
         return integrator_(**call)
 
     def _create_integrator(self, options=None, integrator_type='implicit'):
         if options is None:
             options = {}
 
+        if 'name' in options:
+            name = options.pop('name')
+        else:
+            name = 'integrator'
         for k in config.INTEGRATOR_OPTIONS:
             if k not in options:
                 options[k] = config.INTEGRATOR_OPTIONS[k]
 
         if (integrator_type == 'implicit' and self.is_ode) or integrator_type == 'cvodes':
-            integrator_ = integrator("integrator", "cvodes", self.dae_system_dict, options)
+            integrator_ = integrator(name, "cvodes", self.dae_system_dict, options)
         elif (integrator_type == 'implicit' and self.is_dae) or integrator_type == 'idas':
-            integrator_ = integrator("integrator", "idas", self.dae_system_dict, options)
+            integrator_ = integrator(name, "idas", self.dae_system_dict, options)
         elif integrator_type == 'rk':
-            integrator_ = integrator("integrator", "rk", self.dae_system_dict, options)
+            integrator_ = integrator(name, "rk", self.dae_system_dict, options)
         elif integrator_type == 'collocation':
-            integrator_ = integrator("integrator", "collocation", self.dae_system_dict, options)
+            integrator_ = integrator(name, "collocation", self.dae_system_dict, options)
         elif integrator_type == 'explicit':
             if self.is_ode:
                 integrator_ = self._create_explicit_integrator('explicit_integrator', 'rk4', self.dae_system_dict,
@@ -130,7 +133,7 @@ class DAESystem:
         else:
             raise ValueError("'integrator_type'={} not available. Options available are: 'cvodes', 'idas', implicit "
                              "(default, auto-select between 'idas' and 'cvodes'), 'rk', 'collocation', 'explicit' "
-                             "(own 4th order Runge-Kutta implementation).")
+                             "(own 4th order Runge-Kutta implementation).".format(integrator_type))
         return integrator_
 
     @staticmethod
@@ -175,6 +178,6 @@ class DAESystem:
                     x_f = x0 + 1 / 6. * k1 + 1 / 3. * k2 + 1 / 3. * k3 + 1 / 6. * k4
                     x0 = x_f
                     t += h
-                return {'xf': x_f, 'zf': []}
+                return {'xf': x_f, 'zf': DM([])}
 
             return runge_kutta_4th_order

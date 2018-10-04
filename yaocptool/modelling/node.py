@@ -22,3 +22,6 @@ class Node:
             self.name = self.model.name
 
         self.connected_nodes = {}
+
+        for (k, v) in kwargs.items():
+            setattr(self, k, v)

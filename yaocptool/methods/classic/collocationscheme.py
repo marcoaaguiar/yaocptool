@@ -7,12 +7,12 @@ Created on Thu Jul 13 17:08:34 2017
 from collections import defaultdict
 from itertools import chain
 
-from casadi import DM, MX, repmat, vertcat, Function, jacobian, is_equal, inf
+from casadi import DM, repmat, vertcat, Function, jacobian, is_equal, inf
 
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
-
-
+from yaocptool.optimization import NonlinearOptimizationProblem
 # TODO: implement cost_as_a_sum
+
 
 class CollocationScheme(DiscretizationSchemeBase):
     @property
@@ -35,51 +35,10 @@ class CollocationScheme(DiscretizationSchemeBase):
                                                                                                  with_zero=False)
         return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
 
-    def _number_of_variables(self):
-        return self.model.n_x * self.finite_elements * (self.degree + 1) \
-               + self.model.n_yz * self.finite_elements * self.degree \
-               + self.model.n_u * self.finite_elements * self.degree_control \
-               + self.problem.n_eta
-
-    def _create_variables_bound_vectors(self):
-        """
-        Return two items: the vector of lower bounds and upperbounds
-        :rtype: (DM, DM)
-        """
-        vars_lb = []
-        vars_ub = []
-        for k in range(self.finite_elements):
-            for n in range(self.degree + 1):
-                vars_lb.append(self.problem.x_min)
-                vars_ub.append(self.problem.x_max)
-
-        for k in range(self.finite_elements):
-            for n in range(self.degree):
-                vars_lb.append(self.problem.yz_min)
-                vars_ub.append(self.problem.yz_max)
-
-        for k in range(self.finite_elements):
-            for n in range(self.degree_control):
-                vars_lb.append(self.problem.u_min)
-                vars_ub.append(self.problem.u_max)
-
-        vars_lb.append(-DM.inf(self.problem.n_eta))
-        vars_ub.append(DM.inf(self.problem.n_eta))
-
-        vars_lb.append(self.problem.p_opt_min)
-        vars_ub.append(self.problem.p_opt_max)
-
-        for el in range(self.finite_elements):
-            vars_lb.append(self.problem.theta_opt_min)
-            vars_ub.append(self.problem.theta_opt_max)
-
-        vars_lb = vertcat(*vars_lb)
-        vars_ub = vertcat(*vars_ub)
-        return vars_lb, vars_ub
-
-    def create_nlp_symbolic_variables(self):
+    def create_nlp_symbolic_variables(self, nlp):
         """
         Create the symbolic variables that will be used by the NLP problem
+        :param NonlinearOptimizationProblem nlp: nonlinear optimization problem in which the variables will be created
         :rtype: tuple
         """
         x_var = []
@@ -88,27 +47,31 @@ class CollocationScheme(DiscretizationSchemeBase):
         for k in range(self.finite_elements):
             x_k = []
             for n in range(self.degree + 1):
-                x_k.append(MX.sym('x_' + repr(k) + '_' + repr(n), self.model.n_x))
+                x_k.append(nlp.create_variable('x_' + repr(k) + '_' + repr(n), self.model.n_x,
+                                               lb=self.problem.x_min, ub=self.problem.x_max))
             x_var.append(x_k)
 
         for k in range(self.finite_elements):
             y_k = []
             for n in range(self.degree):
-                y_k.append(MX.sym('yz_' + repr(k) + '_' + repr(n), self.model.n_yz))
+                y_k.append(nlp.create_variable('y_' + repr(k) + '_' + repr(n), self.model.n_y,
+                                               lb=self.problem.y_min, ub=self.problem.y_max))
             y_var.append(y_k)
 
         for k in range(self.finite_elements):
             u_k = []
             for n in range(self.degree_control):
-                u_k.append(MX.sym('u_' + repr(k) + '_' + repr(n), self.model.n_u))
+                u_k.append(nlp.create_variable('u_' + repr(k) + '_' + repr(n), self.model.n_u,
+                                               lb=self.problem.u_min, ub=self.problem.u_max))
             u_var.append(u_k)
 
-        eta = MX.sym('eta', self.problem.n_eta)
-        p_opt = MX.sym('p_opt', self.problem.n_p_opt)
+        eta = nlp.create_variable('eta', self.problem.n_eta)
+        p_opt = nlp.create_variable('p_opt', self.problem.n_p_opt, lb=self.problem.p_opt_min, ub=self.problem.p_opt_max)
 
         theta_opt = []
         for el in range(self.finite_elements):
-            theta_opt.append(MX.sym('theta_opt_' + str(el), self.problem.n_theta_opt))
+            theta_opt.append(nlp.create_variable('theta_opt_' + str(el), self.problem.n_theta_opt,
+                                                 lb=self.problem.theta_opt_min, ub=self.problem.theta_opt_max))
 
         v_x = self.vectorize(x_var)
         v_y = self.vectorize(y_var)
@@ -157,8 +120,8 @@ class CollocationScheme(DiscretizationSchemeBase):
         for k in range(self.finite_elements):
             y_k = []
             for i in range(self.degree):
-                y_k.append(decision_variables[v_offset:v_offset + self.model.n_yz])
-                v_offset += self.model.n_yz
+                y_k.append(decision_variables[v_offset:v_offset + self.model.n_y])
+                v_offset += self.model.n_y
             if all_subinterval:
                 y.append(y_k)
             else:
@@ -189,6 +152,14 @@ class CollocationScheme(DiscretizationSchemeBase):
         return x, y, u, eta, p_opt, theta_opt
 
     def discretize(self, x_0=None, p=None, theta=None, last_u=None):
+        """Discretize the OCP, returning a Optimization Problem
+
+        :param x_0: initial condition
+        :param p: parameters
+        :param theta: theta parameters
+        :param last_u: last applied control
+        :rtype: NonlinearOptimizationProblem
+        """
         if p is None:
             p = []
         if theta is None:
@@ -196,12 +167,11 @@ class CollocationScheme(DiscretizationSchemeBase):
         if x_0 is None:
             x_0 = self.problem.x_0
 
-        # Create NLP symbolic variables
-        all_decision_vars, x_var, yz_var, u_var, eta, p_opt, theta_opt = self.create_nlp_symbolic_variables()
+        # Create nlp object
+        nlp = NonlinearOptimizationProblem(name='collocation_' + self.problem.name)
 
-        constraint_list = []
-        lbg = []
-        ubg = []
+        # Create NLP symbolic variables
+        all_decision_vars, x_var, yz_var, u_var, eta, p_opt, theta_opt = self.create_nlp_symbolic_variables(nlp)
 
         # Put the symbolic optimization parameters in the parameter vector
         for i, p_opt_index in enumerate(self.problem.get_p_opt_indices()):
@@ -225,9 +195,7 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         # Initial time constraint/initial condition
         f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
-        constraint_list.append(f_h_initial(x_var[0][0], x_0))
-        lbg.append(DM.zeros(constraint_list[-1].shape))
-        ubg.append(DM.zeros(constraint_list[-1].shape))
+        nlp.include_equality(f_h_initial(x_var[0][0], x_0))
 
         # Create functions to be evaluated
         functions = defaultdict(dict)
@@ -264,23 +232,17 @@ class CollocationScheme(DiscretizationSchemeBase):
 
             # State continuity, valid for all but the first finite element
             if not el == 0:
-                constraint_list.append(results[el - 1]['x'][-1] - results[el]['x'][0])
-                lbg.append(DM.zeros(constraint_list[-1].shape))
-                ubg.append(DM.zeros(constraint_list[-1].shape))
+                nlp.include_equality(results[el - 1]['x'][-1] - results[el]['x'][0])
 
             tau_list = self.solution_method.collocation_points(self.degree, with_zero=True)
 
             # Enforce the the derivative of the polynomial to be equal ODE at t
             for col_point in range(1, self.degree + 1):
-                constraint_list.append(func_d_x_pol_d_tau(tau_list[col_point], self.vectorize(x_var[el]))
-                                       - dt * results[el]['ode'][col_point])
-                lbg.append(DM.zeros(constraint_list[-1].shape))
-                ubg.append(DM.zeros(constraint_list[-1].shape))
+                nlp.include_equality(func_d_x_pol_d_tau(tau_list[col_point], self.vectorize(x_var[el]))
+                                     - dt * results[el]['ode'][col_point])
 
             for col_point in range(self.degree):
-                constraint_list.append(results[el]['alg'][col_point])
-                lbg.append(DM.zeros(constraint_list[-1].shape))
-                ubg.append(DM.zeros(constraint_list[-1].shape))
+                nlp.include_equality(results[el]['alg'][col_point])
 
             # S cost
             s_cost += results[el]['f_s_cost'][-1]
@@ -291,42 +253,35 @@ class CollocationScheme(DiscretizationSchemeBase):
                     for i in range(self.model.n_u):
                         if not is_equal(self.problem.delta_u_max[i], inf) or not is_equal(self.problem.delta_u_min[i],
                                                                                           -inf):
-                            constraint_list.append(u_var[el][0][i] - u_var[el - 1][0][i])
-                            lbg.append(self.problem.delta_u_min[i])
-                            ubg.append(self.problem.delta_u_max[i])
+                            nlp.include_inequality(u_var[el][0][i] - u_var[el - 1][0][i],
+                                                   lb=self.problem.delta_u_min[i],
+                                                   ub=self.problem.delta_u_max[i])
 
                 elif el == 0 and last_u is not None:
                     for i in range(self.model.n_u):
                         if not is_equal(self.problem.delta_u_max[i], inf) or not is_equal(self.problem.delta_u_min[i],
                                                                                           -inf):
-                            constraint_list.append(u_var[el][0][i] - last_u[i])
-                            lbg.append(self.problem.delta_u_min[i])
-                            ubg.append(self.problem.delta_u_max[i])
+                            nlp.include_inequality(u_var[el][0][i] - last_u[i],
+                                                   lb=self.problem.delta_u_min[i],
+                                                   ub=self.problem.delta_u_max[i])
 
             # Time dependent inequalities
             for i in range(self.problem.n_g_ineq):
                 for collocation_point in range(len(results[el]['g_ineq_' + str(i)])):
-                    constraint_list.append(results[el]['g_ineq_' + str(i)][collocation_point])
-                    lbg.append(-DM.inf(constraint_list[-1].shape))
-                    ubg.append(DM.zeros(constraint_list[-1].shape))
+                    nlp.include_inequality(results[el]['g_ineq_' + str(i)][collocation_point], ub=0)
+
             for i in range(self.problem.n_g_eq):
                 for collocation_point in range(len(results[el]['g_eq_' + str(i)])):
-                    constraint_list.append(results[el]['g_eq_' + str(i)][collocation_point])
-                    lbg.append(DM.zeros(constraint_list[-1].shape))
-                    ubg.append(DM.zeros(constraint_list[-1].shape))
+                    nlp.include_equality(results[el]['g_eq_' + str(i)][collocation_point])
 
         # Final time constraint
         x_f = results[self.finite_elements - 1]['x'][-1]
         f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta, self.model.p_sym], [self.problem.h_final])
-        constraint_list.append(f_h_final(x_f, eta, p))
-        lbg.append(DM.zeros(constraint_list[-1].shape))
-        ubg.append(DM.zeros(constraint_list[-1].shape))
+        nlp.include_equality(f_h_final(x_f, eta, p))
 
         # Time independent constraints
         f_h = Function('h', [self.model.p_sym], [self.problem.h])
-        constraint_list.append(f_h(p))
-        lbg.append(DM.zeros(constraint_list[-1].shape))
-        ubg.append(DM.zeros(constraint_list[-1].shape))
+        nlp.include_equality(f_h(p))
 
         # Cost function
         if self.solution_method.solution_class == 'direct':
@@ -336,20 +291,9 @@ class CollocationScheme(DiscretizationSchemeBase):
         else:
             cost = 0
 
-        nlp_prob = {'g': vertcat(*constraint_list),
-                    'x': all_decision_vars,
-                    'f': cost}
+        nlp.set_objective(cost)
 
-        lbg = vertcat(*lbg)
-        ubg = vertcat(*ubg)
-
-        vars_lb, vars_ub = self._create_variables_bound_vectors()
-        nlp_call = {'lbx': vars_lb,
-                    'ubx': vars_ub,
-                    'lbg': lbg,
-                    'ubg': ubg}
-
-        return nlp_prob, nlp_call
+        return nlp
 
     def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None,
                                   start_at_t_0=False):
@@ -398,7 +342,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             f_x = Function('f_x_pol', [self.model.t_sym, x_par], [x_pol])
 
             # Create function for obtaining y at an given time
-            y_pol, y_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_yz, self.degree,
+            y_pol, y_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_y, self.degree,
                                                                                          name='col_y_approx',
                                                                                          point_at_t0=False)
             y_pol = self.model.convert_expr_from_tau_to_time(y_pol, t_k=t_0, t_kp1=t_f)
@@ -543,7 +487,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             x_init.append(simulation_results.x)
             y_init.append(simulation_results.y)
             u_init.append(simulation_results.u[:self.degree_control])
-            x_0 = simulation_results.x[-1][-1]
+            x_0, _, _ = simulation_results.final_condition()
 
         x_init = self.vectorize(x_init)
         y_init = self.vectorize(y_init)

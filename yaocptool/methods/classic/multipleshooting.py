@@ -6,17 +6,13 @@ Created on Thu Jul 13 17:08:34 2017
 """
 from collections import defaultdict
 
-from casadi import DM, MX, vertcat, Function, repmat, is_equal, inf
+from casadi import DM, vertcat, Function, repmat, is_equal, inf
 
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
+from yaocptool.optimization import NonlinearOptimizationProblem
 
 
 class MultipleShootingScheme(DiscretizationSchemeBase):
-    def _number_of_variables(self):
-        return self.model.n_x * (self.finite_elements + 1) \
-               + self.finite_elements * self.model.n_u * self.degree_control \
-               + self.problem.n_eta
-
     def _create_variables_bound_vectors(self):
         """
         Return two items: the vector of lower bounds and upper bounds
@@ -51,7 +47,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         vars_ub = vertcat(*vars_ub)
         return vars_lb, vars_ub
 
-    def create_nlp_symbolic_variables(self):
+    def create_nlp_symbolic_variables(self, nlp):
         """
        Create the symbolic variables that will be used by the NLP problem
        :rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX, MX, List[MX)
@@ -59,25 +55,27 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         x_var, y_var, u_var = [], [], []
 
         for el in range(self.finite_elements + 1):
-            x_k = [MX.sym('x_' + str(el), self.model.n_x)]
+            x_k = [nlp.create_variable('x_' + str(el), self.model.n_x, lb=self.problem.x_min, ub=self.problem.x_max)]
             x_var.append(x_k)
 
         for el in range(self.finite_elements):
-            y_k = [MX.sym('y_' + str(el), self.model.n_y)]
+            y_k = [nlp.create_variable('y_' + str(el), self.model.n_y, lb=self.problem.y_min, ub=self.problem.y_max)]
             y_var.append(y_k)
 
         for el in range(self.finite_elements):
             u_k = []
             for n in range(self.degree_control):
-                u_k.append(MX.sym('u_' + str(el) + '_' + str(n), self.model.n_u))
+                u_k.append(nlp.create_variable('u_' + str(el) + '_' + str(n), self.model.n_u,
+                                               lb=self.problem.u_min, ub=self.problem.u_max))
             u_var.append(u_k)
 
-        eta = MX.sym('eta', self.problem.n_eta)
-        p_opt = MX.sym('p_opt', self.problem.n_p_opt)
+        eta = nlp.create_variable('eta', self.problem.n_eta)
+        p_opt = nlp.create_variable('p_opt', self.problem.n_p_opt, lb=self.problem.p_opt_min, ub=self.problem.p_opt_max)
 
         theta_opt = []
         for el in range(self.finite_elements):
-            theta_opt.append(MX.sym('theta_opt_' + str(el), self.problem.n_theta_opt))
+            theta_opt.append(nlp.create_variable('theta_opt_' + str(el), self.problem.n_theta_opt,
+                                                 lb=self.problem.theta_opt_min, ub=self.problem.theta_opt_max))
 
         v_x = self.vectorize(x_var)
         v_y = self.vectorize(y_var)
@@ -143,6 +141,14 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         return x, y, u, eta, p_opt, theta_opt
 
     def discretize(self, x_0=None, p=None, theta=None, last_u=None):
+        """Discretize the OCP, returning a Optimization Problem
+
+        :param x_0: initial condition
+        :param p: parameters
+        :param theta: theta parameters
+        :param last_u: last applied control
+        :rtype: NonlinearOptimizationProblem
+        """
         if p is None:
             p = []
         if theta is None:
@@ -150,13 +156,12 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         if x_0 is None:
             x_0 = self.problem.x_0
 
-        # Create NLP symbolic variables
-        all_decision_vars, x_var, y_var, u_var, eta, p_opt, theta_opt = self.create_nlp_symbolic_variables()
+        # Create nlp object
+        nlp = NonlinearOptimizationProblem(name='collocation_' + self.problem.name)
 
+        # Create NLP symbolic variables
+        all_decision_vars, x_var, y_var, u_var, eta, p_opt, theta_opt = self.create_nlp_symbolic_variables(nlp)
         cost = 0
-        constraint_list = []
-        lbg = []
-        ubg = []
 
         # Put the symbolic optimization parameters in the parameter vector
         for i, p_opt_index in enumerate(self.problem.get_p_opt_indices()):
@@ -172,9 +177,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         # Initial time constraint/initial condition
         f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
-        constraint_list.append(f_h_initial(x_var[0][0], x_0))
-        lbg.append(DM.zeros(constraint_list[-1].shape))
-        ubg.append(DM.zeros(constraint_list[-1].shape))
+        nlp.include_equality(f_h_initial(x_var[0][0], x_0))
 
         # Create functions to be evaluated
         functions = defaultdict(dict)
@@ -206,14 +209,10 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 cost += results[el]['x'][0][-1]
 
             # Continuity constraint for defining x
-            constraint_list.append(x_at_el_p_1 - x_var[el + 1][0])
-            lbg.append(DM.zeros(constraint_list[-1].shape))
-            ubg.append(DM.zeros(constraint_list[-1].shape))
+            nlp.include_equality(x_at_el_p_1 - x_var[el + 1][0])
 
             # Defining y
-            constraint_list.append(y_end_el - y_var[el][0])
-            lbg.append(DM.zeros(constraint_list[-1].shape))
-            ubg.append(DM.zeros(constraint_list[-1].shape))
+            nlp.include_equality(y_end_el - y_var[el][0])
 
             # S cost
             s_cost += results[el]['f_s_cost'][-1]
@@ -224,62 +223,40 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                     for i in range(self.model.n_u):
                         if not is_equal(self.problem.delta_u_max[i], inf) or not is_equal(self.problem.delta_u_min[i],
                                                                                           -inf):
-                            constraint_list.append(u_var[el][0][i] - u_var[el - 1][0][i])
-                            lbg.append(self.problem.delta_u_min[i])
-                            ubg.append(self.problem.delta_u_max[i])
+                            nlp.include_inequality(u_var[el][0][i] - u_var[el - 1][0][i],
+                                                   lb=self.problem.delta_u_min[i], ub=self.problem.delta_u_max[i])
 
                 elif el == 0 and last_u is not None:
                     for i in range(self.model.n_u):
-                        if not is_equal(self.problem.delta_u_max[i], inf) or not is_equal(self.problem.delta_u_min[i],
-                                                                                          -inf):
-                            constraint_list.append(u_var[el][0][i] - last_u[i])
-                            lbg.append(self.problem.delta_u_min[i])
-                            ubg.append(self.problem.delta_u_max[i])
+                        if (not is_equal(self.problem.delta_u_max[i], inf)
+                                or not is_equal(self.problem.delta_u_min[i], -inf)):
+                            nlp.include_inequality(u_var[el][0][i] - last_u[i],
+                                                   lb=self.problem.delta_u_min[i], ub=self.problem.delta_u_max[i])
 
             # Time dependent inequalities
             for i in range(self.problem.n_g_ineq):
-                constraint_list.append(results[el]['g_ineq_' + str(i)][0])
-                lbg.append(-DM.inf(constraint_list[-1].shape))
-                ubg.append(DM.zeros(constraint_list[-1].shape))
+                nlp.include_inequality(results[el]['g_ineq_' + str(i)][0], ub=0)
 
             # Time dependent equalities
             for i in range(self.problem.n_g_eq):
-                constraint_list.append(results[el]['g_eq_' + str(i)][0])
-                lbg.append(DM.zeros(constraint_list[-1].shape))
-                ubg.append(DM.zeros(constraint_list[-1].shape))
+                nlp.include_equality(results[el]['g_eq_' + str(i)][0])
 
         # Final time constraint
         f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta, self.model.p_sym], [self.problem.h_final])
-        constraint_list.append(f_h_final(x_var[-1][0], eta, p))
-        lbg.append(DM.zeros(constraint_list[-1].shape))
-        ubg.append(DM.zeros(constraint_list[-1].shape))
+        nlp.include_equality(f_h_final(x_var[-1][0], eta, p))
 
         # Time independent constraints
         f_h = Function('h', [self.model.p_sym], [self.problem.h])
-        constraint_list.append(f_h(p))
-        lbg.append(DM.zeros(constraint_list[-1].shape))
-        ubg.append(DM.zeros(constraint_list[-1].shape))
+        nlp.include_equality(f_h(p))
 
         if self.solution_method.solution_class == 'direct':
             if not self.solution_method.cost_as_a_sum:
                 f_final_cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])
                 cost = f_final_cost(x_var[-1][0], p)
             cost += s_cost
+        nlp.set_objective(cost)
 
-        nlp_prob = {'g': vertcat(*constraint_list),
-                    'x': all_decision_vars,
-                    'f': cost}
-
-        lbg = vertcat(*lbg)
-        ubg = vertcat(*ubg)
-        vars_lb, vars_ub = self._create_variables_bound_vectors()
-
-        nlp_call = {'lbx': vars_lb,
-                    'ubx': vars_ub,
-                    'lbg': lbg,
-                    'ubg': ubg}
-
-        return nlp_prob, nlp_call
+        return nlp
 
     def get_system_at_given_times(self, x_var, y_var, u_var, time_dict=None, p=None, theta=None, functions=None,
                                   start_at_t_0=False):
@@ -352,14 +329,15 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             if t_0 in element_breakpoints:
                 element_breakpoints.remove(t_0)
 
-            for t in element_breakpoints:
+            for t_ind, t in enumerate(element_breakpoints):
                 t_next = t
                 p_i = vertcat(p, theta[el], self.vectorize(u_var[el]))
 
                 # Do the simulation
                 sim_result = dae_sys.simulate(x_init, t_0=t_init, t_f=t_next, p=p_i, y_0=self.problem.y_guess,
-                                              integrator_type=self.solution_method.integrator_type)
-
+                                              integrator_type=self.solution_method.integrator_type,
+                                              integrator_options={'name': 'integrator_' + str(el) + '_' + str(t_ind)}
+                                              )
                 # Fetch values from results
                 x_t, yz_t = sim_result['xf'], sim_result['zf']
                 y_t, z_t = self.model.slice_yz_to_y_and_z(yz_t)
@@ -490,7 +468,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             x_init.append([simulation_results.x[-1]])
             y_init.append([simulation_results.y[-1]])
             u_init.append(simulation_results.u[:self.degree_control])
-            x_0 = simulation_results.x[-1][-1]
+            x_0, _, _ = simulation_results.final_condition()
 
         x_init = self.vectorize(x_init)
         y_init = self.vectorize(y_init)

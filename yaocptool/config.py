@@ -14,7 +14,7 @@ SOLVER_OPTIONS = {
         # "ipopt.ma27_liw_init_factor": 15,
         # "ipopt.ma27_la_init_factor": 15,
         'ipopt.max_iter': 40000,
-        'expand': True,
+        # 'expand': True,
         # 'jit': True,
         # "ipopt.hessian_approximation": "limited-memory",
         # 'ipopt.tol': 1e-14,

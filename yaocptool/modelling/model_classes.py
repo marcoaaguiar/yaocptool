@@ -6,12 +6,13 @@ Created on Thu Jun 09 10:50:48 2016
 """
 import collections
 import copy
-from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec
+from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec, horzcat
 
 from yaocptool import remove_variables_from_vector, config
-from yaocptool.modelling import DAESystem
+from yaocptool.modelling import DAESystem, SimulationResult
+
+
 # TODO: Check linearize method
-from yaocptool.modelling.simualtion_result import SimulationResult
 
 
 class SystemModel:
@@ -124,6 +125,26 @@ class SystemModel:
     @property
     def all_alg(self):
         return vertcat(self.alg, self.alg_z, self.con)
+
+    @property
+    def x_names(self):
+        return [self.x_sym[i].name() for i in range(self.n_x)]
+
+    @property
+    def y_names(self):
+        return [self.y_sym[i].name() for i in range(self.n_y)]
+
+    @property
+    def u_names(self):
+        return [self.u_sym[i].name() for i in range(self.n_u)]
+
+    @property
+    def p_names(self):
+        return [self.p_sym[i].name() for i in range(self.n_p)]
+
+    @property
+    def theta_names(self):
+        return [self.theta_sym[i].name() for i in range(self.n_theta)]
 
     def __repr__(self):
         s = ''
@@ -485,7 +506,7 @@ class SystemModel:
         :param list||DM x_0: Initial condition
         :param float||list t_f: Final time of the simulation, can be a list of final times for sequential simulation
         :param float t_0: Initial time
-        :param list u: Controls of the system to be simulated
+        :param list||DM u: Controls of the system to be simulated
         :param DM||SX||list p: Simulation parameters
         :param dict theta: Parameters theta, which varies for each simulation for sequential simulations.
                            If t_f is a list then theta has to have one entry for each k in [0,...,len(t_f)]
@@ -518,8 +539,9 @@ class SystemModel:
 
         dae_sys = self.get_dae_system()
 
-        t_list = [t_0]
-        x_list = [[x_0]]
+        t_x_list = [t_0]
+        t_yu_list = []
+        x_list = [x_0]
         y_list = []
         u_list = []
         t_k = t_0
@@ -529,23 +551,26 @@ class SystemModel:
             p_k = vertcat(p, theta[k], u[k])
             result = dae_sys.simulate(x_0=x_k, t_f=t_kpp, t_0=t_k, p=p_k, y_0=y_k,
                                       integrator_type=integrator_type, integrator_options=integrator_options)
-            t_list.append(t_kpp)
-            x_list.append([result['xf']])
-            y_list.append([result['zf']])
-            u_list.append([u[k]])
+            t_x_list.append(t_kpp)
+            t_yu_list.append(t_kpp)
+            x_list.append(result['xf'])
+            y_list.append(result['zf'])
+            u_list.append(u[k])
 
             t_k = t_kpp
             x_k = result['xf']
             y_k = result['zf']
-        t_list = vertcat(t_list)
+        t_x_list = horzcat(*t_x_list)
+        t_yu_list = horzcat(*t_yu_list)
 
-        simulation_result = SimulationResult(model_name=self.name, t_0=t_0, t_f=t_f[-1],
-                                             x=x_list, y=y_list, u=u_list, t=t_list, finite_elements=len(t_f))
+        simulation_result = SimulationResult(model_name=self.name,
+                                             n_x=self.n_x, n_y=self.n_y, n_u=self.n_u,
+                                             x_names=self.x_names, y_names=self.y_names, u_names=self.u_names,
+                                             t_0=t_0, t_f=t_f[-1], finite_elements=len(t_f))
 
-        simulation_result.x_names = [self.x_sym[i].name() for i in range(self.n_x)]
-        simulation_result.y_names = [self.y_sym[i].name() for i in range(self.n_y)]
-        simulation_result.z_names = [self.z_sym[i].name() for i in range(self.n_z)]
-        simulation_result.u_names = [self.u_sym[i].name() for i in range(self.n_u)]
+        simulation_result.insert_data('x', time=t_x_list, value=horzcat(*x_list))
+        simulation_result.insert_data('y', time=t_yu_list, value=horzcat(*y_list))
+        simulation_result.insert_data('u', time=t_yu_list, value=horzcat(*u_list))
 
         return simulation_result
 
