@@ -61,16 +61,6 @@ class TestSystemModel(TestCase):
             model = self.models[model_name]
             self.assertEqual(model.n_theta, self.answer_test_n_theta[model_name])
 
-    def test_n_yz(self):
-        for model_name in self.models:
-            model = self.models[model_name]
-            self.assertEqual(model.n_yz, self.answer_test_n_yz[model_name])
-
-    def test_yz_sym(self):
-        for model_name in self.models:
-            model = self.models[model_name]
-            self.assertTrue(is_equal(model.yz_sym, vertcat(model.y_sym, model.z_sym)))
-
     def test_x_sys_sym(self):
         for model_name in self.models:
             model = self.models[model_name]

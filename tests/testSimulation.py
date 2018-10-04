@@ -29,7 +29,6 @@ copy_of_sim_result.extend(sim_result2)
 
 sim_result3 = model.simulate(x_0, range(-20, -10), -21, u=1., p=[1], theta=dict(zip(range(0, 10), [0] * 10)))
 copy_of_sim_result.extend(sim_result3)
-# copy_of_sim_result.plot([{'x': 'all'}, {'y': 'all'}, {'u': 'all'}])
+copy_of_sim_result.plot([{'x': ['x_0', 1]}, {'y': 'all'}, {'u': 'all'}])
 
-
-sim_result.plot([{'x': 'all'}, {'y': 'all'}, {'u': 'all'}])
+# sim_result.plot([{'x': 'all'}, {'y': 'all'}, {'u': 'all'}])

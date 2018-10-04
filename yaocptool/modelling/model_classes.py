@@ -126,6 +126,26 @@ class SystemModel:
     def all_alg(self):
         return vertcat(self.alg, self.alg_z, self.con)
 
+    @property
+    def x_names(self):
+        return [self.x_sym[i].name() for i in range(self.n_x)]
+
+    @property
+    def y_names(self):
+        return [self.y_sym[i].name() for i in range(self.n_y)]
+
+    @property
+    def u_names(self):
+        return [self.u_sym[i].name() for i in range(self.n_u)]
+
+    @property
+    def p_names(self):
+        return [self.p_sym[i].name() for i in range(self.n_p)]
+
+    @property
+    def theta_names(self):
+        return [self.theta_sym[i].name() for i in range(self.n_theta)]
+
     def __repr__(self):
         s = ''
         s += '=' * 20 + '\n'
@@ -543,11 +563,10 @@ class SystemModel:
         t_x_list = horzcat(*t_x_list)
         t_yu_list = horzcat(*t_yu_list)
 
-        simulation_result = SimulationResult(model_name=self.name, t_0=t_0, t_f=t_f[-1], finite_elements=len(t_f))
-
-        simulation_result.create_entry('x', size=self.n_x, names=[self.x_sym[i].name() for i in range(self.n_x)])
-        simulation_result.create_entry('y', size=self.n_y, names=[self.y_sym[i].name() for i in range(self.n_y)])
-        simulation_result.create_entry('u', size=self.n_u, names=[self.u_sym[i].name() for i in range(self.n_u)])
+        simulation_result = SimulationResult(model_name=self.name,
+                                             n_x=self.n_x, n_y=self.n_y, n_u=self.n_u,
+                                             x_names=self.x_names, y_names=self.y_names, u_names=self.u_names,
+                                             t_0=t_0, t_f=t_f[-1], finite_elements=len(t_f))
 
         simulation_result.insert_data('x', time=t_x_list, value=horzcat(*x_list))
         simulation_result.insert_data('y', time=t_yu_list, value=horzcat(*y_list))

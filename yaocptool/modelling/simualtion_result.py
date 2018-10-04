@@ -9,7 +9,7 @@ from casadi import horzcat, vertcat
 
 
 class SimulationResult(DataSet):
-    def __init__(self, **kwargs):
+    def __init__(self, n_x, n_y, n_u, x_names=None, y_names=None, u_names=None, **kwargs):
         self.model_name = ''
         self.delta_t = 1
         self.t_0 = 0
@@ -17,6 +17,12 @@ class SimulationResult(DataSet):
         self.finite_elements = 0
 
         DataSet.__init__(self, **kwargs)
+
+        self.create_entry('x', size=n_x, names=x_names)
+        self.create_entry('y', size=n_y, names=y_names)
+        self.create_entry('u', size=n_u, names=u_names)
+
+
 
     @property
     def x(self):
@@ -85,8 +91,4 @@ class SimulationResult(DataSet):
         self.t_0 = min(self.t_0, other_sim_result.t_0)
         self.finite_elements += other_sim_result.finite_elements
 
-        self.insert_data('x', value=other_sim_result.data['x']['values'], time=other_sim_result.data['x']['time'])
-        self.insert_data('y', value=other_sim_result.data['y']['values'], time=other_sim_result.data['y']['time'])
-        self.insert_data('u', value=other_sim_result.data['u']['values'], time=other_sim_result.data['u']['time'])
-
-        self.sort()
+        DataSet.extend(self, other_sim_result)
