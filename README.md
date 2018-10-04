@@ -4,7 +4,7 @@
 ## Required Packages
 
 ```commandline
-pip install casadi numpy scipy sobol matplotlib typing
+pip install casadi numpy scipy sobol matplotlib
 ```
 
 ## How to use
@@ -17,9 +17,9 @@ Trust me, it is easier!
 ```python
 from yaocptool.modelling import SystemModel
 
-model = SystemModel(n_x=1, n_u=1)
-x = model.x_sym # vector of state variables
-u = model.u_sym # vector of control variables
+model = SystemModel(name='simple_model')
+x = model.create_state('x') # vector of state variables
+u = model.create_control('u') # vector of control variables
 
 # Include the dynamic equation
 ode = [-x + u]

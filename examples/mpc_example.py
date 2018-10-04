@@ -27,7 +27,7 @@ t_s = prediction_window / finite_elements
 model = SystemModel(name='2-Tanks')
 
 # Get the symbolic variables
-h_1, h_2 = model.create_state('h_1'), model.create_state('h_2')
+h = model.create_state('h', 2)
 u = model.create_control('u')
 
 # Model Parameters
@@ -36,8 +36,8 @@ a = 0.071e-2  # (m^2) Holes cross section
 g = 9.8  # gravitational acceleration
 
 # Define the model ODEs
-ode = [(u - a * sqrt(2 * g * h_1)) / A,
-       (a * sqrt(2 * g * h_1) - a * sqrt(2 * g * h_2)) / A]
+ode = [(u - a * sqrt(2 * g * h[0])) / A,
+       (a * sqrt(2 * g * h[0]) - a * sqrt(2 * g * h[1])) / A]
 
 # Include the equations in the model
 model.include_system_equations(ode=ode)
@@ -57,14 +57,14 @@ problem.u_guess = initial_control
 problem.t_f = prediction_window
 
 # Define the integrative cost ( cost = V(..., t_f) + \int_{t_0}^{t_f} L(...) dt) + \sum_{k} S(..., t_k)
-problem.L = (h_1 - 2) ** 2 + 0 * (h_2 - 1) ** 2 + u ** 2
+problem.L = (h[0] - 2) ** 2 + 0 * (h[1] - 1) ** 2 + u ** 2
 
 # We can change the bounds, e.g.: u_min, x_max, y_min, ...
 problem.u_min = 0.001
 problem.x_min = [0.05, 0.05]
 
 # Or include other constraints (g(...) <= 0)
-problem.include_time_inequality(h_1 + h_2 - 10)
+problem.include_time_inequality(h[0] + h[1] - 10)
 
 ######################
 #  Solution Method   #

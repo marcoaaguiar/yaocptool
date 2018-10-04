@@ -1,15 +1,13 @@
 from unittest import TestCase
 
 from casadi import vertcat, SX, is_equal
-from typing import List, Dict
 from .models import create_siso, create_2x1_mimo, create_2x2_mimo
-from yaocptool.modelling import SystemModel, OptimalControlProblem
 
 
 class TestSystemModel(TestCase):
     def setUp(self):
-        self.models = {}  # type: Dict[str, SystemModel]
-        self.problems = {}  # type: Dict[str, OptimalControlProblem]
+        self.models = {}
+        self.problems = {}
         for creator in [create_siso, create_2x1_mimo, create_2x2_mimo]:
             model, problem = creator()
             self.models[model.name] = model
