@@ -1,6 +1,8 @@
 from collections import defaultdict
 from functools import partial
 
+from yaocptool.modelling import DataSet
+
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -36,7 +38,6 @@ class OptimizationResult:
 
         self.x_names = []
         self.y_names = []
-        self.z_names = []
         self.u_names = []
         self.theta_opt_names = []
 
@@ -53,8 +54,16 @@ class OptimizationResult:
         self.theta_opt = []
         self.eta = []
 
+        self._dataset = None
+
         for (k, v) in kwargs.items():
             setattr(self, k, v)
+
+    @property
+    def dataset(self):
+        if self._dataset is None:
+            self._dataset = self.to_dataset()
+        return self._dataset
 
     @property
     def is_collocation(self):
@@ -74,16 +83,6 @@ class OptimizationResult:
                 raise Exception('{} attribute {} is None'.format(self.__class__.__name__, attr))
         return True
 
-    # Plot
-    @staticmethod
-    def _plot_entry(t_vector, data_vector, row, label='', plot_style='plot', **kwargs):
-        if plot_style not in ['plot', 'step']:
-            raise ValueError('Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(plot_style))
-        if plot_style == 'plot':
-            return plt.plot(t_vector.T, data_vector[row, :].T, label=label, **kwargs)
-        elif plot_style == 'step':
-            return plt.step(t_vector.T, data_vector[row, :].T, label=label, where='post', **kwargs)
-
     def first_control(self):
         """Return the first element of the control vector
 
@@ -91,6 +90,41 @@ class OptimizationResult:
         """
         u_0 = self.u_interpolation_data['values'][0][0]
         return u_0
+
+    def to_dataset(self):
+        """
+            Return a dataset with the data of x, y, and u
+
+        :rtype: DataSet
+        """
+        dataset = DataSet(name=self.problem_name + '_dataset')
+
+        dataset.max_delta_t = (self.t_f - self.t_0) / self.finite_elements
+        dataset.plot_style = 'plot'
+
+        dataset.create_entry('x', size=len(self.x_names), names=self.x_names)
+        dataset.create_entry('y', size=len(self.y_names), names=self.y_names)
+        dataset.create_entry('u', size=len(self.u_names), names=self.u_names)
+        dataset.create_entry('theta_opt', size=len(self.theta_opt_names), names=self.theta_opt_names)
+
+        x_times = self.x_interpolation_data['time'] + [[self.t_f]]
+        for el in range(self.finite_elements + 1):
+            time = horzcat(*x_times[el])
+            values = horzcat(*self.x_interpolation_data['values'][el])
+            dataset.insert_data('x', time, values)
+
+        for el in range(self.finite_elements):
+            time_y = horzcat(*self.y_interpolation_data['time'][el])
+            values_y = horzcat(*self.y_interpolation_data['values'][el])
+            dataset.insert_data('y', time_y, values_y)
+
+            time_u = horzcat(*self.u_interpolation_data['time'][el])
+            values_u = horzcat(*self.u_interpolation_data['values'][el])
+            dataset.insert_data('u', time_u, values_u)
+
+        dataset.insert_data('theta_opt', time=horzcat(*self.time_breakpoints[:-1]), value=horzcat(*self.theta_opt))
+
+        return dataset
 
     def plot(self, plot_list, figures=None, show=True):
         """Plot the optimization result.
@@ -101,99 +135,4 @@ class OptimizationResult:
         :param list figures: OPTIONAL: list of figures to be plotted in. If not provided it will create new figures.
         :param bool show: OPTIONAL: select if matplotlib.pyplot.show should be applied after the plots.
         """
-        if isinstance(plot_list, dict):
-            plot_list = [plot_list]
-
-        used_figures = []
-
-        if self.is_valid:
-            x_values = self.x_interpolation_data['values']
-            y_values = self.y_interpolation_data['values']
-            u_values = self.u_interpolation_data['values']
-
-            x_values = horzcat(*[horzcat(*x_values[l]) for l in range(self.finite_elements)])
-            y_values = horzcat(*[horzcat(*y_values[l]) for l in range(self.finite_elements)])
-            u_values = horzcat(*[horzcat(*u_values[l]) for l in range(self.finite_elements)])
-            theta_opt_values = horzcat(*self.theta_opt)
-
-            t_x = self.x_interpolation_data['time']
-            t_y = self.y_interpolation_data['time']
-            t_u = self.u_interpolation_data['time']
-
-            t_x = horzcat(*[horzcat(*t_x[l]) for l in range(self.finite_elements)])
-            t_y = horzcat(*[horzcat(*t_y[l]) for l in range(self.finite_elements)])
-            t_u = horzcat(*[horzcat(*t_u[l]) for l in range(self.finite_elements)])
-
-            for k, entry in enumerate(plot_list):
-                if figures is not None:
-                    fig = plt.figure(figures[k].number)
-                else:
-                    fig = plt.figure(k)
-
-                used_figures.append(fig)
-
-                lines = []
-
-                # Plot optimization x data
-                if 'x' in entry:
-                    x_indices = entry['x']
-                    if x_indices == 'all':
-                        x_indices = range(x_values.shape[0])
-                    # for ind, value in enumerate(x_indices):
-                    #     if isinstance(value, str) and not value == 'all':
-                    #         x_indices.insert(self.x_names.index(value), x_indices.index(value))
-
-                    for l in x_indices:
-                        line = self._plot_entry(t_x, x_values, l, label=self.x_names[l], plot_style='plot')
-                        lines.append(line)
-
-                # Plot optimization y data
-                if 'y' in entry:
-                    y_indices = entry['y']
-                    if y_indices == 'all':
-                        y_indices = range(y_values.shape[0])
-                    for l in y_indices:
-                        line = self._plot_entry(t_y, y_values, l, label=self.y_names[l], plot_style='plot')
-                        lines.append(line)
-
-                # Plot optimization u data
-                if 'u' in entry:
-                    u_indices = entry['u']
-                    if u_indices == 'all':
-                        u_indices = range(u_values.shape[0])
-                    for l in u_indices:
-                        plot_style = 'step' if self.degree_control == 1 else 'plot'
-                        line = self._plot_entry(t_u, u_values, l, label=self.u_names[l], plot_style=plot_style)
-                        lines.append(line)
-
-                # Plot theta_op
-                if 'theta_opt' in entry:
-                    theta_indices = entry['theta_opt']
-                    if theta_indices == 'all':
-                        theta_indices = range(theta_opt_values.shape[0])
-
-                    for l in theta_indices:
-                        plot_style = 'step'
-                        line = self._plot_entry(horzcat(*self.time_breakpoints[:-1]), theta_opt_values, l,
-                                                label=self.theta_opt_names[l],
-                                                plot_style=plot_style)
-                        lines.append(line)
-
-                # Plot optimization any other data included in the OptimizationResult
-                for key in set(entry.keys()).difference(['x', 'y', 'u', 'theta_opt']):
-                    for l in entry[key]:
-                        entry_time = horzcat(
-                            *[horzcat(*self.other_data[key]['times'][i]) for i in range(self.finite_elements)])
-                        entry_values = horzcat(
-                            *[horzcat(*self.other_data[key]['values'][i]) for i in range(self.finite_elements)])
-                        self._plot_entry(entry_time, entry_values, l, label=key + '[' + repr(l) + ']',
-                                         plot_style='plot')
-                plt.grid()
-                axes = fig.axes
-                axes[0].ticklabel_format(useOffset=False)
-                plt.legend(ncol=4)
-
-        if show:
-            plt.show()
-
-        return used_figures
+        return self.dataset.plot(plot_list, figures, show)

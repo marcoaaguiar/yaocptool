@@ -178,11 +178,11 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         self.p_k = p_k[:self.model.n_x, :self.model.n_x]
 
         # Save in the data set
-        self.dataset.insert_data('x', self.x_mean, t_k)
-        self.dataset.insert_data('y', x_mean[self.model.n_x:], t_k)
-        self.dataset.insert_data('meas', meas_corr, t_k)
-        self.dataset.insert_data('P', vec(self.p_k), t_k)
-        self.dataset.insert_data('P_y', p_k[self.model.n_x:, self.model.n_x:], t_k)
+        self.dataset.insert_data('x', t_k, self.x_mean)
+        self.dataset.insert_data('y', t_k, x_mean[self.model.n_x:])
+        self.dataset.insert_data('meas', t_k, meas_corr)
+        self.dataset.insert_data('P', t_k, vec(self.p_k))
+        self.dataset.insert_data('P_y', t_k, p_k[self.model.n_x:, self.model.n_x:])
 
         return self.x_mean, self.p_k
 

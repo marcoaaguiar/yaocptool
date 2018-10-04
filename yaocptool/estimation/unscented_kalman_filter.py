@@ -159,7 +159,6 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         # Obtain the means
         x_aug_pred = sum([weights_m[i] * x_aug_ut_list[i] for i in range(self.n_sigma_points)])
         x_pred = x_aug_pred[:self.model.n_x]
-        y_pred = x_aug_pred[self.model.n_y:]
         meas_pred = sum([weights_m[i] * meas_ut_list[i] for i in range(self.n_sigma_points)])
 
         # Compute the covariances
@@ -203,37 +202,38 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         self.p_k = cov_x_aug[:self.model.n_x, :self.model.n_x]
 
         # Save in the data set
-        self.dataset.insert_data('x', self.x_mean, t_k)
-        self.dataset.insert_data('y', x_mean[self.model.n_x:], t_k)
-        self.dataset.insert_data('meas', meas_corr, t_k)
-        self.dataset.insert_data('P', vec(self.p_k), t_k)
-        self.dataset.insert_data('P_y', cov_x_aug[self.model.n_x:, self.model.n_x:], t_k)
+        self.dataset.insert_data('x', t_k, self.x_mean)
+        self.dataset.insert_data('y', t_k, x_mean[self.model.n_x:])
+        self.dataset.insert_data('meas', t_k, meas_corr)
+        self.dataset.insert_data('P', t_k, vec(self.p_k))
+        self.dataset.insert_data('P_y', t_k, cov_x_aug[self.model.n_x:, self.model.n_x:])
 
         return x_mean, cov_x_aug
 
     def _estimate_square_root_ukf(self, t_k, y_k, u_k):
         raise NotImplementedError
 
-    def cholupdate(self, R, x, sign):
+    @staticmethod
+    def cholupdate(r_matrix, x, sign):
         import numpy as np
         p = np.size(x)
         x = x.T
         for k in range(p):
             if sign == '+':
-                r = np.sqrt(R[k, k] ** 2 + x[k] ** 2)
+                r = np.sqrt(r_matrix[k, k] ** 2 + x[k] ** 2)
             elif sign == '-':
-                r = np.sqrt(R[k, k] ** 2 - x[k] ** 2)
+                r = np.sqrt(r_matrix[k, k] ** 2 - x[k] ** 2)
             else:
                 raise ValueError("sign can be '-' or '+', value given = {}".format(sign))
-            c = r / R[k, k]
-            s = x[k] / R[k, k]
-            R[k, k] = r
+            c = r / r_matrix[k, k]
+            s = x[k] / r_matrix[k, k]
+            r_matrix[k, k] = r
             if sign == '+':
-                R[k, k + 1:p] = (R[k, k + 1:p] + s * x[k + 1:p]) / c
+                r_matrix[k, k + 1:p] = (r_matrix[k, k + 1:p] + s * x[k + 1:p]) / c
             elif sign == '-':
-                R[k, k + 1:p] = (R[k, k + 1:p] - s * x[k + 1:p]) / c
-            x[k + 1:p] = c * x[k + 1:p] - s * R[k, k + 1:p]
-        return R
+                r_matrix[k, k + 1:p] = (r_matrix[k, k + 1:p] - s * x[k + 1:p]) / c
+            x[k + 1:p] = c * x[k + 1:p] - s * r_matrix[k, k + 1:p]
+        return r_matrix
 
     def _get_sigma_points_and_weights(self, x_mean, x_cov):
         # Initialize variables

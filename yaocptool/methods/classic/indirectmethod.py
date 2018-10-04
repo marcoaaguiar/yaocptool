@@ -53,17 +53,16 @@ class IndirectMethod(SolutionMethodsBase):
                 warnings.warn('Problem contains state constraints, they will be ignored')
                 self.problem.y_max[i] = inf
 
-
     def include_adjoint_states(self):
         lamb = SX.sym('lamb', self.model.n_x)
-        nu = SX.sym('nu', self.model.n_yz)
+        nu = SX.sym('nu', self.model.n_y)
 
         self.problem.eta = SX.sym('eta', self.problem.n_h_final)
 
         self.problem.H = self.problem.L + dot(lamb, self.model.ode) + dot(nu, self.model.all_alg)
 
         l_dot = -gradient(self.problem.H, self.model.x_sym)
-        alg_eq = gradient(self.problem.H, self.model.yz_sym)
+        alg_eq = gradient(self.problem.H, self.model.y_sym)
 
         self.problem.include_state(lamb, l_dot, suppress=True)
         self.model.hasAdjointVariables = True

@@ -104,13 +104,6 @@ class DiscretizationSchemeBase:
         """
         raise NotImplementedError
 
-    def _create_variables_bound_vectors(self):
-        """
-        Return two items: the vector of lower bounds and upper bounds
-        :rtype: (DM, DM)
-        """
-        raise NotImplementedError
-
     def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None,
                                   start_at_t_0=False):
         # TODO: calculate quadratures, for error evaluation of aug lagrange

@@ -1,7 +1,9 @@
 from __future__ import print_function
+
 import copy
 from collections import defaultdict
 from functools import partial
+
 from casadi import horzcat, vertcat, DM, sum2
 
 try:
@@ -25,13 +27,17 @@ class DataSet:
         :param str name: name of th dataset
         :param str plot_style: default plot style. plot = linear interpolation, step = piecewise constant
         ('plot' | 'step')
+        :param bool find_discontinuity: Default: True. If True, it will try to find discontinuity on the data, and plot
+        with gaps where data is missing/not available, instead of a line conecting all data points.
         :param float max_sampling_time: maximum expected distance between two time data. This is used to detect
         discontinuity on the data, and plot it separately.
         """
         self.name = name
         self.data = defaultdict(partial(dict, [('time', DM([])), ('names', None), ('values', DM([])), ('size', None)]))
+
         self.plot_style = 'step'
         self.max_delta_t = None
+        self.find_discontinuity = True
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -74,7 +80,7 @@ class DataSet:
         """
         return self.data[entry]['size']
 
-    def insert_data(self, entry, value, time):
+    def insert_data(self, entry, time, value):
         value = vertcat(value)
 
         # TODO: Here is a correction for a BUG on CASADI horzcat with DM([]), refactor when CASADI corrects this
@@ -111,10 +117,10 @@ class DataSet:
             if not self.get_entry_size(entry) == other_dataset.get_entry_size(entry):
                 raise ValueError('The size of the same entry is different in the two datasets, '
                                  '{}!={}'.format(self.get_entry_size(entry), other_dataset.get_entry_size(entry)))
-            if not entry in self.data:
+            if entry not in self.data:
                 self.create_entry(entry, size=other_dataset.get_entry_size(entry),
                                   names=other_dataset.get_entry_names(entry))
-            self.insert_data(entry, value=other_dataset.data[entry]['values'], time=other_dataset.data[entry]['time'])
+            self.insert_data(entry, time=other_dataset.data[entry]['time'], value=other_dataset.data[entry]['values'])
 
         self.sort()
 
@@ -136,8 +142,9 @@ class DataSet:
             self.data[entry]['values'] = horzcat(*values)
 
     def _plot_entry(self, t_vector, data_vector, row, label='', plot_style='plot'):
-        t_vector, data_vector = self._find_discontinuity_for_plotting(t_vector, data_vector)
-        print(t_vector)
+        if self.find_discontinuity:
+            t_vector, data_vector = self._find_discontinuity_for_plotting(t_vector, data_vector)
+
         if plot_style not in ['plot', 'step']:
             raise ValueError('Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(plot_style))
         if plot_style == 'plot':
@@ -194,6 +201,9 @@ class DataSet:
             lines = []
             # Plot optimization x data
             for entry in entry_dict:
+                if entry not in self.data:
+                    raise Exception("Entry not found in the dataset. Entries: {}".format(self.data.keys()))
+
                 indexes = entry_dict[entry]
                 # if it is 'all'
                 if indexes == 'all':

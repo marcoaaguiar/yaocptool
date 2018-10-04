@@ -135,8 +135,8 @@ class PCEConverter:
             rhs = self.socp.g_stochastic_rhs[i]
 
             name = 'stoch_constr_' + str(i)
-            [stoch_ineq_mean, stoch_ineq_var,
-             stoch_ineq_param] = self._include_statistics_of_expression(var, name, exp_phi, ls_factor, model, problem)
+            [stoch_ineq_mean, stoch_ineq_var, _] = self._include_statistics_of_expression(var, name, exp_phi, ls_factor,
+                                                                                          model, problem)
 
             stoch_cosntr_viol_prob = problem.create_optimization_theta('viol_prob_' + name, new_theta_opt_max=0.0)
             k_viol = sqrt(self.socp.g_stochastic_prob[i] / (1 - self.socp.g_stochastic_prob[i]))
@@ -226,7 +226,7 @@ class PCEConverter:
 
         for i in range(self.socp.n_uncertain_initial_condition):
             ind = self.socp.get_uncertain_initial_cond_indices()[i]
-            x_ind_s = problem.model.x_0_sym[ind::(self.socp.model.n_x+1)]
+            x_ind_s = problem.model.x_0_sym[ind::(self.socp.model.n_x + 1)]
             problem.h_initial = substitute(problem.h_initial, x_ind_s, sampled_parameter[self.socp.n_p_unc + i, :].T)
             problem.h_final = substitute(problem.h_final, x_ind_s, sampled_parameter[self.socp.n_p_unc + i, :].T)
 
@@ -251,9 +251,6 @@ class PCEConverter:
     def _create_model(self, sampled_parameters):
         sampled_parameters_p_unc = sampled_parameters[:self.socp.n_p_unc, :]
         model = SystemModel(name=self.socp.model.name + '_PCE')
-        u_global = vertcat([])
-        p_global = vertcat([])
-        theta_global = vertcat([])
 
         model.include_control(self.socp.model.u_sym)
         model.include_parameter(self.socp.get_p_without_p_unc())
@@ -277,8 +274,7 @@ class PCEConverter:
 
             # replace the parameter variable with the sampled variable
             p_unc_s = model_s.p_sym.get(False, self.socp.get_p_unc_indices())
-            p_other_s = model_s.p_sym.get(False,
-                                          [i for i in range(model_s.n_p) if i not in self.socp.get_p_unc_indices()])
+
             model_s.replace_variable(p_unc_s, sampled_parameters_p_unc[:, s])
             model_s.remove_parameter(p_unc_s)
 

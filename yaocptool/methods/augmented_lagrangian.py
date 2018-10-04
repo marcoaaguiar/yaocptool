@@ -295,7 +295,8 @@ class AugmentedLagrangian(SolutionMethodsBase):
             error = 0
         return error
 
-    def join_nu_to_theta(self, theta, nu):
+    @staticmethod
+    def join_nu_to_theta(theta, nu):
         if theta is not None:
             return join_thetas(theta, nu)
         else:
@@ -312,14 +313,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
     # SOLVE
     # ==============================================================================
 
-    def get_solver(self, initial_condition_as_parameter=False):
-        self.get_ocp_solver(initial_condition_as_parameter)
-        return self.solve_raw
-
-    def get_ocp_solver(self, initial_condition_as_parameter=False):
-        self.solver = self.ocp_solver.get_solver(initial_condition_as_parameter=initial_condition_as_parameter)
-
-    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
+    def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None):
         if x_0 is None:
             x_0 = []
         if theta is None:
@@ -327,13 +321,8 @@ class AugmentedLagrangian(SolutionMethodsBase):
         if p is None:
             p = []
         if self.solver_initialized:
-            if len(DM(x_0).full()) > 0:
-                initial_condition_as_parameter = True
-            else:
-                initial_condition_as_parameter = False
-            self.get_ocp_solver(initial_condition_as_parameter)
             self.solver_initialized = True
-        solver = self.ocp_solver.get_solver()
+        solver = self.ocp_solver.call_solver
 
         it = 0
         error = -1

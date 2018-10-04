@@ -117,8 +117,8 @@ def expm(a_matrix):
     dae_system_dict = {'x': x, 'ode': ode, 'p': vec(a_mx)}
 
     integrator_ = integrator("integrator", "cvodes", dae_system_dict, {'tf': 1})
-    integrator_MAP = integrator_.map(a_matrix.shape[1], 'thread')
+    integrator_map = integrator_.map(a_matrix.shape[1], 'thread')
 
-    res = integrator_MAP(x0=DM.eye(dim), p=repmat(vec(a_matrix), (1, a_matrix.shape[1])))['xf']
+    res = integrator_map(x0=DM.eye(dim), p=repmat(vec(a_matrix), (1, a_matrix.shape[1])))['xf']
 
     return res

@@ -84,7 +84,7 @@ class MPC:
             if len(initial_guess_dict) == 1:
                 initial_guess_dict = initial_guess_dict[0]
 
-        solutions = self.solution_method.solve(x_0=x_k, initial_guess_dict=initial_guess_dict, p=p)
+        solutions = self.solution_method.solve(x_0=x_k, initial_guess_dict=initial_guess_dict, p=p, last_u=u_k)
 
         if not isinstance(solutions, list):
             solutions = [solutions]
@@ -177,13 +177,12 @@ class MPC:
 
         return p
 
-    def run_fixed_control(self, u, iterations, verbosity=1):
+    def run_fixed_control(self, u, iterations):
         """
         Run the plant with a fixed control, can be used for initialization purposes.
 
         :param list|DM|float |int u: control value
         :param int iterations: the number of iterations that the MPC will run.
-        :param verbosity: indicates if it should print information about the iterations
         """
         if isinstance(u, list):
             u = vertcat(u)
@@ -202,13 +201,12 @@ class MPC:
             if self.verbosity:
                 print('Measurement: {}'.format(y_k))
 
-    def run_fixed_control_with_estimator(self, u, iterations, verbosity=1):
+    def run_fixed_control_with_estimator(self, u, iterations):
         """
         Run the plant with a fixed control, can be used for initialization purposes.
 
         :param list|DM|float|int u: control value
         :param int iterations: the number of iterations that the MPC will run.
-        :param verbosity: indicates if it should print information about the iterations
         """
         if isinstance(u, list):
             u = vertcat(u)

@@ -64,16 +64,18 @@ class AbstractOptimizationProblem(object):
 
         :param variable: variable to be included
         :param lb: Lower bound of the variable. If the given variable size is greater than one but a scalar is passed as
-         lower bound, a vector of lb with size of the given variable will be used as a lower bound. (default = [-inf]*size)
+         lower bound, a vector of lb with size of the given variable will be used as a lower bound.
+         (default = [-inf]*size)
         :param ub: Upper bound of the variable. If the given variable size is greater than one but a scalar is passed as
-         upper bound, a vector of ub  with size of the given variable will be used as a upper bound. (default = [inf]*size)
+         upper bound, a vector of ub  with size of the given variable will be used as a upper bound.
+         (default = [inf]*size)
         """
         lb = vertcat(lb)
         ub = vertcat(ub)
 
-        if lb.numel() == 1 and variable.numel()>1:
+        if lb.numel() == 1 and variable.numel() > 1:
             lb = repmat(lb, variable.numel())
-        if ub.numel() == 1 and variable.numel()>1:
+        if ub.numel() == 1 and variable.numel() > 1:
             ub = repmat(ub, variable.numel())
 
         if not variable.numel() == lb.numel() or not variable.numel() == ub.numel():
@@ -187,8 +189,9 @@ class AbstractOptimizationProblem(object):
         :param initial_guess: Initial guess
         :param call_dict: a dictionary containing 'lbx', 'ubx', 'lbg', 'ubg'. If not given, the one obtained with
         self.get_default_call_dict will be used.
-
         :param p: parameters
+        :param lam_x:
+        :param lam_g:
         :return: dictionary with solution
         """
         if call_dict is None:
@@ -202,7 +205,6 @@ class AbstractOptimizationProblem(object):
             call_dict['lam_x0'] = lam_x
         if lam_g is not None:
             call_dict['lam_g0'] = lam_g
-
 
         call_dict['p'] = p
         solver = self.get_solver()

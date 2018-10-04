@@ -121,8 +121,8 @@ class PCEKalmanFilter(EstimatorAbstract):
         self.x_mean = x_hat_k
         self.p_k = p_k
 
-        self.dataset.insert_data('x', self.x_mean, t_k)
-        self.dataset.insert_data('P', vec(self.p_k), t_k)
+        self.dataset.insert_data('x', t_k, self.x_mean)
+        self.dataset.insert_data('P', t_k, vec(self.p_k))
 
         return x_hat_k, p_k
 

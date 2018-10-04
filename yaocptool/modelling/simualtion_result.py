@@ -5,7 +5,6 @@ try:
 except ImportError:
     print('Failed to import matplotlib. Make sure that it is properly installed')
     plt = None
-from casadi import horzcat, vertcat
 
 
 class SimulationResult(DataSet):
@@ -21,8 +20,6 @@ class SimulationResult(DataSet):
         self.create_entry('x', size=n_x, names=x_names)
         self.create_entry('y', size=n_y, names=y_names)
         self.create_entry('u', size=n_u, names=u_names)
-
-
 
     @property
     def x(self):

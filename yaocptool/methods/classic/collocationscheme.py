@@ -10,8 +10,8 @@ from itertools import chain
 from casadi import DM, repmat, vertcat, Function, jacobian, is_equal, inf
 
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
-# TODO: implement cost_as_a_sum
 from yaocptool.optimization import NonlinearOptimizationProblem
+# TODO: implement cost_as_a_sum
 
 
 class CollocationScheme(DiscretizationSchemeBase):
@@ -120,8 +120,8 @@ class CollocationScheme(DiscretizationSchemeBase):
         for k in range(self.finite_elements):
             y_k = []
             for i in range(self.degree):
-                y_k.append(decision_variables[v_offset:v_offset + self.model.n_yz])
-                v_offset += self.model.n_yz
+                y_k.append(decision_variables[v_offset:v_offset + self.model.n_y])
+                v_offset += self.model.n_y
             if all_subinterval:
                 y.append(y_k)
             else:
@@ -342,7 +342,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             f_x = Function('f_x_pol', [self.model.t_sym, x_par], [x_pol])
 
             # Create function for obtaining y at an given time
-            y_pol, y_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_yz, self.degree,
+            y_pol, y_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_y, self.degree,
                                                                                          name='col_y_approx',
                                                                                          point_at_t0=False)
             y_pol = self.model.convert_expr_from_tau_to_time(y_pol, t_k=t_0, t_kp1=t_f)

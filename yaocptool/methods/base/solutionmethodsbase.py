@@ -168,6 +168,7 @@ class SolutionMethodsBase(object):
         has_parameters = (self.model.n_p + self.model.n_theta > 0 or self.initial_condition_as_parameter
                           or self.problem.last_u is not None)
         args = {}
+        all_mx = []
         if has_parameters:
             p_mx = MX.sym('p', self.model.n_p)
 
@@ -308,7 +309,6 @@ class SolutionMethodsBase(object):
         # From model
         optimization_result.x_names = [self.model.x_sym[i].name() for i in range(self.model.n_x)]
         optimization_result.y_names = [self.model.y_sym[i].name() for i in range(self.model.n_y)]
-        optimization_result.z_names = [self.model.z_sym[i].name() for i in range(self.model.n_z)]
         optimization_result.u_names = [self.model.u_sym[i].name() for i in range(self.model.n_u)]
         optimization_result.theta_opt_names = [self.problem.theta_opt[i].name()
                                                for i in range(self.problem.n_theta_opt)]
