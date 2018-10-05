@@ -360,27 +360,25 @@ class CollocationScheme(DiscretizationSchemeBase):
             # Iterate with the times in the finite element
             for t in element_breakpoints:
                 x_t = f_x(t, self.vectorize(x[el]))
-                yz_t = f_y(t, self.vectorize(y[el]))
-                y_t, z_t = self.model.slice_yz_to_y_and_z(yz_t)
+                y_t = f_y(t, self.vectorize(y[el]))
 
                 if self.solution_method.solution_class == 'direct':
                     u_t = f_u(t, self.vectorize(u[el]))
                 else:
-                    u_t = f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, z=z_t, p=p,
-                                                                       theta=theta[el],
+                    u_t = f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, p=p, theta=theta[el],
                                                                        u_par=self.vectorize(u[el])))
 
                 if 'x' in time_dict[el] and t in time_dict[el]['x']:
                     results[el]['x'].append(x_t)
                 if 'y' in time_dict and t in time_dict[el]['y']:
-                    results[el]['y'].append(yz_t)
+                    results[el]['y'].append(y_t)
                 if 'u' in time_dict and t in time_dict[el]['u']:
                     results[el]['u'].append(u_t)
 
                 for f_name in functions:
                     if t in time_dict[el][f_name]:
                         f = functions[f_name][el]
-                        val = f(*self.model.put_values_in_all_sym_format(t=t, x=x_t, y=y_t, z=z_t, p=p, theta=theta[el],
+                        val = f(*self.model.put_values_in_all_sym_format(t=t, x=x_t, y=y_t, p=p, theta=theta[el],
                                                                          u_par=self.vectorize(u[el])))
                         results[el][f_name].append(val)
         return results

@@ -59,7 +59,7 @@ class IndirectMethod(SolutionMethodsBase):
 
         self.problem.eta = SX.sym('eta', self.problem.n_h_final)
 
-        self.problem.H = self.problem.L + dot(lamb, self.model.ode) + dot(nu, self.model.all_alg)
+        self.problem.H = self.problem.L + dot(lamb, self.model.ode) + dot(nu, self.model.alg)
 
         l_dot = -gradient(self.problem.H, self.model.x_sym)
         alg_eq = gradient(self.problem.H, self.model.y_sym)

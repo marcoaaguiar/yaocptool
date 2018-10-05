@@ -3,7 +3,7 @@ import unittest
 
 from casadi import DM, mtimes, inf
 from yaocptool.methods import DirectMethod, IndirectMethod
-from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.modelling.ocp import OptimalControlProblem
 from models import create_2x2_mimo
 

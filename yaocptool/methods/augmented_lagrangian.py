@@ -74,12 +74,6 @@ class AugmentedLagrangian(SolutionMethodsBase):
         if self.model.n_y > 0 and self.relax_algebraic:
             self._relax_algebraic_equations()
 
-        if self.model.n_yz > 0 and self.relax_connecting_equations:
-            self._relax_connecting_equations()
-
-        if self.model.n_z > 0 and self.relax_external_algebraic:
-            self._relax_external_algebraic_equations()
-
         if self.relax_state_bounds:
             self._relax_states_constraints()
 

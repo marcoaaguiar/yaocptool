@@ -183,7 +183,6 @@ class PCEConverter:
 
         problem.x_max = repmat(vertcat(self.socp.x_max, inf), self.n_samples)
         problem.y_max = repmat(self.socp.y_max, self.n_samples)
-        problem.z_max = repmat(self.socp.z_max, self.n_samples)
         problem.u_max = self.socp.u_max
         problem.delta_u_max = self.socp.delta_u_max
         problem.p_opt_max = self.socp.p_opt_max
@@ -191,7 +190,6 @@ class PCEConverter:
 
         problem.x_min = repmat(vertcat(self.socp.x_min, -inf), self.n_samples)
         problem.y_min = repmat(self.socp.y_min, self.n_samples)
-        problem.z_min = repmat(self.socp.z_min, self.n_samples)
         problem.u_min = self.socp.u_min
         problem.delta_u_min = self.socp.delta_u_min
         problem.p_opt_min = self.socp.p_opt_min

@@ -64,7 +64,6 @@ class OptimalControlProblem:
 
         self.x_max = repmat(inf, self.model.n_x)
         self.y_max = repmat(inf, self.model.n_y)
-        self.z_max = repmat(inf, self.model.n_z)
         self.u_max = repmat(inf, self.model.n_u)
         self.delta_u_max = repmat(inf, self.model.n_u)
         self.p_opt_max = repmat(inf, self.n_p_opt)
@@ -72,7 +71,6 @@ class OptimalControlProblem:
 
         self.x_min = repmat(-inf, self.model.n_x)
         self.y_min = repmat(-inf, self.model.n_y)
-        self.z_min = repmat(-inf, self.model.n_z)
         self.u_min = repmat(-inf, self.model.n_u)
         self.delta_u_min = repmat(-inf, self.model.n_u)
         self.p_opt_min = repmat(-inf, self.n_p_opt)
@@ -146,14 +144,6 @@ class OptimalControlProblem:
         return self.theta_opt.shape[0]
 
     @property
-    def yz_max(self):
-        return vertcat(self.y_max, self.z_max)
-
-    @property
-    def yz_min(self):
-        return vertcat(self.y_min, self.z_min)
-
-    @property
     def has_delta_u(self):
         has_element_diff_from_inf = False
         for i in range(self.model.n_u):
@@ -202,13 +192,11 @@ class OptimalControlProblem:
         """
         self.x_max = vertcat(self.x_max)
         self.y_max = vertcat(self.y_max)
-        self.z_max = vertcat(self.z_max)
         self.u_max = vertcat(self.u_max)
         self.delta_u_max = vertcat(self.delta_u_max)
 
         self.x_min = vertcat(self.x_min)
         self.y_min = vertcat(self.y_min)
-        self.z_min = vertcat(self.z_min)
         self.u_min = vertcat(self.u_min)
         self.delta_u_min = vertcat(self.delta_u_min)
 
@@ -276,12 +264,10 @@ class OptimalControlProblem:
 
             self.x_max = vertcat(self.x_max, problem.x_max)
             self.y_max = vertcat(self.y_max, problem.y_max)
-            self.z_max = vertcat(self.z_max, problem.z_max)
             self.u_max = vertcat(self.u_max, problem.u_max)
 
             self.x_min = vertcat(self.x_min, problem.x_min)
             self.y_min = vertcat(self.y_min, problem.y_min)
-            self.z_min = vertcat(self.z_min, problem.z_min)
             self.u_min = vertcat(self.u_min, problem.u_min)
 
             self.h_initial = vertcat(self.h_initial, problem.h_initial)
@@ -524,17 +510,6 @@ class OptimalControlProblem:
             self.y_max.remove([it], [])
             self.y_min.remove([it], [])
         self.model.remove_algebraic(var, eq)
-
-    def remove_external_algebraic(self, var, eq=None):
-        to_remove = find_variables_indices_in_vector(var, self.model.z_sym)
-        to_remove.reverse()
-        for it in to_remove:
-            self.z_max.remove([it], [])
-            self.z_min.remove([it], [])
-        self.model.remove_external_algebraic(var, eq)
-
-    def remove_connecting_equations(self, var, eq):
-        self.model.remove_connecting_equations(var=var, eq=eq)
 
     def remove_control(self, var):
         to_remove = []

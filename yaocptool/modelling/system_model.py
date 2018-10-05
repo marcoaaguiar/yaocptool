@@ -32,9 +32,6 @@ class SystemModel:
 
         self.ode = vertcat([])  # ODE
         self.alg = vertcat([])  # Algebraic equations
-        self.alg_z = vertcat([])  # Algebraic equations of the z variable
-        self.con = vertcat([])  # Connecting algebraic equations
-        self.relaxed_alg = vertcat([])
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -51,7 +48,6 @@ class SystemModel:
 
         self.x_0_sym = SX.sym(self.name + '_x_0_sym', self.n_x)
         self.y_sym = SX.sym(self.name + '_y', n_y)
-        self.z_sym = SX.sym(self.name + '_z', n_z)
         self.u_sym = SX.sym(self.name + '_u', n_u)
         self.p_sym = SX.sym(self.name + '_p', n_p)
         self.theta_sym = SX.sym(self.name + '_theta', n_theta)
@@ -63,11 +59,10 @@ class SystemModel:
         self.u_func = vertcat(self.u_sym)
 
         self.hasAdjointVariables = False
-        self.con_z = []
 
     @property
     def system_type(self):
-        if self.n_y + self.n_z > 0:
+        if self.n_y > 0:
             return 'dae'
         else:
             return 'ode'
@@ -81,10 +76,6 @@ class SystemModel:
         return self.y_sym.numel()
 
     @property
-    def n_z(self):
-        return self.z_sym.numel()
-
-    @property
     def n_u(self):
         return self.u_sym.numel()
 
@@ -95,14 +86,6 @@ class SystemModel:
     @property
     def n_theta(self):
         return self.theta_sym.numel()
-
-    @property
-    def n_yz(self):
-        return self.n_y + self.n_z
-
-    @property
-    def yz_sym(self):
-        return vertcat(self.y_sym, self.z_sym)
 
     @property
     def x_sys_sym(self):
@@ -120,11 +103,47 @@ class SystemModel:
 
     @property
     def all_sym(self):
-        return self.t_sym, self.x_sym, self.y_sym, self.z_sym, self.u_sym, self.p_sym, self.theta_sym, self.u_par
+        return self.t_sym, self.x_sym, self.y_sym, self.u_sym, self.p_sym, self.theta_sym, self.u_par
 
     @property
-    def all_alg(self):
-        return vertcat(self.alg, self.alg_z, self.con)
+    def x(self):
+        return self.x_sym
+
+    @x.setter
+    def x(self, value):
+        self.x_sym = value
+
+    @property
+    def y(self):
+        return self.y_sym
+
+    @y.setter
+    def y(self, value):
+        self.y_sym = value
+
+    @property
+    def u(self):
+        return self.u_sym
+
+    @u.setter
+    def u(self, value):
+        self.u_sym = value
+
+    @property
+    def p(self):
+        return self.p_sym
+
+    @p.setter
+    def p(self, value):
+        self.p_sym = value
+
+    @property
+    def theta(self):
+        return self.theta_sym
+
+    @theta.setter
+    def theta(self, value):
+        self.theta_sym = value
 
     @property
     def x_names(self):
@@ -156,8 +175,7 @@ class SystemModel:
         s += 'Number of states (x):         {:4} | Number of algebraic (y):               {:4}'.format(self.n_x,
                                                                                                        self.n_y)
         s += '\n'
-        s += 'Number of ext. algebraic (z): {:4} | Number of controls (u):                {:4}'.format(self.n_z,
-                                                                                                       self.n_u)
+        s += 'Number of controls (u):                {:4}'.format(self.n_u)
         s += '\n'
         s += 'Number of parameters (p):     {:4} | Number of finite elem. param. (theta): {:4}'.format(self.n_p,
                                                                                                        self.n_theta)
@@ -166,9 +184,6 @@ class SystemModel:
         s += 'Number of ODE:                {:4} | Number of algebraic eq.:               {:4}'.format(
             self.ode.numel(),
             self.alg.numel())
-        s += '\n'
-        s += 'Number of external alg. eq.:  {:4} | Number of connecting eq.:              {:4}'.format(
-            self.alg_z.numel(), self.con.numel())
         s += '\n'
         s += '=' * 20 + '\n'
         return s
@@ -192,9 +207,6 @@ class SystemModel:
             print('Replacing: {} with {}'.format(original, replacement))
             self.ode = substitute(self.ode, original, replacement)
             self.alg = substitute(self.alg, original, replacement)
-            self.alg_z = substitute(self.alg_z, original, replacement)
-            self.con = substitute(self.con, original, replacement)
-            self.relaxed_alg = substitute(self.relaxed_alg, original, replacement)
 
             self.u_par = substitute(self.u_par, original, replacement)
             self.u_func = substitute(self.u_func, original, replacement)
@@ -263,7 +275,7 @@ class SystemModel:
 
     # region INCLUDES
 
-    def include_system_equations(self, ode=None, alg=None, alg_z=None, con=None):
+    def include_system_equations(self, ode=None, alg=None):
         if ode is not None:
             if isinstance(ode, list):  # if ode is list or tuple
                 ode = vertcat(*ode)
@@ -273,16 +285,6 @@ class SystemModel:
             if isinstance(alg, list):  # if alg is list or tuple
                 alg = vertcat(*alg)
             self.alg = vertcat(self.alg, alg)
-
-        if alg_z is not None:
-            if isinstance(alg_z, list):  # if alg_z is list or tuple
-                alg_z = vertcat(*alg_z)
-            self.alg_z = vertcat(self.alg_z, alg_z)
-
-        if con is not None:
-            if isinstance(con, list):  # if con is list or tuple
-                con = vertcat(*con)
-            self.con = vertcat(self.con, con)
 
     def include_state(self, var, ode=None, x_0_sym=None):
         if ode is None:
@@ -300,18 +302,6 @@ class SystemModel:
         self.y_sym = vertcat(self.y_sym, var)
 
         self.include_system_equations(alg=alg)
-
-    def include_external_algebraic(self, var, alg_z=None):
-        if alg_z is None:
-            alg_z = []
-        self.z_sym = vertcat(self.z_sym, var)
-        self.alg_z = vertcat(self.alg_z, alg_z)
-
-    def include_connecting_equations(self, con, con_z=None):
-        if con_z is None:
-            con_z = []
-        self.con = vertcat(self.con, con)
-        self.con_z = vertcat(self.con_z, con_z)
 
     def include_control(self, var):
         self.u_sym = vertcat(self.u_sym, var)
@@ -332,15 +322,6 @@ class SystemModel:
         if eq is not None:
             self.alg = remove_variables_from_vector(eq, self.alg)
 
-    def remove_external_algebraic(self, var, eq=None):
-        self.z_sym = remove_variables_from_vector(var, self.z_sym)
-        if eq is not None:
-            self.alg_z = remove_variables_from_vector(eq, self.alg_z)
-
-    def remove_connecting_equations(self, var, eq):
-        self.z_sym = remove_variables_from_vector(var, self.z_sym)
-        self.con = remove_variables_from_vector(eq, self.con)
-
     def remove_control(self, var):
         self.u_sym = remove_variables_from_vector(var, self.u_sym)
 
@@ -355,23 +336,14 @@ class SystemModel:
     # region # Standard Function Call
     # ==============================================================================
 
-    def slice_yz_to_y_and_z(self, yz):
-        return yz[:self.n_y], yz[self.n_y:]
-
     @staticmethod
-    def concat_y_and_z(y, z):
-        return vertcat(y, z)
-
-    @staticmethod
-    def put_values_in_all_sym_format(t=None, x=None, y=None, z=None, u=None, p=None, theta=None, u_par=None):
+    def put_values_in_all_sym_format(t=None, x=None, y=None, u=None, p=None, theta=None, u_par=None):
         if t is None:
             t = []
         if x is None:
             x = []
         if y is None:
             y = []
-        if z is None:
-            z = []
         if u is None:
             u = []
         if p is None:
@@ -380,7 +352,7 @@ class SystemModel:
             theta = []
         if u_par is None:
             u_par = []
-        return t, x, y, z, u, p, theta, u_par
+        return t, x, y, u, p, theta, u_par
 
     # endregion
     # ==============================================================================
@@ -408,11 +380,7 @@ class SystemModel:
     # region MERGE
     # ==============================================================================
 
-    def merge(self, models_list, connecting_equations=None, associated_z=None):
-        if connecting_equations is None:
-            connecting_equations = []
-        if associated_z is None:
-            associated_z = []
+    def merge(self, models_list, connecting_equations=None):
         if not isinstance(models_list, list):
             models_list = [models_list]
 
@@ -421,12 +389,11 @@ class SystemModel:
             model.replace_variable(model.tau_sym, self.tau_sym)
             self.include_state(model.x_sym, model.ode, model.x_0_sym)
             self.include_algebraic(model.y_sym, model.alg)
-            self.include_external_algebraic(model.z_sym, model.alg_z)
             self.include_control(model.u_sym)
             self.include_parameter(model.p_sym)
             self.include_theta(model.theta_sym)
 
-        self.include_connecting_equations(connecting_equations, associated_z)
+        self.include_system_equations(alg=connecting_equations)
 
     def get_copy(self):
         """
@@ -490,8 +457,8 @@ class SystemModel:
         if self.system_type == 'ode':
             kwargs = {'x': self.x_sym, 'ode': self.ode, 't': self.t_sym, 'tau': self.tau_sym}
         else:
-            kwargs = {'x': self.x_sym, 'y': vertcat(self.y_sym, self.z_sym), 'ode': self.ode,
-                      'alg': vertcat(self.alg, self.alg_z, self.con), 't': self.t_sym, 'tau': self.tau_sym}
+            kwargs = {'x': self.x_sym, 'y': self.y_sym, 'ode': self.ode,
+                      'alg': self.alg, 't': self.t_sym, 'tau': self.tau_sym}
         if self.n_p + self.n_theta + self.u_par.numel() > 0:
             kwargs['p'] = vertcat(self.p_sym, self.theta_sym, self.u_par)
 
