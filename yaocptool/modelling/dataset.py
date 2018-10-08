@@ -28,7 +28,7 @@ class DataSet:
         :param str plot_style: default plot style. plot = linear interpolation, step = piecewise constant
         ('plot' | 'step')
         :param bool find_discontinuity: Default: True. If True, it will try to find discontinuity on the data, and plot
-        with gaps where data is missing/not available, instead of a line conecting all data points.
+        with gaps where data is missing/not available, instead of a line connecting all data points.
         :param float max_sampling_time: maximum expected distance between two time data. This is used to detect
         discontinuity on the data, and plot it separately.
         """
@@ -42,18 +42,22 @@ class DataSet:
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-    def create_entry(self, entry, size, names=None):
+    def create_entry(self, entry, size, names=None, plot_style=None):
         """
             Create an entry in the dataset
         :param entry: entry name
         :param size: number of rows in the vector
         :param list names: name for each row, it should be a list with size 'size'. If 'names' is not given,
         then the name list [entry_1, entry_2, ..., entry_size]
+        :param str plot_style: ('plot' | 'step') choose if the plot will be piecewise constant (step) or a first order
+        interpolation (plot)
         """
         if names is None:
             names = [entry + '_' + str(i) for i in range(size)]
         self.data[entry]['size'] = size
         self.data[entry]['names'] = names
+        if plot_style is not None:
+            self.data[entry]['plot_style'] = plot_style
 
     def get_entry(self, entry):
         """
@@ -204,6 +208,11 @@ class DataSet:
                 if entry not in self.data:
                     raise Exception("Entry not found in the dataset. Entries: {}".format(self.data.keys()))
 
+                if 'plot_style' in self.data[entry]:
+                    plot_style = self.data[entry]['plot_style']
+                else:
+                    plot_style = self.plot_style
+
                 indexes = entry_dict[entry]
                 # if it is 'all'
                 if indexes == 'all':
@@ -218,7 +227,7 @@ class DataSet:
                 # plot entry/indexes
                 for l in indexes:
                     line = self._plot_entry(self.data[entry]['time'], self.data[entry]['values'], l,
-                                            label=self.data[entry]['names'][l], plot_style=self.plot_style)
+                                            label=self.data[entry]['names'][l], plot_style=plot_style)
                     lines.append(line)
 
             plt.grid()

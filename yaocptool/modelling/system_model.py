@@ -16,7 +16,7 @@ from yaocptool.modelling import DAESystem, SimulationResult
 
 
 class SystemModel:
-    def __init__(self, name='model', n_x=0, n_y=0, n_z=0, n_u=0, n_p=0, n_theta=0, **kwargs):
+    def __init__(self, name='model', n_x=0, n_y=0, n_u=0, n_p=0, n_theta=0, **kwargs):
         """
             x - states
             y - (internal) algebraic
@@ -208,7 +208,7 @@ class SystemModel:
             self.ode = substitute(self.ode, original, replacement)
             self.alg = substitute(self.alg, original, replacement)
 
-            #TODO: Im commenting the  following line because I think they are wrong
+            # TODO: Im commenting the  following line because I think they are wrong
             # self.u_par = substitute(self.u_par, original, replacement)
             self.u_func = substitute(self.u_func, original, replacement)
 
@@ -656,7 +656,7 @@ class SuperModel(SystemModel):
         if connections is None:
             connections = []
         self.models = models
-        SystemModel.__init__(self, **kwargs)
+        SystemModel.__init__(**kwargs)
 
         connecting_equations, free_zs = zip(*connections)
         self.merge(self.models, connecting_equations=connecting_equations)

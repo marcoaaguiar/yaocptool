@@ -8,7 +8,7 @@ from yaocptool.modelling import SystemModel, OptimalControlProblem
 
 import time
 
-model =  SystemModel(n_x= 1, n_u= 1)
+model = SystemModel(n_x=1, n_u=1)
 model.include_system_equations(ode = (-model.x_sym[0] + model.u_sym[0]))
 
 problem = OptimalControlProblem(model, obj = {'Q':1, 'R':1}, x_0 = [1])

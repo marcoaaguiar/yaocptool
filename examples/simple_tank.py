@@ -2,7 +2,7 @@ from yaocptool.modelling import SystemModel
 from casadi import sqrt, DM
 
 # Create a new model with 2 Tanks, the output of the first tank is connected on the second tank
-model = SystemModel(n_x=2, n_u=1, name='2-Tanks')
+model = SystemModel(name='2-Tanks', n_x=2, n_u=1)
 
 # Get the symbolic variables
 h_1, h_2 = model.x_sym[0], model.x_sym[1]

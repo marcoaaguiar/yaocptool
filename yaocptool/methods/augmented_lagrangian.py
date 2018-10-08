@@ -8,7 +8,7 @@ Created on Sat Oct 22 16:53:36 2016
 import time
 from collections import defaultdict
 
-from casadi import SX, DM, inf, vertcat, dot, vec, Function, MX, horzcat
+from casadi import SX, inf, vertcat, dot, vec, Function, MX, horzcat
 
 from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector, join_thetas, create_constant_theta
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
