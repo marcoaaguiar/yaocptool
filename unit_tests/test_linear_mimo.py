@@ -155,6 +155,7 @@ class MIMO2x2TestCase(unittest.TestCase):
                                          finite_elements=20,
                                          integrator_type='implicit',
                                          discretization_scheme='multiple-shooting',
+                                         initial_guess_heuristic='problem_info',
                                          nlpsol_opts=self.nlpsol_opts
                                          )
         result = solution_method.solve()

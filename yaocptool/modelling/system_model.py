@@ -175,7 +175,7 @@ class SystemModel:
         s += 'Number of states (x):         {:4} | Number of algebraic (y):               {:4}'.format(self.n_x,
                                                                                                        self.n_y)
         s += '\n'
-        s += 'Number of controls (u):                {:4}'.format(self.n_u)
+        s += 'Number of controls (u):       {:4} |'.format(self.n_u)
         s += '\n'
         s += 'Number of parameters (p):     {:4} | Number of finite elem. param. (theta): {:4}'.format(self.n_p,
                                                                                                        self.n_theta)
@@ -208,7 +208,8 @@ class SystemModel:
             self.ode = substitute(self.ode, original, replacement)
             self.alg = substitute(self.alg, original, replacement)
 
-            self.u_par = substitute(self.u_par, original, replacement)
+            #TODO: Im commenting the  following line because I think they are wrong
+            # self.u_par = substitute(self.u_par, original, replacement)
             self.u_func = substitute(self.u_func, original, replacement)
 
     def create_state(self, name='x', size=1):

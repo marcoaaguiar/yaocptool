@@ -167,9 +167,9 @@ class OptimalControlProblem:
                 'Size of final cost (ocp.V) is different from 1, provided size is: {}'.format(self.L.numel()))
 
         # Check if the initial condition has the same number of elements of the model
-        attributes = ['x_0', 'x_max', 'y_max', 'z_max', 'u_max', 'x_min', 'y_min', 'z_min', 'u_min', 'delta_u_max',
+        attributes = ['x_0', 'x_max', 'y_max', 'u_max', 'x_min', 'y_min', 'u_min', 'delta_u_max',
                       'delta_u_min']
-        attr_to_compare = ['n_x', 'n_x', 'n_y', 'n_z', 'n_u', 'n_x', 'n_y', 'n_z', 'n_u', 'n_u', 'n_u']
+        attr_to_compare = ['n_x', 'n_x', 'n_y', 'n_u', 'n_x', 'n_y', 'n_u', 'n_u', 'n_u']
         for i, attr in enumerate(attributes):
             if not getattr(self, attr).numel() == getattr(self.model, attr_to_compare[i]):
                 raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
@@ -354,14 +354,16 @@ class OptimalControlProblem:
 
     def include_state(self, var, ode=None, x_0=None, x_min=None, x_max=None, h_initial=None, x_0_sym=None,
                       suppress=False):
+        if x_0 is not None:
+            x_0 = vertcat(x_0)
         if x_min is None:
             x_min = -DM.inf(var.numel())
         if x_max is None:
             x_max = DM.inf(var.numel())
         if x_0 is None and h_initial is None and not suppress:
             raise Exception('No initial condition given')
+
         var = vertcat(var)
-        x_0 = vertcat(x_0)
         x_min = vertcat(x_min)
         x_max = vertcat(x_max)
 

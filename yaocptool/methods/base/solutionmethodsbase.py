@@ -103,21 +103,33 @@ class SolutionMethodsBase(object):
         return tau, l_list
 
     def create_variable_polynomial_approximation(self, size, degree, name='var_appr', tau=None, point_at_t0=False):
+        if not isinstance(name, list):
+            name = [name + '_' + str(i) for i in range(size)]
+
         if tau is None:
             tau = self.model.tau_sym  # Collocation point
 
         if degree == 1:
-            points = SX.sym(name, size, degree)
+            if size > 0:
+                points = vertcat(*[SX.sym(name[s], 1, degree) for s in range(size)])
+            else:
+                points = SX.sym('empty_sx', size, degree)
             par = vec(points)
             u_pol = points
         else:
             if point_at_t0:
-                points = SX.sym(name, size, degree + 1)
-                tau, ell_list = self._create_lagrangian_polynomial_basis(degree, 0, tau=tau)
+                if size > 0:
+                    points = vertcat(*[SX.sym(name[s], 1, degree + 1) for s in range(size)])
+                else:
+                    points = SX.sym('empty_sx', size, degree)
+                tau, ell_list = self._create_lagrangian_polynomial_basis(degree, starting_index=0, tau=tau)
                 u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree + 1)])
             else:
-                points = SX.sym(name, size, degree)
-                tau, ell_list = self._create_lagrangian_polynomial_basis(degree, 1, tau=tau)
+                if size > 0:
+                    points = vertcat(*[SX.sym(name[s], 1, degree) for s in range(size)])
+                else:
+                    points = SX.sym('empty_sx', size, degree)
+                tau, ell_list = self._create_lagrangian_polynomial_basis(degree, starting_index=1, tau=tau)
                 u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree)])
             par = vec(points)
 
@@ -135,7 +147,8 @@ class SolutionMethodsBase(object):
             if type(degree) == dict:
                 raise Exception('Not implemented')
             else:
-                u_pol, self.model.u_par = self.create_variable_polynomial_approximation(self.model.n_u, degree, 'u_ij')
+                u_pol, self.model.u_par = self.create_variable_polynomial_approximation(self.model.n_u, degree,
+                                                                                        name=self.model.u_names)
             self.model.u_func = u_pol
         else:
             u_pol = self.model.u_func

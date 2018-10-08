@@ -7,10 +7,12 @@ Created on Thu Jul 13 17:08:34 2017
 from collections import defaultdict
 from itertools import chain
 
-from casadi import DM, repmat, vertcat, Function, jacobian, is_equal, inf
+from casadi import DM, repmat, vertcat, Function, jacobian, is_equal, inf, horzcat, vec
 
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.optimization import NonlinearOptimizationProblem
+
+
 # TODO: implement cost_as_a_sum
 
 
@@ -455,7 +457,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         and a given p and theta (for p_opt and theta_opt) if they are given.
         If no u is given the value of problem.u_guess is used, or problem.last_u, then a vector of zeros of appropriate
         size is used.
-        If no p or theta is given, an vector of zeros o appropriate size is used.
+        If no p or theta is given, an vector of zeros of appropriate size is used.
 
         :param u:
         :param p: Optimization parameters
@@ -476,16 +478,34 @@ class CollocationScheme(DiscretizationSchemeBase):
             else:
                 u = DM.zeros(self.model.n_u)
 
-        x_0 = self.problem.x_0
-        for el in range(self.finite_elements):
-            simulation_results = self.model.simulate(x_0, t_f=self.time_interpolation_states[el][1:],
-                                                     t_0=self.time_interpolation_states[0][0],
-                                                     u=u, p=p, theta=theta, y_0=self.problem.y_guess)
+        u = vec(horzcat(*[u]*self.degree_control))
 
-            x_init.append(simulation_results.x)
-            y_init.append(simulation_results.y)
-            u_init.append(simulation_results.u[:self.degree_control])
-            x_0, _, _ = simulation_results.final_condition()
+        x_0 = self.problem.x_0
+        y_guess = self.problem.y_guess
+        for el in range(self.finite_elements):
+            el_x = [x_0]
+            el_y = []
+
+            # get DAE system
+            dae_sys = self.model.get_dae_system()
+            dae_sys.convert_from_tau_to_time(t_k=self.time_interpolation_states[el][0],
+                                             t_kp1=self.time_interpolation_states[el][-1])
+
+            # Prepare for loop
+            t_init = self.time_interpolation_states[el][0]
+            p_el = vertcat(p, theta[el], u)
+            for t in self.time_interpolation_states[el][1:]:
+                res = dae_sys.simulate(x_0=x_0, t_0=t_init, t_f=t, p=p_el, y_0=y_guess)
+
+                el_x.append(res['xf'])
+                el_y.append(res['zf'])
+
+                t_init = t
+                x_0 = res['xf']
+
+            x_init.append(el_x)
+            y_init.append(el_y)
+            u_init.append(u)
 
         x_init = self.vectorize(x_init)
         y_init = self.vectorize(y_init)

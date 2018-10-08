@@ -1,15 +1,14 @@
 from unittest import TestCase
 
 from casadi import vertcat, SX, is_equal
-from typing import List, Dict
 from .models import create_siso, create_2x1_mimo, create_2x2_mimo
 from yaocptool.modelling import SystemModel, OptimalControlProblem
 
 
 class TestSystemModel(TestCase):
     def setUp(self):
-        self.models = {}  # type: Dict[str, SystemModel]
-        self.problems = {}  # type: Dict[str, OptimalControlProblem]
+        self.models = {}
+        self.problems = {}
         for creator in [create_siso, create_2x1_mimo, create_2x2_mimo]:
             model, problem = creator()
             self.models[model.name] = model
@@ -75,7 +74,7 @@ class TestSystemModel(TestCase):
     def test_all_sym(self):
         for model_name in self.models:
             model = self.models[model_name]
-            self.assertEqual(len(model.all_sym), 8)
+            self.assertEqual(len(model.all_sym), 7)
             answer = [model.t_sym, model.x_sym, model.y_sym, model.u_sym, model.p_sym,
                       model.theta_sym, model.u_par]
 
