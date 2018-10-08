@@ -554,10 +554,10 @@ class CollocationScheme(DiscretizationSchemeBase):
         optimization_result.objective = raw_solution_dict['f']
         optimization_result.constraint_values = raw_solution_dict['g']
 
-        optimization_result.x_interpolation_data['values'] = x_interpolation_values
-        optimization_result.y_interpolation_data['values'] = y_interpolation_values
-        optimization_result.u_interpolation_data['values'] = u_interpolation_values
+        optimization_result.x_data['values'] = x_interpolation_values
+        optimization_result.y_data['values'] = y_interpolation_values
+        optimization_result.u_data['values'] = u_interpolation_values
 
-        optimization_result.x_interpolation_data['time'] = self.time_interpolation_states
-        optimization_result.y_interpolation_data['time'] = self.time_interpolation_algebraics
-        optimization_result.u_interpolation_data['time'] = self.time_interpolation_controls
+        optimization_result.x_data['time'] = self.time_interpolation_states
+        optimization_result.y_data['time'] = self.time_interpolation_algebraics
+        optimization_result.u_data['time'] = self.time_interpolation_controls

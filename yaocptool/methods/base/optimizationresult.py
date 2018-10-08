@@ -41,9 +41,9 @@ class OptimizationResult:
         self.u_names = []
         self.theta_opt_names = []
 
-        self.x_interpolation_data = {'values': [], 'time': []}
-        self.y_interpolation_data = {'values': [], 'time': []}
-        self.u_interpolation_data = {'values': [], 'time': []}
+        self.x_data = {'values': [], 'time': []}
+        self.y_data = {'values': [], 'time': []}
+        self.u_data = {'values': [], 'time': []}
 
         self.other_data = defaultdict(partial(defaultdict, {'values': [], 'time': []}))
 
@@ -88,7 +88,7 @@ class OptimizationResult:
 
         :rtype: DM
         """
-        u_0 = self.u_interpolation_data['values'][0][0]
+        u_0 = self.u_data['values'][0][0]
         return u_0
 
     def to_dataset(self):
@@ -112,19 +112,19 @@ class OptimizationResult:
         else:
             dataset.data['u']['plot_style'] = 'step'
 
-        x_times = self.x_interpolation_data['time'] + [[self.t_f]]
+        x_times = self.x_data['time'] + [[self.t_f]]
         for el in range(self.finite_elements + 1):
             time = horzcat(*x_times[el])
-            values = horzcat(*self.x_interpolation_data['values'][el])
+            values = horzcat(*self.x_data['values'][el])
             dataset.insert_data('x', time, values)
 
         for el in range(self.finite_elements):
-            time_y = horzcat(*self.y_interpolation_data['time'][el])
-            values_y = horzcat(*self.y_interpolation_data['values'][el])
+            time_y = horzcat(*self.y_data['time'][el])
+            values_y = horzcat(*self.y_data['values'][el])
             dataset.insert_data('y', time_y, values_y)
 
-            time_u = horzcat(*self.u_interpolation_data['time'][el])
-            values_u = horzcat(*self.u_interpolation_data['values'][el])
+            time_u = horzcat(*self.u_data['time'][el])
+            values_u = horzcat(*self.u_data['values'][el])
             dataset.insert_data('u', time_u, values_u)
 
         dataset.insert_data('theta_opt', time=horzcat(*self.time_breakpoints[:-1]), value=horzcat(*self.theta_opt))
