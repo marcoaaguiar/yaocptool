@@ -8,7 +8,7 @@ Created on Thu Oct 20 13:54:58 2016
 from casadi import vertcat, DM, \
     cos, sin, pi, diag
 
-from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.modelling.ocp import OptimalControlProblem
 
 

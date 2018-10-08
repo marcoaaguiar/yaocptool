@@ -9,7 +9,6 @@ from os.path import dirname, abspath
 
 from casadi import vertcat, DM, mtimes
 
-from scripts.problems.cartpendulum import UpwardPendulumStabilization, PendulumCart
 from yaocptool.methods import DirectMethod
 from yaocptool.modelling import SystemModel, OptimalControlProblem
 

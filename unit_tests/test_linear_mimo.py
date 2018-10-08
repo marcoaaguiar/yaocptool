@@ -3,7 +3,7 @@ import unittest
 
 from casadi import DM, mtimes, inf
 from yaocptool.methods import DirectMethod, IndirectMethod
-from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.modelling.ocp import OptimalControlProblem
 from models import create_2x2_mimo
 
@@ -155,6 +155,7 @@ class MIMO2x2TestCase(unittest.TestCase):
                                          finite_elements=20,
                                          integrator_type='implicit',
                                          discretization_scheme='multiple-shooting',
+                                         initial_guess_heuristic='problem_info',
                                          nlpsol_opts=self.nlpsol_opts
                                          )
         result = solution_method.solve()

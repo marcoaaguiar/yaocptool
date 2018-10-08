@@ -7,7 +7,7 @@ Created on Wed Nov 02 18:55:27 2016
 import sys
 from os.path import dirname, abspath
 
-from scripts.problems.cartpendulum import UpwardPendulumStabilization, PendulumCart
+from tests.models.cartpendulum import PendulumCart, UpwardPendulumStabilization
 from yaocptool.methods import DirectMethod
 
 sys.path.append(abspath(dirname(dirname(__file__))))
@@ -20,15 +20,15 @@ state_constraints_2 = False
 
 problem = UpwardPendulumStabilization(model, state_constraints=state_constraints,
                                       control_constraints=control_constraints,
-                                      delta_u_max = [10],
-                                      delta_u_min=[-10]
+                                      # delta_u_max=[10],
+                                      # delta_u_min=[-10]
                                       )
 
 solution_method = DirectMethod(problem, degree=3,
-                               degree_control=1,
+                               degree_control=3,
                                finite_elements=20,
-                               integrator_type='implicit',
-                               # discretization_scheme = 'collocation'
+                               # integrator_type='implicit',
+                               discretization_scheme = 'multiple-shooting'
                                )
 
 result = solution_method.solve()

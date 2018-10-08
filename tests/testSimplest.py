@@ -4,8 +4,7 @@ from os.path import dirname, abspath
 path.append(abspath(dirname(dirname(__file__))))
 
 from yaocptool.methods import IndirectMethod, DirectMethod, AugmentedLagrangian
-from yaocptool.modelling.model_classes import SystemModel
-from yaocptool.modelling.ocp import OptimalControlProblem
+from yaocptool.modelling import SystemModel, OptimalControlProblem
 
 import time
 

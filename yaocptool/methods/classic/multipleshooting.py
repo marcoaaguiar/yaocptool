@@ -6,7 +6,7 @@ Created on Thu Jul 13 17:08:34 2017
 """
 from collections import defaultdict
 
-from casadi import DM, vertcat, Function, repmat, is_equal, inf
+from casadi import DM, vertcat, Function, repmat, is_equal, inf, vec, horzcat
 
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.optimization import NonlinearOptimizationProblem
@@ -339,27 +339,25 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                                               integrator_options={'name': 'integrator_' + str(el) + '_' + str(t_ind)}
                                               )
                 # Fetch values from results
-                x_t, yz_t = sim_result['xf'], sim_result['zf']
-                y_t, z_t = self.model.slice_yz_to_y_and_z(yz_t)
+                x_t, y_t = sim_result['xf'], sim_result['zf']
 
                 # Save to the result vector
                 if 'x' in time_dict[el] and t in time_dict[el]['x']:
                     results[el]['x'].append(x_t)
                 if 'y' in time_dict[el] and t in time_dict[el]['y']:
-                    results[el]['y'].append(yz_t)
+                    results[el]['y'].append(y_t)
                 if 'u' in time_dict[el] and t in time_dict[el]['u']:
                     if self.solution_method.solution_class == 'direct':
                         results[el]['u'].append(f_u(t, self.vectorize(u_var[el])))
                     else:
                         results[el]['u'].append(
-                            f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, z=z_t, p=p,
-                                                                         theta=theta[el],
+                            f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, p=p, theta=theta[el],
                                                                          u_par=u_var[el])))
                 for f_name in functions:
                     if t in time_dict[el][f_name]:
                         f = functions[f_name][el]
                         val = f(
-                            *self.model.put_values_in_all_sym_format(t=t, x=x_t, y=yz_t, z=z_t, p=p, theta=theta[el],
+                            *self.model.put_values_in_all_sym_format(t=t, x=x_t, y=y_t, p=p, theta=theta[el],
                                                                      u_par=self.vectorize(u_var[el])))
                         results[el][f_name].append(val)
                 # If the simulation should start from the begin of the simulation interval, do not change the t_init
@@ -457,18 +455,35 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 u = self.problem.last_u
             else:
                 u = DM.zeros(self.model.n_u)
+        u = vec(horzcat(*[u]*self.degree_control))
 
         x_0 = self.problem.x_0
+        y_guess = self.problem.y_guess
         x_init.append([x_0])
         for el in range(self.finite_elements):
-            simulation_results = self.model.simulate(x_0, t_f=self.time_breakpoints[el + 1],
-                                                     t_0=self.time_breakpoints[el],
-                                                     u=u, p=p, theta=theta, y_0=self.problem.y_guess)
+            el_x = []
+            el_y = []
 
-            x_init.append([simulation_results.x[-1]])
-            y_init.append([simulation_results.y[-1]])
-            u_init.append(simulation_results.u[:self.degree_control])
-            x_0, _, _ = simulation_results.final_condition()
+            # get DAE system and remove tau
+            dae_sys = self.model.get_dae_system()
+            dae_sys.convert_from_tau_to_time(t_k=self.time_breakpoints[el],
+                                             t_kp1=self.time_breakpoints[el + 1])
+
+            # Prepare for loop
+            t_init = self.time_breakpoints[el]
+            p_el = vertcat(p, theta[el], u)
+            for t in [self.time_breakpoints[el + 1]]:
+                res = dae_sys.simulate(x_0=x_0, t_0=t_init, t_f=t, p=p_el, y_0=y_guess)
+
+                el_x.append(res['xf'])
+                el_y.append(res['zf'])
+
+                t_init = t
+                x_0 = res['xf']
+
+            x_init.append(el_x)
+            y_init.append(el_y)
+            u_init.append(u)
 
         x_init = self.vectorize(x_init)
         y_init = self.vectorize(y_init)

@@ -39,11 +39,6 @@ class TestSystemModel(TestCase):
             model = self.models[model_name]
             self.assertEqual(model.n_y, self.answer_test_n_y[model_name])
 
-    def test_n_z(self):
-        for model_name in self.models:
-            model = self.models[model_name]
-            self.assertEqual(model.n_z, self.answer_test_n_z[model_name])
-
     def test_n_u(self):
         for model_name in self.models:
             model = self.models[model_name]
@@ -78,17 +73,12 @@ class TestSystemModel(TestCase):
     def test_all_sym(self):
         for model_name in self.models:
             model = self.models[model_name]
-            self.assertEqual(len(model.all_sym), 8)
-            answer = [model.t_sym, model.x_sym, model.y_sym, model.z_sym, model.u_sym, model.p_sym,
+            self.assertEqual(len(model.all_sym), 7)
+            answer = [model.t_sym, model.x_sym, model.y_sym, model.u_sym, model.p_sym,
                       model.theta_sym, model.u_par]
 
             for index in range(len(model.all_sym)):
                 self.assertTrue(is_equal(model.all_sym[index], answer[index]))
-
-    def test_all_alg(self):
-        for model_name in self.models:
-            model = self.models[model_name]
-            self.assertTrue(is_equal(model.all_alg, vertcat(model.alg, model.alg_z, model.con)))
 
     def test_replace_variable(self):
         pass
