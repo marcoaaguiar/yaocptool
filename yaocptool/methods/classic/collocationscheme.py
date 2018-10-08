@@ -188,8 +188,9 @@ class CollocationScheme(DiscretizationSchemeBase):
         time_dict = self._create_time_dict_for_collocation()
 
         # create a polynomial approximation for x
+        x_col_names = ['col_appr_' + name for name in self.model.x_names]
         x_pol, x_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_x, self.degree,
-                                                                                     name='col_x_approx',
+                                                                                     name=x_col_names,
                                                                                      point_at_t0=True)
 
         func_d_x_pol_d_tau = Function('f_dL_list', [self.model.tau_sym, x_par],
@@ -337,15 +338,17 @@ class CollocationScheme(DiscretizationSchemeBase):
                 f_u = Function('f_u_pol', list(self.model.all_sym), [u_func])
 
             # Create function for obtaining x at an given time
+            x_col_names = ['col_appr_' + name for name in self.model.x_names]
             x_pol, x_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_x, self.degree,
-                                                                                         name='col_x_approx',
+                                                                                         name=x_col_names,
                                                                                          point_at_t0=True)
             x_pol = self.model.convert_expr_from_tau_to_time(x_pol, t_k=t_0, t_kp1=t_f)
             f_x = Function('f_x_pol', [self.model.t_sym, x_par], [x_pol])
 
             # Create function for obtaining y at an given time
+            y_col_names = ['col_appr_' + name for name in self.model.y_names]
             y_pol, y_par = self.solution_method.create_variable_polynomial_approximation(self.model.n_y, self.degree,
-                                                                                         name='col_y_approx',
+                                                                                         name=y_col_names,
                                                                                          point_at_t0=False)
             y_pol = self.model.convert_expr_from_tau_to_time(y_pol, t_k=t_0, t_kp1=t_f)
             f_y = Function('f_y_pol', [self.model.t_sym, y_par], [y_pol])
@@ -478,7 +481,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             else:
                 u = DM.zeros(self.model.n_u)
 
-        u = vec(horzcat(*[u]*self.degree_control))
+        u = vec(horzcat(*[u] * self.degree_control))
 
         x_0 = self.problem.x_0
         y_guess = self.problem.y_guess

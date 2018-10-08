@@ -349,8 +349,8 @@ class OptimalControlProblem:
         self.theta_opt_max = vertcat(self.theta_opt_max, new_theta_opt_max)
         return new_theta_opt
 
-    def include_system_equations(self, ode=None, alg=None, alg_z=None, con=None):
-        self.model.include_system_equations(ode=ode, alg=alg, alg_z=alg_z, con=con)
+    def include_system_equations(self, ode=None, alg=None):
+        self.model.include_system_equations(ode=ode, alg=alg)
 
     def include_state(self, var, ode=None, x_0=None, x_min=None, x_max=None, h_initial=None, x_0_sym=None,
                       suppress=False):

@@ -43,7 +43,7 @@ class PendulumCart(SystemModel):
         ode = vertcat(
             theta_dot,
             ((m * g * cos(theta) * sin(theta) - m * l * theta_dot ** 2 * sin(theta) - u) / (
-            M + m - m * cos(theta) ** 2) * cos(theta) + g * sin(theta)) / l,
+                    M + m - m * cos(theta) ** 2) * cos(theta) + g * sin(theta)) / l,
             x_dot,
             (m * g * cos(theta) * sin(theta) - m * l * theta_dot ** 2 * sin(theta) - u) / (M + m - m * cos(theta) ** 2)
         )

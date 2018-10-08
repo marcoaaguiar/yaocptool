@@ -105,7 +105,12 @@ class OptimizationResult:
         dataset.create_entry('x', size=len(self.x_names), names=self.x_names)
         dataset.create_entry('y', size=len(self.y_names), names=self.y_names)
         dataset.create_entry('u', size=len(self.u_names), names=self.u_names)
-        dataset.create_entry('theta_opt', size=len(self.theta_opt_names), names=self.theta_opt_names)
+        dataset.create_entry('theta_opt', size=len(self.theta_opt_names), names=self.theta_opt_names, plot_style='step')
+
+        if self.degree_control > 1:
+            dataset.data['u']['plot_style'] = 'plot'
+        else:
+            dataset.data['u']['plot_style'] = 'step'
 
         x_times = self.x_interpolation_data['time'] + [[self.t_f]]
         for el in range(self.finite_elements + 1):
