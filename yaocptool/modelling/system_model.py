@@ -6,6 +6,7 @@ Created on Thu Jun 09 10:50:48 2016
 """
 import collections
 import copy
+
 from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec, horzcat
 
 from yaocptool import remove_variables_from_vector, config
@@ -33,6 +34,9 @@ class SystemModel:
         self.ode = vertcat([])  # ODE
         self.alg = vertcat([])  # Algebraic equations
 
+        self.has_adjoint_variables = False
+        self.model_name_as_prefix = False
+
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
@@ -57,8 +61,6 @@ class SystemModel:
 
         self.u_par = vertcat(self.u_sym)
         self.u_func = vertcat(self.u_sym)
-
-        self.hasAdjointVariables = False
 
     @property
     def system_type(self):
@@ -89,14 +91,14 @@ class SystemModel:
 
     @property
     def x_sys_sym(self):
-        if self.hasAdjointVariables:
+        if self.has_adjoint_variables:
             return self.x_sym[:self.n_x / 2]
         else:
             return self.x_sym
 
     @property
     def lamb_sym(self):
-        if self.hasAdjointVariables:
+        if self.has_adjoint_variables:
             return self.x_sym[self.n_x / 2:]
         else:
             return SX()
@@ -188,39 +190,77 @@ class SystemModel:
         s += '=' * 20 + '\n'
         return s
 
-    def replace_variable(self, original, replacement):
+    def print_variables(self):
         """
-            Replace a variable or parameter by an variable or expression.
-            :param replacement:
-            :param original: SX: and replacement, and also variable type which
-            describes which type of variable is being remove to it from the
-            counters. Types: 'x', 'y', 'u', 'p', 'ignore'
+            Print list of variable in the model (x, y, u, p, theta)
         """
-        original = vertcat(original)
-        replacement = vertcat(replacement)
-        if not original.numel() == replacement.numel():
-            raise ValueError("Original and replacement must have the same number of elements!"
-                             "original.numel()={}, replacement.numel()={}".format(original.numel(),
-                                                                                  replacement.numel()))
+        var_name_space = 20
+        column_size = var_name_space + 4
 
-        if original.numel() > 0:
-            print('Replacing: {} with {}'.format(original, replacement))
-            self.ode = substitute(self.ode, original, replacement)
-            self.alg = substitute(self.alg, original, replacement)
+        n_lines = max(self.n_x, self.n_y, self.n_u, self.n_p, self.n_theta)
+        x_names = self.x_names + [''] * (n_lines - self.n_x)
+        y_names = self.y_names + [''] * (n_lines - self.n_y)
+        u_names = self.u_names + [''] * (n_lines - self.n_u)
+        p_names = self.p_names + [''] * (n_lines - self.n_p)
+        theta_names = self.theta_names + [''] * (n_lines - self.n_theta)
 
-            # TODO: Im commenting the  following line because I think they are wrong
-            # self.u_par = substitute(self.u_par, original, replacement)
-            self.u_func = substitute(self.u_func, original, replacement)
+        header_separator = '=|='
+        header = ''
+        header += ' states (x) '.center(column_size, '=') + header_separator
+        header += ' algebraic (y) '.center(column_size, '=') + header_separator
+        header += ' input (u) '.center(column_size, '=') + header_separator
+        header += ' parameter (p) '.center(column_size, '=') + header_separator
+        header += ' theta param (theta) '.center(column_size, '=') + header_separator
+        print(header)
+
+        for i in range(n_lines):
+            line = ''
+            if i < self.n_x:
+                line += '{:>2}: {:<' + str(var_name_space) + '}' + ' | '
+                line = line.format(i, x_names[i])
+            else:
+                line += ' ' * (var_name_space + 4) + ' | '
+
+            if i < self.n_y:
+                line += '{:>2}: {:<' + str(var_name_space) + '}' + ' | '
+                line = line.format(i, y_names[i])
+            else:
+                line += ' ' * (var_name_space + 4) + ' | '
+
+            if i < self.n_u:
+                line += '{:>2}: {:<' + str(var_name_space) + '}' + ' | '
+                line = line.format(i, u_names[i])
+            else:
+                line += ' ' * (var_name_space + 4) + ' | '
+
+            if i < self.n_p:
+                line += '{:>2}: {:<' + str(var_name_space) + '}' + ' | '
+                line = line.format(i, p_names[i])
+            else:
+                line += ' ' * (var_name_space + 4) + ' | '
+
+            if i < self.n_theta:
+                line += '{:>2}: {:<' + str(var_name_space) + '}' + ' | '
+                line = line.format(i, theta_names[i])
+            else:
+                line += ' ' * (var_name_space + 4) + ' | '
+
+            print(line)
+        print(('=' * column_size + header_separator) * 5)
 
     def create_state(self, name='x', size=1):
         """
         Create a new state with the name "name" and size "size".
         Size can be an int or a tuple (e.g. (2,2)). However, the new state will be vectorized (casadi.vec) to be
         included in the state vector (model.x_sym).
+
         :param name: str
         :param size: int|tuple
         :return:
         """
+        if self.model_name_as_prefix:
+            name = self.name + '_' + name
+
         new_x = SX.sym(name, size)
         new_x_0_sym = SX.sym(name + '_0_sym', size)
         self.include_state(vec(new_x), ode=None, x_0_sym=vec(new_x_0_sym))
@@ -231,10 +271,14 @@ class SystemModel:
         Create a new algebraic variable with the name "name" and size "size".
         Size can be an int or a tuple (e.g. (2,2)). However, the new algebraic variable will be vectorized (casadi.vec)
         to be included in the algebraic vector (model.y_sym).
-        :param name: str
-        :param size: int or tuple
+
+        :param str name:
+        :param int||tuple size:
         :return:
         """
+        if self.model_name_as_prefix:
+            name = self.name + '_' + name
+
         new_y = SX.sym(name, size)
         self.include_algebraic(vec(new_y))
         return new_y
@@ -244,10 +288,14 @@ class SystemModel:
         Create a new control variable name "name" and size "size".
         Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
         to be included in the control vector (model.u_sym).
+
         :param name: str
         :param size: int
         :return:
         """
+        if self.model_name_as_prefix:
+            name = self.name + '_' + name
+
         new_u = SX.sym(name, size)
         self.include_control(vec(new_u))
         return new_u
@@ -255,10 +303,14 @@ class SystemModel:
     def create_parameter(self, name='p', size=1):
         """
         Create a new parameter name "name" and size "size"
+
         :param name: str
         :param size: int
         :return:
         """
+        if self.model_name_as_prefix:
+            name = self.name + '_' + name
+
         new_p = SX.sym(name, size)
         self.include_parameter(vec(new_p))
         return new_p
@@ -266,10 +318,14 @@ class SystemModel:
     def create_theta(self, name='theta', size=1):
         """
         Create a new parameter name "name" and size "size"
+
         :param name: str
         :param size: int
         :return:
         """
+        if self.model_name_as_prefix:
+            name = self.name + '_' + name
+
         new_theta = SX.sym(name, size)
         self.include_theta(vec(new_theta))
         return new_theta
@@ -277,6 +333,12 @@ class SystemModel:
     # region INCLUDES
 
     def include_system_equations(self, ode=None, alg=None):
+        """
+            Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)
+
+        :param ode: (ordinary) differential equation
+        :param alg: algebraic equation
+        """
         if ode is not None:
             if isinstance(ode, list):  # if ode is list or tuple
                 ode = vertcat(*ode)
@@ -314,7 +376,51 @@ class SystemModel:
     def include_theta(self, theta):
         self.theta_sym = vertcat(self.theta_sym, theta)
 
+    def include_models(self, models):
+        if not isinstance(models, list):
+            models = [models]
+
+        for model in models:
+            # include variables
+            self.include_state(model.x_sym, x_0_sym=model.x_0_sym)
+            self.include_algebraic(model.y_sym)
+            self.include_control(model.u_sym)
+            self.include_parameter(model.p_sym)
+            self.include_theta(model.theta_sym)
+
+            # include equations
+            self.include_system_equations(ode=model.ode, alg=model.alg)
+
+            # replace model time variables with this model time variables
+            self.replace_variable(model.t_sym, self.t_sym)
+            self.replace_variable(model.tau_sym, self.tau_sym)
+
     # endregion
+
+    def replace_variable(self, original, replacement):
+        """
+            Replace a variable or parameter by an variable or expression.
+
+            :param replacement:
+            :param original: SX: and replacement, and also variable type which
+                describes which type of variable is being remove to it from the
+                counters. Types: 'x', 'y', 'u', 'p', 'ignore'
+        """
+        original = vertcat(original)
+        replacement = vertcat(replacement)
+        if not original.numel() == replacement.numel():
+            raise ValueError("Original and replacement must have the same number of elements!"
+                             "original.numel()={}, replacement.numel()={}".format(original.numel(),
+                                                                                  replacement.numel()))
+
+        if original.numel() > 0:
+            print('Replacing: {} with {}'.format(original, replacement))
+            self.ode = substitute(self.ode, original, replacement)
+            self.alg = substitute(self.alg, original, replacement)
+
+            # TODO: Im commenting the  following line because I think they are wrong
+            # self.u_par = substitute(self.u_par, original, replacement)
+            self.u_func = substitute(self.u_func, original, replacement)
 
     # region REMOVE
 
@@ -333,6 +439,22 @@ class SystemModel:
         self.theta_sym = remove_variables_from_vector(var, self.theta_sym)
 
     # endregion
+
+    def connect(self, u, y):
+        """
+        Connect an input 'u' to a algebraic variable 'y', u = y.
+        The function will perform the following actions:
+        - include an algebraic equation u - y = 0
+        - remove 'u' from the input vector (since it is not a free variable anymore)
+        - include 'u' into the algebraic vector, since it is an algebraic variable now.
+
+        :param u: input variable
+        :param y: algebraic variable
+        """
+        self.include_system_equations(alg=[u - y])
+        self.remove_control(u)
+        self.include_algebraic(u)
+
     # ==============================================================================
     # region # Standard Function Call
     # ==============================================================================
@@ -385,20 +507,14 @@ class SystemModel:
         if not isinstance(models_list, list):
             models_list = [models_list]
 
-        for model in models_list:
-            model.replace_variable(model.t_sym, self.t_sym)
-            model.replace_variable(model.tau_sym, self.tau_sym)
-            self.include_state(model.x_sym, model.ode, model.x_0_sym)
-            self.include_algebraic(model.y_sym, model.alg)
-            self.include_control(model.u_sym)
-            self.include_parameter(model.p_sym)
-            self.include_theta(model.theta_sym)
+        self.include_models(models_list)
 
         self.include_system_equations(alg=connecting_equations)
 
     def get_copy(self):
         """
             Get a copy of this model
+
         :rtype: SystemModel
         """
         return copy.copy(self)
@@ -439,7 +555,7 @@ class SystemModel:
         model_copy.replace_variable(self.p_sym, p_copy)
         model_copy.replace_variable(self.theta_sym, theta_copy)
 
-        model_copy.hasAdjointVariables = self.hasAdjointVariables
+        model_copy.has_adjoint_variables = self.has_adjoint_variables
 
         return model_copy
 
@@ -542,32 +658,6 @@ class SystemModel:
 
         return simulation_result
 
-    def simulate_raw(self, x_0, t_f, t_0=0.0, p=None, y_0=None, integrator_type='implicit',
-                     integrator_options=None):
-        """ Perform a single simulation.
-
-        :param list||DM x_0: Initial condition
-        :param float t_f: Final time of the simulation
-        :param float t_0: Initial time
-        :param DM||SX||list p: Simulation parameters
-        :param y_0: Initial guess for the algebraic variables
-        :param str integrator_type: 'implicit' or 'explicit'
-        :param dict integrator_options: options to be passed to the integrator
-        """
-
-        if integrator_options is None:
-            integrator_options = {}
-        if p is None:
-            p = []
-        if isinstance(x_0, collections.Iterable):
-            x_0 = vertcat(x_0)
-
-        dae_sys = self.get_dae_system()
-
-        result = dae_sys.simulate(x_0=x_0, t_f=t_f, t_0=t_0, p=p, y_0=y_0,
-                                  integrator_type=integrator_type, integrator_options=integrator_options)
-        return result
-
     # endregion
 
     def find_algebraic_variable(self, x, u, guess=None, t=0.0, p=None, theta_value=None, rootfinder_options=None):
@@ -645,18 +735,3 @@ class SystemModel:
         rf = rootfinder('rf_equilibrium', 'nlpsol', f_eqs, rootfinder_options)
         res = rf(guess)
         return res[:self.n_x], res[self.n_x:self.n_x + self.n_y], res[self.n_x + self.n_y:]
-
-
-#######################################################################
-
-class SuperModel(SystemModel):
-    def __init__(self, models=None, connections=None, **kwargs):
-        if models is None:
-            models = []
-        if connections is None:
-            connections = []
-        self.models = models
-        SystemModel.__init__(**kwargs)
-
-        connecting_equations, free_zs = zip(*connections)
-        self.merge(self.models, connecting_equations=connecting_equations)
