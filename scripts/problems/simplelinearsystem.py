@@ -11,7 +11,7 @@ sys.path.append(r"C:\coinhsl-win32-openblas-2014.01.10")
 #if not 'casadi' in sys.modules:
 from casadi import DM, vertcat, diag
 
-from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.modelling.ocp import OptimalControlProblem
 
 if __name__ == '__main__':

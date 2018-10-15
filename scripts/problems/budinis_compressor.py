@@ -13,7 +13,7 @@ from yaocptool.modelling import SystemModel, OptimalControlProblem
 # noinspection PyPep8Naming
 def create_compressor():
     x_names = (('p', 1), ('m', 1), ('omega', 1), ('p_01', 1))
-    model = SystemModel(name='compressor', x_names=x_names, n_y=5, n_u=2)
+    model = SystemModel(name='compressor', n_y=5, n_u=2, x_names=x_names)
 
     p = model.x_sym[0]  # Plenum pressure
     m = model.x_sym[1]  # Mass flow rate that enters the compressor

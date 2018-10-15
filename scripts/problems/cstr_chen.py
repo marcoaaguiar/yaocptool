@@ -12,12 +12,12 @@ from os.path import dirname, abspath
 sys.path.append(abspath(dirname(dirname(__file__))))
 
 from casadi import vertcat, exp, diag
-from yaocptool.modelling.model_classes import SystemModel
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.modelling.ocp import OptimalControlProblem
 
 
 def create_CSTR_OCP():
-    model = SystemModel(n_x=4, n_y=3, n_u=2, name='cstr')
+    model = SystemModel(name='cstr', n_x=4, n_y=3, n_u=2)
     x = model.x_sym
     y = model.y_sym
     u = model.u_sym
