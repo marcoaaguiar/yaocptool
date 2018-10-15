@@ -17,7 +17,7 @@ class PCEConverter:
 
         :param StochasticOCP socp: Stochastic Optimal Control Problem
         :param int n_samples: number of samples of the parameters. If none is provided, the minimum number of samples
-        will be used, depending on the number of uncertain parameters and polynomial order
+            will be used, depending on the number of uncertain parameters and polynomial order
         :param int pc_order: order of the polynomial, for the polynomial approximation. (default: 3)
 
         """

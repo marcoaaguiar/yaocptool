@@ -23,14 +23,12 @@ class DataSet:
             rows equal to self.data['entry_name']['size'].
             The data can be more easily managed using create_entry, get_entry, insert_data.
 
-
         :param str name: name of th dataset
-        :param str plot_style: default plot style. plot = linear interpolation, step = piecewise constant
-        ('plot' | 'step')
+        :param str plot_style: default plot style. plot = linear interpolation, step = piecewise constant ('plot' | 'step')
         :param bool find_discontinuity: Default: True. If True, it will try to find discontinuity on the data, and plot
-        with gaps where data is missing/not available, instead of a line connecting all data points.
+            with gaps where data is missing/not available, instead of a line connecting all data points.
         :param float max_sampling_time: maximum expected distance between two time data. This is used to detect
-        discontinuity on the data, and plot it separately.
+            discontinuity on the data, and plot it separately.
         """
         self.name = name
         self.data = defaultdict(partial(dict, [('time', DM([])), ('names', None), ('values', DM([])), ('size', None)]))
@@ -45,12 +43,13 @@ class DataSet:
     def create_entry(self, entry, size, names=None, plot_style=None):
         """
             Create an entry in the dataset
+
         :param entry: entry name
         :param size: number of rows in the vector
-        :param list names: name for each row, it should be a list with size 'size'. If 'names' is not given,
-        then the name list [entry_1, entry_2, ..., entry_size]
+        :param list names: name for each row, it should be a list with size 'size'. If 'names' is not given, then the
+            name list [entry_1, entry_2, ..., entry_size]
         :param str plot_style: ('plot' | 'step') choose if the plot will be piecewise constant (step) or a first order
-        interpolation (plot)
+            interpolation (plot).
         """
         if names is None:
             names = [entry + '_' + str(i) for i in range(size)]
@@ -62,6 +61,7 @@ class DataSet:
     def get_entry(self, entry):
         """
             Return the time and values for a given entry.
+
         :param str entry: entry name
         :return: entry time, entry value
         :rtype: tuple
@@ -71,6 +71,7 @@ class DataSet:
     def get_entry_names(self, entry):
         """
             Get list of names of an entry
+
         :param entry:
         :rtype: list
         """
@@ -79,6 +80,7 @@ class DataSet:
     def get_entry_size(self, entry):
         """
             Get size of an entry
+
         :param entry:
         :return:
         """
@@ -102,6 +104,7 @@ class DataSet:
         """
             Return a copy of this dataset. The copy is not connected to the original data set, therefore changes in one
             of the dataset will not affect the other.
+
         :return:
         """
         dataset_copy = copy.copy(self)
@@ -184,6 +187,7 @@ class DataSet:
         It takes as input a list of dictionaries, each dictionary represents a plot.  In the dictionary use keyword 'x'
         to specify which states you want to print, the value of the dictionary should be a list of index of the states
         to be printed.
+
         :param list plot_list: List of dictionaries to generate the plots.
         :param list figures: list of figures to be plotted on top (optional)
         :param bool show: if the plotted figures should be shown after plotting (optional, default=True).

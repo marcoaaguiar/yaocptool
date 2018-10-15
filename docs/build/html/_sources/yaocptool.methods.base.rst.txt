@@ -1,0 +1,38 @@
+yaocptool.methods.base package
+==============================
+
+Submodules
+----------
+
+yaocptool.methods.base.discretizationschemebase module
+------------------------------------------------------
+
+.. automodule:: yaocptool.methods.base.discretizationschemebase
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.methods.base.optimizationresult module
+------------------------------------------------
+
+.. automodule:: yaocptool.methods.base.optimizationresult
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.methods.base.solutionmethodsbase module
+-------------------------------------------------
+
+.. automodule:: yaocptool.methods.base.solutionmethodsbase
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: yaocptool.methods.base
+    :members:
+    :undoc-members:
+    :show-inheritance:

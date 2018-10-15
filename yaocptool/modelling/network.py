@@ -11,15 +11,17 @@ from casadi import vertcat, depends_on
 class Network:
     def __init__(self, nodes, connections_settings_dict):
         """
+        Example of connections_dict:
+            Connections 0:
+            z_sym[0] in Node 0 is connected to z_sym[2] in Node 1
+            connections_dict = {0: [{0:[0]}, {1:[2]}]}
+        it can also be a multidimensional connection:
+            Connection 1:
+            z_sym[0:1] in Node 1 is connected to z_sym[1:2] in Node 4
+            connections_dict = {1: [{1:[0,1]}, {4:[1,2]}]}
 
-            Example of connections_dict:
-                Connections 0:
-                z_sym[0] in Node 0 is connected to z_sym[2] in Node 1
-                connections_dict = {0: [{0:[0]}, {1:[2]}]}
-            it can also be a multidimensional connection:
-                Connection 1:
-                z_sym[0:1] in Node 1 is connected to z_sym[1:2] in Node 4
-                connections_dict = {1: [{1:[0,1]}, {4:[1,2]}]}
+        :type nodes: object
+        :type connections_settings_dict: object
         """
         self.nodes = nodes
         self.connections_settings_dict = connections_settings_dict
@@ -69,6 +71,7 @@ class Connection:
     def __init__(self, connection_id, nodes=None, z_sym_indices_list=None):
         """
             Connection class for Network systems
+
         :type nodes: list
         :type z_sym_indices_list: dict
         :type connection_id: int

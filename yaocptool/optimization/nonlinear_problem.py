@@ -6,17 +6,18 @@ from yaocptool.optimization.abstract_optimization_problem import AbstractOptimiz
 
 class NonlinearOptimizationProblem(AbstractOptimizationProblem):
     def __init__(self, **kwargs):
-        """ Abstract Optimization Problem class
+        """
+            Nonlinear Optimization Problem class
             Optimization problem
 
-            minimize f(x)
-               x
-            subject to: g_eq = 0
-                        g_ineq <= 0
-            Object attributes:
-            x -> optimization variables
-            g -> constraint
+        .. math::
+            \\min_x f(x, p)
 
+            \\textrm{s.t.:} g_{lb} \leq g(x,p) \leq g_{ub}
+
+        Object attributes:
+        x -> optimization variables
+        g -> constraint
         """
         super(NonlinearOptimizationProblem, self).__init__(**kwargs)
         if self.solver_options == {}:

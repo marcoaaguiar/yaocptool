@@ -19,7 +19,7 @@ class OptimalControlProblem:
        \\min J &= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\\theta)
         + \sum_{k} S(x(t_k), y(t_k), u(t_k), t_k, p, \\theta_k)
 
-       \\textnormal{s.t.:}\,& \dot{x} = f(x,y,u,t,p,\\theta)
+       \\textrm{s.t.:}\,& \dot{x} = f(x,y,u,t,p,\\theta)
 
        & g(x,y,u,t,p,\\theta) = 0
 
@@ -452,12 +452,11 @@ class OptimalControlProblem:
         The inequality is concatenated to "g_ineq"
 
         :param str when: Can be 'default', 'end', 'start'.
-                         'start' - the constraint will be evaluated at the start of every finite element
-                         'end' - the constraint will be evaluated at the end of every finite element
-                         'default' - will be evaluated at each collocation point of every finite element.
-                                For the multiple shooting, the constraint will be evaluated at the end of each
-                                finite element
-
+            'start' - the constraint will be evaluated at the start of every finite element
+            'end' - the constraint will be evaluated at the end of every finite element
+            'default' - will be evaluated at each collocation point of every finite element.
+            For the multiple shooting, the constraint will be evaluated at the end of each
+            finite element
         :param eq: inequality
         """
         if isinstance(eq, list):
@@ -473,11 +472,11 @@ class OptimalControlProblem:
 
         :param eq: equality
         :param str when: Can be 'default', 'end', 'start'.
-                 'start' - the constraint will be evaluated at the start of every finite element
-                 'end' - the constraint will be evaluated at the end of every finite element
-                 'default' - will be evaluated at each collocation point of every finite element.
-                        For the multiple shooting, the constraint will be evaluated at the end of each
-                        finite element
+            'start' - the constraint will be evaluated at the start of every finite element
+            'end' - the constraint will be evaluated at the end of every finite element
+            'default' - will be evaluated at each collocation point of every finite element.
+            For the multiple shooting, the constraint will be evaluated at the end of each
+            finite element
         """
         if isinstance(eq, list):
             eq = vertcat(*eq)
