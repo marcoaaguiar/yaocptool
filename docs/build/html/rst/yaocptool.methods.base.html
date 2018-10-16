@@ -1,0 +1,542 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>yaocptool.methods.base package &#8212; YAOCPTool 0.2 documentation</title>
+    <link rel="stylesheet" href="../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  
+   
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">YAOCPTool 0.2 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>Contents</h2>
+    <div class="sidebar-localtoc">
+      <ul>
+<li><a class="reference internal" href="#">yaocptool.methods.base package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-yaocptool.methods.base.discretizationschemebase">yaocptool.methods.base.discretizationschemebase module</a></li>
+<li><a class="reference internal" href="#module-yaocptool.methods.base.optimizationresult">yaocptool.methods.base.optimizationresult module</a></li>
+<li><a class="reference internal" href="#module-yaocptool.methods.base.solutionmethodsbase">yaocptool.methods.base.solutionmethodsbase module</a></li>
+<li><a class="reference internal" href="#module-yaocptool.methods.base">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/rst/yaocptool.methods.base.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+      
+    </div>
+  </div>
+        <div id="right-column">
+          
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../index.html">Docs</a></li>
+              
+              <li>yaocptool.methods.base package</li>
+            </ol>
+          </div>
+          
+          <div class="document clearer body">
+            
+  <div class="section" id="yaocptool-methods-base-package">
+<h1>yaocptool.methods.base package<a class="headerlink" href="#yaocptool-methods-base-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-yaocptool.methods.base.discretizationschemebase">
+<span id="yaocptool-methods-base-discretizationschemebase-module"></span><h2>yaocptool.methods.base.discretizationschemebase module<a class="headerlink" href="#module-yaocptool.methods.base.discretizationschemebase" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase">
+<em class="property">class </em><code class="descclassname">yaocptool.methods.base.discretizationschemebase.</code><code class="descname">DiscretizationSchemeBase</code><span class="sig-paren">(</span><em>solution_method</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>solution_method</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for discretization methods. A discretization class transforms and OCP into a NLP</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_initial_guess">
+<code class="descname">create_initial_guess</code><span class="sig-paren">(</span><em>p=None</em>, <em>theta=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.create_initial_guess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_initial_guess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an initial guess for the optimal control problem using problem.x_0, problem.y_guess, problem.u_guess,
+and a given p and theta (for p_opt and theta_opt) if they are given.
+If y_guess or u_guess are None the initial guess uses a vector of zeros of appropriate size.
+If no p or theta is given, an vector of zeros o appropriate size is used.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>p</strong> – Optimization parameters</li>
+<li><strong>theta</strong> – Optimization theta</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_initial_guess_with_simulation">
+<code class="descname">create_initial_guess_with_simulation</code><span class="sig-paren">(</span><em>u=None</em>, <em>p=None</em>, <em>theta=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.create_initial_guess_with_simulation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_initial_guess_with_simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an initial guess for the optimal control problem using by simulating with a given control u,
+and a given p and theta (for p_opt and theta_opt) if they are given.
+If no u is given the value of problem.u_guess is used, or problem.u_past, then a vector of zeros of appropriate
+size is used.
+If no p or theta is given, an vector of zeros o appropriate size is used.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>u</strong> – Control initial guess</li>
+<li><strong>p</strong> – Optimization parameters</li>
+<li><strong>theta</strong> – Optimization theta</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_nlp_symbolic_variables">
+<code class="descname">create_nlp_symbolic_variables</code><span class="sig-paren">(</span><em>nlp</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.create_nlp_symbolic_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_nlp_symbolic_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the symbolic variables that will be used by the NLP problem
+:rtype: (DM, List[List[DM]], List(List(DM)), List(DM), DM, DM, DM)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.degree">
+<code class="descname">degree</code><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.degree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.degree_control">
+<code class="descname">degree_control</code><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.degree_control" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.delta_t">
+<code class="descname">delta_t</code><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.delta_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.discretize">
+<code class="descname">discretize</code><span class="sig-paren">(</span><em>x_0=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>last_u=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.discretize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.discretize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Discretize the OCP, returning a Optimization Problem</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x_0</strong> – initial condition</li>
+<li><strong>p</strong> – parameters</li>
+<li><strong>theta</strong> – theta parameters</li>
+<li><strong>last_u</strong> – last applied control</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.finite_elements">
+<code class="descname">finite_elements</code><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.finite_elements" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.get_system_at_given_times">
+<code class="descname">get_system_at_given_times</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>u</em>, <em>time_dict=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>functions=None</em>, <em>start_at_t_0=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.get_system_at_given_times"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.get_system_at_given_times" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.model">
+<code class="descname">model</code><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.model" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel" title="yaocptool.modelling.system_model.SystemModel">SystemModel</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.problem">
+<code class="descname">problem</code><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.problem" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem" title="yaocptool.modelling.ocp.OptimalControlProblem">OptimalControlProblem</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.set_data_to_optimization_result_from_raw_data">
+<code class="descname">set_data_to_optimization_result_from_raw_data</code><span class="sig-paren">(</span><em>optimization_result</em>, <em>raw_solution_dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.set_data_to_optimization_result_from_raw_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.set_data_to_optimization_result_from_raw_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the raw data received from the solver and put it in the Optimization Result object
+:type optimization_result: yaocptool.methods.optimizationresult.OptimizationResult
+:type raw_solution_dict: dict</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_and_u">
+<code class="descname">split_x_and_u</code><span class="sig-paren">(</span><em>results_vector</em>, <em>all_subinterval=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.split_x_and_u"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_and_u" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_y_and_u">
+<code class="descname">split_x_y_and_u</code><span class="sig-paren">(</span><em>v</em>, <em>all_subinterval=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.split_x_y_and_u"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_y_and_u" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.time_breakpoints">
+<code class="descname">time_breakpoints</code><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.time_breakpoints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.unpack_decision_variables">
+<code class="descname">unpack_decision_variables</code><span class="sig-paren">(</span><em>decision_variables</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.unpack_decision_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.unpack_decision_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a structured data from the decision variables vector</p>
+<p>Returns:
+(x_data, y_data, u_data, p_opt, eta)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>decision_variables</strong> – DM</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">tuple</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.vectorize">
+<code class="descname">vectorize</code><span class="sig-paren">(</span><em>vector</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.vectorize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.vectorize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.methods.base.optimizationresult">
+<span id="yaocptool-methods-base-optimizationresult-module"></span><h2>yaocptool.methods.base.optimizationresult module<a class="headerlink" href="#module-yaocptool.methods.base.optimizationresult" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.methods.base.optimizationresult.OptimizationResult">
+<em class="property">class </em><code class="descclassname">yaocptool.methods.base.optimizationresult.</code><code class="descname">OptimizationResult</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/optimizationresult.html#OptimizationResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="yaocptool.methods.base.optimizationresult.OptimizationResult.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/optimizationresult.html#OptimizationResult.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.optimizationresult.OptimizationResult.dataset">
+<code class="descname">dataset</code><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult.dataset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.optimizationresult.OptimizationResult.first_control">
+<code class="descname">first_control</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/optimizationresult.html#OptimizationResult.first_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult.first_control" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the first element of the control vector</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">DM</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.optimizationresult.OptimizationResult.is_collocation">
+<code class="descname">is_collocation</code><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult.is_collocation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.optimizationresult.OptimizationResult.is_valid">
+<code class="descname">is_valid</code><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult.is_valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.optimizationresult.OptimizationResult.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>plot_list</em>, <em>figures=None</em>, <em>show=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/optimizationresult.html#OptimizationResult.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the optimization result.
+It takes as input a list of dictionaries, each dictionary represents a plot.  In the dictionary use keyword ‘x’
+to specify which states you want to print, the value of the dictionary should be a list of state to be printed.
+The keywords that are accepted are: ‘x’, ‘y’, ‘u’
+:param list plot_list: List of dictionaries to generate the plots.
+:param list figures: OPTIONAL: list of figures to be plotted in. If not provided it will create new figures.
+:param bool show: OPTIONAL: select if matplotlib.pyplot.show should be applied after the plots.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.optimizationresult.OptimizationResult.to_dataset">
+<code class="descname">to_dataset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/optimizationresult.html#OptimizationResult.to_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult.to_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Return a dataset with the data of x, y, and u</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet" title="yaocptool.modelling.dataset.DataSet">DataSet</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.methods.base.solutionmethodsbase">
+<span id="yaocptool-methods-base-solutionmethodsbase-module"></span><h2>yaocptool.methods.base.solutionmethodsbase module<a class="headerlink" href="#module-yaocptool.methods.base.solutionmethodsbase" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase">
+<em class="property">class </em><code class="descclassname">yaocptool.methods.base.solutionmethodsbase.</code><code class="descname">SolutionMethodsBase</code><span class="sig-paren">(</span><em>problem</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>problem</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>problem</strong> (<a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem" title="yaocptool.modelling.ocp.OptimalControlProblem"><em>OptimalControlProblem</em></a>) – </li>
+<li><strong>integrator_type</strong> (<em>str</em>) – str</li>
+<li><strong>solution_method</strong> (<em>str</em>) – str</li>
+<li><strong>degree</strong> (<em>int</em>) – discretization polynomial degree</li>
+<li><strong>degree_control</strong> (<em>int</em>) – </li>
+<li><strong>discretization_scheme</strong> (<em>str</em>) – (‘multiple-shooting’ | ‘collocation’)</li>
+<li><strong>initial_guess_heuristic</strong> (<em>str</em>) – ‘simulation’ or ‘problem_info’</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.call_solver">
+<code class="descname">call_solver</code><span class="sig-paren">(</span><em>initial_guess=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>x_0=None</em>, <em>last_u=None</em>, <em>initial_guess_dict=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.call_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.call_solver" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.collocation_points">
+<em class="property">static </em><code class="descname">collocation_points</code><span class="sig-paren">(</span><em>degree</em>, <em>cp='radau'</em>, <em>with_zero=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.collocation_points"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.collocation_points" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_control_approximation">
+<code class="descname">create_control_approximation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.create_control_approximation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_control_approximation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parametrize the control variable, accordingly to the ‘degree_control’ attribute.
+If degree_control == 1, then a piecewise constant control will be used (most common).
+If degree_control &gt; 1, then a piecewise polynomial approximation will be used with order ‘degree_control’.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_optimization_problem">
+<code class="descname">create_optimization_problem</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.create_optimization_problem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_optimization_problem" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_optimization_result">
+<code class="descname">create_optimization_result</code><span class="sig-paren">(</span><em>raw_solution_dict</em>, <em>p=None</em>, <em>theta=None</em>, <em>x_0=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.create_optimization_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_optimization_result" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_variable_polynomial_approximation">
+<code class="descname">create_variable_polynomial_approximation</code><span class="sig-paren">(</span><em>size</em>, <em>degree</em>, <em>name='var_appr'</em>, <em>tau=None</em>, <em>point_at_t0=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.create_variable_polynomial_approximation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_variable_polynomial_approximation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.delta_t">
+<code class="descname">delta_t</code><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.delta_t" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.model">
+<code class="descname">model</code><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.prepare">
+<code class="descname">prepare</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.prepare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.prepare" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.solve">
+<code class="descname">solve</code><span class="sig-paren">(</span><em>initial_guess=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>x_0=None</em>, <em>last_u=None</em>, <em>initial_guess_dict=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.solve" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>initial_guess</strong> – Initial guess</li>
+<li><strong>p</strong> – Parameters values</li>
+<li><strong>theta</strong> – Theta values</li>
+<li><strong>x_0</strong> – Initial condition value</li>
+<li><strong>last_u</strong> – Last control value</li>
+<li><strong>initial_guess_dict</strong> – Initial guess as dict</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">OptimizationResult</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_and_u">
+<code class="descname">split_x_and_u</code><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_and_u" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_y_and_u">
+<code class="descname">split_x_y_and_u</code><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_y_and_u" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.time_breakpoints">
+<code class="descname">time_breakpoints</code><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.time_breakpoints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.unvec">
+<code class="descname">unvec</code><span class="sig-paren">(</span><em>vector</em>, <em>degree=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.unvec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.unvec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unvectorize ‘vector’ a vectorized matrix, assuming that it was a matrix with ‘degree’ number of columns
+:type vector: DM a vector (flattened matrix)
+:type degree: int</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.methods.base">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-yaocptool.methods.base" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">YAOCPTool 0.2 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2018, Marco Aurelio S. de Aguiar. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>
