@@ -13,6 +13,7 @@ def find_variables_indices_in_vector(var, vector):
 def remove_variables_from_vector(var, vector):
     """
         Returns a vector with items removed
+
     :param var: items to be removed
     :param vector: vector which will have items removed
     :return:
@@ -28,6 +29,7 @@ def remove_variables_from_vector(var, vector):
 def remove_variables_from_vector_by_indices(vector, indices):
     """
         Returns a vector with items removed
+
     :param vector: vector which will have items removed
     :param list indices: list of indices for which the variables need to be removed.
     :return:
@@ -103,7 +105,7 @@ def blockdiag(matrices_list):
 def expm(a_matrix):
     """Since casadi does not have native support for matrix exponential, this is a trick to computing it.
     It can be quite expensive, specially for large matrices.
-    THIS ONLY SUPPORT NUMERIC MATRICES, DOES NOT SUPPORT SX SYMBOLIC VARIABLES.
+    THIS ONLY SUPPORT NUMERIC MATRICES AND MX VARIABLES, DOES NOT SUPPORT SX SYMBOLIC VARIABLES.
 
     :param DM a_matrix: matrix
     :return:

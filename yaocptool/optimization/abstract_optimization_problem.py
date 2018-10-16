@@ -5,13 +5,15 @@ from casadi import vertcat, MX, inf, DM, repmat
 
 class AbstractOptimizationProblem(object):
     def __init__(self, **kwargs):
-        """ Abstract Optimization Problem class
+        """
+            Abstract Optimization Problem class
             Optimization problem
 
-            minimize f(x)
-               x
-            subject to: g_eq = 0
-                        g
+        .. math::
+            \\min_x f(x, p)
+
+            \\textrm{s.t.:} g_{lb} \leq g(x,p) \leq g_{ub}
+
             Object attributes:
             x -> optimization variables
             g -> constraint
@@ -43,9 +45,9 @@ class AbstractOptimizationProblem(object):
         :param str name: Name of the optimization variable.
         :param int size: Size of the variable (default = 1)
         :param lb: Lower bound of the variable. If the given 'size' is greater than one but a scalar is passed as lower
-        bound, a vector of lb of size 'size' will be used as a lower bound. (default = [-inf]*size)
+            bound, a vector of lb of size 'size' will be used as a lower bound. (default = [-inf]*size)
         :param ub: Upper bound of the variable. If the given 'size' is greater than one but a scalar is passed as upper
-        bound, a vector of ub of size 'size' will be used as a upper bound. (default = [inf]*size)
+            bound, a vector of ub of size 'size' will be used as a upper bound. (default = [inf]*size)
         :return: Return the variable
         :rtype: MX
         """
@@ -64,11 +66,11 @@ class AbstractOptimizationProblem(object):
 
         :param variable: variable to be included
         :param lb: Lower bound of the variable. If the given variable size is greater than one but a scalar is passed as
-         lower bound, a vector of lb with size of the given variable will be used as a lower bound.
-         (default = [-inf]*size)
+            lower bound, a vector of lb with size of the given variable will be used as a lower bound.
+            (default = [-inf]*size)
         :param ub: Upper bound of the variable. If the given variable size is greater than one but a scalar is passed as
-         upper bound, a vector of ub  with size of the given variable will be used as a upper bound.
-         (default = [inf]*size)
+            upper bound, a vector of ub  with size of the given variable will be used as a upper bound.
+            (default = [inf]*size)
         """
         lb = vertcat(lb)
         ub = vertcat(ub)
@@ -102,9 +104,9 @@ class AbstractOptimizationProblem(object):
 
         :param expr: expression for the inequality, this is the only term that should contain symbolic variables
         :param lb: Lower bound of the inequality. If the 'expr' size is greater than one but a scalar is passed as
-         lower bound, a vector of lb with size of 'expr' will be used as a lower bound. (default = [-inf]*size)
+            lower bound, a vector of lb with size of 'expr' will be used as a lower bound. (default = [-inf]*size)
         :param ub: Upper bound of the inequality. If the  'expr' size is greater than one but a scalar is passed as
-         upper bound, a vector of ub with size of  'expr' will be used as a upper bound. (default = [inf]*size)
+            upper bound, a vector of ub with size of  'expr' will be used as a upper bound. (default = [inf]*size)
         """
         if isinstance(expr, list):
             expr = vertcat(expr)
@@ -142,8 +144,8 @@ class AbstractOptimizationProblem(object):
 
         :param expr: expression, this is the only term that should contain symbolic variables
         :param rhs: right hand side, by default it is a vector of zeros with same size of expr. If the  'expr' size is
-        greater than one but a scalar is passed as 'rhs', a vector of 'rhs' with size of 'expr' will be used as
-        right hand side. (default = [0]*size)
+            greater than one but a scalar is passed as 'rhs', a vector of 'rhs' with size of 'expr' will be used as
+            right hand side. (default = [0]*size)
         """
         if isinstance(expr, list):
             expr = vertcat(expr)
@@ -188,7 +190,7 @@ class AbstractOptimizationProblem(object):
 
         :param initial_guess: Initial guess
         :param call_dict: a dictionary containing 'lbx', 'ubx', 'lbg', 'ubg'. If not given, the one obtained with
-        self.get_default_call_dict will be used.
+            self.get_default_call_dict will be used.
         :param p: parameters
         :param lam_x:
         :param lam_g:

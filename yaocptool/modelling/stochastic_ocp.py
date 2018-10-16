@@ -103,12 +103,11 @@ class StochasticOCP(OptimalControlProblem):
         :param list|DM rhs: Right-hand size of the inequality
         :param list|DM prob: Chance/probability of the constraint being satisfied
         :param str when: Can be 'default', 'end', 'start'.
-                         'start' - the constraint will be evaluated at the start of every finite element
-                         'end' - the constraint will be evaluated at the end of every finite element
-                         'default' - will be evaluated at each collocation point of every finite element.
-                                For the multiple shooting, the constraint will be evaluated at the end of each
-                                finite element
-
+            'start' - the constraint will be evaluated at the start of every finite element
+            'end' - the constraint will be evaluated at the end of every finite element
+            'default' - will be evaluated at each collocation point of every finite element.
+            For the multiple shooting, the constraint will be evaluated at the end of each
+            finite element
         """
         if isinstance(ineq, list):
             ineq = vertcat(*ineq)

@@ -1,0 +1,369 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  
+  <!-- Licensed under the Apache 2.0 License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/open-sans/stylesheet.css" />
+  <!-- Licensed under the SIL Open Font License -->
+  <link rel="stylesheet" type="text/css" href="../../../_static/fonts/source-serif-pro/source-serif-pro.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../../../_static/css/bootstrap-theme.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <title>yaocptool.estimation.extended_kalman_filter &#8212; YAOCPTool 0.2 documentation</title>
+    <link rel="stylesheet" href="../../../_static/guzzle.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  
+   
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">YAOCPTool 0.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="container-wrapper">
+
+      <div id="mobile-toggle">
+        <a href="#"><span class="glyphicon glyphicon-align-justify" aria-hidden="true"></span></a>
+      </div>
+  <div id="left-column">
+    <div class="sphinxsidebar">
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <div id="main-search">
+      <form class="form-inline" action="../../../search.html" method="GET" role="form">
+        <div class="input-group">
+          <input name="q" type="text" class="form-control" placeholder="Search...">
+        </div>
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div>
+      
+    </div>
+  </div>
+        <div id="right-column">
+          
+          <div role="navigation" aria-label="breadcrumbs navigation">
+            <ol class="breadcrumb">
+              <li><a href="../../../index.html">Docs</a></li>
+              
+                <li><a href="../../index.html">Module code</a></li>
+              
+              <li>yaocptool.estimation.extended_kalman_filter</li>
+            </ol>
+          </div>
+          
+          <div class="document clearer body">
+            
+  <h1>Source code for yaocptool.estimation.extended_kalman_filter</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">DM</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">jacobian</span><span class="p">,</span> <span class="n">Function</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">inv</span><span class="p">,</span> <span class="n">solve</span><span class="p">,</span> <span class="n">horzcat</span><span class="p">,</span> <span class="n">SX</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="k">import</span> <span class="n">expm</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling</span> <span class="k">import</span> <span class="n">SystemModel</span><span class="p">,</span> <span class="n">DataSet</span>
+<span class="kn">from</span> <span class="nn">.estimator_abstract</span> <span class="k">import</span> <span class="n">EstimatorAbstract</span>
+
+
+<div class="viewcode-block" id="ExtendedKalmanFilter"><a class="viewcode-back" href="../../../yaocptool.estimation.html#yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter">[docs]</a><span class="k">class</span> <span class="nc">ExtendedKalmanFilter</span><span class="p">(</span><span class="n">EstimatorAbstract</span><span class="p">):</span>
+<div class="viewcode-block" id="ExtendedKalmanFilter.__init__"><a class="viewcode-back" href="../../../yaocptool.estimation.html#yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extended Kalman Filter for ODE and DAE systems implementation based on (1)</span>
+
+<span class="sd">        (1) Mandela, R. K., Narasimhan, S., &amp; Rengaswamy, R. (2009).</span>
+<span class="sd">        Nonlinear State Estimation of Differential Algebraic Systems. Proceedings of the 2009 ADCHEM (Vol. 42). IFAC.</span>
+<span class="sd">        http://doi.org/10.3182/20090712-4-TR-2008.00129</span>
+
+<span class="sd">        :param SystemModel model: filter model</span>
+<span class="sd">        :param float t_s: sampling time</span>
+<span class="sd">        :param float t: current estimator time</span>
+<span class="sd">        :param DM x_mean: current state estimation</span>
+<span class="sd">        :param DM p_k: current covariance estimation</span>
+<span class="sd">        :param DM r_v: process noise covariance matrix</span>
+<span class="sd">        :param DM r_n: measurement noise covariance matrix</span>
+<span class="sd">        :param DM y_guess: initial guess of the algebraic variables for the model simulation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># casadi.Function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_matrix</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="s1">&#39;standard&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_v</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_n</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_types_fixed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checked</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">EstimatorAbstract</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_p_k_aug</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_p_k_aug</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_x_aug</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;If the model has algebraic it is necessary to provide a initial guess for it &quot;</span>
+                                 <span class="s2">&quot;(&#39;y_guess&#39;).&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_x_aug</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span>
+
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">augmented_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_aug_matrix_func</span><span class="p">,</span>
+         <span class="bp">self</span><span class="o">.</span><span class="n">gamma_func</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_update_func</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_augmented_model_and_p_update</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+        <span class="c1"># Data set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="n">DataSet</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ekf_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ekf_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;P&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;P&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ekf_P_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span>
+                                           <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;P_y&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;P_y&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ekf_P_y_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span>
+                                             <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;meas&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_meas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;meas&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ekf_meas_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_meas</span><span class="p">)]</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_meas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Number of measurements</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Number of measurements</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span><span class="o">.</span><span class="n">numel_out</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The estimator has no measurements information, neither &#39;h_function&#39; or &#39;c_matrix&#39; &quot;</span>
+                            <span class="s2">&quot;were given.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_fix_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_k</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_v</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r_v</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_n</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r_n</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;A initial condition for the &quot;x_mean&quot; must be provided&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;A initial condition for the &quot;p_k&quot; must be provided&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Neither a measurement function &quot;h_function&quot; or a measurement matrix &quot;c_matrix&quot; was given&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="ExtendedKalmanFilter.estimate"><a class="viewcode-back" href="../../../yaocptool.estimation.html#yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.estimate">[docs]</a>    <span class="k">def</span> <span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">y_k</span><span class="p">,</span> <span class="n">u_k</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checked</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_checked</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_types_fixed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fix_types</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_types_fixed</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Simulate the system to obtain the prediction for the states and algebraic variables</span>
+        <span class="n">sim_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">x_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="p">,</span> <span class="n">t_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">t_f</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_s</span><span class="p">,</span>
+                                          <span class="n">u</span><span class="o">=</span><span class="n">u_k</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">y_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span><span class="p">,</span>
+                                          <span class="n">integrator_type</span><span class="o">=</span><span class="s1">&#39;implicit&#39;</span><span class="p">)</span>
+        <span class="n">x_pred</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">u_f</span> <span class="o">=</span> <span class="n">sim_results</span><span class="o">.</span><span class="n">final_condition</span><span class="p">()</span>
+        <span class="n">x_aug_f</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x_pred</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+
+        <span class="c1"># Covariance</span>
+        <span class="n">all_sym_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">put_values_in_all_sym_format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x_pred</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="n">u_k</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span>
+                                                                 <span class="n">theta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+        <span class="n">all_sym_values</span> <span class="o">=</span> <span class="n">all_sym_values</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span>
+
+        <span class="n">a_aug_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_aug_matrix_func</span><span class="p">(</span><span class="o">*</span><span class="n">all_sym_values</span><span class="p">)</span>
+        <span class="n">transition_matrix</span> <span class="o">=</span> <span class="n">expm</span><span class="p">(</span><span class="n">a_aug_matrix</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_s</span><span class="p">)</span>
+
+        <span class="n">gamma_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_func</span><span class="p">(</span><span class="o">*</span><span class="n">all_sym_values</span><span class="p">)</span>
+        <span class="n">p_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_update_func</span><span class="p">(</span><span class="n">transition_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_p_k_aug</span><span class="p">,</span> <span class="n">gamma_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_v</span><span class="p">)</span>
+
+        <span class="c1"># Obtain the matrix G (linearized measurement model)</span>
+        <span class="n">measurement_sym</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_measurement_from_prediction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">,</span>
+                                                                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span>
+        <span class="n">dh_dx_aug_sym</span> <span class="o">=</span> <span class="n">jacobian</span><span class="p">(</span><span class="n">measurement_sym</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">))</span>
+        <span class="n">f_dh_dx_aug</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;dh_dx_aug&#39;</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_sym</span><span class="p">],</span> <span class="p">[</span><span class="n">dh_dx_aug_sym</span><span class="p">])</span>
+
+        <span class="n">g_matrix</span> <span class="o">=</span> <span class="n">f_dh_dx_aug</span><span class="p">(</span><span class="n">x_pred</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">u_f</span><span class="p">)</span>
+
+        <span class="c1"># Obtain the filter gain</span>
+        <span class="n">k_gain</span> <span class="o">=</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">mtimes</span><span class="p">(</span><span class="n">p_pred</span><span class="p">,</span> <span class="n">g_matrix</span><span class="o">.</span><span class="n">T</span><span class="p">),</span> <span class="n">inv</span><span class="p">(</span><span class="n">mtimes</span><span class="p">(</span><span class="n">g_matrix</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">p_pred</span><span class="p">,</span> <span class="n">g_matrix</span><span class="o">.</span><span class="n">T</span><span class="p">))</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_n</span><span class="p">))</span>
+
+        <span class="c1"># Get measurement prediction</span>
+        <span class="n">meas_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_measurement_from_prediction</span><span class="p">(</span><span class="n">x_pred</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">u_f</span><span class="p">)</span>
+
+        <span class="c1"># Correct prediction of the state estimation</span>
+        <span class="n">x_mean</span> <span class="o">=</span> <span class="n">x_aug_f</span> <span class="o">+</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">k_gain</span><span class="p">,</span> <span class="p">(</span><span class="n">y_k</span> <span class="o">-</span> <span class="n">meas_pred</span><span class="p">))</span>
+        <span class="n">meas_corr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_measurement_from_prediction</span><span class="p">(</span><span class="n">x_mean</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">],</span> <span class="n">x_mean</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:],</span> <span class="n">u_f</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Predicted state: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x_pred</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Prediction error: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y_k</span> <span class="o">-</span> <span class="n">meas_pred</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Correction: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mtimes</span><span class="p">(</span><span class="n">k_gain</span><span class="p">,</span> <span class="p">(</span><span class="n">y_k</span> <span class="o">-</span> <span class="n">meas_pred</span><span class="p">))))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Corrected state: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x_mean</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Measurement: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y_k</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Corrected Meas.: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">meas_corr</span><span class="p">))</span>
+
+        <span class="c1"># Correct covariance prediction</span>
+        <span class="n">p_k</span> <span class="o">=</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">DM</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">augmented_model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span> <span class="o">-</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">k_gain</span><span class="p">,</span> <span class="n">g_matrix</span><span class="p">),</span> <span class="n">p_pred</span><span class="p">)</span>
+
+        <span class="c1"># Save variables in local object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_x_aug</span> <span class="o">=</span> <span class="n">x_mean</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="o">=</span> <span class="n">x_mean</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_p_k_aug</span> <span class="o">=</span> <span class="n">p_k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span> <span class="o">=</span> <span class="n">p_k</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">]</span>
+
+        <span class="c1"># Save in the data set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">x_mean</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;meas&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">meas_corr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">vec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_k</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;P_y&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">p_k</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:])</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span></div>
+
+    <span class="k">def</span> <span class="nf">_create_augmented_model_and_p_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :type model: SystemModel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">aug_model</span> <span class="o">=</span> <span class="n">SystemModel</span><span class="p">(</span><span class="s1">&#39;aug_linearized_EKF_model&#39;</span><span class="p">)</span>
+        <span class="n">aug_model</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">)</span>
+        <span class="n">aug_model</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">)</span>
+        <span class="n">aug_model</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span>
+        <span class="n">aug_model</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">p_sym</span><span class="p">)</span>
+        <span class="n">aug_model</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">)</span>
+
+        <span class="c1"># remove u_par (self.model.u_par model.u_par)</span>
+        <span class="n">all_sym</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">all_sym</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># Mean</span>
+        <span class="n">a_func</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;A_matrix&#39;</span><span class="p">,</span> <span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">)])</span>
+        <span class="n">b_func</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;B_matrix&#39;</span><span class="p">,</span> <span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">)])</span>
+        <span class="n">c_func</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;C_matrix&#39;</span><span class="p">,</span> <span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">)])</span>
+        <span class="n">d_func</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;D_matrix&#39;</span><span class="p">,</span> <span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">)])</span>
+
+        <span class="n">x_lin</span> <span class="o">=</span> <span class="n">aug_model</span><span class="o">.</span><span class="n">create_parameter</span><span class="p">(</span><span class="s1">&#39;x_lin&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+        <span class="n">y_lin</span> <span class="o">=</span> <span class="n">aug_model</span><span class="o">.</span><span class="n">create_parameter</span><span class="p">(</span><span class="s1">&#39;y_lin&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+
+        <span class="n">all_sym</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_lin</span>
+        <span class="n">all_sym</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">y_lin</span>
+
+        <span class="n">a_matrix</span> <span class="o">=</span> <span class="n">a_func</span><span class="p">(</span><span class="o">*</span><span class="n">all_sym</span><span class="p">)</span>
+        <span class="n">b_matrix</span> <span class="o">=</span> <span class="n">b_func</span><span class="p">(</span><span class="o">*</span><span class="n">all_sym</span><span class="p">)</span>
+        <span class="n">c_matrix</span> <span class="o">=</span> <span class="n">c_func</span><span class="p">(</span><span class="o">*</span><span class="n">all_sym</span><span class="p">)</span>
+        <span class="n">d_matrix</span> <span class="o">=</span> <span class="n">d_func</span><span class="p">(</span><span class="o">*</span><span class="n">all_sym</span><span class="p">)</span>
+
+        <span class="n">a_aug_matrix</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">horzcat</span><span class="p">(</span><span class="n">a_matrix</span><span class="p">,</span> <span class="n">b_matrix</span><span class="p">),</span>
+                               <span class="n">horzcat</span><span class="p">(</span><span class="n">mtimes</span><span class="p">(</span><span class="o">-</span><span class="n">solve</span><span class="p">(</span><span class="n">d_matrix</span><span class="p">,</span> <span class="n">c_matrix</span><span class="p">),</span> <span class="n">a_matrix</span><span class="p">),</span>
+                                       <span class="n">mtimes</span><span class="p">(</span><span class="o">-</span><span class="n">solve</span><span class="p">(</span><span class="n">d_matrix</span><span class="p">,</span> <span class="n">c_matrix</span><span class="p">),</span> <span class="n">b_matrix</span><span class="p">)))</span>
+
+        <span class="n">x_aug</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">)</span>
+        <span class="n">aug_model</span><span class="o">.</span><span class="n">include_system_equations</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="p">[</span><span class="n">mtimes</span><span class="p">(</span><span class="n">a_aug_matrix</span><span class="p">,</span> <span class="n">x_aug</span><span class="p">)])</span>
+
+        <span class="c1"># Covariance</span>
+        <span class="n">gamma</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">DM</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">),</span> <span class="o">-</span><span class="n">solve</span><span class="p">(</span><span class="n">d_matrix</span><span class="p">,</span> <span class="n">c_matrix</span><span class="p">))</span>
+
+        <span class="n">trans_matrix_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;trans_matrix&#39;</span><span class="p">,</span> <span class="n">a_aug_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">p_matrix_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;p_matrix&#39;</span><span class="p">,</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">n_x</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">))</span>
+        <span class="n">gamma_matrix_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;gamma_matrix&#39;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">q_matrix_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;q_matrix&#39;</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">))</span>
+
+        <span class="n">p_kpp</span> <span class="o">=</span> <span class="p">(</span><span class="n">mtimes</span><span class="p">(</span><span class="n">trans_matrix_sym</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">p_matrix_sym</span><span class="p">,</span> <span class="n">trans_matrix_sym</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+                 <span class="o">+</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">gamma_matrix_sym</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">q_matrix_sym</span><span class="p">,</span> <span class="n">gamma_matrix_sym</span><span class="o">.</span><span class="n">T</span><span class="p">)))</span>
+
+        <span class="n">a_aug_matrix_func</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;trans_matrix&#39;</span><span class="p">,</span> <span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="n">a_aug_matrix</span><span class="p">])</span>
+        <span class="n">gamma_func</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;gamma&#39;</span><span class="p">,</span> <span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="n">gamma</span><span class="p">])</span>
+        <span class="n">p_update_func</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;p_update&#39;</span><span class="p">,</span>
+                                 <span class="p">[</span><span class="n">trans_matrix_sym</span><span class="p">,</span> <span class="n">p_matrix_sym</span><span class="p">,</span> <span class="n">gamma_matrix_sym</span><span class="p">,</span> <span class="n">q_matrix_sym</span><span class="p">],</span>
+                                 <span class="p">[</span><span class="n">p_kpp</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">aug_model</span><span class="p">,</span> <span class="n">a_aug_matrix_func</span><span class="p">,</span> <span class="n">gamma_func</span><span class="p">,</span> <span class="n">p_update_func</span>
+
+    <span class="k">def</span> <span class="nf">_get_measurement_from_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">measurement_prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">measurement_prediction</span> <span class="o">=</span> <span class="n">mtimes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">measurement_prediction</span> <span class="o">=</span> <span class="n">measurement_prediction</span> <span class="o">+</span> <span class="n">mtimes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d_matrix</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Neither a measurement function &quot;h_function&quot; or a measurement matrix &quot;c_matrix&quot; was given&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">measurement_prediction</span></div>
+</pre></div>
+
+          </div>
+            
+        </div>
+        <div class="clearfix"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">YAOCPTool 0.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+<script type="text/javascript">
+  $("#mobile-toggle a").click(function () {
+    $("#left-column").toggle();
+  });
+</script>
+<script type="text/javascript" src="../../../_static/js/bootstrap.js"></script>
+  <div class="footer">
+    &copy; Copyright 2018, Marco Aurelio S. de Aguiar. Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+  </div>
+  </body>
+</html>

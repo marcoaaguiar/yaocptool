@@ -7,6 +7,10 @@
 pip install casadi numpy scipy sobol matplotlib
 ```
 
+## Documentation
+
+The documentation can be accessed [here!](./docs/index.html) 
+
 ## How to use
 The objective of this tool is to make easier to use the state-of-the-art CasADi, at the same time allowing for researchers to propose new methods.
 

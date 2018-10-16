@@ -31,6 +31,7 @@ class PlantSimulation(Plant):
 
     def __init__(self, model, x_0, **kwargs):
         """
+            Plant which uses a SystemModel.simulate to obtain the measurements.
 
         :param SystemModel model: simulation model
         :param DM x_0: initial condition
@@ -43,7 +44,7 @@ class PlantSimulation(Plant):
         :param DM r_n: Measurement noise covariance matrix
         :param DM r_v: Process noise covariance matrix
         :param noise_seed: Seed for the random number generator used to create noise. Use the same seed for the
-        repeatability in the experiments.
+            repeatability in the experiments.
         """
         Plant.__init__(self)
         self.model = model
