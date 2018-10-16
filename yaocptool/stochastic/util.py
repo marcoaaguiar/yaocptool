@@ -3,7 +3,7 @@ import math
 import numpy as np
 from casadi import DM, SX, mtimes, chol, vertcat, log, exp
 from scipy.stats.distributions import norm
-from sobol import sobol_seq
+import sobol_seq
 
 
 def sample_parameter_normal_distribution_with_sobol(mean, covariance, n_samples=1):

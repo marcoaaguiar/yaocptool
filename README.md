@@ -4,12 +4,14 @@
 ## Required Packages
 
 ```commandline
-pip install casadi numpy scipy sobol matplotlib
+pip install casadi numpy scipy sobol_seq matplotlib
 ```
 
 ## Documentation
 
-The documentation can be accessed [here!](https://marcoaaguiar.github.io/yaocptool/) 
+The documentation can be accessed [here!](https://marcoaaguiar.github.io/yaocptool/)
+For PDF version click [here!](https://marcoaaguiar.github.io/yaocptool/build/latex/YAOCPTool.pdf)
+
 
 ## How to use
 The objective of this tool is to make easier to use the state-of-the-art CasADi, at the same time allowing for researchers to propose new methods.

@@ -5,7 +5,7 @@ import numpy as np
 from casadi import DM, SX, Function, mtimes, chol, solve, vertcat, substitute, repmat, depends_on, inf, is_equal, \
     sqrt, fmax, diagcat
 from scipy.stats.distributions import norm
-from sobol import sobol_seq
+import sobol_seq
 
 from yaocptool.modelling import OptimalControlProblem, SystemModel, StochasticOCP
 from yaocptool.stochastic import sample_parameter_normal_distribution_with_sobol
@@ -45,8 +45,8 @@ class PCEConverter:
 
     @property
     def n_pol_parameters(self):
-        n_pol_parameters = factorial(self.n_uncertain + self.pc_order) / (
-                factorial(self.n_uncertain) * factorial(self.pc_order))
+        n_pol_parameters = int(factorial(self.n_uncertain + self.pc_order) / (
+                factorial(self.n_uncertain) * factorial(self.pc_order)))
         return n_pol_parameters
 
     def _sample_parameters(self):
