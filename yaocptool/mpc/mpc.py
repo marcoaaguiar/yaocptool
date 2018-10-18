@@ -63,7 +63,10 @@ class MPC:
             setattr(self, k, v)
 
         if self.n_x is None:
-            self.n_x = self.plant.n_x
+            self.n_x = self.solution_method.model.n_x
+
+        # set last_control_as_parameter to True, so the optimization problem can take last_u
+        self.solution_method.last_control_as_parameter = True
 
     def get_new_control(self, x_k, u_k, p=None):
         """Use solution_method to obtain new controls

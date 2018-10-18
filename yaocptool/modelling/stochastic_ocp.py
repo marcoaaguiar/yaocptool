@@ -134,5 +134,4 @@ class StochasticOCP(OptimalControlProblem):
 
         self.g_stochastic_ineq = vertcat(self.g_stochastic_ineq, ineq)
         self.g_stochastic_rhs = vertcat(self.g_stochastic_rhs, rhs)
-        self.g_stochastic_prob = vertcat(self.g_stochastic_prob, ineq)
-        self.time_g_ineq.extend([when] * ineq.numel())
+        self.g_stochastic_prob = vertcat(self.g_stochastic_prob, prob)

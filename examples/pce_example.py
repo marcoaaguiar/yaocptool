@@ -45,7 +45,7 @@ model.include_system_equations(ode=ode)
 print(model)
 
 ######################
-#      OCP           #
+#   StochasticOCP    #
 ######################
 # Create the optimal control problem
 problem = StochasticOCP(model)
@@ -65,7 +65,7 @@ problem.u_min = 0.00001
 problem.set_parameter_as_uncertain_parameter(a, mean=a_mean, var=[1e-8], distribution='normal')
 
 # Include chance constraint
-problem.include_time_chance_inequality(a * sqrt(2 * g * h_1), rhs=[0.005], prob=[0.9])
+problem.include_time_chance_inequality(a * sqrt(2 * g * h_1), rhs=[0.01], prob=[0.9])
 
 ######################
 #      PCE           #
@@ -74,8 +74,8 @@ problem.include_time_chance_inequality(a * sqrt(2 * g * h_1), rhs=[0.005], prob=
 pce_converter = PCEConverter(problem)
 
 # It is possible to include some expressions if we want to calculate the statistics (mean and variance) with PCE
-pce_converter.stochastic_variables.append(a * sqrt(2 * g * h_1))
-pce_converter.stochastic_variables.append(h_1)
+# pce_converter.stochastic_variables.append(a * sqrt(2 * g * h_1))
+# pce_converter.stochastic_variables.append(h_1)
 
 # Transform the Stochastic OCP into a OCP
 pce_problem = pce_converter.convert_socp_to_ocp_with_pce()
@@ -87,7 +87,7 @@ pce_problem = pce_converter.convert_socp_to_ocp_with_pce()
 solution_method = DirectMethod(pce_problem, finite_elements=20, discretization_scheme='collocation')
 
 # Solve the problem and get the result
-result = solution_method.solve(p=[0.071e-2] + [0]*5)
+result = solution_method.solve(p=[0.071e-2] + [0]*6)
 
 # Make one plot with the element with h_0 and h_1 for every sample, notice that it has an additional state that is the
 # cost at each sample.

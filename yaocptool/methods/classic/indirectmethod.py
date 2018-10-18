@@ -19,12 +19,12 @@ class IndirectMethod(SolutionMethodsBase):
         :param degree: int
         :param discretization_scheme: str 'multiple-shooting' | 'collocation'
         """
+        self.hasCostState = False
+
         super(IndirectMethod, self).__init__(problem, **kwargs)
 
-        self.problem = problem  # type: yaocptool.modelling.ocp.OptimalControlProblem
         self.solution_class = 'indirect'
-
-        self.hasCostState = False
+        self.initial_guess_heuristic = 'problem_info'
 
         self._check_bounds()
 
@@ -65,7 +65,7 @@ class IndirectMethod(SolutionMethodsBase):
         alg_eq = gradient(self.problem.H, self.model.y_sym)
 
         self.problem.include_state(lamb, l_dot, suppress=True)
-        self.model.hasAdjointVariables = True
+        self.model.has_adjoint_variables = True
 
         self.problem.include_algebraic(nu, alg_eq)
 

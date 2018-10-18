@@ -16,16 +16,16 @@ class OptimalControlProblem:
     It has the following form:
 
     .. math::
-       \\min J &= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\\theta)
+       \\min J &= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\\theta) \, dt
         + \sum_{k} S(x(t_k), y(t_k), u(t_k), t_k, p, \\theta_k)
 
        \\textrm{s.t.:}\,& \dot{x} = f(x,y,u,t,p,\\theta)
 
        & g(x,y,u,t,p,\\theta) = 0
 
-       & g_eq (x,y,u,t,p,\\theta) = 0
+       & g_{eq} (x,y,u,t,p,\\theta) = 0
 
-       & g_ineq(x,y,u,t,p,\\theta) \leq 0
+       & g_{ineq}(x,y,u,t,p,\\theta) \leq 0
 
        & x_{min} \leq x \leq x_{max}
 
@@ -35,9 +35,9 @@ class OptimalControlProblem:
 
        & \Delta u_{min} \leq \Delta u \leq \Delta u_{max}
 
-       & h_{initial} (x_(t_0), t_0, p, \theta) = 0
+       & h_{initial} (x (t_0), t_0, p, \\theta) = 0
 
-       & h_{final} (x_(t_f), t_f, p, \theta) = 0
+       & h_{final} (x (t_f), t_f, p, \\theta) = 0
 
        & h (p) = 0
 

@@ -1,11 +1,11 @@
 from __future__ import print_function
+
 import unittest
 
-from casadi import DM, mtimes, inf
+from casadi import DM, inf
+
 from yaocptool.methods import DirectMethod, IndirectMethod
-from yaocptool.modelling.system_model import SystemModel
-from yaocptool.modelling.ocp import OptimalControlProblem
-from models import create_2x2_mimo
+from .models import create_2x2_mimo
 
 
 class MIMO2x2TestCase(unittest.TestCase):
@@ -143,8 +143,8 @@ class MIMO2x2TestCase(unittest.TestCase):
                                          nlpsol_opts=self.nlpsol_opts
                                          )
         result = solution_method.solve()
-        error_init = result.x_interpolation_data['values'][0][0] - self.answer_initial_states
-        error_final = result.x_interpolation_data['values'][-1][-1] - self.answer_final_states
+        error_init = result.x_data['values'][0][0] - self.answer_initial_states
+        error_final = result.x_data['values'][-1][-1] - self.answer_final_states
         for i in range(solution_method.model.n_x):
             self.assertAlmostEqual(error_init[i], 0, delta=self.obj_tol, msg="Row {} failed".format(i))
             self.assertAlmostEqual(error_final[i], 0, delta=self.obj_tol, msg="Row {} failed".format(i))
@@ -159,8 +159,8 @@ class MIMO2x2TestCase(unittest.TestCase):
                                          nlpsol_opts=self.nlpsol_opts
                                          )
         result = solution_method.solve()
-        error_init = result.x_interpolation_data['values'][0][0] - self.answer_initial_states
-        error_final = result.x_interpolation_data['values'][-1][-1] - self.answer_final_states
+        error_init = result.x_data['values'][0][0] - self.answer_initial_states
+        error_final = result.x_data['values'][-1][-1] - self.answer_final_states
         for i in range(solution_method.model.n_x):
             self.assertAlmostEqual(error_init[i], 0, delta=self.obj_tol, msg="Row {} failed".format(i))
             self.assertAlmostEqual(error_final[i], 0, delta=self.obj_tol, msg="Row {} failed".format(i))
@@ -174,8 +174,8 @@ class MIMO2x2TestCase(unittest.TestCase):
                                          nlpsol_opts=self.nlpsol_opts
                                          )
         result = solution_method.solve()
-        error_init = result.x_interpolation_data['values'][0][0] - self.answer_initial_states
-        error_final = result.x_interpolation_data['values'][-1][-1] - self.answer_final_states
+        error_init = result.x_data['values'][0][0] - self.answer_initial_states
+        error_final = result.x_data['values'][-1][-1] - self.answer_final_states
         for i in range(solution_method.model.n_x):
             self.assertAlmostEqual(error_init[i], 0, delta=self.obj_tol, msg="Row {} failed".format(i))
             self.assertAlmostEqual(error_final[i], 0, delta=self.obj_tol, msg="Row {} failed".format(i))

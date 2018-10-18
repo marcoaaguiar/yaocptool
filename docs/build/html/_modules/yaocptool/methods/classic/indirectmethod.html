@@ -101,12 +101,12 @@
 <span class="sd">        :param degree: int</span>
 <span class="sd">        :param discretization_scheme: str &#39;multiple-shooting&#39; | &#39;collocation&#39;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasCostState</span> <span class="o">=</span> <span class="kc">False</span>
+
         <span class="nb">super</span><span class="p">(</span><span class="n">IndirectMethod</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>  <span class="c1"># type: yaocptool.modelling.ocp.OptimalControlProblem</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solution_class</span> <span class="o">=</span> <span class="s1">&#39;indirect&#39;</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">hasCostState</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_guess_heuristic</span> <span class="o">=</span> <span class="s1">&#39;problem_info&#39;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_bounds</span><span class="p">()</span></div>
 
@@ -147,7 +147,7 @@
         <span class="n">alg_eq</span> <span class="o">=</span> <span class="n">gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">lamb</span><span class="p">,</span> <span class="n">l_dot</span><span class="p">,</span> <span class="n">suppress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">hasAdjointVariables</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">has_adjoint_variables</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="n">alg_eq</span><span class="p">)</span>
 

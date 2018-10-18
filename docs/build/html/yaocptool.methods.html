@@ -179,6 +179,9 @@ s.t.: dot{x} = f(x,u),</dd>
 <li><strong>degree_control</strong> (<em>int</em>) – </li>
 <li><strong>discretization_scheme</strong> (<em>str</em>) – (‘multiple-shooting’ | ‘collocation’)</li>
 <li><strong>initial_guess_heuristic</strong> (<em>str</em>) – ‘simulation’ or ‘problem_info’</li>
+<li><strong>last_control_as_parameter</strong> (<em>bool</em>) – Default: False, if set to True, the last control will be an
+parameter for the NLP generated from the OCP. This is useful for MPCs, where the initial condition changes
+every iteration.</li>
 </ul>
 </td>
 </tr>

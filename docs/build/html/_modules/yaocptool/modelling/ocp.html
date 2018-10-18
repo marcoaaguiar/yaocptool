@@ -98,16 +98,16 @@
 <span class="sd">    It has the following form:</span>
 
 <span class="sd">    .. math::</span>
-<span class="sd">       \\min J &amp;= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\\theta)</span>
+<span class="sd">       \\min J &amp;= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\\theta) \, dt</span>
 <span class="sd">        + \sum_{k} S(x(t_k), y(t_k), u(t_k), t_k, p, \\theta_k)</span>
 
 <span class="sd">       \\textrm{s.t.:}\,&amp; \dot{x} = f(x,y,u,t,p,\\theta)</span>
 
 <span class="sd">       &amp; g(x,y,u,t,p,\\theta) = 0</span>
 
-<span class="sd">       &amp; g_eq (x,y,u,t,p,\\theta) = 0</span>
+<span class="sd">       &amp; g_{eq} (x,y,u,t,p,\\theta) = 0</span>
 
-<span class="sd">       &amp; g_ineq(x,y,u,t,p,\\theta) \leq 0</span>
+<span class="sd">       &amp; g_{ineq}(x,y,u,t,p,\\theta) \leq 0</span>
 
 <span class="sd">       &amp; x_{min} \leq x \leq x_{max}</span>
 
@@ -117,9 +117,9 @@
 
 <span class="sd">       &amp; \Delta u_{min} \leq \Delta u \leq \Delta u_{max}</span>
 
-<span class="sd">       &amp; h_{initial} (x_(t_0), t_0, p, \theta) = 0</span>
+<span class="sd">       &amp; h_{initial} (x (t_0), t_0, p, \\theta) = 0</span>
 
-<span class="sd">       &amp; h_{final} (x_(t_f), t_f, p, \theta) = 0</span>
+<span class="sd">       &amp; h_{final} (x (t_f), t_f, p, \\theta) = 0</span>
 
 <span class="sd">       &amp; h (p) = 0</span>
 

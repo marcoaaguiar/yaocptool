@@ -1,7 +1,7 @@
 This is makeindex, version 2.15 [TeX Live 2015] (kpathsea + Thai support).
 Scanning style file ./python.ist.......done (7 attributes redefined, 0 ignored).
-Scanning input file YAOCPTool.idx....done (356 entries accepted, 0 rejected).
-Sorting entries......done (3281 comparisons).
-Generating output file YAOCPTool.ind....done (588 lines written, 0 warnings).
+Scanning input file YAOCPTool.idx....done (354 entries accepted, 0 rejected).
+Sorting entries......done (3326 comparisons).
+Generating output file YAOCPTool.ind....done (586 lines written, 0 warnings).
 Output written in YAOCPTool.ind.
 Transcript written in YAOCPTool.ilg.

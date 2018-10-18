@@ -413,6 +413,9 @@ The keywords that are accepted are: ‘x’, ‘y’, ‘u’
 <li><strong>degree_control</strong> (<em>int</em>) – </li>
 <li><strong>discretization_scheme</strong> (<em>str</em>) – (‘multiple-shooting’ | ‘collocation’)</li>
 <li><strong>initial_guess_heuristic</strong> (<em>str</em>) – ‘simulation’ or ‘problem_info’</li>
+<li><strong>last_control_as_parameter</strong> (<em>bool</em>) – Default: False, if set to True, the last control will be an
+parameter for the NLP generated from the OCP. This is useful for MPCs, where the initial condition changes
+every iteration.</li>
 </ul>
 </td>
 </tr>
@@ -493,7 +496,7 @@ If degree_control &gt; 1, then a piecewise polynomial approximation will be used
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">OptimizationResult</p>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#yaocptool.methods.base.optimizationresult.OptimizationResult" title="yaocptool.methods.base.optimizationresult.OptimizationResult">OptimizationResult</a></p>
 </td>
 </tr>
 </tbody>

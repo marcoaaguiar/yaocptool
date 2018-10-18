@@ -490,8 +490,8 @@ connections_dict = {1: [{1:[0,1]}, {4:[1,2]}]}</dd>
 <dd><p>Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)
 It has the following form:</p>
 <div class="math notranslate nohighlight">
-\[ \begin{align}\begin{aligned}\min J &amp;= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\theta)
- + \sum_{k} S(x(t_k), y(t_k), u(t_k), t_k, p, \theta_k)\\\textrm{s.t.:}\,&amp; \dot{x} = f(x,y,u,t,p,\theta)\\&amp; g(x,y,u,t,p,\theta) = 0\\&amp; g_eq (x,y,u,t,p,\theta) = 0\\&amp; g_ineq(x,y,u,t,p,\theta) \leq 0\\&amp; x_{min} \leq x \leq x_{max}\\&amp; y_{min} \leq y \leq y_{max}\\&amp; u_{min} \leq u \leq u_{max}\\&amp; \Delta u_{min} \leq \Delta u \leq \Delta u_{max}\\&amp; h_{initial} (x_(t_0), t_0, p,  heta) = 0\\&amp; h_{final} (x_(t_f), t_f, p,    heta) = 0\\&amp; h (p) = 0\end{aligned}\end{align} \]</div>
+\[ \begin{align}\begin{aligned}\min J &amp;= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\theta) \, dt
+ + \sum_{k} S(x(t_k), y(t_k), u(t_k), t_k, p, \theta_k)\\\textrm{s.t.:}\,&amp; \dot{x} = f(x,y,u,t,p,\theta)\\&amp; g(x,y,u,t,p,\theta) = 0\\&amp; g_{eq} (x,y,u,t,p,\theta) = 0\\&amp; g_{ineq}(x,y,u,t,p,\theta) \leq 0\\&amp; x_{min} \leq x \leq x_{max}\\&amp; y_{min} \leq y \leq y_{max}\\&amp; u_{min} \leq u \leq u_{max}\\&amp; \Delta u_{min} \leq \Delta u \leq \Delta u_{max}\\&amp; h_{initial} (x (t_0), t_0, p, \theta) = 0\\&amp; h_{final} (x (t_f), t_f, p, \theta) = 0\\&amp; h (p) = 0\end{aligned}\end{align} \]</div>
 <p>where  <span class="math notranslate nohighlight">\(t_k\)</span> is final time in each finite element.</p>
 <dl class="method">
 <dt id="yaocptool.modelling.ocp.OptimalControlProblem.__init__">
@@ -970,14 +970,35 @@ finite element</li>
 <dd><dl class="method">
 <dt id="yaocptool.modelling.system_model.SystemModel.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>name='model'</em>, <em>n_x=0</em>, <em>n_y=0</em>, <em>n_u=0</em>, <em>n_p=0</em>, <em>n_theta=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>x - states
-y - (internal) algebraic
-z - external algebraic
+<dd><blockquote>
+<div>Continuous-time Dynamic System Model</div></blockquote>
+<div class="math notranslate nohighlight">
+\[\begin{split}\dot{x} = f(x,y,u,t,p,\theta) \\
+g(x,y,u,t,p,\theta) = 0\\\end{split}\]</div>
+<p>x - states
+y - algebraic
 u - control
 p - constant parameters
-theta - parameters dependent of the finite_elements
-u_par - parametrized control parameters</p>
+theta - parameters dependent of the finite_elements (e.g.: disturbances)</p>
 <p>Note: when vectorizing the parameters order is [ p; theta; u_par]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> – model name</li>
+<li><strong>n_x</strong> – number of states (will automatically create states with name ‘x’)</li>
+<li><strong>n_y</strong> – number of algebraics (will automatically create algebraic with name ‘y’)</li>
+<li><strong>n_u</strong> – number of controls (will automatically create control with name ‘u’)</li>
+<li><strong>n_p</strong> – number of parameters (will automatically create parameters with name ‘p’)</li>
+<li><strong>n_theta</strong> – number of theta parameters (will automatically create theta parameters with name ‘theta’)</li>
+<li><strong>model_name_as_prefix</strong> (<em>bool</em>) – if true all variables create will have the model name as prefix
+e.g.: ‘tank_h’, where ‘tank’ is model name and ‘h’ is the state created</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">

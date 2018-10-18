@@ -1,6 +1,7 @@
 from unittest import TestCase
 
-from casadi import vertcat, SX, is_equal
+from casadi import SX, is_equal
+
 from .models import create_siso, create_2x1_mimo, create_2x2_mimo
 
 
@@ -57,7 +58,7 @@ class TestSystemModel(TestCase):
     def test_x_sys_sym(self):
         for model_name in self.models:
             model = self.models[model_name]
-            if model.hasAdjointVariables:
+            if model.has_adjoint_variables:
                 self.assertTrue(is_equal(model.x_sys_sym, model.x_sym[:model.n_x // 2]))
             else:
                 self.assertTrue(is_equal(model.x_sys_sym, model.x_sym))
@@ -65,7 +66,7 @@ class TestSystemModel(TestCase):
     def test_lamb_sym(self):
         for model_name in self.models:
             model = self.models[model_name]
-            if model.hasAdjointVariables:
+            if model.has_adjoint_variables:
                 self.assertTrue(is_equal(model.lamb_sym, model.x_sym[model.n_x // 2:]))
             else:
                 self.assertTrue(is_equal(model.lamb_sym, SX()))

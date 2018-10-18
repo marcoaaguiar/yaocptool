@@ -101,23 +101,36 @@
 <div class="viewcode-block" id="SystemModel"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel">[docs]</a><span class="k">class</span> <span class="nc">SystemModel</span><span class="p">:</span>
 <div class="viewcode-block" id="SystemModel.__init__"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">n_x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_u</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_p</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_theta</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            x - states</span>
-<span class="sd">            y - (internal) algebraic</span>
-<span class="sd">            z - external algebraic</span>
-<span class="sd">            u - control</span>
-<span class="sd">            p - constant parameters</span>
-<span class="sd">            theta - parameters dependent of the finite_elements</span>
-<span class="sd">            u_par - parametrized control parameters</span>
+<span class="sd">            Continuous-time Dynamic System Model</span>
 
-<span class="sd">            Note: when vectorizing the parameters order is [ p; theta; u_par]</span>
+<span class="sd">        .. math::</span>
+<span class="sd">            \dot{x} = f(x,y,u,t,p,\\theta) \\\\</span>
+<span class="sd">            g(x,y,u,t,p,\\theta) = 0\\\\</span>
+
+<span class="sd">        x - states</span>
+<span class="sd">        y - algebraic</span>
+<span class="sd">        u - control</span>
+<span class="sd">        p - constant parameters</span>
+<span class="sd">        theta - parameters dependent of the finite_elements (e.g.: disturbances)</span>
+
+<span class="sd">        Note: when vectorizing the parameters order is [ p; theta; u_par]</span>
+
+<span class="sd">        :param name: model name</span>
+<span class="sd">        :param n_x: number of states (will automatically create states with name &#39;x&#39;)</span>
+<span class="sd">        :param n_y: number of algebraics (will automatically create algebraic with name &#39;y&#39;)</span>
+<span class="sd">        :param n_u: number of controls (will automatically create control with name &#39;u&#39;)</span>
+<span class="sd">        :param n_p: number of parameters (will automatically create parameters with name &#39;p&#39;)</span>
+<span class="sd">        :param n_theta: number of theta parameters (will automatically create theta parameters with name &#39;theta&#39;)</span>
+<span class="sd">        :param bool model_name_as_prefix: if true all variables create will have the model name as prefix</span>
+<span class="sd">            e.g.: &#39;tank_h&#39;, where &#39;tank&#39; is model name and &#39;h&#39; is the state created</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ode</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">([])</span>  <span class="c1"># ODE</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">([])</span>  <span class="c1"># Algebraic equations</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_name_as_prefix</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
@@ -174,14 +187,14 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">x_sys_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">/</span> <span class="mi">2</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span><span class="p">[:</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">lamb_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">SX</span><span class="p">()</span>
 
@@ -512,7 +525,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SystemModel.remove_control"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.remove_control">[docs]</a>    <span class="k">def</span> <span class="nf">remove_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SystemModel.remove_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.remove_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">remove_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">p_sym</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_sym</span><span class="p">)</span></div>

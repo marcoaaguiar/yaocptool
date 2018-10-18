@@ -8,13 +8,13 @@ from yaocptool.modelling import SystemModel
 
 
 class Pump(SystemModel):
-    def __init__(self, id, **kwargs):
+    def __init__(self, index, **kwargs):
         # define default values
         self.gamma = 0.5
         self.k = 3.33e-6
 
         # super class method
-        SystemModel.__init__(self, name="pump_" + str(id), model_name_as_prefix=True, **kwargs)
+        SystemModel.__init__(self, name="pump_" + str(index), model_name_as_prefix=True, **kwargs)
 
         # create variables
         v = self.create_control('v')  # Create input pump voltage
@@ -27,14 +27,14 @@ class Pump(SystemModel):
 
 
 class Tank(SystemModel):
-    def __init__(self, id, **kwargs):
+    def __init__(self, index, **kwargs):
         # define default values
         self.g = 9.8
         self.A = 28e-4
         self.a = 0.071e-4
 
         # super class method
-        SystemModel.__init__(self, name="tank_" + str(id), model_name_as_prefix=True, **kwargs)
+        SystemModel.__init__(self, name="tank_" + str(index), model_name_as_prefix=True, **kwargs)
 
         # create variables
         h = self.create_state('h')
@@ -57,20 +57,19 @@ class QuadTanks(SystemModel):
         SystemModel.__init__(self, **kwargs)
 
         # create the pumps
-        pumps = [Pump(id=0, gamma=0.7), Pump(id=1, gamma=0.6)]
+        pumps = [Pump(index=0, gamma=0.7), Pump(index=1, gamma=0.6)]
         # create the tanks
-        tanks = [Tank(id=0, n_inputs=2), Tank(id=1, n_inputs=2), Tank(id=2, n_inputs=1), Tank(id=3, n_inputs=1)]
+        tanks = [Tank(index=0, n_inputs=2), Tank(index=1, n_inputs=2), Tank(index=2, n_inputs=1),
+                 Tank(index=3, n_inputs=1)]
 
         self.include_models(pumps)
         self.include_models(tanks)
 
-        tank_0_q_out = tanks[0].y
-
         # connections
         self.connect(tanks[0].u, pumps[0].y[0] + tanks[2].y[0])
-        self.connect(tanks[3].u, pumps[0].y[1] + tanks[3].y[0])
+        self.connect(tanks[3].u, pumps[1].y[1] + tanks[3].y[0])
         self.connect(tanks[1].u, pumps[1].y[0])
-        self.connect(tanks[2].u, pumps[1].y[1])
+        self.connect(tanks[2].u, pumps[0].y[1])
 
 
 if __name__ == "__main__":

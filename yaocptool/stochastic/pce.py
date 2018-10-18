@@ -114,11 +114,11 @@ class PCEConverter:
         self._construct_stochastic_objective(cost_list, exp_phi, ls_factor, self.problem)
 
         # uncertain constraints
-        self._include_statistics_eqs_of_stochastics_variables(exp_phi, ls_factor, self.model, self.problem)
+        self._include_statistics_eqs_of_stochastic_variables(exp_phi, ls_factor, self.model, self.problem)
 
         return self.problem
 
-    def _include_statistics_eqs_of_stochastics_variables(self, exp_phi, ls_factor, model, problem):
+    def _include_statistics_eqs_of_stochastic_variables(self, exp_phi, ls_factor, model, problem):
         self.stochastic_variables = vertcat(*self.stochastic_variables)
 
         for i in range(self.stochastic_variables.numel()):
@@ -138,7 +138,7 @@ class PCEConverter:
             [stoch_ineq_mean, stoch_ineq_var, _] = self._include_statistics_of_expression(var, name, exp_phi, ls_factor,
                                                                                           model, problem)
 
-            stoch_cosntr_viol_prob = problem.create_optimization_theta('viol_prob_' + name, new_theta_opt_max=0.0)
+            stoch_cosntr_viol_prob = problem.create_optimization_theta(name + '_viol_prob', new_theta_opt_max=0.0)
             k_viol = sqrt(self.socp.g_stochastic_prob[i] / (1 - self.socp.g_stochastic_prob[i]))
 
             problem.include_time_equality(stoch_cosntr_viol_prob
@@ -350,10 +350,10 @@ def get_ls_factor(n_uncertain, n_samples, pc_order, lamb=0.0):
     # Calculation of factor for least-squares
     xu = SX.sym("xu", n_uncertain)
     exps = (p for p in product(range(pc_order + 1), repeat=n_uncertain) if sum(p) <= pc_order)
-    exps.next()
+    next(exps)
     exps = list(exps)
 
-    psi = SX.ones(factorial(n_uncertain + pc_order) / (factorial(n_uncertain) * factorial(pc_order)))
+    psi = SX.ones(int(factorial(n_uncertain + pc_order) / (factorial(n_uncertain) * factorial(pc_order))))
     for i in range(len(exps)):
         for j in range(n_uncertain):
             psi[i + 1] *= helist[exps[i][j]](xu[j])
@@ -362,7 +362,7 @@ def get_ls_factor(n_uncertain, n_samples, pc_order, lamb=0.0):
     nparameter = SX.size(psi)[0]
     psi_matrix = SX.zeros(n_samples, nparameter)
     for i in range(n_samples):
-        psi_a = psi_fcn(sobol_samples[i, :])
+        psi_a = psi_fcn(sobol_samples[:, i])
         for j in range(SX.size(psi)[0]):
             psi_matrix[i, j] = psi_a[j]
 

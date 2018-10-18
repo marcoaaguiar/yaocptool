@@ -19,23 +19,36 @@ from yaocptool.modelling import DAESystem, SimulationResult
 class SystemModel:
     def __init__(self, name='model', n_x=0, n_y=0, n_u=0, n_p=0, n_theta=0, **kwargs):
         """
-            x - states
-            y - (internal) algebraic
-            z - external algebraic
-            u - control
-            p - constant parameters
-            theta - parameters dependent of the finite_elements
-            u_par - parametrized control parameters
+            Continuous-time Dynamic System Model
 
-            Note: when vectorizing the parameters order is [ p; theta; u_par]
+        .. math::
+            \dot{x} = f(x,y,u,t,p,\\theta) \\\\
+            g(x,y,u,t,p,\\theta) = 0\\\\
+
+        x - states
+        y - algebraic
+        u - control
+        p - constant parameters
+        theta - parameters dependent of the finite_elements (e.g.: disturbances)
+
+        Note: when vectorizing the parameters order is [ p; theta; u_par]
+
+        :param name: model name
+        :param n_x: number of states (will automatically create states with name 'x')
+        :param n_y: number of algebraics (will automatically create algebraic with name 'y')
+        :param n_u: number of controls (will automatically create control with name 'u')
+        :param n_p: number of parameters (will automatically create parameters with name 'p')
+        :param n_theta: number of theta parameters (will automatically create theta parameters with name 'theta')
+        :param bool model_name_as_prefix: if true all variables create will have the model name as prefix
+            e.g.: 'tank_h', where 'tank' is model name and 'h' is the state created
         """
         self.name = name
 
         self.ode = vertcat([])  # ODE
         self.alg = vertcat([])  # Algebraic equations
 
-        self.has_adjoint_variables = False
         self.model_name_as_prefix = False
+        self.has_adjoint_variables = False
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -92,14 +105,14 @@ class SystemModel:
     @property
     def x_sys_sym(self):
         if self.has_adjoint_variables:
-            return self.x_sym[:self.n_x / 2]
+            return self.x_sym[:int(self.n_x // 2)]
         else:
             return self.x_sym
 
     @property
     def lamb_sym(self):
         if self.has_adjoint_variables:
-            return self.x_sym[self.n_x / 2:]
+            return self.x_sym[self.n_x // 2:]
         else:
             return SX()
 
@@ -431,6 +444,7 @@ class SystemModel:
 
     def remove_control(self, var):
         self.u_sym = remove_variables_from_vector(var, self.u_sym)
+        self.u_par = remove_variables_from_vector(var, self.u_par)
 
     def remove_parameter(self, var):
         self.p_sym = remove_variables_from_vector(var, self.p_sym)

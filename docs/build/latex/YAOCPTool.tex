@@ -52,7 +52,7 @@
 
 
 \title{YAOCPTool Documentation}
-\date{Oct 16, 2018}
+\date{Oct 18, 2018}
 \release{0.2.0}
 \author{Marco Aurelio S. de Aguiar}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -670,6 +670,11 @@ Bases: \sphinxcode{\sphinxupquote{object}}
 \item {} 
 \sphinxstyleliteralstrong{\sphinxupquote{initial\_guess\_heuristic}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} ‘simulation’ or ‘problem\_info’
 
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{last\_control\_as\_parameter}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Default: False, if set to True, the last control will be an
+parameter for the NLP generated from the OCP. This is useful for MPCs, where the initial condition changes
+every iteration.
+
 \end{itemize}
 
 \end{description}\end{quote}
@@ -764,8 +769,8 @@ If degree\_control \textgreater{} 1, then a piecewise polynomial approximation w
 
 \end{itemize}
 
-\item[{Returns}] \leavevmode
-OptimizationResult
+\item[{Return type}] \leavevmode
+{\hyperref[\detokenize{yaocptool.methods.base:yaocptool.methods.base.optimizationresult.OptimizationResult}]{\sphinxcrossref{OptimizationResult}}}
 
 \end{description}\end{quote}
 
@@ -1288,8 +1293,8 @@ identifier, VALUE is a CasADi Function with model.all\_sym as input
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{yaocptool.methods.classic:yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.set_data_to_optimization_result_from_raw_data}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{set\_data\_to\_optimization\_result\_from\_raw\_data}}}{\emph{optimization\_result}, \emph{raw\_solution\_dict}}{}
 Set the raw data received from the solver and put it in the Optimization Result object
-:param optimization\_result: OptimizationResult
-:param raw\_solution\_dict: dict
+:param OptimizationResult optimization\_result:
+:param dict raw\_solution\_dict:
 
 \end{fulllineitems}
 
@@ -1389,6 +1394,11 @@ s.t.: dot\{x\} = f(x,u),
 
 \item {} 
 \sphinxstyleliteralstrong{\sphinxupquote{initial\_guess\_heuristic}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} ‘simulation’ or ‘problem\_info’
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{last\_control\_as\_parameter}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Default: False, if set to True, the last control will be an
+parameter for the NLP generated from the OCP. This is useful for MPCs, where the initial condition changes
+every iteration.
 
 \end{itemize}
 
@@ -1925,18 +1935,18 @@ Created on Mon Apr 03 11:15:03 2017
 Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)
 It has the following form:
 \begin{align*}\!\begin{aligned}
-\min J &= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\theta)
+\min J &= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\theta) \, dt
  + \sum_{k} S(x(t_k), y(t_k), u(t_k), t_k, p, \theta_k)\\
 \textrm{s.t.:}\,& \dot{x} = f(x,y,u,t,p,\theta)\\
 & g(x,y,u,t,p,\theta) = 0\\
-& g_eq (x,y,u,t,p,\theta) = 0\\
-& g_ineq(x,y,u,t,p,\theta) \leq 0\\
+& g_{eq} (x,y,u,t,p,\theta) = 0\\
+& g_{ineq}(x,y,u,t,p,\theta) \leq 0\\
 & x_{min} \leq x \leq x_{max}\\
 & y_{min} \leq y \leq y_{max}\\
 & u_{min} \leq u \leq u_{max}\\
 & \Delta u_{min} \leq \Delta u \leq \Delta u_{max}\\
-& h_{initial} (x_(t_0), t_0, p,  heta) = 0\\
-& h_{final} (x_(t_f), t_f, p,    heta) = 0\\
+& h_{initial} (x (t_0), t_0, p, \theta) = 0\\
+& h_{final} (x (t_f), t_f, p, \theta) = 0\\
 & h (p) = 0\\
 \end{aligned}\end{align*}
 where  \(t_k\) is final time in each finite element.
@@ -2485,16 +2495,48 @@ Created on Thu Jun 09 10:50:48 2016
 \phantomsection\label{\detokenize{yaocptool.modelling:yaocptool.modelling.system_model.SystemModel}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{yaocptool.modelling.system\_model.}}\sphinxbfcode{\sphinxupquote{SystemModel}}}{\emph{name='model'}, \emph{n\_x=0}, \emph{n\_y=0}, \emph{n\_u=0}, \emph{n\_p=0}, \emph{n\_theta=0}, \emph{**kwargs}}{}~\index{\_\_init\_\_() (yaocptool.modelling.system\_model.SystemModel method)}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{yaocptool.modelling:yaocptool.modelling.system_model.SystemModel.__init__}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_\_init\_\_}}}{\emph{name='model'}, \emph{n\_x=0}, \emph{n\_y=0}, \emph{n\_u=0}, \emph{n\_p=0}, \emph{n\_theta=0}, \emph{**kwargs}}{}
+\phantomsection\label{\detokenize{yaocptool.modelling:yaocptool.modelling.system_model.SystemModel.__init__}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_\_init\_\_}}}{\emph{name='model'}, \emph{n\_x=0}, \emph{n\_y=0}, \emph{n\_u=0}, \emph{n\_p=0}, \emph{n\_theta=0}, \emph{**kwargs}}{}~\begin{quote}
+
+Continuous-time Dynamic System Model
+\end{quote}
+\begin{equation*}
+\begin{split}\dot{x} = f(x,y,u,t,p,\theta) \\
+g(x,y,u,t,p,\theta) = 0\\\end{split}
+\end{equation*}
 x - states
-y - (internal) algebraic
-z - external algebraic
+y - algebraic
 u - control
 p - constant parameters
-theta - parameters dependent of the finite\_elements
-u\_par - parametrized control parameters
+theta - parameters dependent of the finite\_elements (e.g.: disturbances)
 
 Note: when vectorizing the parameters order is {[} p; theta; u\_par{]}
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{name}} \textendash{} model name
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{n\_x}} \textendash{} number of states (will automatically create states with name ‘x’)
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{n\_y}} \textendash{} number of algebraics (will automatically create algebraic with name ‘y’)
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{n\_u}} \textendash{} number of controls (will automatically create control with name ‘u’)
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{n\_p}} \textendash{} number of parameters (will automatically create parameters with name ‘p’)
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{n\_theta}} \textendash{} number of theta parameters (will automatically create theta parameters with name ‘theta’)
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{model\_name\_as\_prefix}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} if true all variables create will have the model name as prefix
+e.g.: ‘tank\_h’, where ‘tank’ is model name and ‘h’ is the state created
+
+\end{itemize}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -3256,12 +3298,6 @@ Sent controls to the plant.
 \phantomsection\label{\detokenize{yaocptool.mpc:yaocptool.mpc.plant.Plant.get_measurement}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{get\_measurement}}}{}{}
 \end{fulllineitems}
 
-\index{n\_x (yaocptool.mpc.plant.Plant attribute)}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{yaocptool.mpc:yaocptool.mpc.plant.Plant.n_x}}\pysigline{\sphinxbfcode{\sphinxupquote{n\_x}}}
-\end{fulllineitems}
-
 \index{set\_control() (yaocptool.mpc.plant.Plant method)}
 
 \begin{fulllineitems}
@@ -3342,12 +3378,6 @@ tuple
 
 \end{description}\end{quote}
 
-\end{fulllineitems}
-
-\index{n\_x (yaocptool.mpc.plant.PlantSimulation attribute)}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{yaocptool.mpc:yaocptool.mpc.plant.PlantSimulation.n_x}}\pysigline{\sphinxbfcode{\sphinxupquote{n\_x}}}
 \end{fulllineitems}
 
 \index{set\_control() (yaocptool.mpc.plant.PlantSimulation method)}

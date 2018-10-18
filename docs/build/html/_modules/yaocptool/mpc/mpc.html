@@ -145,7 +145,10 @@
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plant</span><span class="o">.</span><span class="n">n_x</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span>
+
+        <span class="c1"># set last_control_as_parameter to True, so the optimization problem can take last_u</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">last_control_as_parameter</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 <div class="viewcode-block" id="MPC.get_new_control"><a class="viewcode-back" href="../../../yaocptool.mpc.html#yaocptool.mpc.mpc.MPC.get_new_control">[docs]</a>    <span class="k">def</span> <span class="nf">get_new_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_k</span><span class="p">,</span> <span class="n">u_k</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Use solution_method to obtain new controls</span>

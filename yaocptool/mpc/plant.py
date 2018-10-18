@@ -6,16 +6,6 @@ from yaocptool.modelling import SystemModel, DataSet
 class Plant:
     def __init__(self):
         self.name = 'Plant'
-        self._n_x = None
-        pass
-
-    @property
-    def n_x(self):
-        return self._n_x
-
-    @n_x.setter
-    def n_x(self, value):
-        self._n_x = value
 
     def get_measurement(self):
         pass
@@ -106,9 +96,6 @@ class PlantSimulation(Plant):
         self.dataset.data['meas']['size'] = self.c_matrix.size1()
         self.dataset.data['meas']['names'] = ['meas_' + str(i) for i in range(self.model.n_x)]
 
-    @property
-    def n_x(self):
-        return self.model.n_x
 
     def get_measurement(self):
         """Return the plant measurement of a simulated model and advance time by 't_s'.

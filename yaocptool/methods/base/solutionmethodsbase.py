@@ -1,3 +1,5 @@
+import warnings
+
 from casadi import SX, MX, vertcat, collocation_points, vec, reshape, repmat
 
 from yaocptool import config, create_constant_theta
@@ -18,6 +20,9 @@ class SolutionMethodsBase(object):
         :param int degree_control:
         :param str discretization_scheme: ('multiple-shooting' | 'collocation')
         :param str initial_guess_heuristic: 'simulation' or 'problem_info'
+        :param bool last_control_as_parameter: Default: False, if set to True, the last control will be an
+            parameter for the NLP generated from the OCP. This is useful for MPCs, where the initial condition changes
+            every iteration.
         """
         self.opt_problem = None
         self.problem = problem
@@ -34,6 +39,7 @@ class SolutionMethodsBase(object):
         self.initial_condition_as_parameter = True
         self.nlpsol_opts = {}
         self.initial_guess_heuristic = 'simulation'  # 'problem_info'
+        self.last_control_as_parameter = False
 
         # Internal variables
         self.parametrized_control = False
@@ -47,6 +53,9 @@ class SolutionMethodsBase(object):
         for k in config.SOLVER_OPTIONS['nlpsol_options']:
             if k not in self.nlpsol_opts:
                 self.nlpsol_opts[k] = config.SOLVER_OPTIONS['nlpsol_options'][k]
+
+        if self.problem.last_u is not None:
+            self.last_control_as_parameter = True
 
         if self.discretization_scheme == 'multiple-shooting':
             self.degree = 1
@@ -180,28 +189,26 @@ class SolutionMethodsBase(object):
 
         has_parameters = (self.model.n_p + self.model.n_theta > 0 or self.initial_condition_as_parameter
                           or self.problem.last_u is not None)
-        args = {}
-        all_mx = []
-        if has_parameters:
-            p_mx = MX.sym('p', self.model.n_p)
 
-            theta_mx = MX.sym('theta_', self.model.n_theta, self.finite_elements)
-            theta = dict([(i, vec(theta_mx[:, i])) for i in range(self.finite_elements)])
+        # parameters MX
+        p_mx = MX.sym('p', self.model.n_p)
 
-            all_mx = vertcat(p_mx, vec(theta_mx))
-            if self.initial_condition_as_parameter:
-                p_mx_x_0 = MX.sym('x_0_p', self.model.n_x)
-                all_mx = vertcat(all_mx, p_mx_x_0)
-            else:
-                p_mx_x_0 = None
+        # theta MX
+        theta_mx = MX.sym('theta_', self.model.n_theta, self.finite_elements)
+        theta = dict([(i, vec(theta_mx[:, i])) for i in range(self.finite_elements)])
 
-            if self.problem.last_u is not None:
-                p_last_u = MX.sym('last_u', self.model.n_u)
-                all_mx = vertcat(all_mx, p_last_u)
-            else:
-                p_last_u = None
+        # initial cond MX
+        p_mx_x_0 = MX.sym('x_0_p', self.model.n_x)
 
-            args = dict(p=p_mx, x_0=p_mx_x_0, theta=theta, last_u=p_last_u)
+        # last control MX
+        if self.last_control_as_parameter:
+            p_last_u = MX.sym('last_u', self.model.n_u)
+        else:
+            p_last_u = []
+
+        all_mx = vertcat(p_mx, vec(theta_mx), p_mx_x_0, p_last_u)
+
+        args = dict(p=p_mx, x_0=p_mx_x_0, theta=theta, last_u=p_last_u)
 
         # Discretize the problem
         opt_problem = self.discretizer.discretize(**args)
@@ -221,30 +228,40 @@ class SolutionMethodsBase(object):
         if not vertcat(x_0).numel() == self.model.n_x:
             raise Exception('Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, '
                             'x_0.numel() = {}, model.n_x = {}'.format(vertcat(x_0).numel(), self.model.n_x))
+
+        # parameters
         if p is None:
             if self.problem.n_p_opt == self.model.n_p:
                 p = repmat(0, self.problem.n_p_opt)
             elif self.problem.model.n_p > 0:
                 raise Exception("A parameter 'p' of size {} should be given".format(self.problem.model.n_p))
 
+        # theta
         if theta is None:
             if self.problem.n_theta_opt == self.model.n_theta:
                 theta = create_constant_theta(0, self.problem.n_theta_opt, self.finite_elements)
             elif self.problem.model.n_theta > 0:
                 raise Exception("A parameter 'theta' of size {} should be given".format(self.problem.model.n_theta))
-
         if theta is not None:
             par = vertcat(p, *theta.values())
         else:
             par = p
+
+        # initial condition
         if self.initial_condition_as_parameter:
             par = vertcat(par, x_0)
-        if last_u is not None:
-            if isinstance(last_u, list):
-                last_u = vertcat(*last_u)
-            par = vertcat(par, last_u)
-        elif self.problem.last_u is not None:
-            par = vertcat(par, self.problem.last_u)
+
+        # last control
+        if not self.last_control_as_parameter and last_u is not None:
+            raise warnings.warn('solution_method.last_control_as_parameter is False, but last_u was passed. last_u will'
+                                ' be ignored.')
+        else:
+            if last_u is not None:
+                if isinstance(last_u, list):
+                    last_u = vertcat(*last_u)
+                par = vertcat(par, last_u)
+            elif self.problem.last_u is not None:
+                par = vertcat(par, self.problem.last_u)
 
         if initial_guess_dict is None:
             if initial_guess is None:
@@ -263,15 +280,6 @@ class SolutionMethodsBase(object):
         sol = self.opt_problem.solve(**args)
         return sol
 
-    # def solve_raw(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
-    #     if isinstance(x_0, list):
-    #         x_0 = vertcat(x_0)
-    #
-    #     solution_dict = self.call_solver(initial_guess=initial_guess, p=p, theta=theta,
-    #                                      x_0=x_0, last_u=last_u,
-    #                                      initial_guess_dict=initial_guess_dict)
-    #     return solution_dict
-
     def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         """
 
@@ -281,7 +289,7 @@ class SolutionMethodsBase(object):
         :param x_0: Initial condition value
         :param last_u: Last control value
         :param initial_guess_dict: Initial guess as dict
-        :return: OptimizationResult
+        :rtype: OptimizationResult
         """
         if isinstance(x_0, list):
             x_0 = vertcat(x_0)

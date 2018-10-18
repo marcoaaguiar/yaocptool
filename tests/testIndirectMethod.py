@@ -21,8 +21,7 @@ problem = DownwardPendulumStabilization(model, t_f=3.)
 
 
 indir_method = IndirectMethod(problem, degree=5, finite_elements=20, integrator_type='implicit',
-                                initial_guess_heuristic='problem_info',
-                              discretization_scheme='collocation')
+                              initial_guess_heuristic='problem_info',
+                              discretization_scheme='multiple-shooting')
 solution = indir_method.solve()
 solution.plot([{'x': [0, 1]}, {'x': [2, 3]}])
-

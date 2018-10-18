@@ -5,7 +5,7 @@ from casadi import sqrt, DM
 model = SystemModel(name='2-Tanks', n_x=2, n_u=1)
 
 # Get the symbolic variables
-h_1, h_2 = model.x_sym[0], model.x_sym[1]
+h_1, h_2 = model.x[0], model.x[1]
 u = model.u_sym
 
 # Model Parameters

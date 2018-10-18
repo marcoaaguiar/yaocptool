@@ -8,6 +8,7 @@ from collections import defaultdict
 
 from casadi import DM, vertcat, Function, repmat, is_equal, inf, vec, horzcat
 
+from yaocptool.methods import OptimizationResult
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.optimization import NonlinearOptimizationProblem
 
@@ -189,8 +190,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             functions['g_eq_' + str(i)] = self._create_function_from_expression('f_g_eq_' + str(i),
                                                                                 self.problem.g_eq[i])
 
-        functions['f_s_cost'] = self._create_function_from_expression('f_s_cost',
-                                                                      self.problem.S)
+        functions['f_s_cost'] = self._create_function_from_expression('f_s_cost', self.problem.S)
 
         # Multiple Shooting "simulation"
         results = self.get_system_at_given_times(x_var, y_var, u_var, time_dict, p, theta, functions=functions)
@@ -304,7 +304,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
             # Find the times that need to be evaluated
             element_breakpoints = set()
-            for key in ['x', 'y', 'u'] + functions.keys():
+            for key in ['x', 'y', 'u'] + list(functions.keys()):
                 if key in time_dict[el]:
                     element_breakpoints = element_breakpoints.union(time_dict[el][key])
 
@@ -509,10 +509,9 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
     def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
         """
         Set the raw data received from the solver and put it in the Optimization Result object
-        :param optimization_result: OptimizationResult
-        :param raw_solution_dict: dict
+        :param OptimizationResult optimization_result:
+        :param dict raw_solution_dict:
         """
-
         optimization_result.raw_solution_dict = raw_solution_dict
         optimization_result.raw_decision_variables = raw_solution_dict['x']
 
@@ -526,17 +525,17 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         optimization_result.p_opt = p_opt
         optimization_result.theta_opt = theta_opt
 
-        optimization_result.x_interpolation_data['values'] = x_values
-        optimization_result.y_interpolation_data['values'] = y_values
-        optimization_result.u_interpolation_data['values'] = u_values
+        optimization_result.x_data['values'] = x_values
+        optimization_result.y_data['values'] = y_values
+        optimization_result.u_data['values'] = u_values
 
-        optimization_result.x_interpolation_data['time'] = [[t] for t in self.time_breakpoints]
-        optimization_result.y_interpolation_data['time'] = [[t] for t in self.time_breakpoints[1:]]
+        optimization_result.x_data['time'] = [[t] for t in self.time_breakpoints]
+        optimization_result.y_data['time'] = [[t] for t in self.time_breakpoints[1:]]
 
         if self.degree_control == 1:
-            optimization_result.u_interpolation_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
+            optimization_result.u_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
         else:
-            optimization_result.u_interpolation_data['time'] = [
+            optimization_result.u_data['time'] = [
                 [t + self.delta_t * col for col in self.solution_method.collocation_points(self.degree_control)] for t
                 in
                 self.time_breakpoints[:-1]]

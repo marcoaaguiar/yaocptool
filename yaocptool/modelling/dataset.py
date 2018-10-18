@@ -225,7 +225,7 @@ class DataSet:
                 # if it is a variable name
                 names = self.get_entry_names(entry)
                 for i, item in enumerate(indexes):
-                    if isinstance(item, (str, unicode)):
+                    if isinstance(item, ("".__class__, u"".__class__)):
                         indexes[i] = names.index(item)
 
                 # plot entry/indexes

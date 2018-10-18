@@ -105,8 +105,8 @@
 \indexentry{yaocptool.methods.augmented\_lagrangian (module)|hyperpage}{11}
 \indexentry{AugmentedLagrangian (class in yaocptool.methods.augmented\_lagrangian)|hyperpage}{11}
 \indexentry{\_\_init\_\_() (yaocptool.methods.augmented\_lagrangian.AugmentedLagrangian method)|hyperpage}{11}
-\indexentry{create\_nu\_initial\_guess() (yaocptool.methods.augmented\_lagrangian.AugmentedLagrangian method)|hyperpage}{11}
-\indexentry{create\_optimization\_result() (yaocptool.methods.augmented\_lagrangian.AugmentedLagrangian method)|hyperpage}{11}
+\indexentry{create\_nu\_initial\_guess() (yaocptool.methods.augmented\_lagrangian.AugmentedLagrangian method)|hyperpage}{12}
+\indexentry{create\_optimization\_result() (yaocptool.methods.augmented\_lagrangian.AugmentedLagrangian method)|hyperpage}{12}
 \indexentry{join\_nu\_to\_theta() (yaocptool.methods.augmented\_lagrangian.AugmentedLagrangian static method)|hyperpage}{12}
 \indexentry{model (yaocptool.methods.augmented\_lagrangian.AugmentedLagrangian attribute)|hyperpage}{12}
 \indexentry{relaxed\_alg (yaocptool.methods.augmented\_lagrangian.AugmentedLagrangian attribute)|hyperpage}{12}
@@ -139,7 +139,7 @@
 \indexentry{DataSet (class in yaocptool.modelling.dataset)|hyperpage}{13}
 \indexentry{\_\_init\_\_() (yaocptool.modelling.dataset.DataSet method)|hyperpage}{13}
 \indexentry{create\_entry() (yaocptool.modelling.dataset.DataSet method)|hyperpage}{13}
-\indexentry{extend() (yaocptool.modelling.dataset.DataSet method)|hyperpage}{13}
+\indexentry{extend() (yaocptool.modelling.dataset.DataSet method)|hyperpage}{14}
 \indexentry{get\_copy() (yaocptool.modelling.dataset.DataSet method)|hyperpage}{14}
 \indexentry{get\_entry() (yaocptool.modelling.dataset.DataSet method)|hyperpage}{14}
 \indexentry{get\_entry\_names() (yaocptool.modelling.dataset.DataSet method)|hyperpage}{14}
@@ -160,8 +160,8 @@
 \indexentry{yaocptool.modelling.node (module)|hyperpage}{15}
 \indexentry{Node (class in yaocptool.modelling.node)|hyperpage}{15}
 \indexentry{\_\_init\_\_() (yaocptool.modelling.node.Node method)|hyperpage}{15}
-\indexentry{yaocptool.modelling.ocp (module)|hyperpage}{15}
-\indexentry{OptimalControlProblem (class in yaocptool.modelling.ocp)|hyperpage}{15}
+\indexentry{yaocptool.modelling.ocp (module)|hyperpage}{16}
+\indexentry{OptimalControlProblem (class in yaocptool.modelling.ocp)|hyperpage}{16}
 \indexentry{\_\_init\_\_() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{16}
 \indexentry{create\_algebraic() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{16}
 \indexentry{create\_cost\_state() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{16}
@@ -176,8 +176,8 @@
 \indexentry{include\_algebraic() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{16}
 \indexentry{include\_control() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{16}
 \indexentry{include\_equality() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{16}
-\indexentry{include\_final\_time\_equality() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{16}
-\indexentry{include\_initial\_time\_equality() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{16}
+\indexentry{include\_final\_time\_equality() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
+\indexentry{include\_initial\_time\_equality() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
 \indexentry{include\_optimization\_parameter() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
 \indexentry{include\_optimization\_theta() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
 \indexentry{include\_state() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
@@ -196,8 +196,8 @@
 \indexentry{remove\_algebraic() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
 \indexentry{remove\_control() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
 \indexentry{replace\_variable() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
-\indexentry{reset\_working\_model() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
-\indexentry{set\_parameter\_as\_optimization\_parameter() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{17}
+\indexentry{reset\_working\_model() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{18}
+\indexentry{set\_parameter\_as\_optimization\_parameter() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{18}
 \indexentry{set\_theta\_as\_optimization\_theta() (yaocptool.modelling.ocp.OptimalControlProblem method)|hyperpage}{18}
 \indexentry{SuperOCP (class in yaocptool.modelling.ocp)|hyperpage}{18}
 \indexentry{\_\_init\_\_() (yaocptool.modelling.ocp.SuperOCP method)|hyperpage}{18}
@@ -219,8 +219,8 @@
 \indexentry{yaocptool.modelling.stochastic\_ocp (module)|hyperpage}{18}
 \indexentry{StochasticOCP (class in yaocptool.modelling.stochastic\_ocp)|hyperpage}{18}
 \indexentry{\_\_init\_\_() (yaocptool.modelling.stochastic\_ocp.StochasticOCP method)|hyperpage}{18}
-\indexentry{create\_uncertain\_parameter() (yaocptool.modelling.stochastic\_ocp.StochasticOCP method)|hyperpage}{18}
-\indexentry{get\_p\_unc\_indices() (yaocptool.modelling.stochastic\_ocp.StochasticOCP method)|hyperpage}{18}
+\indexentry{create\_uncertain\_parameter() (yaocptool.modelling.stochastic\_ocp.StochasticOCP method)|hyperpage}{19}
+\indexentry{get\_p\_unc\_indices() (yaocptool.modelling.stochastic\_ocp.StochasticOCP method)|hyperpage}{19}
 \indexentry{get\_p\_without\_p\_unc() (yaocptool.modelling.stochastic\_ocp.StochasticOCP method)|hyperpage}{19}
 \indexentry{get\_uncertain\_initial\_cond\_indices() (yaocptool.modelling.stochastic\_ocp.StochasticOCP method)|hyperpage}{19}
 \indexentry{include\_time\_chance\_inequality() (yaocptool.modelling.stochastic\_ocp.StochasticOCP method)|hyperpage}{19}
@@ -233,29 +233,29 @@
 \indexentry{yaocptool.modelling.system\_model (module)|hyperpage}{19}
 \indexentry{SystemModel (class in yaocptool.modelling.system\_model)|hyperpage}{19}
 \indexentry{\_\_init\_\_() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{19}
-\indexentry{all\_sym (yaocptool.modelling.system\_model.SystemModel attribute)|hyperpage}{19}
-\indexentry{connect() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{19}
-\indexentry{convert\_expr\_from\_tau\_to\_time() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{19}
+\indexentry{all\_sym (yaocptool.modelling.system\_model.SystemModel attribute)|hyperpage}{20}
+\indexentry{connect() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
+\indexentry{convert\_expr\_from\_tau\_to\_time() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
 \indexentry{convert\_expr\_from\_time\_to\_tau() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
 \indexentry{create\_algebraic\_variable() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
 \indexentry{create\_control() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
 \indexentry{create\_parameter() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
 \indexentry{create\_state() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
-\indexentry{create\_theta() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
-\indexentry{find\_algebraic\_variable() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
-\indexentry{find\_equilibrium() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{20}
+\indexentry{create\_theta() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
+\indexentry{find\_algebraic\_variable() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
+\indexentry{find\_equilibrium() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
 \indexentry{get\_copy() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
 \indexentry{get\_dae\_system() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
 \indexentry{get\_hardcopy() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
 \indexentry{include\_algebraic() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
-\indexentry{include\_control() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
-\indexentry{include\_models() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
-\indexentry{include\_parameter() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
-\indexentry{include\_state() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
-\indexentry{include\_system\_equations() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
-\indexentry{include\_theta() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
-\indexentry{lamb\_sym (yaocptool.modelling.system\_model.SystemModel attribute)|hyperpage}{21}
-\indexentry{linearize() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{21}
+\indexentry{include\_control() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{22}
+\indexentry{include\_models() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{22}
+\indexentry{include\_parameter() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{22}
+\indexentry{include\_state() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{22}
+\indexentry{include\_system\_equations() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{22}
+\indexentry{include\_theta() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{22}
+\indexentry{lamb\_sym (yaocptool.modelling.system\_model.SystemModel attribute)|hyperpage}{22}
+\indexentry{linearize() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{22}
 \indexentry{merge() (yaocptool.modelling.system\_model.SystemModel method)|hyperpage}{22}
 \indexentry{n\_p (yaocptool.modelling.system\_model.SystemModel attribute)|hyperpage}{22}
 \indexentry{n\_theta (yaocptool.modelling.system\_model.SystemModel attribute)|hyperpage}{22}
@@ -289,20 +289,18 @@
 \indexentry{get\_measurement() (yaocptool.mpc.mpc.MPC method)|hyperpage}{24}
 \indexentry{get\_new\_control() (yaocptool.mpc.mpc.MPC method)|hyperpage}{24}
 \indexentry{get\_states() (yaocptool.mpc.mpc.MPC method)|hyperpage}{24}
-\indexentry{run() (yaocptool.mpc.mpc.MPC method)|hyperpage}{24}
-\indexentry{run\_fixed\_control() (yaocptool.mpc.mpc.MPC method)|hyperpage}{24}
-\indexentry{run\_fixed\_control\_with\_estimator() (yaocptool.mpc.mpc.MPC method)|hyperpage}{24}
+\indexentry{run() (yaocptool.mpc.mpc.MPC method)|hyperpage}{25}
+\indexentry{run\_fixed\_control() (yaocptool.mpc.mpc.MPC method)|hyperpage}{25}
+\indexentry{run\_fixed\_control\_with\_estimator() (yaocptool.mpc.mpc.MPC method)|hyperpage}{25}
 \indexentry{send\_control() (yaocptool.mpc.mpc.MPC method)|hyperpage}{25}
 \indexentry{yaocptool.mpc.plant (module)|hyperpage}{25}
 \indexentry{Plant (class in yaocptool.mpc.plant)|hyperpage}{25}
 \indexentry{\_\_init\_\_() (yaocptool.mpc.plant.Plant method)|hyperpage}{25}
 \indexentry{get\_measurement() (yaocptool.mpc.plant.Plant method)|hyperpage}{25}
-\indexentry{n\_x (yaocptool.mpc.plant.Plant attribute)|hyperpage}{25}
 \indexentry{set\_control() (yaocptool.mpc.plant.Plant method)|hyperpage}{25}
 \indexentry{PlantSimulation (class in yaocptool.mpc.plant)|hyperpage}{25}
 \indexentry{\_\_init\_\_() (yaocptool.mpc.plant.PlantSimulation method)|hyperpage}{25}
-\indexentry{get\_measurement() (yaocptool.mpc.plant.PlantSimulation method)|hyperpage}{25}
-\indexentry{n\_x (yaocptool.mpc.plant.PlantSimulation attribute)|hyperpage}{26}
+\indexentry{get\_measurement() (yaocptool.mpc.plant.PlantSimulation method)|hyperpage}{26}
 \indexentry{set\_control() (yaocptool.mpc.plant.PlantSimulation method)|hyperpage}{26}
 \indexentry{yaocptool.mpc (module)|hyperpage}{26}
 \indexentry{yaocptool.optimization.abstract\_optimization\_problem (module)|hyperpage}{26}
@@ -310,10 +308,10 @@
 \indexentry{\_\_init\_\_() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{26}
 \indexentry{create\_parameter() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{26}
 \indexentry{create\_variable() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{26}
-\indexentry{get\_default\_call\_dict() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{26}
-\indexentry{get\_problem\_dict() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{26}
-\indexentry{get\_solver() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{26}
-\indexentry{include\_equality() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{26}
+\indexentry{get\_default\_call\_dict() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{27}
+\indexentry{get\_problem\_dict() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{27}
+\indexentry{get\_solver() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{27}
+\indexentry{include\_equality() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{27}
 \indexentry{include\_inequality() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{27}
 \indexentry{include\_parameter() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{27}
 \indexentry{include\_variable() (yaocptool.optimization.abstract\_optimization\_problem.AbstractOptimizationProblem method)|hyperpage}{27}
@@ -329,7 +327,7 @@
 \indexentry{yaocptool.parallel.worker (module)|hyperpage}{28}
 \indexentry{Worker (class in yaocptool.parallel.worker)|hyperpage}{28}
 \indexentry{\_\_init\_\_() (yaocptool.parallel.worker.Worker method)|hyperpage}{28}
-\indexentry{run() (yaocptool.parallel.worker.Worker method)|hyperpage}{28}
+\indexentry{run() (yaocptool.parallel.worker.Worker method)|hyperpage}{29}
 \indexentry{yaocptool.parallel (module)|hyperpage}{29}
 \indexentry{yaocptool.stochastic.pce (module)|hyperpage}{29}
 \indexentry{PCEConverter (class in yaocptool.stochastic.pce)|hyperpage}{29}
