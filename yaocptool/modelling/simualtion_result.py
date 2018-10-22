@@ -16,6 +16,7 @@ class SimulationResult(DataSet):
         self.finite_elements = 0
 
         DataSet.__init__(self, **kwargs)
+        self.plot_style = 'plot'
 
         self.create_entry('x', size=n_x, names=x_names)
         self.create_entry('y', size=n_y, names=y_names)

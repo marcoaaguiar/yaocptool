@@ -14,7 +14,8 @@ class Pump(SystemModel):
         self.k = 3.33e-6
 
         # super class method
-        SystemModel.__init__(self, name="pump_" + str(index), model_name_as_prefix=True, **kwargs)
+        SystemModel.__init__(self, name="pump_" + str(index),
+                             model_name_as_prefix=True, **kwargs)
 
         # create variables
         v = self.create_control('v')  # Create input pump voltage
@@ -34,7 +35,8 @@ class Tank(SystemModel):
         self.a = 0.071e-4
 
         # super class method
-        SystemModel.__init__(self, name="tank_" + str(index), model_name_as_prefix=True, **kwargs)
+        SystemModel.__init__(self, name="tank_" + str(index),
+                             model_name_as_prefix=True, **kwargs)
 
         # create variables
         h = self.create_state('h')
@@ -59,9 +61,10 @@ class QuadTanks(SystemModel):
         # create the pumps
         pumps = [Pump(index=0, gamma=0.7), Pump(index=1, gamma=0.6)]
         # create the tanks
-        tanks = [Tank(index=0, n_inputs=2), Tank(index=1, n_inputs=2), Tank(index=2, n_inputs=1),
-                 Tank(index=3, n_inputs=1)]
+        tanks = [Tank(index=0, n_inputs=2), Tank(index=1, n_inputs=2),
+                 Tank(index=2, n_inputs=1), Tank(index=3, n_inputs=1)]
 
+        # include all variables and equations from pumps and tanks
         self.include_models(pumps)
         self.include_models(tanks)
 

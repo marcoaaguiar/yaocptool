@@ -23,9 +23,9 @@ Trust me, it is easier!
 ```python
 from yaocptool.modelling import SystemModel
 
-model = SystemModel(name='simple_model')
-x = model.create_state('x') # vector of state variables
-u = model.create_control('u') # vector of control variables
+model = SystemModel(name="simple_model")
+x = model.create_state("x") # vector of state variables
+u = model.create_control("u") # vector of control variables
 
 # Include the dynamic equation
 ode = [-x + u]
@@ -40,7 +40,7 @@ print(model)
 ```python
 from yaocptool.modelling import OptimalControlProblem
 
-problem = OptimalControlProblem(model, x_0 = [1], t_f=10, obj={'Q': 1, 'R': 1})
+problem = OptimalControlProblem(model, x_0=[1], t_f=10, obj={"Q": 1, "R": 1})
 ```
 
 ### Creating a Solver for the OCP
