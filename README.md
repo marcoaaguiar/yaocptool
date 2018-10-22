@@ -1,11 +1,24 @@
 # yaocptool
 (YAOCPTool) Yet Another Optimal Control Tool
 
-## Required Packages
+## How to install
 
+The package is not yet listed in PyPI (pip install), however it can be installed directly from GitHub using the following command:
+
+For MASTER branch:
+```commandline
+pip install https://github.com/marcoaaguiar/yaocptool/archive/master.zip
+```
+For DEV branch:
+```commandline
+pip install https://github.com/marcoaaguiar/yaocptool/archive/dev.zip
+```
+
+If you are not installing using pip install, but cloning the repository you will need to install the following packages
 ```commandline
 pip install casadi numpy scipy sobol_seq matplotlib
 ```
+
 
 ## Documentation
 
