@@ -1,4 +1,4 @@
-from casadi import is_equal, DM, vec, vertcat, substitute, mtimes, integrator, MX, repmat
+from casadi import is_equal, DM, vec, vertcat, substitute, mtimes, integrator, MX, repmat, OP_LT, OP_LE, OP_EQ, SX
 
 
 def find_variables_indices_in_vector(var, vector):
@@ -124,3 +124,29 @@ def expm(a_matrix):
     res = integrator_map(x0=DM.eye(dim), p=repmat(vec(a_matrix), (1, a_matrix.shape[1])))['xf']
 
     return res
+
+
+def is_inequality(expr):
+    """ Return true if an expression is an inequality (e.g.: x < 1, x <= 2)
+
+    :param MX|SX expr: symbolic expression
+    :return: True if 'expr' is an inequality, False otherwise
+    :rtype: bool
+    """
+    if isinstance(expr, (MX, SX)):
+        if expr.op() == OP_LE or expr.op == OP_LT:
+            return True
+    return False
+
+
+def is_equality(expr):
+    """ Return true if an expression is an equality (e.g.: x == 2)
+
+    :param MX|SX expr: symbolic expression
+    :return: True if 'expr' is an inequality, False otherwise
+    :rtype: bool
+    """
+    if isinstance(expr, (MX, SX)):
+        if expr.op() == OP_EQ:
+            return True
+    return False

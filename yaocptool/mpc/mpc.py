@@ -18,8 +18,8 @@ class MPC:
         :param DM default_p: is a default parameter vector that will be used by the 'solution_method'
         :param DM default_theta: is a default theta parameter that will be used by the 'solution_method'
         :param bool include_cost_in_state_vector: Typically the optimal control problem has one extra state than the
-            plant, the dynamic cost state. By setting this variable to True, it automatically include an zero the in state
-            vector obtained from the estimator.
+            plant, the dynamic cost state. By setting this variable to True, it automatically include an zero
+            the in state vector obtained from the estimator.
         :param bool mean_as_parameter: The mean estimated by the Estimator as parameter of the OCP. It will be put in
             the end of parameter vector, before the covariance if covariance_as_parameter=True.
         :param bool covariance_as_parameter: The covariance estimated by the Estimator as parameter of the OCP. It will
@@ -27,12 +27,12 @@ class MPC:
         :param list mean_p_indices: If mean_as_parameter=True, mean_p_indices is a list of tuples (pairs), where the
             first element of the tuple is the index in the mean vector and the second is the index in the p vector.
         :param list cov_p_indices: If covariance_as_parameter=True, cov_p_indices is a list of tuples (pairs), where the
-            first element of the tuple is the index in the vectorized covariance matrix and the second is the index in the p
-            vector.
+            first element of the tuple is the index in the vectorized covariance matrix and the second is the index
+            in the p vector.
         :param function state_rearrangement_function: A function that can be used to rearrange the initial condition in
-            cases where the estimated states is not equal to initial condition vector of the OCP. For instance, when the OCP
-            has multiple representations of the system. The provided function has the estimated stated as input and has to
-            return a initial condition vector.
+            cases where the estimated states is not equal to initial condition vector of the OCP. For instance, when the
+             OCP has multiple representations of the system. The provided function has the estimated stated as input and
+              has to return a initial condition vector.
         """
         self.plant = plant
         self.solution_method = solution_method

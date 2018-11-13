@@ -4,10 +4,11 @@ Created on Fri Oct 21 16:39:52 2016
 
 @author: marco
 """
-from casadi import inf, substitute, hessian, inv, fmin, fmax, is_equal, mtimes, DM, SX, dot, gradient, vertcat, jacobian
-from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 import warnings
-import yaocptool.modelling
+
+from casadi import inf, substitute, hessian, inv, fmin, fmax, is_equal, mtimes, DM, SX, dot, gradient, vertcat, jacobian
+
+from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
 class IndirectMethod(SolutionMethodsBase):

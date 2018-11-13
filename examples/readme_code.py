@@ -1,12 +1,12 @@
 from __future__ import print_function
 from yaocptool.modelling import SystemModel
-from yaocptool.methods import DirectMethod
 from yaocptool.modelling import OptimalControlProblem
+from yaocptool.methods import DirectMethod
 
 # PART 1
 model = SystemModel(name="simple_model")
-x = model.create_state("x") # vector of state variables
-u = model.create_control("u") # vector of control variables
+x = model.create_state("x")  # vector of state variables
+u = model.create_control("u")  # vector of control variables
 
 # Include the dynamic equation
 ode = [-x + u]

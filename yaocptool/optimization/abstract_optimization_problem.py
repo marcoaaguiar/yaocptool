@@ -1,6 +1,7 @@
 from numbers import Number
 
-from casadi import vertcat, MX, inf, DM, repmat
+from casadi import vertcat, MX, inf, DM, repmat, is_equal, depends_on
+from yaocptool import is_inequality, is_equality
 
 
 class AbstractOptimizationProblem(object):
@@ -133,6 +134,9 @@ class AbstractOptimizationProblem(object):
                 msg = "Expression and upper bound does not have the same size: expr.shape={}, ub.shape=={}".format(
                     expr.shape, ub.shape)
                 raise ValueError(msg)
+        if depends_on(lb, vertcat(self.x, self.p)) or depends_on(ub, vertcat(self.x, self.p)):
+            raise ValueError("The lower and upper bound cannot contain variables from the optimization problem."
+                             "LB: {}, UB: {}".format(lb, ub))
 
         self.g = vertcat(self.g, expr)
         self.g_lb = vertcat(self.g_lb, lb)
@@ -163,12 +167,69 @@ class AbstractOptimizationProblem(object):
                 msg = "Expression and the right hand side does not have the same size: " \
                       "expr.shape={}, rhs.shape=={}".format(expr.shape, rhs.shape)
                 raise ValueError(msg)
+        if depends_on(rhs, vertcat(self.x, self.p)):
+            raise ValueError("Right-hand side cannot contain variables from the optimization problem. "
+                             "RHS = {}".format(rhs))
 
         self.g = vertcat(self.g, expr)
         self.g_lb = vertcat(self.g_lb, rhs)
         self.g_ub = vertcat(self.g_ub, rhs)
 
+    def include_constraint(self, expr):
+        """Includes an inequality or inequality to the optimization problem, example:
+            opt_problem.include_constraint(1 <= x**2)
+            opt_problem.include_constraint(x + y == 1)
+        Due to limitations on CasADi it does not allows for double inequalities (e.g.: 0 <= x <= 1)
+
+        :param casadi.MX expr: equality or inequality expression
+        """
+        # Check for inconsistencies
+        if not is_inequality(expr) and not is_equality(expr):
+            raise ValueError("The passed 'expr' was not recognized as an equality or inequality constraint")
+        if expr.dep(0).is_constant() and expr.dep(1).is_constant():
+            raise ValueError('Both sides of the constraint are constant')
+        if depends_on(expr.dep(0), vertcat(self.x, self.p)) and depends_on(expr.dep(1), vertcat(self.x, self.p)):
+            raise ValueError("One of the sides of the constraint cannot depend on the problem. (e.g.: x<=1)"
+                             "lhs: {}, rhs: {}".format(expr.dep(0), expr.dep(1)))
+
+        # find the dependent and independent term
+        if depends_on(expr.dep(0), vertcat(self.x, self.p)):
+            dep_term = expr.dep(0)
+            indep_term = expr.dep(1)
+            if indep_term.is_constant():
+                indep_term = indep_term.to_DM()
+        else:
+            dep_term = expr.dep(1)
+            indep_term = expr.dep(0).to_DM()
+            if indep_term.is_constant():
+                indep_term = indep_term.to_DM()
+
+        # if it is and equality
+        if is_equality(expr):
+            self.include_equality(dep_term, indep_term)
+
+        # if it is an inequality
+        elif is_inequality(expr):
+            # by default all inequalities are treated as 'less than' or 'less or equal', e.g.: x<=1 or 1<=x
+            # if the term on the rhs term is the non-symbolic term, then it is a 'x<=1' inequality,
+            # where the independent term is the upper bound
+            if is_equal(indep_term, expr.dep(1)):
+                self.include_inequality(dep_term, ub=indep_term)
+            # otherwise, it is a '1<=x' inequality, where the independent term is the lower bound
+            else:
+                self.include_inequality(dep_term, lb=indep_term)
+
     def get_problem_dict(self):
+        """Return the optimization problem in a Python dict form (CasADi standard).
+        The dictionary keys are:
+        f-> objective function
+        g-> constraints
+        x-> variables
+        p-> parameters
+
+        :return: optimization problem as a dict
+        :rtype: dict
+        """
         return {'f': self.f, 'g': self.g, 'x': self.x, 'p': self.p}
 
     def get_solver(self):
@@ -185,7 +246,7 @@ class AbstractOptimizationProblem(object):
                 'lbg': self.g_lb,
                 'ubg': self.g_ub}
 
-    def solve(self, initial_guess=None, call_dict=None, p=None, lam_x=None, lam_g=None):
+    def solve(self, initial_guess, call_dict=None, p=None, lam_x=None, lam_g=None):
         """
 
         :param initial_guess: Initial guess

@@ -96,7 +96,6 @@ class PlantSimulation(Plant):
         self.dataset.data['meas']['size'] = self.c_matrix.size1()
         self.dataset.data['meas']['names'] = ['meas_' + str(i) for i in range(self.model.n_x)]
 
-
     def get_measurement(self):
         """Return the plant measurement of a simulated model and advance time by 't_s'.
         Return the measurement time, the measurement [x; y], and the controls.

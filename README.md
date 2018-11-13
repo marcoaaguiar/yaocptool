@@ -58,6 +58,7 @@ problem = OptimalControlProblem(model, x_0=[1], t_f=10, obj={"Q": 1, "R": 1})
 
 ### Creating a Solver for the OCP
 ```python
+from yaocptool.methods import DirectMethod
 # Initialize a DirectMethod to solve the OCP using collocation
 solution_method = DirectMethod(problem, finite_elements=20, discretization_scheme='collocation')
 

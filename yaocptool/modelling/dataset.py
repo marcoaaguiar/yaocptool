@@ -24,7 +24,8 @@ class DataSet:
             The data can be more easily managed using create_entry, get_entry, insert_data.
 
         :param str name: name of th dataset
-        :param str plot_style: default plot style. plot = linear interpolation, step = piecewise constant ('plot' | 'step')
+        :param str plot_style: default plot style. plot = linear interpolation, step = piecewise constant
+            ('plot' | 'step')
         :param bool find_discontinuity: Default: True. If True, it will try to find discontinuity on the data, and plot
             with gaps where data is missing/not available, instead of a line connecting all data points.
         :param float max_sampling_time: maximum expected distance between two time data. This is used to detect

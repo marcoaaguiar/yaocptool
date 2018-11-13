@@ -15,7 +15,6 @@ from yaocptool.modelling import DAESystem, SimulationResult
 
 # TODO: Check linearize method
 
-
 class SystemModel:
     def __init__(self, name='model', n_x=0, n_y=0, n_u=0, n_p=0, n_theta=0, **kwargs):
         """
