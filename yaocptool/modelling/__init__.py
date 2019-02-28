@@ -7,7 +7,7 @@ Created on Mon Jul 10 14:27:21 2017
 
 from .dae_system import DAESystem
 from .dataset import DataSet
-from .simualtion_result import SimulationResult
+from .simulation_result import SimulationResult
 from .system_model import SystemModel
 from .ocp import OptimalControlProblem
 from .stochastic_ocp import StochasticOCP

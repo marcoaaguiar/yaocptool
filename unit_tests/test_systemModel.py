@@ -74,9 +74,9 @@ class TestSystemModel(TestCase):
     def test_all_sym(self):
         for model_name in self.models:
             model = self.models[model_name]
-            self.assertEqual(len(model.all_sym), 7)
-            answer = [model.t_sym, model.x_sym, model.y_sym, model.u_sym, model.p_sym,
+            answer = [model.t_sym, model.x_sym, model.y_sym, model.p_sym,
                       model.theta_sym, model.u_par]
+            self.assertEqual(len(model.all_sym), len(answer))
 
             for index in range(len(model.all_sym)):
                 self.assertTrue(is_equal(model.all_sym[index], answer[index]))

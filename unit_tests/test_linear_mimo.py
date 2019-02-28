@@ -68,8 +68,9 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        print(result.objective)
-        self.assertAlmostEqual(result.objective, self.answer_obj_value['direct_pw_continuous'], delta=self.obj_tol)
+        print(result.objective_opt_problem)
+        self.assertAlmostEqual(result.objective_opt_problem, self.answer_obj_value['direct_pw_continuous'],
+                               delta=self.obj_tol)
 
     def test_direct_multiple_shooting_implicit_pw_cont_control(self):
         model, problem = self._create_model_and_problem()
@@ -80,8 +81,9 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        print(result.objective)
-        self.assertAlmostEqual(result.objective, self.answer_obj_value['direct_pw_continuous'], delta=self.obj_tol)
+        print(result.objective_opt_problem)
+        self.assertAlmostEqual(result.objective_opt_problem, self.answer_obj_value['direct_pw_continuous'],
+                               delta=self.obj_tol)
 
     def test_direct_multiple_shooting_explicit_polynomial_control(self):
         model, problem = self._create_model_and_problem()
@@ -92,8 +94,9 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        print(result.objective)
-        self.assertAlmostEqual(result.objective, self.answer_obj_value['direct_polynomial'], delta=self.obj_tol)
+        print(result.objective_opt_problem)
+        self.assertAlmostEqual(result.objective_opt_problem, self.answer_obj_value['direct_polynomial'],
+                               delta=self.obj_tol)
 
     def test_direct_multiple_shooting_implicit_polynomial_control(self):
         model, problem = self._create_model_and_problem()
@@ -104,12 +107,13 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        print(result.objective)
-        self.assertAlmostEqual(result.objective, self.answer_obj_value['direct_polynomial'], delta=self.obj_tol)
+        print(result.objective_opt_problem)
+        self.assertAlmostEqual(result.objective_opt_problem, self.answer_obj_value['direct_polynomial'],
+                               delta=self.obj_tol)
 
     # endregion
 
-    # region DIRECT COLLOCAITON METHOD
+    # region DIRECT COLLOCATION METHOD
     def test_direct_collocation_polynomial_control(self):
         model, problem = self._create_model_and_problem()
         solution_method = DirectMethod(problem, degree=3, degree_control=3,
@@ -118,8 +122,9 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        print(result.objective)
-        self.assertAlmostEqual(result.objective, self.answer_obj_value['direct_polynomial'], delta=self.obj_tol)
+        print(result.objective_opt_problem)
+        self.assertAlmostEqual(result.objective_opt_problem, self.answer_obj_value['direct_polynomial'],
+                               delta=self.obj_tol)
 
     def test_direct_collocation_pw_cont_control(self):
         model, problem = self._create_model_and_problem()
@@ -130,11 +135,12 @@ class MIMO2x2TestCase(unittest.TestCase):
                                        nlpsol_opts=self.nlpsol_opts
                                        )
         result = solution_method.solve()
-        print(result.objective)
-        self.assertAlmostEqual(result.objective, self.answer_obj_value['direct_pw_continuous'], delta=self.obj_tol)
+        print(result.objective_opt_problem)
+        self.assertAlmostEqual(result.objective_opt_problem, self.answer_obj_value['direct_pw_continuous'],
+                               delta=self.obj_tol)
 
     # endregion
-    # region INIDRECT METHOD
+    # region INDIRECT METHOD
     def test_indirect_collocation(self):
         model, problem = self._create_model_and_problem()
         solution_method = IndirectMethod(problem, degree=3, degree_control=3,

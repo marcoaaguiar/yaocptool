@@ -2,6 +2,13 @@ from casadi import is_equal, DM, vec, vertcat, substitute, mtimes, integrator, M
 
 
 def find_variables_indices_in_vector(var, vector):
+    """
+        Given symbolic variables return the indices of the variables in a vector
+
+    :param casadi.SX|casadi.MX var:
+    :param casadi.SX|casadi.MX vector:
+    :rtype: list
+    """
     index = []
     for j in range(vector.size1()):
         for i in range(var.numel()):

@@ -1,8 +1,8 @@
 import warnings
 
-from casadi import SX, MX, vertcat, collocation_points, vec, reshape, repmat
+from casadi import SX, MX, vertcat, collocation_points, vec, reshape, DM
 
-from yaocptool import config, create_constant_theta
+from yaocptool import config, create_constant_theta, find_variables_indices_in_vector
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
@@ -44,9 +44,6 @@ class SolutionMethodsBase(object):
         # Internal variables
         self.parametrized_control = False
 
-        self.nlp_prob = {}
-        self.nlp_call = {}
-
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
@@ -58,7 +55,6 @@ class SolutionMethodsBase(object):
             self.last_control_as_parameter = True
 
         if self.discretization_scheme == 'multiple-shooting':
-            self.degree = 1
             self.discretizer = MultipleShootingScheme(self)
         elif self.discretization_scheme == 'collocation':
             self.discretizer = CollocationScheme(self)
@@ -77,14 +73,6 @@ class SolutionMethodsBase(object):
     @property
     def time_breakpoints(self):
         return [self.delta_t * k for k in range(self.finite_elements + 1)]
-
-    @property
-    def split_x_and_u(self):
-        return self.discretizer.split_x_and_u
-
-    @property
-    def split_x_y_and_u(self):
-        return self.discretizer.split_x_y_and_u
 
     @staticmethod
     def collocation_points(degree, cp='radau', with_zero=False):
@@ -158,9 +146,9 @@ class SolutionMethodsBase(object):
             else:
                 u_pol, self.model.u_par = self.create_variable_polynomial_approximation(self.model.n_u, degree,
                                                                                         name=self.model.u_names)
-            self.model.u_func = u_pol
+            self.model.u_expr = u_pol
         else:
-            u_pol = self.model.u_func
+            u_pol = self.model.u_expr
 
         return u_pol
 
@@ -172,7 +160,7 @@ class SolutionMethodsBase(object):
         """
         if degree is None:
             degree = self.degree
-        n_lines = vector.numel() / degree
+        n_lines = vector.numel() // degree
         return reshape(vector, n_lines, degree)
 
     # ==============================================================================
@@ -222,8 +210,11 @@ class SolutionMethodsBase(object):
         if self.opt_problem is None:
             self.create_optimization_problem()
 
+        # initial conditions
         if x_0 is None:
             x_0 = self.problem.x_0
+        if isinstance(x_0, list):
+            x_0 = vertcat(x_0)
 
         if not vertcat(x_0).numel() == self.model.n_x:
             raise Exception('Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, '
@@ -232,9 +223,12 @@ class SolutionMethodsBase(object):
         # parameters
         if p is None:
             if self.problem.n_p_opt == self.model.n_p:
-                p = repmat(0, self.problem.n_p_opt)
+                p = DM.zeros(self.problem.n_p_opt)
             elif self.problem.model.n_p > 0:
                 raise Exception("A parameter 'p' of size {} should be given".format(self.problem.model.n_p))
+
+        if isinstance(p, list):
+            p = DM(p)
 
         # theta
         if theta is None:
@@ -242,14 +236,14 @@ class SolutionMethodsBase(object):
                 theta = create_constant_theta(0, self.problem.n_theta_opt, self.finite_elements)
             elif self.problem.model.n_theta > 0:
                 raise Exception("A parameter 'theta' of size {} should be given".format(self.problem.model.n_theta))
-        if theta is not None:
-            par = vertcat(p, *theta.values())
-        else:
-            par = p
 
-        # initial condition
+        # Prepare NLP parameter vector
+        theta_vector, par_x_0, par_last_u = [], [], []
+        if theta is not None:
+            theta_vector = vertcat(*[theta[i] for i in range(self.finite_elements)])
+
         if self.initial_condition_as_parameter:
-            par = vertcat(par, x_0)
+            par_x_0 = x_0
 
         # last control
         if not self.last_control_as_parameter and last_u is not None:
@@ -259,9 +253,16 @@ class SolutionMethodsBase(object):
             if last_u is not None:
                 if isinstance(last_u, list):
                     last_u = vertcat(*last_u)
-                par = vertcat(par, last_u)
             elif self.problem.last_u is not None:
-                par = vertcat(par, self.problem.last_u)
+                last_u = self.problem.last_u
+            elif self.last_control_as_parameter and last_u is None:
+                raise Exception('last_control_as_parameter is True, but no "last_u" was passed and the "ocp.last_u" is '
+                                'None.')
+
+        if self.last_control_as_parameter:
+            par_last_u = last_u
+
+        par = vertcat(p, theta_vector, par_x_0, par_last_u)
 
         if initial_guess_dict is None:
             if initial_guess is None:
@@ -278,7 +279,7 @@ class SolutionMethodsBase(object):
                         lam_x=initial_guess_dict['lam_x'], lam_g=initial_guess_dict['lam_g'])
 
         sol = self.opt_problem.solve(**args)
-        return sol
+        return sol, p, theta, x_0, last_u
 
     def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         """
@@ -291,23 +292,15 @@ class SolutionMethodsBase(object):
         :param initial_guess_dict: Initial guess as dict
         :rtype: OptimizationResult
         """
-        if isinstance(x_0, list):
-            x_0 = vertcat(x_0)
+        raw_solution_dict, p, theta, x_0, last_u = self.call_solver(initial_guess=initial_guess,
+                                                                    p=p, theta=theta,
+                                                                    x_0=x_0, last_u=last_u,
+                                                                    initial_guess_dict=initial_guess_dict)
 
-        raw_solution_dict = self.call_solver(initial_guess=initial_guess, p=p, theta=theta,
-                                             x_0=x_0, last_u=last_u,
-                                             initial_guess_dict=initial_guess_dict)
+        optimization_result = self.create_optimization_result(raw_solution_dict, p, theta, x_0)
+        return optimization_result
 
-        return self.create_optimization_result(raw_solution_dict, p, theta, x_0=x_0)
-
-    def create_optimization_result(self, raw_solution_dict, p=None, theta=None, x_0=None):
-        if x_0 is None:
-            x_0 = self.problem.x_0
-        if theta is None:
-            theta = {}
-        if p is None:
-            p = []
-
+    def create_optimization_result(self, raw_solution_dict, p, theta, x_0):
         optimization_result = OptimizationResult()
 
         # From the solution_method
@@ -335,5 +328,9 @@ class SolutionMethodsBase(object):
                                                for i in range(self.problem.n_theta_opt)]
 
         self.discretizer.set_data_to_optimization_result_from_raw_data(optimization_result, raw_solution_dict)
+
+        if self.problem.x_cost is not None:
+            x_c_index = find_variables_indices_in_vector(self.problem.x_cost, self.model.x_sym)
+            optimization_result.x_c_final = optimization_result.x_data['values'][-1][-1][x_c_index]
 
         return optimization_result

@@ -14,3 +14,6 @@ import tests.testPCE
 import tests.testSimplest
 import tests.testSimulation
 import tests.testTwoTanks
+import tests.testDirectMethodWithAdjointStates
+import tests.testAugmentedLagrange
+import tests.testParametrizeControl

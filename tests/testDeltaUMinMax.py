@@ -29,7 +29,7 @@ problem = OptimalControlProblem(model, obj={'Q': DM.eye(2), 'R': DM.eye(2)}, x_0
 
 problem.delta_u_max = [0.05, 0.05]
 problem.delta_u_min = [-0.05, -0.05]
-problem.last_u = [0,0]
+problem.last_u = [0, 0]
 
 solution_method = DirectMethod(problem, degree=3,
                                degree_control=1,
@@ -38,7 +38,6 @@ solution_method = DirectMethod(problem, degree=3,
                                # discretization_scheme = 'collocation'
                                )
 
-
 result = solution_method.solve()
 
 result.plot([  # {'x': [0]},
@@ -46,9 +45,8 @@ result.plot([  # {'x': [0]},
     {'u': [0, 1]}
 ])
 
-result = solution_method.solve(last_u = [0,1])
+result = solution_method.solve(last_u=[0, 1])
 result.plot([  # {'x': [0]},
     {'x': [0, 1]},
     {'u': [0, 1]}
 ])
-

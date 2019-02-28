@@ -1,15 +1,13 @@
 from collections import defaultdict
 from functools import partial
-
 from yaocptool.modelling import DataSet
+from casadi import horzcat, DM
 
 try:
     import matplotlib.pyplot as plt
 except ImportError:
     print('Failed to import matplotlib. Make sure that it is properly installed')
     plt = None
-
-from casadi import horzcat, DM
 
 
 class OptimizationResult:
@@ -33,7 +31,9 @@ class OptimizationResult:
         self.time_breakpoints = []
         self.collocation_points = []
 
-        self.objective = None  # type: DM
+        self.objective_opt_problem = None  # type: DM
+        self.v_final = None  # type: DM
+        self.x_c_final = None  # type: DM
         self.constraints_values = None  # type: DM
 
         self.x_names = []
@@ -45,14 +45,14 @@ class OptimizationResult:
         self.y_data = {'values': [], 'time': []}
         self.u_data = {'values': [], 'time': []}
 
-        self.other_data = defaultdict(partial(defaultdict, {'values': [], 'time': []}))
+        self.other_data = defaultdict(partial(dict, [('values', []), ('time', [])]))
 
-        self.x_0 = []
+        self.x_0 = DM([])
         self.theta = {}
-        self.p = []
-        self.p_opt = []
+        self.p = DM([])
+        self.p_opt = DM([])
         self.theta_opt = []
-        self.eta = []
+        self.eta = DM([])
 
         self._dataset = None
 
@@ -107,6 +107,10 @@ class OptimizationResult:
         dataset.create_entry('u', size=len(self.u_names), names=self.u_names)
         dataset.create_entry('theta_opt', size=len(self.theta_opt_names), names=self.theta_opt_names, plot_style='step')
 
+        for entry in self.other_data:
+            size = self.other_data[entry]['values'][0][0].shape[0]
+            dataset.create_entry(entry, size=size, names=[entry + '_' + str(i) for i in range(size)])
+
         if self.degree_control > 1:
             dataset.data['u']['plot_style'] = 'plot'
         else:
@@ -128,6 +132,12 @@ class OptimizationResult:
             dataset.insert_data('u', time_u, values_u)
 
         dataset.insert_data('theta_opt', time=horzcat(*self.time_breakpoints[:-1]), value=horzcat(*self.theta_opt))
+
+        for entry in self.other_data:
+            for el in range(self.finite_elements):
+                dataset.insert_data(entry,
+                                    time=horzcat(*self.other_data[entry]['time'][el]),
+                                    value=horzcat(*self.other_data[entry]['values'][el]))
 
         return dataset
 

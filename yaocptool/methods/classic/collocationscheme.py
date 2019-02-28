@@ -31,41 +31,36 @@ class CollocationScheme(DiscretizationSchemeBase):
         tau_list = self.solution_method.collocation_points(self.degree, with_zero=False)
         return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
 
-    @property
-    def time_interpolation_controls(self):
-        tau_list = [0.] if self.degree_control == 1 else self.solution_method.collocation_points(self.degree,
-                                                                                                 with_zero=False)
-        return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
-
-    def create_nlp_symbolic_variables(self, nlp):
+    def _create_nlp_symbolic_variables(self, nlp):
         """
         Create the symbolic variables that will be used by the NLP problem
+
         :param NonlinearOptimizationProblem nlp: nonlinear optimization problem in which the variables will be created
         :rtype: tuple
         """
-        x_var = []
-        y_var = []
-        u_var = []
+        x, y, u, eta, p_opt = [], [], [], [], []
+
         for k in range(self.finite_elements):
             x_k = []
             for n in range(self.degree + 1):
                 x_k.append(nlp.create_variable('x_' + repr(k) + '_' + repr(n), self.model.n_x,
                                                lb=self.problem.x_min, ub=self.problem.x_max))
-            x_var.append(x_k)
+            x.append(x_k)
 
         for k in range(self.finite_elements):
             y_k = []
             for n in range(self.degree):
                 y_k.append(nlp.create_variable('y_' + repr(k) + '_' + repr(n), self.model.n_y,
                                                lb=self.problem.y_min, ub=self.problem.y_max))
-            y_var.append(y_k)
+            y.append(y_k)
 
         for k in range(self.finite_elements):
             u_k = []
-            for n in range(self.degree_control):
-                u_k.append(nlp.create_variable('u_' + repr(k) + '_' + repr(n), self.model.n_u,
-                                               lb=self.problem.u_min, ub=self.problem.u_max))
-            u_var.append(u_k)
+            if self.model.n_u_par > 0:
+                for n in range(self.degree_control):
+                    u_k.append(nlp.create_variable('u_' + repr(k) + '_' + repr(n), self.model.n_u,
+                                                   lb=self.problem.u_min, ub=self.problem.u_max))
+            u.append(u_k)
 
         eta = nlp.create_variable('eta', self.problem.n_eta)
         p_opt = nlp.create_variable('p_opt', self.problem.n_p_opt, lb=self.problem.p_opt_min, ub=self.problem.p_opt_max)
@@ -75,24 +70,14 @@ class CollocationScheme(DiscretizationSchemeBase):
             theta_opt.append(nlp.create_variable('theta_opt_' + str(el), self.problem.n_theta_opt,
                                                  lb=self.problem.theta_opt_min, ub=self.problem.theta_opt_max))
 
-        v_x = self.vectorize(x_var)
-        v_y = self.vectorize(y_var)
-        v_u = self.vectorize(u_var)
+        v_x = self.vectorize(x)
+        v_y = self.vectorize(y)
+        v_u = self.vectorize(u)
         v_theta_opt = vertcat(*theta_opt)
 
         v = vertcat(v_x, v_y, v_u, eta, p_opt, v_theta_opt)
 
-        return v, x_var, y_var, u_var, eta, p_opt, theta_opt
-
-    def split_x_y_and_u(self, decision_variables, all_subinterval=False):
-        """
-        :param all_subinterval: Bool 'Returns all elements of the subinterval (or only the first one)'
-        :param decision_variables: DM
-        :return: X, Y, and U -> list with a DM for each element
-        """
-
-        x, y, u, _, _, _ = self.unpack_decision_variables(decision_variables, all_subinterval=all_subinterval)
-        return x, y, u
+        return v, x, y, u, eta, p_opt, theta_opt
 
     def unpack_decision_variables(self, decision_variables, all_subinterval=True):
         """Return a structured data from the decision variables vector
@@ -131,18 +116,17 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         for k in range(self.finite_elements):
             u_k = []
-            for i in range(self.degree_control):
-                u_k.append(decision_variables[v_offset:v_offset + self.model.n_u])
-                v_offset += self.model.n_u
+            if self.model.n_u_par > 0:
+                for i in range(self.degree_control):
+                    u_k.append(decision_variables[v_offset:v_offset + self.model.n_u])
+                    v_offset += self.model.n_u
             u.append(u_k)
 
-        if self.problem.n_eta > 0:
-            eta = decision_variables[v_offset:v_offset + self.problem.n_eta]
-            v_offset += self.problem.n_eta
+        eta = decision_variables[v_offset:v_offset + self.problem.n_eta]
+        v_offset += self.problem.n_eta
 
-        if self.problem.n_p_opt > 0:
-            p_opt = decision_variables[v_offset:v_offset + self.problem.n_p_opt]
-            v_offset += self.problem.n_p_opt
+        p_opt = decision_variables[v_offset:v_offset + self.problem.n_p_opt]
+        v_offset += self.problem.n_p_opt
 
         theta_opt = []
         for k in range(self.finite_elements):
@@ -173,7 +157,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         nlp = NonlinearOptimizationProblem(name='collocation_' + self.problem.name)
 
         # Create NLP symbolic variables
-        all_decision_vars, x_var, yz_var, u_var, eta, p_opt, theta_opt = self.create_nlp_symbolic_variables(nlp)
+        all_decision_vars, x_var, y_var, u_var, eta, p_opt, theta_opt = self._create_nlp_symbolic_variables(nlp)
 
         # Put the symbolic optimization parameters in the parameter vector
         for i, p_opt_index in enumerate(self.problem.get_p_opt_indices()):
@@ -208,8 +192,10 @@ class CollocationScheme(DiscretizationSchemeBase):
             dae_sys.convert_from_tau_to_time(self.time_breakpoints[el],
                                              self.time_breakpoints[el + 1])
 
-            f_ode = Function('f_ode_' + repr(el), self.model.all_sym, [dae_sys.ode])
-            f_alg = Function('f_alg_' + repr(el), self.model.all_sym, [dae_sys.alg])
+            f_ode = Function('f_ode_' + repr(el), self.model.all_sym, [dae_sys.ode], self.model.all_sym_names(),
+                             ['ode'])
+            f_alg = Function('f_alg_' + repr(el), self.model.all_sym, [dae_sys.alg], self.model.all_sym_names(),
+                             ['alg'])
 
             functions['ode'][el] = f_ode
             functions['alg'][el] = f_alg
@@ -226,7 +212,7 @@ class CollocationScheme(DiscretizationSchemeBase):
                                                                       self.problem.S)
 
         # Obtain the "simulation" results
-        results = self.get_system_at_given_times(x_var, yz_var, u_var, time_dict, p, theta, functions=functions)
+        results = self.get_system_at_given_times(x_var, y_var, u_var, time_dict, p, theta, functions=functions)
 
         # Build the NLP
         s_cost = 0
@@ -331,11 +317,12 @@ class CollocationScheme(DiscretizationSchemeBase):
             t_f = time_dict[el]['t_f']
 
             # The control function
-            u_func = self.model.convert_expr_from_tau_to_time(self.model.u_func, t_0, t_f)
+            u_func = self.model.convert_expr_from_tau_to_time(self.model.u_expr, t_0, t_f)
             if self.solution_method.solution_class == 'direct':
-                f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par], [u_func])
+                f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par], [u_func], ['t', 'u_par'], ['u_func'])
             else:
-                f_u = Function('f_u_pol', list(self.model.all_sym), [u_func])
+                f_u = Function('f_u_pol', self.model.all_sym, [u_func],
+                               self.model.all_sym_names(), ['f_u_pol'])
 
             # Create function for obtaining x at an given time
             x_col_names = ['col_appr_' + name for name in self.model.x_names]
@@ -370,21 +357,24 @@ class CollocationScheme(DiscretizationSchemeBase):
                 if self.solution_method.solution_class == 'direct':
                     u_t = f_u(t, self.vectorize(u[el]))
                 else:
-                    u_t = f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, p=p, theta=theta[el],
-                                                                       u_par=self.vectorize(u[el])))
+                    u_t = f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, p=p, theta=theta[el]))
 
                 if 'x' in time_dict[el] and t in time_dict[el]['x']:
                     results[el]['x'].append(x_t)
-                if 'y' in time_dict and t in time_dict[el]['y']:
+                if 'y' in time_dict[el] and t in time_dict[el]['y']:
                     results[el]['y'].append(y_t)
-                if 'u' in time_dict and t in time_dict[el]['u']:
+                if 'u' in time_dict[el] and t in time_dict[el]['u']:
                     results[el]['u'].append(u_t)
 
                 for f_name in functions:
                     if t in time_dict[el][f_name]:
                         f = functions[f_name][el]
-                        val = f(*self.model.put_values_in_all_sym_format(t=t, x=x_t, y=y_t, p=p, theta=theta[el],
-                                                                         u_par=self.vectorize(u[el])))
+                        if self.solution_method.solution_class == 'direct':
+                            val = f(*self.model.put_values_in_all_sym_format(t=t, x=x_t, y=y_t, p=p, theta=theta[el],
+                                                                             u_par=self.vectorize(u[el])))
+                        else:
+                            val = f(*self.model.put_values_in_all_sym_format(t=t, x=x_t, y=y_t, p=p, theta=theta[el]))
+
                         results[el][f_name].append(val)
         return results
 
@@ -395,7 +385,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             time_dict[el]['t_f'] = self.time_breakpoints[el + 1]
             time_dict[el]['x'] = self.time_interpolation_states[el]
             time_dict[el]['y'] = self.time_interpolation_algebraics[el]
-            time_dict[el]['u'] = self.time_interpolation_controls[el]
+            # time_dict[el]['u'] = self.time_interpolation_controls[el]
 
             time_dict[el]['ode'] = self.time_interpolation_states[el]
             time_dict[el]['alg'] = self.time_interpolation_algebraics[el]
@@ -435,10 +425,13 @@ class CollocationScheme(DiscretizationSchemeBase):
         else:
             y_init = repmat(DM.zeros(self.model.n_y), self.degree * self.finite_elements)
 
-        if self.problem.u_guess is not None:
-            u_init = repmat(self.problem.u_guess, self.degree_control * self.finite_elements)
+        if self.model.n_u_par > 0:
+            if self.problem.u_guess is not None:
+                u_init = repmat(self.problem.u_guess, self.degree_control * self.finite_elements)
+            else:
+                u_init = repmat(DM.zeros(self.model.n_u), self.degree_control * self.finite_elements)
         else:
-            u_init = repmat(DM.zeros(self.model.n_u), self.degree_control * self.finite_elements)
+            u_init = []
 
         eta_init = DM.zeros(self.problem.n_eta, 1)
         p_opt_init = DM.zeros(self.problem.n_p_opt, 1)
@@ -481,7 +474,10 @@ class CollocationScheme(DiscretizationSchemeBase):
             else:
                 u = DM.zeros(self.model.n_u)
 
-        u = vec(horzcat(*[u] * self.degree_control))
+        if self.model.n_u_par > 0:
+            u = vec(horzcat(*[u] * self.degree_control))
+        else:
+            u = []
 
         x_0 = self.problem.x_0
         y_guess = self.problem.y_guess
@@ -541,22 +537,35 @@ class CollocationScheme(DiscretizationSchemeBase):
         optimization_result.raw_solution_dict = raw_solution_dict
         optimization_result.raw_decision_variables = raw_solution_dict['x']
 
-        raw_data = raw_solution_dict['x']
-        x_interpolation_values, y_interpolation_values, u_interpolation_values \
-            = self.split_x_y_and_u(raw_data, all_subinterval=True)
-
         x_values, y_values, u_values, eta, p_opt, theta_opt = self.unpack_decision_variables(raw_solution_dict['x'])
+
+        optimization_result.p[self.problem.get_p_opt_indices()] = p_opt
+        for el in optimization_result.theta:
+            optimization_result.theta[el][self.problem.get_theta_opt_indices()] = theta_opt[el]
+
+        # if u_values are all empty, u is not based on the u_par directly
+        # evaluate u_expr to obtain the value of u
+        if len(u_values[0]) == 0:
+            time_dict = dict([(el, {'u': self.time_interpolation_controls[el],
+                                    't_0': self.time_breakpoints[el],
+                                    't_f': self.time_breakpoints[el + 1]}) for el in range(self.finite_elements)])
+
+            result = self.get_system_at_given_times(x_values, y_values, u_values,
+                                                    time_dict=time_dict,
+                                                    p=optimization_result.p, theta=optimization_result.theta)
+
+            u_values = [result[el]['u'] for el in range(self.finite_elements)]
 
         optimization_result.p_opt = p_opt
         optimization_result.eta = eta
         optimization_result.theta_opt = theta_opt
 
-        optimization_result.objective = raw_solution_dict['f']
+        optimization_result.objective_opt_problem = raw_solution_dict['f']
         optimization_result.constraint_values = raw_solution_dict['g']
 
-        optimization_result.x_data['values'] = x_interpolation_values
-        optimization_result.y_data['values'] = y_interpolation_values
-        optimization_result.u_data['values'] = u_interpolation_values
+        optimization_result.x_data['values'] = x_values
+        optimization_result.y_data['values'] = y_values
+        optimization_result.u_data['values'] = u_values
 
         optimization_result.x_data['time'] = self.time_interpolation_states
         optimization_result.y_data['time'] = self.time_interpolation_algebraics

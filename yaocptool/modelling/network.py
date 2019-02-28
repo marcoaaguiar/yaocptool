@@ -20,8 +20,8 @@ class Network:
             z_sym[0:1] in Node 1 is connected to z_sym[1:2] in Node 4
             connections_dict = {1: [{1:[0,1]}, {4:[1,2]}]}
 
-        :type nodes: object
-        :type connections_settings_dict: object
+        :param nodes:
+        :param connections_settings_dict:
         """
         self.nodes = nodes
         self.connections_settings_dict = connections_settings_dict
@@ -72,9 +72,9 @@ class Connection:
         """
             Connection class for Network systems
 
-        :type nodes: list
-        :type z_sym_indices_list: dict
-        :type connection_id: int
+        :param list nodes:
+        :param dict z_sym_indices_list:
+        :param int connection_id:
         """
         if z_sym_indices_list is None:
             z_sym_indices_list = {}

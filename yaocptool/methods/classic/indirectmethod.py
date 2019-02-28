@@ -6,21 +6,23 @@ Created on Fri Oct 21 16:39:52 2016
 """
 import warnings
 
-from casadi import inf, substitute, hessian, inv, fmin, fmax, is_equal, mtimes, DM, SX, dot, gradient, vertcat, jacobian
+from casadi import inf, substitute, hessian, inv, fmin, fmax, is_equal, mtimes, DM
 
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
 class IndirectMethod(SolutionMethodsBase):
-    def __init__(self, problem, **kwargs):
+    def __init__(self, problem, create_cost_state=False, **kwargs):
         """
         :param problem: yaocptool.modelling.ocp.OptimalControlProblem
+        :param bool create_cost_state: If True a cost state will be created to keep track of the dynamic cost.
         :param integrator_type: str
         :param solution_method: str
         :param degree: int
         :param discretization_scheme: str 'multiple-shooting' | 'collocation'
         """
-        self.hasCostState = False
+        self.create_cost_state = create_cost_state
+        self.has_cost_state = False
 
         super(IndirectMethod, self).__init__(problem, **kwargs)
 
@@ -29,9 +31,20 @@ class IndirectMethod(SolutionMethodsBase):
 
         self._check_bounds()
 
+    @property
+    def degree_control(self):
+        return self.degree
+
+    @degree_control.setter
+    def degree_control(self, val):
+        self.degree = val
+
     def prepare(self):
         super(IndirectMethod, self).prepare()
-        self.include_adjoint_states()
+        self.problem.create_adjoint_states()
+        if self.create_cost_state:
+            self.has_cost_state = True
+            self.problem.create_cost_state()
         u_opt = self.calculate_optimal_control()
         self.replace_with_optimal_control(u_opt)
 
@@ -54,27 +67,6 @@ class IndirectMethod(SolutionMethodsBase):
                 warnings.warn('Problem contains state constraints, they will be ignored')
                 self.problem.y_max[i] = inf
 
-    def include_adjoint_states(self):
-        lamb = SX.sym('lamb', self.model.n_x)
-        nu = SX.sym('nu', self.model.n_y)
-
-        self.problem.eta = SX.sym('eta', self.problem.n_h_final)
-
-        self.problem.H = self.problem.L + dot(lamb, self.model.ode) + dot(nu, self.model.alg)
-
-        l_dot = -gradient(self.problem.H, self.model.x_sym)
-        alg_eq = gradient(self.problem.H, self.model.y_sym)
-
-        self.problem.include_state(lamb, l_dot, suppress=True)
-        self.model.has_adjoint_variables = True
-
-        self.problem.include_algebraic(nu, alg_eq)
-
-        self.problem.h_final = vertcat(self.problem.h_final,
-                                       self.model.lamb_sym - gradient(self.problem.V, self.model.x_sys_sym)
-                                       - mtimes(jacobian(self.problem.h_final, self.model.x_sys_sym).T,
-                                                self.problem.eta))
-
     def calculate_optimal_control(self):
         dd_h_dudu, d_h_du = hessian(self.problem.H, self.model.u_sym)
         if is_equal(dd_h_dudu, DM.zeros(self.model.n_u, self.model.n_u)):
@@ -96,6 +88,4 @@ class IndirectMethod(SolutionMethodsBase):
         return u_opt
 
     def replace_with_optimal_control(self, u_opt):
-        self.problem.replace_variable(self.model.u_sym, u_opt, 'u')
-        self.model.u_func = u_opt
-        self.problem.remove_control(self.model.u_sym)
+        self.problem.parametrize_control(self.model.u_sym, u_opt)

@@ -5,11 +5,7 @@ Created on Thu Oct 20 13:54:58 2016
 @author: marco
 """
 
-# sys.path.append(r"C:\casadi-py27-np1.9.1-v3.0.0")
-# sys.path.append(r"C:\coinhsl-win32-openblas-2014.01.10")
-# if not 'casadi' in sys.modules:
-from casadi import vertcat, DM, \
-    diag, sqrt
+from casadi import DM, diag, sqrt
 from yaocptool.modelling import SystemModel, OptimalControlProblem
 
 
@@ -21,7 +17,7 @@ class Tank1(SystemModel):
         q_out = self.create_algebraic_variable('q_out')
         u = self.create_control('u')
 
-        q_in = 10
+        q_in = 0.2
 
         ode = [q_in - q_out]
         alg = [q_out - 0.1 * sqrt(h) * u]
@@ -36,9 +32,10 @@ class Tank2(SystemModel):
         h = self.create_state('h')
         q_out = self.create_algebraic_variable('q_out')
         q_in = self.create_control('q_in')
+        u = self.create_control('u')
 
         ode = [q_in - q_out]
-        alg = [q_out - 0.1 * sqrt(h)]
+        alg = [q_out - 0.1 * sqrt(h) * u]
 
         self.include_system_equations(ode=ode, alg=alg)
 
@@ -51,7 +48,7 @@ class TwoTanks(SystemModel):
         tank2 = Tank2()
 
         self.include_models([tank1, tank2])
-        self.connect(tank2.u, tank1.y)
+        self.connect(tank2.u[0], tank1.y[0])
 
 
 class StabilizationTank1(OptimalControlProblem):
@@ -92,12 +89,13 @@ class StabilizationTank2(OptimalControlProblem):
 
 
 class StabilizationTwoTanks(OptimalControlProblem):
-    def __init__(self, **kwargs):
+    def __init__(self, model, **kwargs):
+        self.cost = {'Q': diag([1, 1]), 'R': diag([.1]), 'Qv': diag([0]), 'x_ref': DM([.5, .5])}
+        OptimalControlProblem.__init__(self, model, obj=self.cost, **kwargs)
+
         self.t_f = 5.
         self.x_0 = [1, 1]
 
-        model = TwoTanks()
-
-        self.cost = {'Q': diag([1, 1]), 'R': diag([.1]), 'Qv': diag([0]), 'x_ref': DM([2, 2])}
-
-        OptimalControlProblem.__init__(self, model, obj=self.cost, **kwargs)
+        self.x_min = [0.0001, 0.0001]
+        self.u_max = [1, 1]
+        self.u_min = [.01, .011]

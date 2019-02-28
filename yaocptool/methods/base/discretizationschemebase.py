@@ -53,9 +53,11 @@ class DiscretizationSchemeBase:
     def time_breakpoints(self):
         return self.solution_method.time_breakpoints
 
-    def split_x_and_u(self, results_vector, all_subinterval=False):
-        x_values, _, u_values = self.split_x_y_and_u(results_vector, all_subinterval)
-        return x_values, u_values
+    @property
+    def time_interpolation_controls(self):
+        tau_list = [0.] if self.degree_control == 1 else self.solution_method.collocation_points(self.degree_control,
+                                                                                                 with_zero=False)
+        return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
 
     def vectorize(self, vector):
         if len(vector) > 0:
@@ -83,9 +85,6 @@ class DiscretizationSchemeBase:
             function_dict[el] = f_expr_el
         return function_dict
 
-    def split_x_y_and_u(self, v, all_subinterval=False):
-        raise NotImplementedError
-
     def discretize(self, x_0=None, p=None, theta=None, last_u=None):
         """Discretize the OCP, returning a Optimization Problem
 
@@ -97,7 +96,7 @@ class DiscretizationSchemeBase:
         """
         raise NotImplementedError
 
-    def create_nlp_symbolic_variables(self, nlp):
+    def _create_nlp_symbolic_variables(self, nlp):
         """
         Create the symbolic variables that will be used by the NLP problem
         :rtype: (DM, List[List[DM]], List(List(DM)), List(DM), DM, DM, DM)

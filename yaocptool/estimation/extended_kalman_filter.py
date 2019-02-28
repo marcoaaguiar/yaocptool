@@ -133,9 +133,9 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         x_aug_f = vertcat(x_pred, y_pred)
 
         # Covariance
-        all_sym_values = self.model.put_values_in_all_sym_format(t=self.t, x=x_pred, y=y_pred, u=u_k, p=self.p,
+        all_sym_values = self.model.put_values_in_all_sym_format(t=self.t, x=x_pred, y=y_pred, p=self.p,
                                                                  theta=self.theta)
-        all_sym_values = all_sym_values[:6]
+        all_sym_values = all_sym_values
 
         a_aug_matrix = self.a_aug_matrix_func(*all_sym_values)
         transition_matrix = expm(a_aug_matrix * self.t_s)
@@ -199,7 +199,7 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         aug_model.include_theta(self.model.theta_sym)
 
         # remove u_par (self.model.u_par model.u_par)
-        all_sym = list(self.model.all_sym[:-1])
+        all_sym = list(self.model.all_sym)
 
         # Mean
         a_func = Function('A_matrix', all_sym, [jacobian(self.model.ode, self.model.x_sym)])

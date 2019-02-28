@@ -6,7 +6,7 @@ Created on Mon Apr 03 11:15:03 2017
 """
 
 import copy
-from casadi import DM, repmat, vertcat, substitute, mtimes, is_equal, SX, inf
+from casadi import DM, repmat, vertcat, substitute, mtimes, is_equal, SX, inf, gradient, dot, jacobian
 from yaocptool import find_variables_indices_in_vector
 from yaocptool.modelling import SystemModel
 
@@ -58,6 +58,7 @@ class OptimalControlProblem:
         self._model = model  # type: SystemModel
         self.reset_working_model()
 
+        self.x_cost = None
         self.eta = SX()
         self.p_opt = vertcat([])
         self.theta_opt = vertcat([])
@@ -151,138 +152,9 @@ class OptimalControlProblem:
             has_element_diff_from_inf = (not is_equal(self.delta_u_min[i], -inf)) or has_element_diff_from_inf
         return has_element_diff_from_inf
 
-    def pre_solve_check(self):
-        self._fix_types()
-
-        # Check if Objective Function was provided
-        if self.L.is_zero() and self.V.is_zero() and self.S.is_zero() and not self.NULL_OBJ:
-            raise Exception('No objective, if this is intentional use problem.NULL_OBJ = True')
-
-        # Check if the objective function has the proper size
-        if not self.L.numel() == 1:
-            raise Exception(
-                'Size of dynamic cost (ocp.L) is different from 1, provided size is: {}'.format(self.L.numel()))
-        if not self.V.numel() == 1:
-            raise Exception(
-                'Size of final cost (ocp.V) is different from 1, provided size is: {}'.format(self.L.numel()))
-
-        # Check if the initial condition has the same number of elements of the model
-        attributes = ['x_0', 'x_max', 'y_max', 'u_max', 'x_min', 'y_min', 'u_min', 'delta_u_max',
-                      'delta_u_min']
-        attr_to_compare = ['n_x', 'n_x', 'n_y', 'n_u', 'n_x', 'n_y', 'n_u', 'n_u', 'n_u']
-        for i, attr in enumerate(attributes):
-            if not getattr(self, attr).numel() == getattr(self.model, attr_to_compare[i]):
-                raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
-                                '{} != {}'.format(attr, attr_to_compare[i], getattr(self, attr).numel(),
-                                                  getattr(self.model, attr_to_compare[i])))
-
-        # Check if the initial condition has the same number of elements of the model
-        attributes_ocp = ['p_opt_max', 'p_opt_min', 'theta_opt_min', 'theta_opt_max']
-        attr_to_compare_in_ocp = ['n_p_opt', 'n_p_opt', 'n_theta_opt', 'n_theta_opt']
-        for i, attr in enumerate(attributes_ocp):
-            if not getattr(self, attr).numel() == getattr(self, attr_to_compare_in_ocp[i]):
-                raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
-                                '{} != {}'.format(attr, attr_to_compare_in_ocp[i], getattr(self, attr).numel(),
-                                                  getattr(self, attr_to_compare_in_ocp[i])))
-
-        return True
-
-    def _fix_types(self):
-        """Transform attributes in casadi types.
-        """
-        self.x_max = vertcat(self.x_max)
-        self.y_max = vertcat(self.y_max)
-        self.u_max = vertcat(self.u_max)
-        self.delta_u_max = vertcat(self.delta_u_max)
-
-        self.x_min = vertcat(self.x_min)
-        self.y_min = vertcat(self.y_min)
-        self.u_min = vertcat(self.u_min)
-        self.delta_u_min = vertcat(self.delta_u_min)
-
-        self.h_final = vertcat(self.h_final)
-        self.h_initial = vertcat(self.h_initial)
-        self.h = vertcat(self.h)
-
-        self.g_eq = vertcat(self.g_eq)
-        self.g_ineq = vertcat(self.g_ineq)
-
-        self.x_0 = vertcat(self.x_0)
-        if self.y_guess is not None:
-            self.y_guess = vertcat(self.y_guess)
-        if self.u_guess is not None:
-            self.u_guess = vertcat(self.u_guess)
-
-    def reset_working_model(self):
-        self.model = copy.copy(self._model)
-
-    def create_cost_state(self):
-        """Transforms the integral \int_{t_0}^{t_f} L(...) dt into a dynamic cost state:
-        \dot{x}_c = L(...)
-        and include x_c(t_f) into the final time cost (V(t_f) += x_c(t_f)).
-
-        :rtype: object
-        """
-        x_c = SX.sym('x_c')
-        if self.positive_objective:
-            x_min = 0
-        else:
-            x_min = -inf
-
-        self.include_state(x_c, self.L, x_0=0, x_min=x_min)
-        self.model.x_c = x_c
-        self.L = DM(0)
-        self.V += x_c
-
-    def create_quadratic_cost(self, par_dict):
-        self.L = DM(0)
-        self.V = DM(0)
-        if 'x_ref' not in par_dict:
-            par_dict['x_ref'] = DM.zeros(self.model.n_x)
-        if 'u_ref' not in par_dict:
-            par_dict['u_ref'] = DM.zeros(self.model.n_u)
-
-        if 'Q' in par_dict:
-            self.L += mtimes(mtimes((self.model.x_sym - par_dict['x_ref']).T, par_dict['Q']),
-                             (self.model.x_sym - par_dict['x_ref']))
-
-        if 'R' in par_dict:
-            self.L += mtimes(mtimes((self.model.u_sym - par_dict['u_ref']).T, par_dict['R']),
-                             (self.model.u_sym - par_dict['u_ref']))
-
-        if 'Qv' in par_dict:
-            self.V += mtimes(mtimes((self.model.x_sym - par_dict['x_ref']).T, par_dict['Qv']),
-                             (self.model.x_sym - par_dict['x_ref']))
-
-        if 'Rv' in par_dict:
-            self.V += mtimes(mtimes(self.model.x_sym.T, par_dict['Rv']), self.model.x_sym)
-
-    def merge(self, problems):
-        for problem in problems:
-            self.L += problem.L
-            self.V += problem.V
-
-            self.x_max = vertcat(self.x_max, problem.x_max)
-            self.y_max = vertcat(self.y_max, problem.y_max)
-            self.u_max = vertcat(self.u_max, problem.u_max)
-
-            self.x_min = vertcat(self.x_min, problem.x_min)
-            self.y_min = vertcat(self.y_min, problem.y_min)
-            self.u_min = vertcat(self.u_min, problem.u_min)
-
-            self.h_initial = vertcat(self.h_initial, problem.h_initial)
-            self.h_final = vertcat(self.h_final, problem.h_final)
-            self.g_ineq = vertcat(self.g_ineq, problem.g_ineq)
-
-            self.model.merge([problem.model])
-
-    # ==============================================================================
-    # INCLUDE VARIABLES
-    # ==============================================================================
-
-    def create_state(self, name, size, ode=None, x_0=None, var_max=None, var_min=None, h_initial=None):
+    def create_state(self, name, size, ode=None, x_0=None, x_max=None, x_min=None, h_initial=None):
         var = SX.sym(name, size)
-        self.include_state(var, ode=ode, x_0=x_0, x_min=var_min, x_max=var_max, h_initial=h_initial)
+        self.include_state(var, ode=ode, x_0=x_0, x_min=x_min, x_max=x_max, h_initial=h_initial)
         return var
 
     def create_algebraic(self, name, size, alg=None, y_max=None, y_min=None, y_guess=None):
@@ -307,47 +179,26 @@ class OptimalControlProblem:
                                              new_theta_opt_max=new_theta_opt_max)
         return new_theta_opt
 
-    def set_parameter_as_optimization_parameter(self, new_p_opt, new_p_opt_min=None, new_p_opt_max=None):
-        if new_p_opt_min is None:
-            new_p_opt_min = -DM.inf(new_p_opt.numel())
-        if new_p_opt_max is None:
-            new_p_opt_max = DM.inf(new_p_opt.numel())
-        new_p_opt = vertcat(new_p_opt)
-        new_p_opt_min = vertcat(new_p_opt_min)
-        new_p_opt_max = vertcat(new_p_opt_max)
-        if not new_p_opt.numel() == new_p_opt_max.numel():
-            raise ValueError('Size of "new_p_opt" and "new_p_opt_max" differ. new_p_opt.numel()={} '
-                             'and new_p_opt_max.numel()={}'.format(new_p_opt.numel(), new_p_opt_max.numel()))
-        if not new_p_opt.numel() == new_p_opt_min.numel():
-            raise ValueError('Size of "new_p_opt" and "new_p_opt_min" differ. new_p_opt.numel()={} '
-                             'and new_p_opt_min.numel()={}'.format(new_p_opt.numel(), new_p_opt_min.numel()))
+    def create_adjoint_states(self):
+        lamb = SX.sym(self.name + '_lamb', self.model.n_x)
+        nu = SX.sym(self.name + '_nu', self.model.n_y)
 
-        self.p_opt = vertcat(self.p_opt, new_p_opt)
-        self.p_opt_min = vertcat(self.p_opt_min, new_p_opt_min)
-        self.p_opt_max = vertcat(self.p_opt_max, new_p_opt_max)
-        return new_p_opt
+        self.eta = SX.sym(self.name + '_eta', self.n_h_final)
 
-    def set_theta_as_optimization_theta(self, new_theta_opt, new_theta_opt_min=None, new_theta_opt_max=None):
-        if new_theta_opt_min is None:
-            new_theta_opt_min = -DM.inf(new_theta_opt.numel())
-        if new_theta_opt_max is None:
-            new_theta_opt_max = DM.inf(new_theta_opt.numel())
-        new_theta_opt = vertcat(new_theta_opt)
-        new_theta_opt_min = vertcat(new_theta_opt_min)
-        new_theta_opt_max = vertcat(new_theta_opt_max)
-        if not new_theta_opt.numel() == new_theta_opt_max.numel():
-            raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
-                             'and new_theta_opt_max.numel()={}'.format(new_theta_opt.numel(),
-                                                                       new_theta_opt_max.numel()))
-        if not new_theta_opt.numel() == new_theta_opt_min.numel():
-            raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
-                             'and new_theta_opt_min.numel()={}'.format(new_theta_opt.numel(),
-                                                                       new_theta_opt_min.numel()))
+        self.H = self.L + dot(lamb, self.model.ode) + dot(nu, self.model.alg)
 
-        self.theta_opt = vertcat(self.theta_opt, new_theta_opt)
-        self.theta_opt_min = vertcat(self.theta_opt_min, new_theta_opt_min)
-        self.theta_opt_max = vertcat(self.theta_opt_max, new_theta_opt_max)
-        return new_theta_opt
+        l_dot = -gradient(self.H, self.model.x_sym)
+        alg_eq = gradient(self.H, self.model.y_sym)
+
+        self.include_state(lamb, l_dot, suppress=True)
+        self.model.has_adjoint_variables = True
+
+        self.include_algebraic(nu, alg_eq)
+
+        self.h_final = vertcat(self.h_final,
+                               self.model.lamb_sym - gradient(self.V, self.model.x_sys_sym)
+                               - mtimes(jacobian(self.h_final, self.model.x_sys_sym).T,
+                                        self.eta))
 
     def include_system_equations(self, ode=None, alg=None):
         self.model.include_system_equations(ode=ode, alg=alg)
@@ -407,15 +258,21 @@ class OptimalControlProblem:
         self.y_min = vertcat(self.y_min, y_min)
         self.y_max = vertcat(self.y_max, y_max)
 
-    def include_control(self, var, u_min=None, u_max=None):
+    def include_control(self, var, u_min=None, u_max=None, delta_u_min=None, delta_u_max=None):
         if u_min is None:
             u_min = -DM.inf(var.numel())
         if u_max is None:
             u_max = DM.inf(var.numel())
+        if delta_u_min is None:
+            delta_u_min = -DM.inf(var.numel())
+        if delta_u_max is None:
+            delta_u_max = DM.inf(var.numel())
 
         self.model.include_control(var)
         self.u_min = vertcat(self.u_min, u_min)
         self.u_max = vertcat(self.u_max, u_max)
+        self.delta_u_min = vertcat(self.delta_u_min, delta_u_min)
+        self.delta_u_max = vertcat(self.delta_u_max, delta_u_max)
 
     def include_optimization_parameter(self, var, p_opt_min=None, p_opt_max=None):
         if p_opt_min is None:
@@ -444,6 +301,16 @@ class OptimalControlProblem:
         if isinstance(eq, list):
             eq = vertcat(*eq)
         self.h_initial = vertcat(self.h_initial, eq)
+
+    def include_final_time_equality(self, eq):
+        """Include final time equality. Equality that is evaluated at t=t_f.
+        The equality is concatenated to "h_final"
+
+        :param eq: final equality constraint
+        """
+        if isinstance(eq, list):
+            eq = vertcat(*eq)
+        self.h_final = vertcat(self.h_final, eq)
 
     def include_time_inequality(self, eq, when='default'):
         """Include time dependent inequality.
@@ -483,16 +350,6 @@ class OptimalControlProblem:
         self.g_eq = vertcat(self.g_eq, eq)
         self.time_g_eq.extend([when] * eq.numel())
 
-    def include_final_time_equality(self, eq):
-        """Include final time equality. Equality that is evaluated at t=t_f.
-        The equality is concatenated to "h_final"
-
-        :param eq: final equality constraint
-        """
-        if isinstance(eq, list):
-            eq = vertcat(*eq)
-        self.h_final = vertcat(self.h_final, eq)
-
     def include_equality(self, eq):
         """Include time independent equality.
         Equality is concatenated "h".
@@ -523,31 +380,218 @@ class OptimalControlProblem:
         for it in to_remove:
             self.u_max.remove([it], [])
             self.u_min.remove([it], [])
+            self.delta_u_max.remove([it], [])
+            self.delta_u_min.remove([it], [])
 
         self.model.remove_control(var)
 
     def replace_variable(self, original, replacement, variable_type='other'):
+        """
+            Replace 'original' by 'replacement' in the problem and model equations
+
+        :param original:
+        :param replacement:
+        :param variable_type:
+        """
         self.L = substitute(self.L, original, replacement)
         if variable_type == 'p':
+            # TODO: is this really necessary?
             self.V = substitute(self.V, original, replacement)
+        self.S = substitute(self.S, original, replacement)
 
+        # change its own variables
         self.h_initial = substitute(self.h_initial, original, replacement)
         self.h_final = substitute(self.h_final, original, replacement)
         self.g_ineq = substitute(self.g_ineq, original, replacement)
         self.g_eq = substitute(self.g_eq, original, replacement)
         self.h = substitute(self.h, original, replacement)
 
+        # apply to the model
         self.model.replace_variable(original, replacement)
+
+    def parametrize_control(self, u_sym, expr, u_par=None):
+        """
+            Parametrize the control variable
+
+        :param u_sym:
+        :param expr:
+        :param u_par:
+        """
+        # parametrize on the model
+        self.model.parametrize_control(u_sym=u_sym, expr=expr, u_par=u_par)
+
+        # replace the OCP equations
+        self.replace_variable(u_sym, expr)
+
+    def _fix_types(self):
+        """
+            Transform attributes in casadi types.
+        """
+        self.x_max = vertcat(self.x_max)
+        self.y_max = vertcat(self.y_max)
+        self.u_max = vertcat(self.u_max)
+        self.delta_u_max = vertcat(self.delta_u_max)
+
+        self.x_min = vertcat(self.x_min)
+        self.y_min = vertcat(self.y_min)
+        self.u_min = vertcat(self.u_min)
+        self.delta_u_min = vertcat(self.delta_u_min)
+
+        self.h_final = vertcat(self.h_final)
+        self.h_initial = vertcat(self.h_initial)
+        self.h = vertcat(self.h)
+
+        self.g_eq = vertcat(self.g_eq)
+        self.g_ineq = vertcat(self.g_ineq)
+
+        self.x_0 = vertcat(self.x_0)
+        if self.y_guess is not None:
+            self.y_guess = vertcat(self.y_guess)
+        if self.u_guess is not None:
+            self.u_guess = vertcat(self.u_guess)
+
+    def pre_solve_check(self):
+        self._fix_types()
+
+        # Check if Objective Function was provided
+        if self.L.is_zero() and self.V.is_zero() and self.S.is_zero() and not self.NULL_OBJ:
+            raise Exception('No objective, if this is intentional use problem.NULL_OBJ = True')
+
+        # Check if the objective function has the proper size
+        if not self.L.numel() == 1:
+            raise Exception(
+                'Size of dynamic cost (ocp.L) is different from 1, provided size is: {}'.format(self.L.numel()))
+        if not self.V.numel() == 1:
+            raise Exception(
+                'Size of final cost (ocp.V) is different from 1, provided size is: {}'.format(self.L.numel()))
+
+        # Check if the initial condition has the same number of elements of the model
+        attributes = ['x_0', 'x_max', 'y_max', 'u_max', 'x_min', 'y_min', 'u_min', 'delta_u_max',
+                      'delta_u_min']
+        attr_to_compare = ['n_x', 'n_x', 'n_y', 'n_u', 'n_x', 'n_y', 'n_u', 'n_u', 'n_u']
+        for i, attr in enumerate(attributes):
+            if not getattr(self, attr).numel() == getattr(self.model, attr_to_compare[i]):
+                raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
+                                '{} != {}'.format(attr, attr_to_compare[i], getattr(self, attr).numel(),
+                                                  getattr(self.model, attr_to_compare[i])))
+
+        # Check if the initial condition has the same number of elements of the model
+        attributes_ocp = ['p_opt_max', 'p_opt_min', 'theta_opt_min', 'theta_opt_max']
+        attr_to_compare_in_ocp = ['n_p_opt', 'n_p_opt', 'n_theta_opt', 'n_theta_opt']
+        for i, attr in enumerate(attributes_ocp):
+            if not getattr(self, attr).numel() == getattr(self, attr_to_compare_in_ocp[i]):
+                raise Exception('The size of "self.{}" is not equal to the size of "model.{}", '
+                                '{} != {}'.format(attr, attr_to_compare_in_ocp[i], getattr(self, attr).numel(),
+                                                  getattr(self, attr_to_compare_in_ocp[i])))
+
+        return True
+
+    def reset_working_model(self):
+        self.model = copy.copy(self._model)
+
+    def create_cost_state(self):
+        """Create and state with the dynamics equal to L from \int_{t_0}^{t_f} L(...) dt:
+        \dot{x}_c = L(...)
+
+        :rtype: casadi.SX
+        """
+        if self.positive_objective:
+            x_min = 0
+        else:
+            x_min = -inf
+
+        x_c = self.create_state('x_c', size=1, ode=self.L, x_0=0, x_min=x_min)
+        self.x_cost = x_c
+        return x_c
+
+    def create_quadratic_cost(self, par_dict):
+        self.L = DM(0)
+        self.V = DM(0)
+        if 'x_ref' not in par_dict:
+            par_dict['x_ref'] = DM.zeros(self.model.n_x)
+        if 'u_ref' not in par_dict:
+            par_dict['u_ref'] = DM.zeros(self.model.n_u)
+
+        if 'Q' in par_dict:
+            self.L += mtimes(mtimes((self.model.x_sym - par_dict['x_ref']).T, par_dict['Q']),
+                             (self.model.x_sym - par_dict['x_ref']))
+
+        if 'R' in par_dict:
+            self.L += mtimes(mtimes((self.model.u_sym - par_dict['u_ref']).T, par_dict['R']),
+                             (self.model.u_sym - par_dict['u_ref']))
+
+        if 'Qv' in par_dict:
+            self.V += mtimes(mtimes((self.model.x_sym - par_dict['x_ref']).T, par_dict['Qv']),
+                             (self.model.x_sym - par_dict['x_ref']))
+
+        if 'Rv' in par_dict:
+            self.V += mtimes(mtimes(self.model.x_sym.T, par_dict['Rv']), self.model.x_sym)
+
+    def merge(self, problems):
+        for problem in problems:
+            self.L += problem.L
+            self.V += problem.V
+
+            self.x_max = vertcat(self.x_max, problem.x_max)
+            self.y_max = vertcat(self.y_max, problem.y_max)
+            self.u_max = vertcat(self.u_max, problem.u_max)
+            self.delta_u_max = vertcat(self.u_max, problem.u_max)
+
+            self.x_min = vertcat(self.x_min, problem.x_min)
+            self.y_min = vertcat(self.y_min, problem.y_min)
+            self.u_min = vertcat(self.u_min, problem.u_min)
+            self.delta_u_min = vertcat(self.u_min, problem.u_min)
+
+            self.h_initial = vertcat(self.h_initial, problem.h_initial)
+            self.h_final = vertcat(self.h_final, problem.h_final)
+            self.g_ineq = vertcat(self.g_ineq, problem.g_ineq)
+
+            self.model.merge([problem.model])
+
+    def set_parameter_as_optimization_parameter(self, new_p_opt, new_p_opt_min=None, new_p_opt_max=None):
+        if new_p_opt_min is None:
+            new_p_opt_min = -DM.inf(new_p_opt.numel())
+        if new_p_opt_max is None:
+            new_p_opt_max = DM.inf(new_p_opt.numel())
+        new_p_opt = vertcat(new_p_opt)
+        new_p_opt_min = vertcat(new_p_opt_min)
+        new_p_opt_max = vertcat(new_p_opt_max)
+        if not new_p_opt.numel() == new_p_opt_max.numel():
+            raise ValueError('Size of "new_p_opt" and "new_p_opt_max" differ. new_p_opt.numel()={} '
+                             'and new_p_opt_max.numel()={}'.format(new_p_opt.numel(), new_p_opt_max.numel()))
+        if not new_p_opt.numel() == new_p_opt_min.numel():
+            raise ValueError('Size of "new_p_opt" and "new_p_opt_min" differ. new_p_opt.numel()={} '
+                             'and new_p_opt_min.numel()={}'.format(new_p_opt.numel(), new_p_opt_min.numel()))
+
+        self.p_opt = vertcat(self.p_opt, new_p_opt)
+        self.p_opt_min = vertcat(self.p_opt_min, new_p_opt_min)
+        self.p_opt_max = vertcat(self.p_opt_max, new_p_opt_max)
+        return new_p_opt
+
+    def set_theta_as_optimization_theta(self, new_theta_opt, new_theta_opt_min=None, new_theta_opt_max=None):
+        if new_theta_opt_min is None:
+            new_theta_opt_min = -DM.inf(new_theta_opt.numel())
+        if new_theta_opt_max is None:
+            new_theta_opt_max = DM.inf(new_theta_opt.numel())
+        new_theta_opt = vertcat(new_theta_opt)
+        new_theta_opt_min = vertcat(new_theta_opt_min)
+        new_theta_opt_max = vertcat(new_theta_opt_max)
+        if not new_theta_opt.numel() == new_theta_opt_max.numel():
+            raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
+                             'and new_theta_opt_max.numel()={}'.format(new_theta_opt.numel(),
+                                                                       new_theta_opt_max.numel()))
+        if not new_theta_opt.numel() == new_theta_opt_min.numel():
+            raise ValueError('Size of "new_theta_opt" and "new_theta_opt_max" differ. new_theta_opt.numel()={} '
+                             'and new_theta_opt_min.numel()={}'.format(new_theta_opt.numel(),
+                                                                       new_theta_opt_min.numel()))
+
+        self.theta_opt = vertcat(self.theta_opt, new_theta_opt)
+        self.theta_opt_min = vertcat(self.theta_opt_min, new_theta_opt_min)
+        self.theta_opt_max = vertcat(self.theta_opt_max, new_theta_opt_max)
+        return new_theta_opt
 
     def get_p_opt_indices(self):
         return find_variables_indices_in_vector(self.p_opt, self.model.p_sym)
 
     def get_theta_opt_indices(self):
         return find_variables_indices_in_vector(self.theta_opt, self.model.theta_sym)
-
-
-class SuperOCP(OptimalControlProblem):
-    def __init__(self, problems, **kwargs):
-        self.problems = problems
-        OptimalControlProblem.__init__(self, SystemModel(), NULL_OBJ=True, **kwargs)
-        self.merge(problems)

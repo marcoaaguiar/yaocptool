@@ -263,7 +263,7 @@ class PCEConverter:
 
         cost_list = []
         for s in range(self.n_samples):
-            model_s = self.socp.model.get_hardcopy()
+            model_s = self.socp.model.get_deepcopy()
 
             # cost of sample
             cost_ode = self._create_cost_ode_of_sample(model_s)

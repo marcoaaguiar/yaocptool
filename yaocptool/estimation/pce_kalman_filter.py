@@ -55,7 +55,7 @@ class PCEKalmanFilter(EstimatorAbstract):
             self.n_uncertain = self.x_mean.numel()
 
         if self.n_samples is None:
-            self.n_samples = factorial(self.n_uncertain + self.pc_order) / (
+            self.n_samples = factorial(self.n_uncertain + self.pc_order) // (
                     factorial(self.n_uncertain) * factorial(self.pc_order))
 
         if self.n_samples < self.n_pol_parameters:

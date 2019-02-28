@@ -14,4 +14,4 @@ solution_method = DirectMethod(problem, degree=3, degree_control=3,
                                nlpsol_opts=nlpsol_opts
                                )
 result = solution_method.solve()
-print(result.objective)
+print(result.objective_opt_problem)

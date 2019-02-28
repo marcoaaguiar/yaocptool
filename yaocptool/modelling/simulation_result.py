@@ -36,7 +36,7 @@ class SimulationResult(DataSet):
 
     @property
     def t(self):
-        return self.data['x']['times']
+        return self.data['x']['time']
 
     @property
     def n_x(self):

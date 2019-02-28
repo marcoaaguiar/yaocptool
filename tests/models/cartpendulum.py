@@ -8,8 +8,8 @@ Created on Thu Oct 20 13:54:58 2016
 from casadi import vertcat, DM, \
     cos, sin, pi, diag
 
-from yaocptool.modelling.system_model import SystemModel
 from yaocptool.modelling.ocp import OptimalControlProblem
+from yaocptool.modelling.system_model import SystemModel
 
 
 class PendulumCart(SystemModel):
@@ -24,12 +24,12 @@ class PendulumCart(SystemModel):
         # Mazenc
 
         g = 9.8
-        l = 9.8 / 9.
-        M = 1.
+        ell = 9.8 / 9.
+        big_m = 1.
         m = 1.
 
         for (k, v) in kwargs.items():
-            exec (k + ' = ' + repr(v))  # comentario
+            exec(k + ' = ' + repr(v))  # comentario
         #        m = 0.853
         #        M = 1
         #        l = 0.323
@@ -42,10 +42,11 @@ class PendulumCart(SystemModel):
 
         ode = vertcat(
             theta_dot,
-            ((m * g * cos(theta) * sin(theta) - m * l * theta_dot ** 2 * sin(theta) - u) / (
-                    M + m - m * cos(theta) ** 2) * cos(theta) + g * sin(theta)) / l,
+            ((m * g * cos(theta) * sin(theta) - m * ell * theta_dot ** 2 * sin(theta) - u) / (
+                    big_m + m - m * cos(theta) ** 2) * cos(theta) + g * sin(theta)) / ell,
             x_dot,
-            (m * g * cos(theta) * sin(theta) - m * l * theta_dot ** 2 * sin(theta) - u) / (M + m - m * cos(theta) ** 2)
+            (m * g * cos(theta) * sin(theta) - m * ell * theta_dot ** 2 * sin(theta) - u) / (
+                        big_m + m - m * cos(theta) ** 2)
         )
         self.include_system_equations(ode)
 

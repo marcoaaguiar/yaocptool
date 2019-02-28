@@ -7,9 +7,10 @@ Created on Thu Jun 09 10:50:48 2016
 import collections
 import copy
 
-from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec, horzcat
+from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec, horzcat, is_equal
 
-from yaocptool import remove_variables_from_vector, config
+from yaocptool import remove_variables_from_vector, config, find_variables_indices_in_vector, \
+    remove_variables_from_vector_by_indices
 from yaocptool.modelling import DAESystem, SimulationResult
 
 
@@ -60,7 +61,6 @@ class SystemModel:
                 self.x_sym = vertcat(self.x_sym, SX.sym(self.name + '_' + name, size))
         else:
             self.x_sym = SX.sym(self.name + '_x', n_x)
-            # raise Exception("You should provide an 'n_x' OR a 'x_names' dict.")
 
         self.x_0_sym = SX.sym(self.name + '_x_0_sym', self.n_x)
         self.y_sym = SX.sym(self.name + '_y', n_y)
@@ -71,8 +71,9 @@ class SystemModel:
         self.t_sym = SX.sym('t')
         self.tau_sym = SX.sym('tau')
 
+        self._parametrized_controls = []
         self.u_par = vertcat(self.u_sym)
-        self.u_func = vertcat(self.u_sym)
+        self.u_expr = vertcat(self.u_sym)
 
     @property
     def system_type(self):
@@ -102,6 +103,10 @@ class SystemModel:
         return self.theta_sym.numel()
 
     @property
+    def n_u_par(self):
+        return self.u_par.numel()
+
+    @property
     def x_sys_sym(self):
         if self.has_adjoint_variables:
             return self.x_sym[:int(self.n_x // 2)]
@@ -117,7 +122,7 @@ class SystemModel:
 
     @property
     def all_sym(self):
-        return self.t_sym, self.x_sym, self.y_sym, self.u_sym, self.p_sym, self.theta_sym, self.u_par
+        return self.t_sym, self.x_sym, self.y_sym, self.p_sym, self.theta_sym, self.u_par
 
     @property
     def x(self):
@@ -180,6 +185,11 @@ class SystemModel:
         return [self.theta_sym[i].name() for i in range(self.n_theta)]
 
     def __repr__(self):
+        """
+        Print model summary when using print(model)
+
+        :return:
+        """
         s = ''
         s += '=' * 20 + '\n'
         s += 'Model Name: {:>23}'.format(self.name)
@@ -312,6 +322,18 @@ class SystemModel:
         self.include_control(vec(new_u))
         return new_u
 
+    def create_input(self, name='u', size=1):
+        """
+        Same as the "model.create_control" function.
+        Create a new control/input variable name "name" and size "size".
+        Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
+        to be included in the control vector (model.u_sym).
+
+        :param name: str
+        :param size: int
+        :return:
+        """
+
     def create_parameter(self, name='p', size=1):
         """
         Create a new parameter name "name" and size "size"
@@ -342,14 +364,12 @@ class SystemModel:
         self.include_theta(vec(new_theta))
         return new_theta
 
-    # region INCLUDES
-
     def include_system_equations(self, ode=None, alg=None):
         """
             Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)
 
-        :param ode: (ordinary) differential equation
-        :param alg: algebraic equation
+        :param list|casadi.SX ode: (ordinary) differential equation
+        :param list|casadi.SX alg: algebraic equation
         """
         if ode is not None:
             if isinstance(ode, list):  # if ode is list or tuple
@@ -380,6 +400,7 @@ class SystemModel:
 
     def include_control(self, var):
         self.u_sym = vertcat(self.u_sym, var)
+        self.u_expr = vertcat(self.u_expr, var)
         self.u_par = vertcat(self.u_par, var)
 
     def include_parameter(self, p):
@@ -387,27 +408,6 @@ class SystemModel:
 
     def include_theta(self, theta):
         self.theta_sym = vertcat(self.theta_sym, theta)
-
-    def include_models(self, models):
-        if not isinstance(models, list):
-            models = [models]
-
-        for model in models:
-            # include variables
-            self.include_state(model.x_sym, x_0_sym=model.x_0_sym)
-            self.include_algebraic(model.y_sym)
-            self.include_control(model.u_sym)
-            self.include_parameter(model.p_sym)
-            self.include_theta(model.theta_sym)
-
-            # include equations
-            self.include_system_equations(ode=model.ode, alg=model.alg)
-
-            # replace model time variables with this model time variables
-            self.replace_variable(model.t_sym, self.t_sym)
-            self.replace_variable(model.tau_sym, self.tau_sym)
-
-    # endregion
 
     def replace_variable(self, original, replacement):
         """
@@ -430,9 +430,8 @@ class SystemModel:
             self.ode = substitute(self.ode, original, replacement)
             self.alg = substitute(self.alg, original, replacement)
 
-            # TODO: Im commenting the  following line because I think they are wrong
-            # self.u_par = substitute(self.u_par, original, replacement)
-            self.u_func = substitute(self.u_func, original, replacement)
+            self.u_par = substitute(self.u_par, original, replacement)
+            self.u_expr = substitute(self.u_expr, original, replacement)
 
     # region REMOVE
 
@@ -442,6 +441,8 @@ class SystemModel:
             self.alg = remove_variables_from_vector(eq, self.alg)
 
     def remove_control(self, var):
+        self.u_expr = remove_variables_from_vector_by_indices(self.u_expr,
+                                                              find_variables_indices_in_vector(var, self.u_sym))
         self.u_sym = remove_variables_from_vector(var, self.u_sym)
         self.u_par = remove_variables_from_vector(var, self.u_par)
 
@@ -451,7 +452,88 @@ class SystemModel:
     def remove_theta(self, var):
         self.theta_sym = remove_variables_from_vector(var, self.theta_sym)
 
-    # endregion
+    def is_parametrized(self, u=None):
+        """
+            Check if the model is para metrized if no parameter "u" is given, otherwise check if the control "u" is
+            parametrized
+
+        :param casadi.SX u:
+        :rtype bool:
+        """
+        # if no u is provided (checking if the model is parametrized)
+        if u is None:
+            return len(self._parametrized_controls) > 0
+
+        # if u is provided checking if the control is parametrized
+        u = vertcat(u)
+        if not u.numel() == 1:
+            raise ValueError('The parameter "u" is expected to be of size 1x1, given: {}x{}'.format(*u.shape))
+        if any([is_equal(u, parametrized_u) for parametrized_u in self._parametrized_controls]):
+            return True
+        return False
+
+    def parametrize_control(self, u_sym, expr, u_par=None):
+        """
+            Parametrize a control variables so it is a function of a set of parameters or other model variables.
+
+        :param list|casadi.SX u_sym:
+        :param list|casadi.SX expr:
+        :param list|casadi.SX u_par:
+        """
+        # input check
+        u_sym = vertcat(u_sym)
+        expr = vertcat(expr)
+
+        if not u_sym.numel() == expr.numel():
+            raise ValueError("Passed control and parametrization expression does not have same size. "
+                             "u_sym ({}) and expr ({})".format(u_sym.numel(), expr.numel()))
+
+        # Remove u from u_par if they are going to be parametrized
+        if u_par is not None:
+            self.u_par = vertcat(self.u_par, u_par)
+        else:
+            self.u_par = remove_variables_from_vector(u_sym, self.u_par)
+
+        # Update self.u_expr vector
+        for i in range(u_sym.numel()):
+            if self.is_parametrized(u_sym[i]):
+                raise ValueError('The control "{}" is already parametrized.'.format(u_sym[i]))
+            self._parametrized_controls.append(u_sym[i])
+
+        # Replace u by expr into the system
+        self.replace_variable(u_sym, expr)
+
+    def include_models(self, models):
+        """
+            Include model or list of models into this model. All the variables and functions will be included.
+
+        :param list|SystemModel models: models to be included
+        """
+        if not isinstance(models, list):
+            models = [models]
+
+        for model in models:
+            # include variables
+            self.include_state(model.x_sym, x_0_sym=model.x_0_sym)
+            self.include_algebraic(model.y_sym)
+            self.include_control(model.u_sym)
+            self.include_parameter(model.p_sym)
+            self.include_theta(model.theta_sym)
+
+            # include equations
+            self.include_system_equations(ode=model.ode, alg=model.alg)
+
+            # replace model time variables with this model time variables
+            self.replace_variable(model.t_sym, self.t_sym)
+            self.replace_variable(model.tau_sym, self.tau_sym)
+
+    def merge(self, models_list, connecting_equations=None):
+        if not isinstance(models_list, list):
+            models_list = [models_list]
+
+        self.include_models(models_list)
+
+        self.include_system_equations(alg=connecting_equations)
 
     def connect(self, u, y):
         """
@@ -464,38 +546,37 @@ class SystemModel:
         :param u: input variable
         :param y: algebraic variable
         """
+        # fix types
+        u = vertcat(u)
+        y = vertcat(y)
+
+        # check if same size
+        if not u.numel() == y.numel():
+            raise ValueError('Size of "u" and "y" are not the same, u={} and y={}'.format(u.numel(), y.numel()))
+
         self.include_system_equations(alg=[u - y])
         self.remove_control(u)
         self.include_algebraic(u)
 
-    # ==============================================================================
-    # region # Standard Function Call
-    # ==============================================================================
-
     @staticmethod
-    def put_values_in_all_sym_format(t=None, x=None, y=None, u=None, p=None, theta=None, u_par=None):
+    def put_values_in_all_sym_format(t=None, x=None, y=None, p=None, theta=None, u_par=None):
         if t is None:
             t = []
         if x is None:
             x = []
         if y is None:
             y = []
-        if u is None:
-            u = []
         if p is None:
             p = []
         if theta is None:
             theta = []
         if u_par is None:
             u_par = []
-        return t, x, y, u, p, theta, u_par
+        return t, x, y, p, theta, u_par
 
-    # endregion
-    # ==============================================================================
-
-    # ==============================================================================
-    # region # TIME
-    # ==============================================================================
+    @staticmethod
+    def all_sym_names():
+        return 't', 'x', 'y', 'p', 'theta', 'u_par'
 
     def convert_expr_from_time_to_tau(self, expr, t_k, t_kp1):
         t = self.t_sym
@@ -509,21 +590,6 @@ class SystemModel:
         h = t_kp1 - t_k
         return substitute(expr, tau, (t - t_k) / h)
 
-    # endregion
-    # ==============================================================================
-
-    # ==============================================================================
-    # region MERGE
-    # ==============================================================================
-
-    def merge(self, models_list, connecting_equations=None):
-        if not isinstance(models_list, list):
-            models_list = [models_list]
-
-        self.include_models(models_list)
-
-        self.include_system_equations(alg=connecting_equations)
-
     def get_copy(self):
         """
             Get a copy of this model
@@ -532,7 +598,7 @@ class SystemModel:
         """
         return copy.copy(self)
 
-    def get_hardcopy(self):
+    def get_deepcopy(self):
         """
             Get a hard copy of this model, differently from "get_copy", the variables of the original copy and the
             hard copy will not be the same, i.e. model.x_sym != copy.x_sym
@@ -559,7 +625,7 @@ class SystemModel:
             theta_copy = vertcat(*[model_copy.create_theta(self.theta_sym[i].name()) for i in range(self.n_theta)])
 
         model_copy.include_system_equations(ode=self.ode, alg=self.alg)
-        model_copy.u_func = self.u_func
+        model_copy.u_expr = self.u_expr
         model_copy.u_par = self.u_par
 
         model_copy.replace_variable(self.x_sym, x_copy)
@@ -571,13 +637,6 @@ class SystemModel:
         model_copy.has_adjoint_variables = self.has_adjoint_variables
 
         return model_copy
-
-    # endregion
-    # ==============================================================================
-
-    # ==============================================================================
-    # region SIMULATION
-    # ==============================================================================
 
     def get_dae_system(self):
         """ Return a DAESystem object with the model equations.
@@ -625,6 +684,8 @@ class SystemModel:
             integrator_options = {}
         if p is None:
             p = []
+        else:
+            p = vertcat(p)
 
         if u is None:  # if control is not given
             u = [[]] * len(t_f)
@@ -632,7 +693,8 @@ class SystemModel:
             u = [u] * len(t_f)
 
         if len(t_f) > 1 and not len(u) == len(t_f):
-            raise ValueError('If "t_f" is a list, the parameter "u" should be a list with same length of "t_f"')
+            raise ValueError('If "t_f" is a list, the parameter "u" should be a list with same length of "t_f".'
+                             'len(t_f) = {}'.format(len(t_f)))
 
         dae_sys = self.get_dae_system()
 
@@ -644,19 +706,23 @@ class SystemModel:
         t_k = t_0
         x_k = x_0
         y_k = y_0
+        f_u = Function('f_u', self.all_sym, [self.u_expr])
         for k, t_kpp in enumerate(t_f):
             p_k = vertcat(p, theta[k], u[k])
             result = dae_sys.simulate(x_0=x_k, t_f=t_kpp, t_0=t_k, p=p_k, y_0=y_k,
                                       integrator_type=integrator_type, integrator_options=integrator_options)
             t_x_list.append(t_kpp)
             t_yu_list.append(t_kpp)
-            x_list.append(result['xf'])
-            y_list.append(result['zf'])
-            u_list.append(u[k])
 
             t_k = t_kpp
             x_k = result['xf']
             y_k = result['zf']
+            u_k = f_u(*self.put_values_in_all_sym_format(t=t_kpp, x=x_k, y=y_k, p=p, theta=theta[k], u_par=u[k]))
+
+            x_list.append(result['xf'])
+            y_list.append(result['zf'])
+            u_list.append(u_k)
+
         t_x_list = horzcat(*t_x_list)
         t_yu_list = horzcat(*t_yu_list)
 
@@ -670,8 +736,6 @@ class SystemModel:
         simulation_result.insert_data('u', time=t_yu_list, value=horzcat(*u_list))
 
         return simulation_result
-
-    # endregion
 
     def find_algebraic_variable(self, x, u, guess=None, t=0.0, p=None, theta_value=None, rootfinder_options=None):
         if guess is None:

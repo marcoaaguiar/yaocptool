@@ -13,7 +13,7 @@ SOLVER_OPTIONS = {
         # 'ipopt.mumps_pivtol': 1e-8,
         # "ipopt.ma27_liw_init_factor": 15,
         # "ipopt.ma27_la_init_factor": 15,
-        # 'ipopt.max_iter': 1000,
+        # 'ipopt.max_iter': 20000,
         # 'expand': True,
         # 'jit': True,
         # "ipopt.hessian_approximation": "limited-memory",
@@ -24,6 +24,6 @@ SOLVER_OPTIONS = {
 }
 
 INTEGRATOR_OPTIONS = {
-    # 'abstol' : 1e-10, # abs. tolerance
-    # 'reltol' :  1e-10 # rel. tolerance
+    # 'abstol': 1e-10,  # abs. tolerance
+    # 'reltol': 1e-10  # rel. tolerance
 }
