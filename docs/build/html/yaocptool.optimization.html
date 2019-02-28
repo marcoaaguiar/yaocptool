@@ -22,7 +22,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="yaocptool.parallel package" href="yaocptool.parallel.html" />
@@ -190,12 +191,47 @@ bound, a vector of ub of size ‘size’ will be used as a upper bound. (default
 <dl class="method">
 <dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_problem_dict">
 <code class="descname">get_problem_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.get_problem_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_problem_dict" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the optimization problem in a Python dict form (CasADi standard).
+The dictionary keys are:
+f-&gt; objective function
+g-&gt; constraints
+x-&gt; variables
+p-&gt; parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">optimization problem as a dict</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_solver">
 <code class="descname">get_solver</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.get_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_solver" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_constraint">
+<code class="descname">include_constraint</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.include_constraint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_constraint" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Includes an inequality or inequality to the optimization problem, example:</dt>
+<dd>opt_problem.include_constraint(1 &lt;= x**2)
+opt_problem.include_constraint(x + y == 1)</dd>
+</dl>
+<p>Due to limitations on CasADi it does not allows for double inequalities (e.g.: 0 &lt;= x &lt;= 1)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>expr</strong> (<em>casadi.MX</em>) – equality or inequality expression</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_equality">
@@ -275,7 +311,7 @@ upper bound, a vector of ub  with size of the given variable will be used as a u
 
 <dl class="method">
 <dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.solve">
-<code class="descname">solve</code><span class="sig-paren">(</span><em>initial_guess=None</em>, <em>call_dict=None</em>, <em>p=None</em>, <em>lam_x=None</em>, <em>lam_g=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.solve" title="Permalink to this definition">¶</a></dt>
+<code class="descname">solve</code><span class="sig-paren">(</span><em>initial_guess</em>, <em>call_dict=None</em>, <em>p=None</em>, <em>lam_x=None</em>, <em>lam_g=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.solve" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />

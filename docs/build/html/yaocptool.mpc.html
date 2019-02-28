@@ -22,7 +22,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="yaocptool.optimization package" href="yaocptool.optimization.html" />
@@ -127,7 +128,8 @@
 <dl class="class">
 <dt id="yaocptool.mpc.mpc.MPC">
 <em class="property">class </em><code class="descclassname">yaocptool.mpc.mpc.</code><code class="descname">MPC</code><span class="sig-paren">(</span><em>plant</em>, <em>solution_method</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/mpc/mpc.html#MPC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.mpc.mpc.MPC" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.mpc.mpc.MPC.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>plant</em>, <em>solution_method</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/mpc/mpc.html#MPC.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.mpc.mpc.MPC.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Model Predictive control class. Requires a plant and a solution_method.</p>
@@ -142,8 +144,8 @@
 <li><strong>default_p</strong> (<em>DM</em>) – is a default parameter vector that will be used by the ‘solution_method’</li>
 <li><strong>default_theta</strong> (<em>DM</em>) – is a default theta parameter that will be used by the ‘solution_method’</li>
 <li><strong>include_cost_in_state_vector</strong> (<em>bool</em>) – Typically the optimal control problem has one extra state than the
-plant, the dynamic cost state. By setting this variable to True, it automatically include an zero the in state
-vector obtained from the estimator.</li>
+plant, the dynamic cost state. By setting this variable to True, it automatically include an zero
+the in state vector obtained from the estimator.</li>
 <li><strong>mean_as_parameter</strong> (<em>bool</em>) – The mean estimated by the Estimator as parameter of the OCP. It will be put in
 the end of parameter vector, before the covariance if covariance_as_parameter=True.</li>
 <li><strong>covariance_as_parameter</strong> (<em>bool</em>) – The covariance estimated by the Estimator as parameter of the OCP. It will
@@ -151,12 +153,17 @@ be put in the end of parameter vector.</li>
 <li><strong>mean_p_indices</strong> (<em>list</em>) – If mean_as_parameter=True, mean_p_indices is a list of tuples (pairs), where the
 first element of the tuple is the index in the mean vector and the second is the index in the p vector.</li>
 <li><strong>cov_p_indices</strong> (<em>list</em>) – If covariance_as_parameter=True, cov_p_indices is a list of tuples (pairs), where the
-first element of the tuple is the index in the vectorized covariance matrix and the second is the index in the p
-vector.</li>
-<li><strong>state_rearrangement_function</strong> (<em>function</em>) – A function that can be used to rearrange the initial condition in
-cases where the estimated states is not equal to initial condition vector of the OCP. For instance, when the OCP
-has multiple representations of the system. The provided function has the estimated stated as input and has to
-return a initial condition vector.</li>
+first element of the tuple is the index in the vectorized covariance matrix and the second is the index
+in the p vector.</li>
+<li><strong>state_rearrangement_function</strong> (<em>function</em>) – <p>A function that can be used to rearrange the initial condition in
+cases where the estimated states is not equal to initial condition vector of the OCP. For instance, when the</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>OCP has multiple representations of the system. The provided function has the estimated stated as input and</dt>
+<dd>has to return a initial condition vector.</dd>
+</dl>
+</div></blockquote>
+</li>
 </ul>
 </td>
 </tr>
@@ -291,10 +298,12 @@ return a initial condition vector.</li>
 <dl class="class">
 <dt id="yaocptool.mpc.plant.Plant">
 <em class="property">class </em><code class="descclassname">yaocptool.mpc.plant.</code><code class="descname">Plant</code><a class="reference internal" href="_modules/yaocptool/mpc/plant.html#Plant"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.mpc.plant.Plant" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.mpc.plant.Plant.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/mpc/plant.html#Plant.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.mpc.plant.Plant.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="yaocptool.mpc.plant.Plant.get_measurement">

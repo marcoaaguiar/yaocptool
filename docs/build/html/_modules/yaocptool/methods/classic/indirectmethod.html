@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
   
@@ -86,22 +87,25 @@
 
 <span class="sd">@author: marco</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">inf</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">inv</span><span class="p">,</span> <span class="n">fmin</span><span class="p">,</span> <span class="n">fmax</span><span class="p">,</span> <span class="n">is_equal</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">DM</span><span class="p">,</span> <span class="n">SX</span><span class="p">,</span> <span class="n">dot</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">jacobian</span>
-<span class="kn">from</span> <span class="nn">yaocptool.methods.base.solutionmethodsbase</span> <span class="k">import</span> <span class="n">SolutionMethodsBase</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
-<span class="kn">import</span> <span class="nn">yaocptool.modelling</span>
+
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">inf</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">hessian</span><span class="p">,</span> <span class="n">inv</span><span class="p">,</span> <span class="n">fmin</span><span class="p">,</span> <span class="n">fmax</span><span class="p">,</span> <span class="n">is_equal</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">DM</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool.methods.base.solutionmethodsbase</span> <span class="k">import</span> <span class="n">SolutionMethodsBase</span>
 
 
 <div class="viewcode-block" id="IndirectMethod"><a class="viewcode-back" href="../../../../yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod">[docs]</a><span class="k">class</span> <span class="nc">IndirectMethod</span><span class="p">(</span><span class="n">SolutionMethodsBase</span><span class="p">):</span>
-<div class="viewcode-block" id="IndirectMethod.__init__"><a class="viewcode-back" href="../../../../yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="IndirectMethod.__init__"><a class="viewcode-back" href="../../../../yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="n">create_cost_state</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :param problem: yaocptool.modelling.ocp.OptimalControlProblem</span>
+<span class="sd">        :param bool create_cost_state: If True a cost state will be created to keep track of the dynamic cost.</span>
 <span class="sd">        :param integrator_type: str</span>
 <span class="sd">        :param solution_method: str</span>
 <span class="sd">        :param degree: int</span>
 <span class="sd">        :param discretization_scheme: str &#39;multiple-shooting&#39; | &#39;collocation&#39;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">hasCostState</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create_cost_state</span> <span class="o">=</span> <span class="n">create_cost_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_cost_state</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">IndirectMethod</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -110,9 +114,20 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_bounds</span><span class="p">()</span></div>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">degree_control</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree</span>
+
+    <span class="nd">@degree_control</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">degree_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degree</span> <span class="o">=</span> <span class="n">val</span>
+
 <div class="viewcode-block" id="IndirectMethod.prepare"><a class="viewcode-back" href="../../../../yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">IndirectMethod</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">include_adjoint_states</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">create_adjoint_states</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_cost_state</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">has_cost_state</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">create_cost_state</span><span class="p">()</span>
         <span class="n">u_opt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_optimal_control</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">replace_with_optimal_control</span><span class="p">(</span><span class="n">u_opt</span><span class="p">)</span></div>
 
@@ -135,27 +150,6 @@
                 <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Problem contains state constraints, they will be ignored&#39;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">y_max</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">inf</span>
 
-<div class="viewcode-block" id="IndirectMethod.include_adjoint_states"><a class="viewcode-back" href="../../../../yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod.include_adjoint_states">[docs]</a>    <span class="k">def</span> <span class="nf">include_adjoint_states</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">lamb</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;lamb&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
-        <span class="n">nu</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;nu&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">eta</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;eta&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_h_final</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">H</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">L</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">lamb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">ode</span><span class="p">)</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
-
-        <span class="n">l_dot</span> <span class="o">=</span> <span class="o">-</span><span class="n">gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">)</span>
-        <span class="n">alg_eq</span> <span class="o">=</span> <span class="n">gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">lamb</span><span class="p">,</span> <span class="n">l_dot</span><span class="p">,</span> <span class="n">suppress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">has_adjoint_variables</span> <span class="o">=</span> <span class="kc">True</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="n">alg_eq</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">h_final</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">h_final</span><span class="p">,</span>
-                                       <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">lamb_sym</span> <span class="o">-</span> <span class="n">gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sys_sym</span><span class="p">)</span>
-                                       <span class="o">-</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">h_final</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sys_sym</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
-                                                <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">eta</span><span class="p">))</span></div>
-
 <div class="viewcode-block" id="IndirectMethod.calculate_optimal_control"><a class="viewcode-back" href="../../../../yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod.calculate_optimal_control">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_optimal_control</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">dd_h_dudu</span><span class="p">,</span> <span class="n">d_h_du</span> <span class="o">=</span> <span class="n">hessian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">is_equal</span><span class="p">(</span><span class="n">dd_h_dudu</span><span class="p">,</span> <span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">)):</span>
@@ -177,9 +171,7 @@
         <span class="k">return</span> <span class="n">u_opt</span></div>
 
 <div class="viewcode-block" id="IndirectMethod.replace_with_optimal_control"><a class="viewcode-back" href="../../../../yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod.replace_with_optimal_control">[docs]</a>    <span class="k">def</span> <span class="nf">replace_with_optimal_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_opt</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_sym</span><span class="p">,</span> <span class="n">u_opt</span><span class="p">,</span> <span class="s1">&#39;u&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_func</span> <span class="o">=</span> <span class="n">u_opt</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">remove_control</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">parametrize_control</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_sym</span><span class="p">,</span> <span class="n">u_opt</span><span class="p">)</span></div></div>
 </pre></div>
 
           </div>

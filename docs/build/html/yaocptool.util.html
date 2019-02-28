@@ -22,7 +22,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="yaocptool.stochastic package" href="yaocptool.stochastic.html" />
@@ -161,7 +162,60 @@ THIS ONLY SUPPORT NUMERIC MATRICES AND MX VARIABLES, DOES NOT SUPPORT SX SYMBOLI
 <dl class="function">
 <dt id="yaocptool.util.util.find_variables_indices_in_vector">
 <code class="descclassname">yaocptool.util.util.</code><code class="descname">find_variables_indices_in_vector</code><span class="sig-paren">(</span><em>var</em>, <em>vector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#find_variables_indices_in_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.find_variables_indices_in_vector" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><blockquote>
+<div>Given symbolic variables return the indices of the variables in a vector</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>var</strong> (<em>casadi.SX|casadi.MX</em>) – </li>
+<li><strong>vector</strong> (<em>casadi.SX|casadi.MX</em>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.is_equality">
+<code class="descclassname">yaocptool.util.util.</code><code class="descname">is_equality</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#is_equality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.is_equality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return true if an expression is an equality (e.g.: x == 2)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>expr</strong> (<em>MX|SX</em>) – symbolic expression</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if ‘expr’ is an inequality, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.is_inequality">
+<code class="descclassname">yaocptool.util.util.</code><code class="descname">is_inequality</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#is_inequality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.is_inequality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return true if an expression is an inequality (e.g.: x &lt; 1, x &lt;= 2)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>expr</strong> (<em>MX|SX</em>) – symbolic expression</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if ‘expr’ is an inequality, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="yaocptool.util.util.join_thetas">

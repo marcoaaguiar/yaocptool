@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   
@@ -215,9 +216,9 @@
         <span class="n">x_aug_f</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x_pred</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
 
         <span class="c1"># Covariance</span>
-        <span class="n">all_sym_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">put_values_in_all_sym_format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x_pred</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="n">u_k</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span>
+        <span class="n">all_sym_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">put_values_in_all_sym_format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x_pred</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span>
                                                                  <span class="n">theta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
-        <span class="n">all_sym_values</span> <span class="o">=</span> <span class="n">all_sym_values</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span>
+        <span class="n">all_sym_values</span> <span class="o">=</span> <span class="n">all_sym_values</span>
 
         <span class="n">a_aug_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_aug_matrix_func</span><span class="p">(</span><span class="o">*</span><span class="n">all_sym_values</span><span class="p">)</span>
         <span class="n">transition_matrix</span> <span class="o">=</span> <span class="n">expm</span><span class="p">(</span><span class="n">a_aug_matrix</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_s</span><span class="p">)</span>
@@ -281,7 +282,7 @@
         <span class="n">aug_model</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">)</span>
 
         <span class="c1"># remove u_par (self.model.u_par model.u_par)</span>
-        <span class="n">all_sym</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">all_sym</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">all_sym</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">all_sym</span><span class="p">)</span>
 
         <span class="c1"># Mean</span>
         <span class="n">a_func</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;A_matrix&#39;</span><span class="p">,</span> <span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">)])</span>

@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   
@@ -88,16 +89,14 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
 
-<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">SX</span><span class="p">,</span> <span class="n">inf</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">dot</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">Function</span><span class="p">,</span> <span class="n">MX</span><span class="p">,</span> <span class="n">horzcat</span>
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">SX</span><span class="p">,</span> <span class="n">inf</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">dot</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">Function</span><span class="p">,</span> <span class="n">MX</span><span class="p">,</span> <span class="n">horzcat</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">repmat</span><span class="p">,</span> <span class="n">mmax</span><span class="p">,</span> <span class="n">fabs</span><span class="p">,</span> <span class="n">substitute</span>
 
-<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="k">import</span> <span class="n">find_variables_indices_in_vector</span><span class="p">,</span> <span class="n">remove_variables_from_vector</span><span class="p">,</span> <span class="n">join_thetas</span><span class="p">,</span> <span class="n">create_constant_theta</span>
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="k">import</span> <span class="n">find_variables_indices_in_vector</span><span class="p">,</span> <span class="n">join_thetas</span><span class="p">,</span> <span class="n">create_constant_theta</span>
 <span class="kn">from</span> <span class="nn">yaocptool.methods.base.solutionmethodsbase</span> <span class="k">import</span> <span class="n">SolutionMethodsBase</span>
 
-
-<span class="c1"># TODO: Fix PEP 8</span>
-<span class="c1"># TODO: update_nu calculate error</span>
 
 <div class="viewcode-block" id="AugmentedLagrangian"><a class="viewcode-back" href="../../../yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian">[docs]</a><span class="k">class</span> <span class="nc">AugmentedLagrangian</span><span class="p">(</span><span class="n">SolutionMethodsBase</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -112,23 +111,39 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="AugmentedLagrangian.__init__"><a class="viewcode-back" href="../../../yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="n">ocp_solver_class</span><span class="p">,</span> <span class="n">solver_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Augmented Lagrange Method (Aguiar 2016)</span>
+
+<span class="sd">        :param yaocptool.modelling.OptimalControlProblem: Optimal Control Problem</span>
+<span class="sd">        :param yaocptool.methods.SolutionMethodsBase ocp_solver_class: Class of Solution Method (Direct/Indirect Method)</span>
+<span class="sd">        :param solver_options: Options for the Solution Method class given</span>
+<span class="sd">        :param relax_algebraic_index: Index for the algebraic equations that will be relaxed, if not given all the</span>
+<span class="sd">        algebraic equations will be relaxed</span>
+<span class="sd">        :param relax_algebraic_var_index: Index for the algebraic variables that will be relaxed, if not given it will</span>
+<span class="sd">        be assumed the same as the &#39;relax_algebraic_index&#39;</span>
+<span class="sd">        :param relax_state_bounds: This relax the states bounds and put then in the objective, via an algebraic variable</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">solver_options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">solver_options</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">degree</span> <span class="o">=</span> <span class="mi">4</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">degree_control</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degree</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degree_control</span> <span class="o">=</span> <span class="mi">3</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_relax</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nu_sym</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;mu&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nu_par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">([])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nu_pol</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">([])</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mu_0</span> <span class="o">=</span> <span class="mf">10.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="mf">4.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mu_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">**</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">**</span> <span class="mi">10</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nu_tilde</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_violation_error</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alg_violation</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">new_nu_func</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: Function</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-4</span>
@@ -138,10 +153,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: SolutionMethodsBase</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">solver_initialized</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">relax_external_algebraic</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">relax_connecting_equations</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_var_index</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">relax_state_bounds</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">relaxed_alg</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_parametrize</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_initialize</span> <span class="o">=</span> <span class="kc">False</span>
@@ -153,15 +169,29 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_0</span>
 
         <span class="c1"># RELAXATION</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_relax_algebraic_equations</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">create_parameter</span><span class="p">(</span><span class="s1">&#39;mu&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_var_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_var_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_relax_algebraic_equations</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">relax_state_bounds</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_relax_states_constraints</span><span class="p">()</span>
 
-        <span class="c1"># CREATE THE OCP SOLVER</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_initialize</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_parametrize</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_parametrize_nu</span><span class="p">()</span>
 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_nu_initial_guess</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg_violation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">alg_violation</span> <span class="o">=</span> <span class="n">create_constant_theta</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_relax</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span>
+                                                           <span class="n">finite_elements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)</span>
+
+        <span class="c1"># make sure that the ocp_solver and the augmented_lagrangian has the same options</span>
         <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;degree&#39;</span><span class="p">,</span> <span class="s1">&#39;finite_elements&#39;</span><span class="p">,</span> <span class="s1">&#39;degree_control&#39;</span><span class="p">,</span> <span class="s1">&#39;integrator_type&#39;</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">solver_options</span> <span class="ow">and</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="n">solver_options</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">!=</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">attr</span><span class="p">]:</span>
                 <span class="n">exc_mess</span> <span class="o">=</span> <span class="s2">&quot;Trying to pass attribute &#39;</span><span class="si">{}</span><span class="s2">&#39; for &#39;</span><span class="si">{}</span><span class="s2">&#39; and &#39;</span><span class="si">{}</span><span class="s2">&#39; that are not equal: </span><span class="si">{}</span><span class="s2"> != </span><span class="si">{}</span><span class="s2">&quot;</span>
@@ -174,16 +204,8 @@
 
         <span class="n">solver_options</span><span class="p">[</span><span class="s1">&#39;integrator_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">integrator_type</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_initialize</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_parametrize</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_parametrize_nu</span><span class="p">()</span>
-
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">nu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_nu_initial_guess</span><span class="p">()</span>
-
-            <span class="c1"># Initialize OCP solver</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span> <span class="o">=</span> <span class="n">ocp_solver_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_options</span><span class="p">)</span>  <span class="c1"># type: SolutionMethodsBase</span></div>
+        <span class="c1"># Initialize OCP solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span> <span class="o">=</span> <span class="n">ocp_solver_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_options</span><span class="p">)</span>  <span class="c1"># type: SolutionMethodsBase</span></div>
 
     <span class="c1"># region # PROPERTY</span>
     <span class="nd">@property</span>
@@ -191,16 +213,12 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">relaxed_alg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">relaxed_alg</span>
+    <span class="k">def</span> <span class="nf">discretizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">discretizer</span>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">split_x_y_and_u</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">split_x_y_and_u</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">split_x_and_u</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">split_x_and_u</span>
+    <span class="nd">@discretizer</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">discretizer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">pass</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">time_interpolation_nu</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -213,49 +231,31 @@
     <span class="c1"># ==============================================================================</span>
     <span class="c1"># region RELAX</span>
 
-    <span class="k">def</span> <span class="nf">_save_relaxed_equation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alg</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">relaxed_alg</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relaxed_alg</span><span class="p">,</span> <span class="n">alg</span><span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">_relax_algebraic_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">nu_alg</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;AL_nu_alg&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="o">.</span><span class="n">size1</span><span class="p">())</span>
+        <span class="c1"># get the equations to relax</span>
+        <span class="n">alg_relax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span><span class="p">]</span>
+        <span class="n">n_alg_relax</span> <span class="o">=</span> <span class="n">alg_relax</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_relax</span> <span class="o">+=</span> <span class="n">n_alg_relax</span>
+
+        <span class="c1"># create a symbolic nu</span>
+        <span class="n">nu_alg</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;AL_nu_alg&#39;</span><span class="p">,</span> <span class="n">n_alg_relax</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nu_sym</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu_sym</span><span class="p">,</span> <span class="n">nu_alg</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">L</span> <span class="o">+=</span> <span class="n">dot</span><span class="p">(</span><span class="n">nu_alg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span> <span class="o">/</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="o">.</span><span class="n">size1</span><span class="p">()</span>
+        <span class="c1"># save the relaxed algebraic equations for computing the update later</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relaxed_alg</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relaxed_alg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span><span class="p">])</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_save_relaxed_equation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">,</span> <span class="n">u_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">y_max</span><span class="p">,</span> <span class="n">u_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">y_min</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">remove_algebraic</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
+        <span class="c1"># include the penalization term in the objective</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">L</span> <span class="o">+=</span> <span class="p">(</span><span class="n">mtimes</span><span class="p">(</span><span class="n">nu_alg</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span><span class="p">])</span>
+                           <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span> <span class="o">/</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">mtimes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                                                       <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span><span class="p">]))</span>
 
-    <span class="k">def</span> <span class="nf">_relax_external_algebraic_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">nu_alg</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;AL_nu_alg_z&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg_z</span><span class="o">.</span><span class="n">size1</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nu_sym</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu_sym</span><span class="p">,</span> <span class="n">nu_alg</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">L</span> <span class="o">+=</span> <span class="n">dot</span><span class="p">(</span><span class="n">nu_alg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg_z</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span> <span class="o">/</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg_z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg_z</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg_z</span><span class="o">.</span><span class="n">size1</span><span class="p">()</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_save_relaxed_equation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg_z</span><span class="p">)</span>
-        <span class="n">z_without_con_z</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con_z</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">z_sym</span><span class="p">))</span>
-        <span class="n">z_without_con_z_indices</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">z_without_con_z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">z_sym</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">z_without_con_z</span><span class="p">,</span> <span class="n">u_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">z_max</span><span class="p">[</span><span class="n">z_without_con_z_indices</span><span class="p">],</span>
-                                     <span class="n">u_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">z_min</span><span class="p">[</span><span class="n">z_without_con_z_indices</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">remove_external_algebraic</span><span class="p">(</span><span class="n">z_without_con_z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg_z</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_relax_connecting_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">nu_alg</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;AL_nu_alg_con&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">size1</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nu_sym</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu_sym</span><span class="p">,</span> <span class="n">nu_alg</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">L</span> <span class="o">+=</span> <span class="n">dot</span><span class="p">(</span><span class="n">nu_alg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span> <span class="o">/</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con</span><span class="o">.</span><span class="n">size1</span><span class="p">()</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_save_relaxed_equation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con</span><span class="p">)</span>
-        <span class="n">con_z_ind</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con_z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">z_sym</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con_z</span><span class="p">,</span> <span class="n">u_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">z_max</span><span class="p">[</span><span class="n">con_z_ind</span><span class="p">],</span>
-                                     <span class="n">u_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">z_min</span><span class="p">[</span><span class="n">con_z_ind</span><span class="p">])</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">remove_connecting_equations</span><span class="p">(</span><span class="n">var</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con_z</span><span class="p">,</span> <span class="n">eq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">con</span><span class="p">)</span>
+        <span class="c1"># include the relaxed y_sym as controls</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_var_index</span><span class="p">],</span>
+                                     <span class="n">u_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">y_max</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_var_index</span><span class="p">],</span>
+                                     <span class="n">u_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">y_min</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_var_index</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">remove_algebraic</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_var_index</span><span class="p">],</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_algebraic_index</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">_relax_states_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">):</span>
@@ -268,11 +268,11 @@
                 <span class="n">new_alg</span> <span class="o">=</span> <span class="n">y_x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">L</span> <span class="o">+=</span> <span class="n">dot</span><span class="p">(</span><span class="n">nu_y_x</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">new_alg</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">dot</span><span class="p">(</span><span class="n">new_alg</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">new_alg</span><span class="p">)</span>
 
-                <span class="bp">self</span><span class="o">.</span><span class="n">_save_relaxed_equation</span><span class="p">(</span><span class="n">new_alg</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">relaxed_alg</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relaxed_alg</span><span class="p">,</span> <span class="n">new_alg</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">y_x</span><span class="p">,</span> <span class="n">u_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">x_min</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">u_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">x_max</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">x_max</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">inf</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">x_min</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">inf</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">n_relax</span> <span class="o">+=</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">_relax_inequalities</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Not implemented&#39;</span><span class="p">)</span>
@@ -287,7 +287,7 @@
         <span class="k">if</span> <span class="n">nu_sym</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">nu_sym</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu_sym</span>
         <span class="k">if</span> <span class="n">n_r</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">n_r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span>
+            <span class="n">n_r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_relax</span>
 
         <span class="n">nu_pol</span><span class="p">,</span> <span class="n">nu_par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_variable_polynomial_approximation</span><span class="p">(</span><span class="n">n_r</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span> <span class="s1">&#39;nu&#39;</span><span class="p">)</span>
 
@@ -301,19 +301,18 @@
 
 <div class="viewcode-block" id="AugmentedLagrangian.create_nu_initial_guess"><a class="viewcode-back" href="../../../yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.create_nu_initial_guess">[docs]</a>    <span class="k">def</span> <span class="nf">create_nu_initial_guess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_r</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">n_r</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">n_r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span>
+            <span class="n">n_r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_relax</span>
         <span class="n">nu</span> <span class="o">=</span> <span class="n">create_constant_theta</span><span class="p">(</span><span class="n">constant</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="n">n_r</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span> <span class="n">finite_elements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">nu</span></div>
 
     <span class="k">def</span> <span class="nf">_create_nu_update_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">v</span><span class="p">,</span> <span class="n">x_var</span><span class="p">,</span> <span class="n">y_var</span><span class="p">,</span> <span class="n">u_var</span><span class="p">,</span> <span class="n">eta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">discretizer</span><span class="o">.</span><span class="n">create_nlp_symbolic_variables</span><span class="p">()</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt_problem</span><span class="o">.</span><span class="n">x</span>
+        <span class="n">x_var</span><span class="p">,</span> <span class="n">y_var</span><span class="p">,</span> <span class="n">u_var</span><span class="p">,</span> <span class="n">eta</span><span class="p">,</span> <span class="n">p_opt</span><span class="p">,</span> <span class="n">theta_opt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">discretizer</span><span class="o">.</span><span class="n">unpack_decision_variables</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
         <span class="n">par</span> <span class="o">=</span> <span class="n">MX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;par&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_p</span><span class="p">)</span>
         <span class="n">theta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">vec</span><span class="p">(</span><span class="n">MX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;theta_&#39;</span> <span class="o">+</span> <span class="nb">repr</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_theta</span><span class="p">)))</span>
                       <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
-        <span class="n">theta_var</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">theta</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">theta_var</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
 
-        <span class="n">new_nu</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">error</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">time_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">):</span>
@@ -324,9 +323,12 @@
 
         <span class="n">functions</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">):</span>
-            <span class="n">func_rel_alg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">convert_expr_from_tau_to_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relaxed_alg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span><span class="p">[</span><span class="n">el</span><span class="p">],</span>
-                                                                    <span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span><span class="p">[</span><span class="n">el</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
-            <span class="n">nu_time_dependent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">convert_expr_from_tau_to_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu_pol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span><span class="p">[</span><span class="n">el</span><span class="p">],</span>
+            <span class="n">func_rel_alg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">convert_expr_from_tau_to_time</span><span class="p">(</span>
+                <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relaxed_alg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_expr</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span><span class="p">[</span><span class="n">el</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span><span class="p">[</span><span class="n">el</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="n">nu_time_dependent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">convert_expr_from_tau_to_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu_pol</span><span class="p">,</span>
+                                                                         <span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span><span class="p">[</span><span class="n">el</span><span class="p">],</span>
                                                                          <span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span><span class="p">[</span><span class="n">el</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
 
             <span class="n">f_nu</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;f_nu&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="n">nu_time_dependent</span><span class="p">])</span>
@@ -338,35 +340,48 @@
         <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">discretizer</span><span class="o">.</span><span class="n">get_system_at_given_times</span><span class="p">(</span><span class="n">x_var</span><span class="p">,</span> <span class="n">y_var</span><span class="p">,</span> <span class="n">u_var</span><span class="p">,</span> <span class="n">time_dict</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">par</span><span class="p">,</span>
                                                                         <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span>
                                                                         <span class="n">functions</span><span class="o">=</span><span class="n">functions</span><span class="p">)</span>
+
+        <span class="n">mu_mx</span> <span class="o">=</span> <span class="n">par</span><span class="p">[</span><span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mu_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">)]</span>
+        <span class="n">new_nu</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">rel_alg</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">):</span>
             <span class="n">new_nu_k</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">rel_alg_k</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">):</span>
                 <span class="n">nu_kj</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">el</span><span class="p">][</span><span class="s1">&#39;f_nu&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
                 <span class="n">rel_alg_kj</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">el</span><span class="p">][</span><span class="s1">&#39;f_relax_alg&#39;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
-                <span class="n">new_nu_k</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="n">new_nu_k</span><span class="p">,</span> <span class="n">nu_kj</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">*</span> <span class="n">rel_alg_kj</span><span class="p">)</span>
+                <span class="n">new_nu_k</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="n">new_nu_k</span><span class="p">,</span> <span class="n">nu_kj</span> <span class="o">+</span> <span class="n">mu_mx</span> <span class="o">*</span> <span class="n">rel_alg_kj</span><span class="p">)</span>
+                <span class="n">rel_alg_k</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="n">rel_alg_k</span><span class="p">,</span> <span class="n">rel_alg_kj</span><span class="p">)</span>
             <span class="n">new_nu</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vec</span><span class="p">(</span><span class="n">new_nu_k</span><span class="p">))</span>
+            <span class="n">rel_alg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vec</span><span class="p">(</span><span class="n">rel_alg_k</span><span class="p">))</span>
 
-        <span class="n">output</span> <span class="o">=</span> <span class="n">new_nu</span> <span class="o">+</span> <span class="p">[</span><span class="n">error</span><span class="p">]</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">new_nu</span> <span class="o">+</span> <span class="n">rel_alg</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">new_nu_func</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;nu_update_function&#39;</span><span class="p">,</span> <span class="p">[</span><span class="n">v</span><span class="p">,</span> <span class="n">par</span><span class="p">,</span> <span class="n">theta_var</span><span class="p">],</span> <span class="n">output</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_update_nu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raw_solution_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_compute_new_nu_and_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raw_solution_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">raw_solution_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">raw_solution_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">theta</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_update_nu</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_nu_func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_create_nu_update_func</span><span class="p">()</span>
-            <span class="n">raw_decision_variables</span> <span class="o">=</span> <span class="n">raw_solution_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
-            <span class="c1"># noinspection PyCallingNonCallable</span>
-            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_nu_func</span><span class="p">(</span><span class="n">raw_decision_variables</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">theta</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
-            <span class="n">new_nu</span> <span class="o">=</span> <span class="n">output</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Violation: &quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">nu</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">new_nu</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_nu_func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_create_nu_update_func</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_update_nu</span><span class="p">:</span>
+            <span class="n">raw_decision_variables</span> <span class="o">=</span> <span class="n">raw_solution_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+            <span class="n">theta_vector</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_nu_func</span><span class="p">(</span><span class="n">raw_decision_variables</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta_vector</span><span class="p">)</span>
+            <span class="n">new_nu</span> <span class="o">=</span> <span class="n">output</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">]</span>
+            <span class="n">rel_alg</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">:</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">nu_tilde</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">new_nu</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alg_violation</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">rel_alg</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
+
+            <span class="n">error</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">mmax</span><span class="p">(</span><span class="n">fabs</span><span class="p">(</span><span class="n">rel_alg</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Violation: &quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">error</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">return</span> <span class="n">error</span>
@@ -389,39 +404,106 @@
     <span class="c1"># SOLVE</span>
     <span class="c1"># ==============================================================================</span>
 
-<div class="viewcode-block" id="AugmentedLagrangian.solve_raw"><a class="viewcode-back" href="../../../yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.solve_raw">[docs]</a>    <span class="k">def</span> <span class="nf">solve_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">last_u</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="AugmentedLagrangian.call_solver"><a class="viewcode-back" href="../../../yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.call_solver">[docs]</a>    <span class="k">def</span> <span class="nf">call_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">last_u</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initial_guess_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt_problem</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">create_optimization_problem</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opt_problem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">opt_problem</span>
+
         <span class="k">if</span> <span class="n">x_0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">x_0</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">theta</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">x_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">x_0</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x_0</span><span class="p">)</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, &#39;</span>
+                            <span class="s1">&#39;x_0.numel() = </span><span class="si">{}</span><span class="s1">, model.n_x = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vertcat</span><span class="p">(</span><span class="n">x_0</span><span class="p">)</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">))</span>
+
+        <span class="c1"># parameters</span>
         <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver_initialized</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">solver_initialized</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="n">solver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">call_solver</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_p_opt</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_p</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_p_opt</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_p</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;A parameter &#39;p&#39; of size </span><span class="si">{}</span><span class="s2"> should be given.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_p</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># theta</span>
+        <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_theta_opt</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_theta</span><span class="p">:</span>
+                <span class="n">theta</span> <span class="o">=</span> <span class="n">create_constant_theta</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_theta_opt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_theta</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_relax</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;A parameter &#39;theta&#39; of size </span><span class="si">{}</span><span class="s2"> should be given&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_theta</span><span class="p">))</span>
+
+        <span class="c1"># last control</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_control_as_parameter</span> <span class="ow">and</span> <span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;solution_method.last_control_as_parameter is False, but last_u was passed. last_u will&#39;</span>
+                                <span class="s1">&#39; be ignored.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last_u</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">last_u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">last_u</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">last_u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">last_u</span>
 
         <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">error</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
 
         <span class="n">t1</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu_tilde</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu_tilde</span>
+
             <span class="n">theta_k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">join_nu_to_theta</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu</span><span class="p">)</span>
             <span class="n">p_k</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">)</span>
-            <span class="n">raw_solution_dict</span> <span class="o">=</span> <span class="n">solver</span><span class="p">(</span><span class="n">initial_guess</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p_k</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta_k</span><span class="p">,</span> <span class="n">x_0</span><span class="o">=</span><span class="n">x_0</span><span class="p">,</span> <span class="n">last_u</span><span class="o">=</span><span class="n">last_u</span><span class="p">)</span>
-            <span class="n">initial_guess</span> <span class="o">=</span> <span class="n">raw_solution_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
-            <span class="n">x</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_x_and_u</span><span class="p">(</span><span class="n">initial_guess</span><span class="p">)</span>
+
+            <span class="c1"># build the optimization parameter vector</span>
+            <span class="k">if</span> <span class="n">theta_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">theta_k_vector</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">theta_k</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
+                <span class="n">par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">p_k</span><span class="p">,</span> <span class="n">theta_k_vector</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">par</span> <span class="o">=</span> <span class="n">p_k</span>
+
+            <span class="c1"># initial condition</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_condition_as_parameter</span><span class="p">:</span>
+                <span class="n">par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">x_0</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">last_u</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">last_u</span><span class="p">)</span>
+
+            <span class="c1"># if initial_guess_dict is None:</span>
+            <span class="c1">#     if initial_guess is None:</span>
+            <span class="c1">#         if self.initial_guess_heuristic == &#39;simulation&#39;:</span>
+            <span class="c1">#             initial_guess = self.ocp_solver.discretizer.create_initial_guess_with_simulation(p=p_k,</span>
+            <span class="c1">#                                                                                              theta=theta_k)</span>
+            <span class="c1">#         elif self.initial_guess_heuristic == &#39;problem_info&#39;:</span>
+            <span class="c1">#             initial_guess = self.ocp_solver.discretizer.create_initial_guess(p_k, theta_k)</span>
+            <span class="c1">#         else:</span>
+            <span class="c1">#             raise ValueError(</span>
+            <span class="c1">#                 &#39;initial_guess_heuristic did not recognized, available options: &quot;simulation&quot; and &#39;</span>
+            <span class="c1">#                 &#39;&quot;problem_info&quot;. Given: {}&#39;.format(self.initial_guess_heuristic))</span>
+
+            <span class="k">if</span> <span class="n">initial_guess_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">initial_guess</span><span class="o">=</span><span class="n">initial_guess</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">initial_guess</span><span class="o">=</span><span class="n">initial_guess_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">p</span><span class="o">=</span><span class="n">par</span><span class="p">,</span>
+                            <span class="n">lam_x</span><span class="o">=</span><span class="n">initial_guess_dict</span><span class="p">[</span><span class="s1">&#39;lam_x&#39;</span><span class="p">],</span> <span class="n">lam_g</span><span class="o">=</span><span class="n">initial_guess_dict</span><span class="p">[</span><span class="s1">&#39;lam_g&#39;</span><span class="p">])</span>
+
+            <span class="c1"># solve the optimization problem</span>
+            <span class="n">raw_solution_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt_problem</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+            <span class="n">initial_guess_dict</span> <span class="o">=</span> <span class="n">raw_solution_dict</span>
+
             <span class="n">it</span> <span class="o">+=</span> <span class="mi">1</span>
 
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_new_nu_and_error</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="n">p_k</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta_k</span><span class="p">,</span> <span class="n">raw_solution_dict</span><span class="o">=</span><span class="n">raw_solution_dict</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_mu</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_violation_error</span> <span class="o">=</span> <span class="n">error</span>
+
             <span class="k">if</span> <span class="n">it</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">last_solution</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
                 <span class="k">break</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_nu</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="n">p_k</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta_k</span><span class="p">,</span> <span class="n">raw_solution_dict</span><span class="o">=</span><span class="n">raw_solution_dict</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_update_mu</span><span class="p">()</span>
-
+                <span class="k">pass</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Solution time: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t1</span><span class="p">))</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Approximation error: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">raw_solution_dict</span></div>
+        <span class="k">return</span> <span class="n">raw_solution_dict</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">x_0</span><span class="p">,</span> <span class="n">last_u</span></div>
 
 <div class="viewcode-block" id="AugmentedLagrangian.create_optimization_result"><a class="viewcode-back" href="../../../yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.create_optimization_result">[docs]</a>    <span class="k">def</span> <span class="nf">create_optimization_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_solution_dict</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -430,11 +512,21 @@
             <span class="n">theta</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">p</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">)</span>
         <span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">join_nu_to_theta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocp_solver</span><span class="o">.</span><span class="n">create_optimization_result</span><span class="p">(</span><span class="n">raw_solution_dict</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">x_0</span><span class="p">)</span>
-        <span class="n">result</span><span class="o">.</span><span class="n">other_data</span><span class="p">[</span><span class="s1">&#39;nu&#39;</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">unvec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu</span><span class="p">[</span><span class="n">el</span><span class="p">])[:,</span> <span class="n">d</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">)]</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span>
-                                             <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)]</span>
-        <span class="n">result</span><span class="o">.</span><span class="n">other_data</span><span class="p">[</span><span class="s1">&#39;nu&#39;</span><span class="p">][</span><span class="s1">&#39;times&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_interpolation_nu</span>
-        <span class="k">return</span> <span class="n">result</span></div></div>
+
+        <span class="n">optimization_result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">AugmentedLagrangian</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">create_optimization_result</span><span class="p">(</span><span class="n">raw_solution_dict</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span>
+                                                                                          <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span> <span class="n">x_0</span><span class="o">=</span><span class="n">x_0</span><span class="p">)</span>
+
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">other_data</span><span class="p">[</span><span class="s1">&#39;nu&#39;</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">unvec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu</span><span class="p">[</span><span class="n">el</span><span class="p">])[:,</span> <span class="n">d</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">)]</span>
+                                                          <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)]</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">other_data</span><span class="p">[</span><span class="s1">&#39;nu&#39;</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_interpolation_nu</span>
+
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">other_data</span><span class="p">[</span><span class="s1">&#39;alg_violation&#39;</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">unvec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alg_violation</span><span class="p">[</span><span class="n">el</span><span class="p">])[:,</span> <span class="n">d</span><span class="p">]</span>
+                                                                      <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">)]</span>
+                                                                     <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)]</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">other_data</span><span class="p">[</span><span class="s1">&#39;alg_violation&#39;</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_interpolation_nu</span>
+
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">violation_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_violation_error</span>
+        <span class="k">return</span> <span class="n">optimization_result</span></div></div>
 </pre></div>
 
           </div>

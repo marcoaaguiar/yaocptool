@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   
@@ -137,7 +138,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">n_uncertain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">=</span> <span class="n">factorial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_uncertain</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pc_order</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">=</span> <span class="n">factorial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_uncertain</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">pc_order</span><span class="p">)</span> <span class="o">//</span> <span class="p">(</span>
                     <span class="n">factorial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_uncertain</span><span class="p">)</span> <span class="o">*</span> <span class="n">factorial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pc_order</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_pol_parameters</span><span class="p">:</span>

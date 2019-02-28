@@ -22,7 +22,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="yaocptool.mpc package" href="yaocptool.mpc.html" />
@@ -69,7 +70,7 @@
 <li><a class="reference internal" href="#module-yaocptool.modelling.network">yaocptool.modelling.network module</a></li>
 <li><a class="reference internal" href="#module-yaocptool.modelling.node">yaocptool.modelling.node module</a></li>
 <li><a class="reference internal" href="#module-yaocptool.modelling.ocp">yaocptool.modelling.ocp module</a></li>
-<li><a class="reference internal" href="#module-yaocptool.modelling.simualtion_result">yaocptool.modelling.simualtion_result module</a></li>
+<li><a class="reference internal" href="#module-yaocptool.modelling.simulation_result">yaocptool.modelling.simulation_result module</a></li>
 <li><a class="reference internal" href="#module-yaocptool.modelling.stochastic_ocp">yaocptool.modelling.stochastic_ocp module</a></li>
 <li><a class="reference internal" href="#module-yaocptool.modelling.system_model">yaocptool.modelling.system_model module</a></li>
 <li><a class="reference internal" href="#module-yaocptool.modelling">Module contents</a></li>
@@ -133,7 +134,8 @@
 <dl class="class">
 <dt id="yaocptool.modelling.dae_system.DAESystem">
 <em class="property">class </em><code class="descclassname">yaocptool.modelling.dae_system.</code><code class="descname">DAESystem</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/dae_system.html#DAESystem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.dae_system.DAESystem" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.modelling.dae_system.DAESystem.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/dae_system.html#DAESystem.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.dae_system.DAESystem.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
@@ -208,7 +210,8 @@
 <dl class="class">
 <dt id="yaocptool.modelling.dataset.DataSet">
 <em class="property">class </em><code class="descclassname">yaocptool.modelling.dataset.</code><code class="descname">DataSet</code><span class="sig-paren">(</span><em>name='dataset'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/dataset.html#DataSet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.dataset.DataSet" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.modelling.dataset.DataSet.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>name='dataset'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/dataset.html#DataSet.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.dataset.DataSet.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
@@ -224,7 +227,8 @@ The data can be more easily managed using create_entry, get_entry, insert_data.<
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>name</strong> (<em>str</em>) – name of th dataset</li>
-<li><strong>plot_style</strong> (<em>str</em>) – default plot style. plot = linear interpolation, step = piecewise constant (‘plot’ | ‘step’)</li>
+<li><strong>plot_style</strong> (<em>str</em>) – default plot style. plot = linear interpolation, step = piecewise constant
+(‘plot’ | ‘step’)</li>
 <li><strong>find_discontinuity</strong> (<em>bool</em>) – Default: True. If True, it will try to find discontinuity on the data, and plot
 with gaps where data is missing/not available, instead of a line connecting all data points.</li>
 <li><strong>max_sampling_time</strong> (<em>float</em>) – maximum expected distance between two time data. This is used to detect
@@ -398,7 +402,8 @@ in an ordered fashion.</div></blockquote>
 <dl class="class">
 <dt id="yaocptool.modelling.network.Connection">
 <em class="property">class </em><code class="descclassname">yaocptool.modelling.network.</code><code class="descname">Connection</code><span class="sig-paren">(</span><em>connection_id</em>, <em>nodes=None</em>, <em>z_sym_indices_list=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network.html#Connection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.Connection" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.modelling.network.Connection.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>connection_id</em>, <em>nodes=None</em>, <em>z_sym_indices_list=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network.html#Connection.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.Connection.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
@@ -407,6 +412,13 @@ in an ordered fashion.</div></blockquote>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nodes</strong> (<em>list</em>) – </li>
+<li><strong>z_sym_indices_list</strong> (<em>dict</em>) – </li>
+<li><strong>connection_id</strong> (<em>int</em>) – </li>
+</ul>
+</td>
+</tr>
 </tbody>
 </table>
 </dd></dl>
@@ -416,7 +428,8 @@ in an ordered fashion.</div></blockquote>
 <dl class="class">
 <dt id="yaocptool.modelling.network.Network">
 <em class="property">class </em><code class="descclassname">yaocptool.modelling.network.</code><code class="descname">Network</code><span class="sig-paren">(</span><em>nodes</em>, <em>connections_settings_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network.html#Network"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.Network" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.modelling.network.Network.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>nodes</em>, <em>connections_settings_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network.html#Network.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.Network.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
@@ -433,6 +446,12 @@ connections_dict = {1: [{1:[0,1]}, {4:[1,2]}]}</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nodes</strong> – </li>
+<li><strong>connections_settings_dict</strong> – </li>
+</ul>
+</td>
+</tr>
 </tbody>
 </table>
 </dd></dl>
@@ -472,10 +491,12 @@ connections_dict = {1: [{1:[0,1]}, {4:[1,2]}]}</dd>
 <dl class="class">
 <dt id="yaocptool.modelling.node.Node">
 <em class="property">class </em><code class="descclassname">yaocptool.modelling.node.</code><code class="descname">Node</code><span class="sig-paren">(</span><em>node_id=-1</em>, <em>name=''</em>, <em>model=None</em>, <em>problem=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/node.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.node.Node" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.modelling.node.Node.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>node_id=-1</em>, <em>name=''</em>, <em>model=None</em>, <em>problem=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/node.html#Node.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.node.Node.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -487,7 +508,8 @@ connections_dict = {1: [{1:[0,1]}, {4:[1,2]}]}</dd>
 <dl class="class">
 <dt id="yaocptool.modelling.ocp.OptimalControlProblem">
 <em class="property">class </em><code class="descclassname">yaocptool.modelling.ocp.</code><code class="descname">OptimalControlProblem</code><span class="sig-paren">(</span><em>model</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem" title="Permalink to this definition">¶</a></dt>
-<dd><p>Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)
 It has the following form:</p>
 <div class="math notranslate nohighlight">
 \[ \begin{align}\begin{aligned}\min J &amp;= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\theta) \, dt
@@ -496,6 +518,12 @@ It has the following form:</p>
 <dl class="method">
 <dt id="yaocptool.modelling.ocp.OptimalControlProblem.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>model</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.ocp.OptimalControlProblem.create_adjoint_states">
+<code class="descname">create_adjoint_states</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.create_adjoint_states"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.create_adjoint_states" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -506,14 +534,13 @@ It has the following form:</p>
 <dl class="method">
 <dt id="yaocptool.modelling.ocp.OptimalControlProblem.create_cost_state">
 <code class="descname">create_cost_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.create_cost_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.create_cost_state" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transforms the integral int_{t_0}^{t_f} L(…) dt into a dynamic cost state:
-dot{x}_c = L(…)
-and include x_c(t_f) into the final time cost (V(t_f) += x_c(t_f)).</p>
+<dd><p>Create and state with the dynamics equal to L from int_{t_0}^{t_f} L(…) dt:
+dot{x}_c = L(…)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">object</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">casadi.SX</td>
 </tr>
 </tbody>
 </table>
@@ -541,7 +568,7 @@ and include x_c(t_f) into the final time cost (V(t_f) += x_c(t_f)).</p>
 
 <dl class="method">
 <dt id="yaocptool.modelling.ocp.OptimalControlProblem.create_state">
-<code class="descname">create_state</code><span class="sig-paren">(</span><em>name</em>, <em>size</em>, <em>ode=None</em>, <em>x_0=None</em>, <em>var_max=None</em>, <em>var_min=None</em>, <em>h_initial=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.create_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.create_state" title="Permalink to this definition">¶</a></dt>
+<code class="descname">create_state</code><span class="sig-paren">(</span><em>name</em>, <em>size</em>, <em>ode=None</em>, <em>x_0=None</em>, <em>x_max=None</em>, <em>x_min=None</em>, <em>h_initial=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.create_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.create_state" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -566,7 +593,7 @@ and include x_c(t_f) into the final time cost (V(t_f) += x_c(t_f)).</p>
 
 <dl class="method">
 <dt id="yaocptool.modelling.ocp.OptimalControlProblem.include_control">
-<code class="descname">include_control</code><span class="sig-paren">(</span><em>var</em>, <em>u_min=None</em>, <em>u_max=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.include_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.include_control" title="Permalink to this definition">¶</a></dt>
+<code class="descname">include_control</code><span class="sig-paren">(</span><em>var</em>, <em>u_min=None</em>, <em>u_max=None</em>, <em>delta_u_min=None</em>, <em>delta_u_max=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.include_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.include_control" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -725,6 +752,26 @@ finite element</li>
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="yaocptool.modelling.ocp.OptimalControlProblem.parametrize_control">
+<code class="descname">parametrize_control</code><span class="sig-paren">(</span><em>u_sym</em>, <em>expr</em>, <em>u_par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.parametrize_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.parametrize_control" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Parametrize the control variable</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>u_sym</strong> – </li>
+<li><strong>expr</strong> – </li>
+<li><strong>u_par</strong> – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="yaocptool.modelling.ocp.OptimalControlProblem.pre_solve_check">
 <code class="descname">pre_solve_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.pre_solve_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.pre_solve_check" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -742,7 +789,22 @@ finite element</li>
 <dl class="method">
 <dt id="yaocptool.modelling.ocp.OptimalControlProblem.replace_variable">
 <code class="descname">replace_variable</code><span class="sig-paren">(</span><em>original</em>, <em>replacement</em>, <em>variable_type='other'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#OptimalControlProblem.replace_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.OptimalControlProblem.replace_variable" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><blockquote>
+<div>Replace ‘original’ by ‘replacement’ in the problem and model equations</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>original</strong> – </li>
+<li><strong>replacement</strong> – </li>
+<li><strong>variable_type</strong> – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="yaocptool.modelling.ocp.OptimalControlProblem.reset_working_model">
@@ -761,32 +823,46 @@ finite element</li>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="yaocptool.modelling.ocp.SuperOCP">
-<em class="property">class </em><code class="descclassname">yaocptool.modelling.ocp.</code><code class="descname">SuperOCP</code><span class="sig-paren">(</span><em>problems</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#SuperOCP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.SuperOCP" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#yaocptool.modelling.ocp.OptimalControlProblem" title="yaocptool.modelling.ocp.OptimalControlProblem"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaocptool.modelling.ocp.OptimalControlProblem</span></code></a></p>
-<dl class="method">
-<dt id="yaocptool.modelling.ocp.SuperOCP.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>problems</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/ocp.html#SuperOCP.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.ocp.SuperOCP.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
 </div>
-<div class="section" id="module-yaocptool.modelling.simualtion_result">
-<span id="yaocptool-modelling-simualtion-result-module"></span><h2>yaocptool.modelling.simualtion_result module<a class="headerlink" href="#module-yaocptool.modelling.simualtion_result" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-yaocptool.modelling.simulation_result">
+<span id="yaocptool-modelling-simulation-result-module"></span><h2>yaocptool.modelling.simulation_result module<a class="headerlink" href="#module-yaocptool.modelling.simulation_result" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult">
-<em class="property">class </em><code class="descclassname">yaocptool.modelling.simualtion_result.</code><code class="descname">SimulationResult</code><span class="sig-paren">(</span><em>n_x</em>, <em>n_y</em>, <em>n_u</em>, <em>x_names=None</em>, <em>y_names=None</em>, <em>u_names=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/simualtion_result.html#SimulationResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult">
+<em class="property">class </em><code class="descclassname">yaocptool.modelling.simulation_result.</code><code class="descname">SimulationResult</code><span class="sig-paren">(</span><em>n_x</em>, <em>n_y</em>, <em>n_u</em>, <em>x_names=None</em>, <em>y_names=None</em>, <em>u_names=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/simulation_result.html#SimulationResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#yaocptool.modelling.dataset.DataSet" title="yaocptool.modelling.dataset.DataSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaocptool.modelling.dataset.DataSet</span></code></a></p>
 <dl class="method">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>n_x</em>, <em>n_y</em>, <em>n_u</em>, <em>x_names=None</em>, <em>y_names=None</em>, <em>u_names=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/simualtion_result.html#SimulationResult.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>n_x</em>, <em>n_y</em>, <em>n_u</em>, <em>x_names=None</em>, <em>y_names=None</em>, <em>u_names=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/simulation_result.html#SimulationResult.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Generic time dependent data storage.</dt>
+<dd>The data is stored in the self.data dictionary.
+self.data[‘entry_name’][‘time’] is a row vector
+self.data[‘entry_name’][‘values’] is a matrix with the same number of columns as the time vector, and
+rows equal to self.data[‘entry_name’][‘size’].
+The data can be more easily managed using create_entry, get_entry, insert_data.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>str</em>) – name of th dataset</li>
+<li><strong>plot_style</strong> (<em>str</em>) – default plot style. plot = linear interpolation, step = piecewise constant
+(‘plot’ | ‘step’)</li>
+<li><strong>find_discontinuity</strong> (<em>bool</em>) – Default: True. If True, it will try to find discontinuity on the data, and plot
+with gaps where data is missing/not available, instead of a line connecting all data points.</li>
+<li><strong>max_sampling_time</strong> (<em>float</em>) – maximum expected distance between two time data. This is used to detect
+discontinuity on the data, and plot it separately.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.extend">
-<code class="descname">extend</code><span class="sig-paren">(</span><em>other_sim_result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/simualtion_result.html#SimulationResult.extend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.extend" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.extend">
+<code class="descname">extend</code><span class="sig-paren">(</span><em>other_sim_result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/simulation_result.html#SimulationResult.extend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.extend" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extend this SimulationResult with other SimulationResult.
 It is only implemented for the case where the other simulation result starts at the end of this
 simulation. That is this.t_f == other_sim_result.t_0 .</p>
@@ -794,7 +870,7 @@ simulation. That is this.t_f == other_sim_result.t_0 .</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other_sim_result</strong> (<a class="reference internal" href="#yaocptool.modelling.simualtion_result.SimulationResult" title="yaocptool.modelling.simualtion_result.SimulationResult"><em>SimulationResult</em></a>) – </td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other_sim_result</strong> (<a class="reference internal" href="#yaocptool.modelling.simulation_result.SimulationResult" title="yaocptool.modelling.simulation_result.SimulationResult"><em>SimulationResult</em></a>) – </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
 </tr>
@@ -803,8 +879,8 @@ simulation. That is this.t_f == other_sim_result.t_0 .</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.final_condition">
-<code class="descname">final_condition</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/simualtion_result.html#SimulationResult.final_condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.final_condition" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.final_condition">
+<code class="descname">final_condition</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/simulation_result.html#SimulationResult.final_condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.final_condition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the simulation final condition in the form of a tuple (x_f, y_f, u_f)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -817,53 +893,53 @@ simulation. That is this.t_f == other_sim_result.t_0 .</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.n_u">
-<code class="descname">n_u</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.n_u" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.n_u">
+<code class="descname">n_u</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.n_u" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.n_x">
-<code class="descname">n_x</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.n_x" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.n_x">
+<code class="descname">n_x</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.n_x" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.n_y">
-<code class="descname">n_y</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.n_y" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.n_y">
+<code class="descname">n_y</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.n_y" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.t">
-<code class="descname">t</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.t" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.t">
+<code class="descname">t</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.t" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.u">
-<code class="descname">u</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.u" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.u">
+<code class="descname">u</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.u" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.u_names">
-<code class="descname">u_names</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.u_names" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.u_names">
+<code class="descname">u_names</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.u_names" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.x">
-<code class="descname">x</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.x" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.x">
+<code class="descname">x</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.x" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.x_names">
-<code class="descname">x_names</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.x_names" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.x_names">
+<code class="descname">x_names</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.x_names" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.y">
-<code class="descname">y</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.y" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.y">
+<code class="descname">y</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.y" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
-<dt id="yaocptool.modelling.simualtion_result.SimulationResult.y_names">
-<code class="descname">y_names</code><a class="headerlink" href="#yaocptool.modelling.simualtion_result.SimulationResult.y_names" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.simulation_result.SimulationResult.y_names">
+<code class="descname">y_names</code><a class="headerlink" href="#yaocptool.modelling.simulation_result.SimulationResult.y_names" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -878,7 +954,8 @@ simulation. That is this.t_f == other_sim_result.t_0 .</p>
 <dl class="method">
 <dt id="yaocptool.modelling.stochastic_ocp.StochasticOCP.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>model</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/stochastic_ocp.html#StochasticOCP.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.stochastic_ocp.StochasticOCP.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="yaocptool.modelling.stochastic_ocp.StochasticOCP.create_uncertain_parameter">
@@ -967,7 +1044,8 @@ finite element</li>
 <dl class="class">
 <dt id="yaocptool.modelling.system_model.SystemModel">
 <em class="property">class </em><code class="descclassname">yaocptool.modelling.system_model.</code><code class="descname">SystemModel</code><span class="sig-paren">(</span><em>name='model'</em>, <em>n_x=0</em>, <em>n_y=0</em>, <em>n_u=0</em>, <em>n_p=0</em>, <em>n_theta=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.modelling.system_model.SystemModel.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>name='model'</em>, <em>n_x=0</em>, <em>n_y=0</em>, <em>n_u=0</em>, <em>n_p=0</em>, <em>n_theta=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
@@ -1004,6 +1082,11 @@ e.g.: ‘tank_h’, where ‘tank’ is model name and ‘h’ is the state crea
 <dl class="attribute">
 <dt id="yaocptool.modelling.system_model.SystemModel.all_sym">
 <code class="descname">all_sym</code><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.all_sym" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="yaocptool.modelling.system_model.SystemModel.all_sym_names">
+<em class="property">static </em><code class="descname">all_sym_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.all_sym_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.all_sym_names" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -1065,6 +1148,30 @@ to be included in the algebraic vector (model.y_sym).</p>
 <dt id="yaocptool.modelling.system_model.SystemModel.create_control">
 <code class="descname">create_control</code><span class="sig-paren">(</span><em>name='u'</em>, <em>size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.create_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.create_control" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a new control variable name “name” and size “size”.
+Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
+to be included in the control vector (model.u_sym).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – str</li>
+<li><strong>size</strong> – int</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.system_model.SystemModel.create_input">
+<code class="descname">create_input</code><span class="sig-paren">(</span><em>name='u'</em>, <em>size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.create_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.create_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as the “model.create_control” function.
+Create a new control/input variable name “name” and size “size”.
 Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
 to be included in the control vector (model.u_sym).</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1217,8 +1324,8 @@ with singularities.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="yaocptool.modelling.system_model.SystemModel.get_hardcopy">
-<code class="descname">get_hardcopy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.get_hardcopy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.get_hardcopy" title="Permalink to this definition">¶</a></dt>
+<dt id="yaocptool.modelling.system_model.SystemModel.get_deepcopy">
+<code class="descname">get_deepcopy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.get_deepcopy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.get_deepcopy" title="Permalink to this definition">¶</a></dt>
 <dd><blockquote>
 <div>Get a hard copy of this model, differently from “get_copy”, the variables of the original copy and the
 hard copy will not be the same, i.e. model.x_sym != copy.x_sym</div></blockquote>
@@ -1245,7 +1352,17 @@ hard copy will not be the same, i.e. model.x_sym != copy.x_sym</div></blockquote
 <dl class="method">
 <dt id="yaocptool.modelling.system_model.SystemModel.include_models">
 <code class="descname">include_models</code><span class="sig-paren">(</span><em>models</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.include_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.include_models" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><blockquote>
+<div>Include model or list of models into this model. All the variables and functions will be included.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>models</strong> (<em>list|SystemModel</em>) – models to be included</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="method">
 <dt id="yaocptool.modelling.system_model.SystemModel.include_parameter">
@@ -1267,8 +1384,8 @@ hard copy will not be the same, i.e. model.x_sym != copy.x_sym</div></blockquote
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>ode</strong> – (ordinary) differential equation</li>
-<li><strong>alg</strong> – algebraic equation</li>
+<li><strong>ode</strong> (<em>list|casadi.SX</em>) – (ordinary) differential equation</li>
+<li><strong>alg</strong> (<em>list|casadi.SX</em>) – algebraic equation</li>
 </ul>
 </td>
 </tr>
@@ -1280,6 +1397,24 @@ hard copy will not be the same, i.e. model.x_sym != copy.x_sym</div></blockquote
 <dt id="yaocptool.modelling.system_model.SystemModel.include_theta">
 <code class="descname">include_theta</code><span class="sig-paren">(</span><em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.include_theta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.include_theta" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.system_model.SystemModel.is_parametrized">
+<code class="descname">is_parametrized</code><span class="sig-paren">(</span><em>u=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.is_parametrized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.is_parametrized" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Check if the model is para metrized if no parameter “u” is given, otherwise check if the control “u” is
+parametrized</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<em>casadi.SX</em>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rtype bool:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="yaocptool.modelling.system_model.SystemModel.lamb_sym">
@@ -1313,6 +1448,11 @@ hard copy will not be the same, i.e. model.x_sym != copy.x_sym</div></blockquote
 <dd></dd></dl>
 
 <dl class="attribute">
+<dt id="yaocptool.modelling.system_model.SystemModel.n_u_par">
+<code class="descname">n_u_par</code><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.n_u_par" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
 <dt id="yaocptool.modelling.system_model.SystemModel.n_x">
 <code class="descname">n_x</code><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.n_x" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -1333,6 +1473,26 @@ hard copy will not be the same, i.e. model.x_sym != copy.x_sym</div></blockquote
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="yaocptool.modelling.system_model.SystemModel.parametrize_control">
+<code class="descname">parametrize_control</code><span class="sig-paren">(</span><em>u_sym</em>, <em>expr</em>, <em>u_par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.parametrize_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.parametrize_control" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Parametrize a control variables so it is a function of a set of parameters or other model variables.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>u_sym</strong> (<em>list|casadi.SX</em>) – </li>
+<li><strong>expr</strong> (<em>list|casadi.SX</em>) – </li>
+<li><strong>u_par</strong> (<em>list|casadi.SX</em>) – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="yaocptool.modelling.system_model.SystemModel.print_variables">
 <code class="descname">print_variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.print_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.print_variables" title="Permalink to this definition">¶</a></dt>
 <dd><p>Print list of variable in the model (x, y, u, p, theta)</p>
@@ -1340,7 +1500,7 @@ hard copy will not be the same, i.e. model.x_sym != copy.x_sym</div></blockquote
 
 <dl class="staticmethod">
 <dt id="yaocptool.modelling.system_model.SystemModel.put_values_in_all_sym_format">
-<em class="property">static </em><code class="descname">put_values_in_all_sym_format</code><span class="sig-paren">(</span><em>t=None</em>, <em>x=None</em>, <em>y=None</em>, <em>u=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>u_par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.put_values_in_all_sym_format"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.put_values_in_all_sym_format" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="descname">put_values_in_all_sym_format</code><span class="sig-paren">(</span><em>t=None</em>, <em>x=None</em>, <em>y=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>u_par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/system_model.html#SystemModel.put_values_in_all_sym_format"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.system_model.SystemModel.put_values_in_all_sym_format" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -1409,7 +1569,7 @@ If t_f is a list then theta has to have one entry for each k in [0,…,len(t_f)]
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#yaocptool.modelling.simualtion_result.SimulationResult" title="yaocptool.modelling.simualtion_result.SimulationResult">SimulationResult</a></p>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#yaocptool.modelling.simulation_result.SimulationResult" title="yaocptool.modelling.simulation_result.SimulationResult">SimulationResult</a></p>
 </td>
 </tr>
 </tbody>

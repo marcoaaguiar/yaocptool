@@ -44,10 +44,10 @@ yaocptool.modelling.ocp module
     :undoc-members:
     :show-inheritance:
 
-yaocptool.modelling.simualtion\_result module
+yaocptool.modelling.simulation\_result module
 ---------------------------------------------
 
-.. automodule:: yaocptool.modelling.simualtion_result
+.. automodule:: yaocptool.modelling.simulation_result
     :members:
     :undoc-members:
     :show-inheritance:

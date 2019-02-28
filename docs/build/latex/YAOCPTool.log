@@ -1907,7 +1907,7 @@ Overfull \hbox (66.24915pt too wide) in paragraph at lines 103--105
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 105--107
-[]\T1/ptm/m/n/10 create_nlp_symbolic_variables() (yaocp-
+[]\T1/ptm/m/n/10 _create_nlp_symbolic_variables() (yaocp-
  []
 
 
@@ -1918,7 +1918,7 @@ ase
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 107--109
-[]\T1/ptm/m/n/10 create_nlp_symbolic_variables() (yaocp-
+[]\T1/ptm/m/n/10 _create_nlp_symbolic_variables() (yaocp-
  []
 
 
@@ -1928,7 +1928,7 @@ Overfull \hbox (48.98932pt too wide) in paragraph at lines 107--109
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 109--111
-[]\T1/ptm/m/n/10 create_nlp_symbolic_variables() (yaocp-
+[]\T1/ptm/m/n/10 _create_nlp_symbolic_variables() (yaocp-
  []
 
 
@@ -2450,7 +2450,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 237--238
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 241--243
-[]\T1/ptm/m/n/10 include_adjoint_states() (yaocp-
+[]\T1/ptm/m/n/10 create_adjoint_states() (yaocp-
  []
 
 

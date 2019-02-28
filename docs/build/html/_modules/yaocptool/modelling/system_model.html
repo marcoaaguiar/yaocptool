@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   
@@ -89,14 +90,14 @@
 <span class="kn">import</span> <span class="nn">collections</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 
-<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">SX</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">Function</span><span class="p">,</span> <span class="n">jacobian</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">rootfinder</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">horzcat</span>
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">SX</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">Function</span><span class="p">,</span> <span class="n">jacobian</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">rootfinder</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">horzcat</span><span class="p">,</span> <span class="n">is_equal</span>
 
-<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="k">import</span> <span class="n">remove_variables_from_vector</span><span class="p">,</span> <span class="n">config</span>
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="k">import</span> <span class="n">remove_variables_from_vector</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">find_variables_indices_in_vector</span><span class="p">,</span> \
+    <span class="n">remove_variables_from_vector_by_indices</span>
 <span class="kn">from</span> <span class="nn">yaocptool.modelling</span> <span class="k">import</span> <span class="n">DAESystem</span><span class="p">,</span> <span class="n">SimulationResult</span>
 
 
 <span class="c1"># TODO: Check linearize method</span>
-
 
 <div class="viewcode-block" id="SystemModel"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel">[docs]</a><span class="k">class</span> <span class="nc">SystemModel</span><span class="p">:</span>
 <div class="viewcode-block" id="SystemModel.__init__"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">n_x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_u</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_p</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_theta</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -143,7 +144,6 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_x&#39;</span><span class="p">,</span> <span class="n">n_x</span><span class="p">)</span>
-            <span class="c1"># raise Exception(&quot;You should provide an &#39;n_x&#39; OR a &#39;x_names&#39; dict.&quot;)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">x_0_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_x_0_sym&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">y_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_y&#39;</span><span class="p">,</span> <span class="n">n_y</span><span class="p">)</span>
@@ -154,8 +154,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">t_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;t&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tau_sym</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;tau&#39;</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parametrized_controls</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">u_func</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">system_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -185,6 +186,10 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_sym</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_u_par</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">x_sys_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span><span class="p">[:</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)]</span>
@@ -200,7 +205,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">all_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -263,6 +268,11 @@
         <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_theta</span><span class="p">)]</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Print model summary when using print(model)</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
         <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;=&#39;</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
         <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;Model Name: </span><span class="si">{:&gt;23}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
@@ -395,6 +405,18 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">vec</span><span class="p">(</span><span class="n">new_u</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">new_u</span></div>
 
+<div class="viewcode-block" id="SystemModel.create_input"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.create_input">[docs]</a>    <span class="k">def</span> <span class="nf">create_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Same as the &quot;model.create_control&quot; function.</span>
+<span class="sd">        Create a new control/input variable name &quot;name&quot; and size &quot;size&quot;.</span>
+<span class="sd">        Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)</span>
+<span class="sd">        to be included in the control vector (model.u_sym).</span>
+
+<span class="sd">        :param name: str</span>
+<span class="sd">        :param size: int</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
 <div class="viewcode-block" id="SystemModel.create_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.create_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">create_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;p&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a new parameter name &quot;name&quot; and size &quot;size&quot;</span>
@@ -425,14 +447,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="n">vec</span><span class="p">(</span><span class="n">new_theta</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">new_theta</span></div>
 
-    <span class="c1"># region INCLUDES</span>
-
 <div class="viewcode-block" id="SystemModel.include_system_equations"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_system_equations">[docs]</a>    <span class="k">def</span> <span class="nf">include_system_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)</span>
 
-<span class="sd">        :param ode: (ordinary) differential equation</span>
-<span class="sd">        :param alg: algebraic equation</span>
+<span class="sd">        :param list|casadi.SX ode: (ordinary) differential equation</span>
+<span class="sd">        :param list|casadi.SX alg: algebraic equation</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">ode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>  <span class="c1"># if ode is list or tuple</span>
@@ -463,6 +483,7 @@
 
 <div class="viewcode-block" id="SystemModel.include_control"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_control">[docs]</a>    <span class="k">def</span> <span class="nf">include_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SystemModel.include_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">include_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
@@ -470,27 +491,6 @@
 
 <div class="viewcode-block" id="SystemModel.include_theta"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_theta">[docs]</a>    <span class="k">def</span> <span class="nf">include_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">theta_sym</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="SystemModel.include_models"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_models">[docs]</a>    <span class="k">def</span> <span class="nf">include_models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">models</span><span class="p">]</span>
-
-        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
-            <span class="c1"># include variables</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="n">x_0_sym</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">x_0_sym</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">p_sym</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">)</span>
-
-            <span class="c1"># include equations</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">include_system_equations</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="n">alg</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
-
-            <span class="c1"># replace model time variables with this model time variables</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">t_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_sym</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tau_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_sym</span><span class="p">)</span></div>
-
-    <span class="c1"># endregion</span>
 
 <div class="viewcode-block" id="SystemModel.replace_variable"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.replace_variable">[docs]</a>    <span class="k">def</span> <span class="nf">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -513,9 +513,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">ode</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
 
-            <span class="c1"># TODO: Im commenting the  following line because I think they are wrong</span>
-            <span class="c1"># self.u_par = substitute(self.u_par, original, replacement)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">u_func</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_func</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span></div>
 
     <span class="c1"># region REMOVE</span>
 
@@ -525,6 +524,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SystemModel.remove_control"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.remove_control">[docs]</a>    <span class="k">def</span> <span class="nf">remove_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span><span class="p">,</span>
+                                                              <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">)</span></div>
 
@@ -534,7 +535,88 @@
 <div class="viewcode-block" id="SystemModel.remove_theta"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.remove_theta">[docs]</a>    <span class="k">def</span> <span class="nf">remove_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">theta_sym</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">)</span></div>
 
-    <span class="c1"># endregion</span>
+<div class="viewcode-block" id="SystemModel.is_parametrized"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.is_parametrized">[docs]</a>    <span class="k">def</span> <span class="nf">is_parametrized</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Check if the model is para metrized if no parameter &quot;u&quot; is given, otherwise check if the control &quot;u&quot; is</span>
+<span class="sd">            parametrized</span>
+
+<span class="sd">        :param casadi.SX u:</span>
+<span class="sd">        :rtype bool:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if no u is provided (checking if the model is parametrized)</span>
+        <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parametrized_controls</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+        <span class="c1"># if u is provided checking if the control is parametrized</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The parameter &quot;u&quot; is expected to be of size 1x1, given: </span><span class="si">{}</span><span class="s1">x</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">is_equal</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">parametrized_u</span><span class="p">)</span> <span class="k">for</span> <span class="n">parametrized_u</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parametrized_controls</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="SystemModel.parametrize_control"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.parametrize_control">[docs]</a>    <span class="k">def</span> <span class="nf">parametrize_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u_sym</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">u_par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Parametrize a control variables so it is a function of a set of parameters or other model variables.</span>
+
+<span class="sd">        :param list|casadi.SX u_sym:</span>
+<span class="sd">        :param list|casadi.SX expr:</span>
+<span class="sd">        :param list|casadi.SX u_par:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># input check</span>
+        <span class="n">u_sym</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">u_sym</span><span class="p">)</span>
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u_sym</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">expr</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Passed control and parametrization expression does not have same size. &quot;</span>
+                             <span class="s2">&quot;u_sym (</span><span class="si">{}</span><span class="s2">) and expr (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u_sym</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">expr</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="c1"># Remove u from u_par if they are going to be parametrized</span>
+        <span class="k">if</span> <span class="n">u_par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">,</span> <span class="n">u_par</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">u_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">)</span>
+
+        <span class="c1"># Update self.u_expr vector</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">u_sym</span><span class="o">.</span><span class="n">numel</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_parametrized</span><span class="p">(</span><span class="n">u_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The control &quot;</span><span class="si">{}</span><span class="s1">&quot; is already parametrized.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parametrized_controls</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">u_sym</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="c1"># Replace u by expr into the system</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">u_sym</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.include_models"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_models">[docs]</a>    <span class="k">def</span> <span class="nf">include_models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Include model or list of models into this model. All the variables and functions will be included.</span>
+
+<span class="sd">        :param list|SystemModel models: models to be included</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">models</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+            <span class="c1"># include variables</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="n">x_0_sym</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">x_0_sym</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">u_sym</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">p_sym</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">)</span>
+
+            <span class="c1"># include equations</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_system_equations</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="n">alg</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
+
+            <span class="c1"># replace model time variables with this model time variables</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">t_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_sym</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tau_sym</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_sym</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.merge"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models_list</span><span class="p">,</span> <span class="n">connecting_equations</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">models_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">models_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">models_list</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_models</span><span class="p">(</span><span class="n">models_list</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_system_equations</span><span class="p">(</span><span class="n">alg</span><span class="o">=</span><span class="n">connecting_equations</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SystemModel.connect"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.connect">[docs]</a>    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -547,38 +629,37 @@
 <span class="sd">        :param u: input variable</span>
 <span class="sd">        :param y: algebraic variable</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># fix types</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="c1"># check if same size</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Size of &quot;u&quot; and &quot;y&quot; are not the same, u=</span><span class="si">{}</span><span class="s1"> and y=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">include_system_equations</span><span class="p">(</span><span class="n">alg</span><span class="o">=</span><span class="p">[</span><span class="n">u</span> <span class="o">-</span> <span class="n">y</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">remove_control</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">u</span><span class="p">)</span></div>
 
-    <span class="c1"># ==============================================================================</span>
-    <span class="c1"># region # Standard Function Call</span>
-    <span class="c1"># ==============================================================================</span>
-
 <div class="viewcode-block" id="SystemModel.put_values_in_all_sym_format"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.put_values_in_all_sym_format">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">put_values_in_all_sym_format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">u_par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">put_values_in_all_sym_format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">u_par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">t</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">x</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">y</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">u</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">theta</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="n">u_par</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">u_par</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">return</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">u_par</span></div>
+        <span class="k">return</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">u_par</span></div>
 
-    <span class="c1"># endregion</span>
-    <span class="c1"># ==============================================================================</span>
-
-    <span class="c1"># ==============================================================================</span>
-    <span class="c1"># region # TIME</span>
-    <span class="c1"># ==============================================================================</span>
+<div class="viewcode-block" id="SystemModel.all_sym_names"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.all_sym_names">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">all_sym_names</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">,</span> <span class="s1">&#39;theta&#39;</span><span class="p">,</span> <span class="s1">&#39;u_par&#39;</span></div>
 
 <div class="viewcode-block" id="SystemModel.convert_expr_from_time_to_tau"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.convert_expr_from_time_to_tau">[docs]</a>    <span class="k">def</span> <span class="nf">convert_expr_from_time_to_tau</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">t_kp1</span><span class="p">):</span>
         <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_sym</span>
@@ -592,21 +673,6 @@
         <span class="n">h</span> <span class="o">=</span> <span class="n">t_kp1</span> <span class="o">-</span> <span class="n">t_k</span>
         <span class="k">return</span> <span class="n">substitute</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">t_k</span><span class="p">)</span> <span class="o">/</span> <span class="n">h</span><span class="p">)</span></div>
 
-    <span class="c1"># endregion</span>
-    <span class="c1"># ==============================================================================</span>
-
-    <span class="c1"># ==============================================================================</span>
-    <span class="c1"># region MERGE</span>
-    <span class="c1"># ==============================================================================</span>
-
-<div class="viewcode-block" id="SystemModel.merge"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models_list</span><span class="p">,</span> <span class="n">connecting_equations</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">models_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="n">models_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">models_list</span><span class="p">]</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">include_models</span><span class="p">(</span><span class="n">models_list</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">include_system_equations</span><span class="p">(</span><span class="n">alg</span><span class="o">=</span><span class="n">connecting_equations</span><span class="p">)</span></div>
-
 <div class="viewcode-block" id="SystemModel.get_copy"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_copy">[docs]</a>    <span class="k">def</span> <span class="nf">get_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Get a copy of this model</span>
@@ -615,7 +681,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="SystemModel.get_hardcopy"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_hardcopy">[docs]</a>    <span class="k">def</span> <span class="nf">get_hardcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SystemModel.get_deepcopy"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_deepcopy">[docs]</a>    <span class="k">def</span> <span class="nf">get_deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Get a hard copy of this model, differently from &quot;get_copy&quot;, the variables of the original copy and the</span>
 <span class="sd">            hard copy will not be the same, i.e. model.x_sym != copy.x_sym</span>
@@ -642,7 +708,7 @@
             <span class="n">theta_copy</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">model_copy</span><span class="o">.</span><span class="n">create_theta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_theta</span><span class="p">)])</span>
 
         <span class="n">model_copy</span><span class="o">.</span><span class="n">include_system_equations</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="n">alg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
-        <span class="n">model_copy</span><span class="o">.</span><span class="n">u_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_func</span>
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span>
         <span class="n">model_copy</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span>
 
         <span class="n">model_copy</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_sym</span><span class="p">,</span> <span class="n">x_copy</span><span class="p">)</span>
@@ -654,13 +720,6 @@
         <span class="n">model_copy</span><span class="o">.</span><span class="n">has_adjoint_variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span>
 
         <span class="k">return</span> <span class="n">model_copy</span></div>
-
-    <span class="c1"># endregion</span>
-    <span class="c1"># ==============================================================================</span>
-
-    <span class="c1"># ==============================================================================</span>
-    <span class="c1"># region SIMULATION</span>
-    <span class="c1"># ==============================================================================</span>
 
 <div class="viewcode-block" id="SystemModel.get_dae_system"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_dae_system">[docs]</a>    <span class="k">def</span> <span class="nf">get_dae_system</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Return a DAESystem object with the model equations.</span>
@@ -708,6 +767,8 @@
             <span class="n">integrator_options</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># if control is not given</span>
             <span class="n">u</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">)</span>
@@ -715,7 +776,8 @@
             <span class="n">u</span> <span class="o">=</span> <span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;If &quot;t_f&quot; is a list, the parameter &quot;u&quot; should be a list with same length of &quot;t_f&quot;&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;If &quot;t_f&quot; is a list, the parameter &quot;u&quot; should be a list with same length of &quot;t_f&quot;.&#39;</span>
+                             <span class="s1">&#39;len(t_f) = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">)))</span>
 
         <span class="n">dae_sys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dae_system</span><span class="p">()</span>
 
@@ -727,19 +789,23 @@
         <span class="n">t_k</span> <span class="o">=</span> <span class="n">t_0</span>
         <span class="n">x_k</span> <span class="o">=</span> <span class="n">x_0</span>
         <span class="n">y_k</span> <span class="o">=</span> <span class="n">y_0</span>
+        <span class="n">f_u</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s1">&#39;f_u&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span><span class="p">])</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">t_kpp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">t_f</span><span class="p">):</span>
             <span class="n">p_k</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">dae_sys</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">x_0</span><span class="o">=</span><span class="n">x_k</span><span class="p">,</span> <span class="n">t_f</span><span class="o">=</span><span class="n">t_kpp</span><span class="p">,</span> <span class="n">t_0</span><span class="o">=</span><span class="n">t_k</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p_k</span><span class="p">,</span> <span class="n">y_0</span><span class="o">=</span><span class="n">y_k</span><span class="p">,</span>
                                       <span class="n">integrator_type</span><span class="o">=</span><span class="n">integrator_type</span><span class="p">,</span> <span class="n">integrator_options</span><span class="o">=</span><span class="n">integrator_options</span><span class="p">)</span>
             <span class="n">t_x_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_kpp</span><span class="p">)</span>
             <span class="n">t_yu_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_kpp</span><span class="p">)</span>
-            <span class="n">x_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;xf&#39;</span><span class="p">])</span>
-            <span class="n">y_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;zf&#39;</span><span class="p">])</span>
-            <span class="n">u_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
 
             <span class="n">t_k</span> <span class="o">=</span> <span class="n">t_kpp</span>
             <span class="n">x_k</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;xf&#39;</span><span class="p">]</span>
             <span class="n">y_k</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;zf&#39;</span><span class="p">]</span>
+            <span class="n">u_k</span> <span class="o">=</span> <span class="n">f_u</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">put_values_in_all_sym_format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="n">t_kpp</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x_k</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_k</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">u_par</span><span class="o">=</span><span class="n">u</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+
+            <span class="n">x_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;xf&#39;</span><span class="p">])</span>
+            <span class="n">y_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;zf&#39;</span><span class="p">])</span>
+            <span class="n">u_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">u_k</span><span class="p">)</span>
+
         <span class="n">t_x_list</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">t_x_list</span><span class="p">)</span>
         <span class="n">t_yu_list</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">t_yu_list</span><span class="p">)</span>
 
@@ -753,8 +819,6 @@
         <span class="n">simulation_result</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">t_yu_list</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">u_list</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">simulation_result</span></div>
-
-    <span class="c1"># endregion</span>
 
 <div class="viewcode-block" id="SystemModel.find_algebraic_variable"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.find_algebraic_variable">[docs]</a>    <span class="k">def</span> <span class="nf">find_algebraic_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">guess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rootfinder_options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">guess</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>

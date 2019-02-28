@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
   
@@ -82,16 +83,14 @@
   <h1>Source code for yaocptool.methods.base.optimizationresult</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
-
 <span class="kn">from</span> <span class="nn">yaocptool.modelling</span> <span class="k">import</span> <span class="n">DataSet</span>
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">horzcat</span><span class="p">,</span> <span class="n">DM</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Failed to import matplotlib. Make sure that it is properly installed&#39;</span><span class="p">)</span>
     <span class="n">plt</span> <span class="o">=</span> <span class="kc">None</span>
-
-<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">horzcat</span><span class="p">,</span> <span class="n">DM</span>
 
 
 <div class="viewcode-block" id="OptimizationResult"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.optimizationresult.OptimizationResult">[docs]</a><span class="k">class</span> <span class="nc">OptimizationResult</span><span class="p">:</span>
@@ -115,7 +114,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">collocation_points</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">objective</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: DM</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objective_opt_problem</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: DM</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_final</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: DM</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_c_final</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: DM</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">constraints_values</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: DM</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">x_names</span> <span class="o">=</span> <span class="p">[]</span>
@@ -127,14 +128,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">y_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="p">[]}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">u_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="p">[]}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">other_data</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">defaultdict</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="p">[]}))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">other_data</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;values&#39;</span><span class="p">,</span> <span class="p">[]),</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="p">[])]))</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">eta</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eta</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_dataset</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -189,6 +190,10 @@
         <span class="n">dataset</span><span class="o">.</span><span class="n">create_entry</span><span class="p">(</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_names</span><span class="p">),</span> <span class="n">names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">u_names</span><span class="p">)</span>
         <span class="n">dataset</span><span class="o">.</span><span class="n">create_entry</span><span class="p">(</span><span class="s1">&#39;theta_opt&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_names</span><span class="p">),</span> <span class="n">names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_names</span><span class="p">,</span> <span class="n">plot_style</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">)</span>
 
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">other_data</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">other_data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">create_entry</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="n">entry</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">)])</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree_control</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">][</span><span class="s1">&#39;plot_style&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;plot&#39;</span>
         <span class="k">else</span><span class="p">:</span>
@@ -210,6 +215,12 @@
             <span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="n">time_u</span><span class="p">,</span> <span class="n">values_u</span><span class="p">)</span>
 
         <span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;theta_opt&#39;</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">value</span><span class="o">=</span><span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">other_data</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">):</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span>
+                                    <span class="n">time</span><span class="o">=</span><span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">other_data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="n">el</span><span class="p">]),</span>
+                                    <span class="n">value</span><span class="o">=</span><span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">other_data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">][</span><span class="n">el</span><span class="p">]))</span>
 
         <span class="k">return</span> <span class="n">dataset</span></div>
 

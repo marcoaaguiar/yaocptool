@@ -22,7 +22,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="yaocptool.methods.base package" href="yaocptool.methods.base.html" />
@@ -167,27 +168,33 @@ s.t.: dot{x} = f(x,u),</dd>
 <dl class="method">
 <dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>problem</em>, <em>ocp_solver_class</em>, <em>solver_options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/augmented_lagrangian.html#AugmentedLagrangian.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
+<dd><blockquote>
+<div>Augmented Lagrange Method (Aguiar 2016)</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>problem</strong> (<a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem" title="yaocptool.modelling.ocp.OptimalControlProblem"><em>OptimalControlProblem</em></a>) – </li>
-<li><strong>integrator_type</strong> (<em>str</em>) – str</li>
-<li><strong>solution_method</strong> (<em>str</em>) – str</li>
-<li><strong>degree</strong> (<em>int</em>) – discretization polynomial degree</li>
-<li><strong>degree_control</strong> (<em>int</em>) – </li>
-<li><strong>discretization_scheme</strong> (<em>str</em>) – (‘multiple-shooting’ | ‘collocation’)</li>
-<li><strong>initial_guess_heuristic</strong> (<em>str</em>) – ‘simulation’ or ‘problem_info’</li>
-<li><strong>last_control_as_parameter</strong> (<em>bool</em>) – Default: False, if set to True, the last control will be an
-parameter for the NLP generated from the OCP. This is useful for MPCs, where the initial condition changes
-every iteration.</li>
+<li><strong>yaocptool.modelling.OptimalControlProblem</strong> – Optimal Control Problem</li>
+<li><strong>ocp_solver_class</strong> (<em>yaocptool.methods.SolutionMethodsBase</em>) – Class of Solution Method (Direct/Indirect Method)</li>
+<li><strong>solver_options</strong> – Options for the Solution Method class given</li>
+<li><strong>relax_algebraic_index</strong> – Index for the algebraic equations that will be relaxed, if not given all the</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
+<p>algebraic equations will be relaxed
+:param relax_algebraic_var_index: Index for the algebraic variables that will be relaxed, if not given it will
+be assumed the same as the ‘relax_algebraic_index’
+:param relax_state_bounds: This relax the states bounds and put then in the objective, via an algebraic variable
+:param kwargs:</p>
 </dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.call_solver">
+<code class="descname">call_solver</code><span class="sig-paren">(</span><em>initial_guess=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>x_0=None</em>, <em>last_u=None</em>, <em>initial_guess_dict=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/augmented_lagrangian.html#AugmentedLagrangian.call_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.call_solver" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.create_nu_initial_guess">
@@ -199,6 +206,11 @@ every iteration.</li>
 <code class="descname">create_optimization_result</code><span class="sig-paren">(</span><em>raw_solution_dict</em>, <em>p=None</em>, <em>theta=None</em>, <em>x_0=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/augmented_lagrangian.html#AugmentedLagrangian.create_optimization_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.create_optimization_result" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="attribute">
+<dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.discretizer">
+<code class="descname">discretizer</code><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.discretizer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="staticmethod">
 <dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.join_nu_to_theta">
 <em class="property">static </em><code class="descname">join_nu_to_theta</code><span class="sig-paren">(</span><em>theta</em>, <em>nu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/augmented_lagrangian.html#AugmentedLagrangian.join_nu_to_theta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.join_nu_to_theta" title="Permalink to this definition">¶</a></dt>
@@ -207,26 +219,6 @@ every iteration.</li>
 <dl class="attribute">
 <dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.model">
 <code class="descname">model</code><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.model" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.relaxed_alg">
-<code class="descname">relaxed_alg</code><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.relaxed_alg" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.solve_raw">
-<code class="descname">solve_raw</code><span class="sig-paren">(</span><em>initial_guess=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>x_0=None</em>, <em>last_u=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/augmented_lagrangian.html#AugmentedLagrangian.solve_raw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.solve_raw" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.split_x_and_u">
-<code class="descname">split_x_and_u</code><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.split_x_and_u" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.split_x_y_and_u">
-<code class="descname">split_x_y_and_u</code><a class="headerlink" href="#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.split_x_y_and_u" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -242,10 +234,12 @@ every iteration.</li>
 <dl class="class">
 <dt id="yaocptool.methods.distributed_solution.DistributedSolution">
 <em class="property">class </em><code class="descclassname">yaocptool.methods.distributed_solution.</code><code class="descname">DistributedSolution</code><span class="sig-paren">(</span><em>subsystem_classes_list</em>, <em>parameters_list</em>, <em>connection_list</em>, <em>main_to_subsystems_list=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/distributed_solution.html#DistributedSolution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.distributed_solution.DistributedSolution" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.methods.distributed_solution.DistributedSolution.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>subsystem_classes_list</em>, <em>parameters_list</em>, <em>connection_list</em>, <em>main_to_subsystems_list=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/distributed_solution.html#DistributedSolution.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.distributed_solution.DistributedSolution.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="yaocptool.methods.distributed_solution.DistributedSolution.initialize">

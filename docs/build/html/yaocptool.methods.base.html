@@ -22,7 +22,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="yaocptool.methods.classic package" href="yaocptool.methods.classic.html" />
@@ -131,7 +132,8 @@
 <dl class="class">
 <dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase">
 <em class="property">class </em><code class="descclassname">yaocptool.methods.base.discretizationschemebase.</code><code class="descname">DiscretizationSchemeBase</code><span class="sig-paren">(</span><em>solution_method</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>solution_method</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for discretization methods. A discretization class transforms and OCP into a NLP</p>
@@ -191,13 +193,6 @@ If no p or theta is given, an vector of zeros o appropriate size is used.</p>
 </tr>
 </tbody>
 </table>
-</dd></dl>
-
-<dl class="method">
-<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_nlp_symbolic_variables">
-<code class="descname">create_nlp_symbolic_variables</code><span class="sig-paren">(</span><em>nlp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.create_nlp_symbolic_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_nlp_symbolic_variables" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create the symbolic variables that will be used by the NLP problem
-:rtype: (DM, List[List[DM]], List(List(DM)), List(DM), DM, DM, DM)</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -282,19 +277,14 @@ If no p or theta is given, an vector of zeros o appropriate size is used.</p>
 :type raw_solution_dict: dict</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_and_u">
-<code class="descname">split_x_and_u</code><span class="sig-paren">(</span><em>results_vector</em>, <em>all_subinterval=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.split_x_and_u"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_and_u" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_y_and_u">
-<code class="descname">split_x_y_and_u</code><span class="sig-paren">(</span><em>v</em>, <em>all_subinterval=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/base/discretizationschemebase.html#DiscretizationSchemeBase.split_x_y_and_u"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_y_and_u" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="attribute">
 <dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.time_breakpoints">
 <code class="descname">time_breakpoints</code><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.time_breakpoints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.time_interpolation_controls">
+<code class="descname">time_interpolation_controls</code><a class="headerlink" href="#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.time_interpolation_controls" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -328,10 +318,12 @@ If no p or theta is given, an vector of zeros o appropriate size is used.</p>
 <dl class="class">
 <dt id="yaocptool.methods.base.optimizationresult.OptimizationResult">
 <em class="property">class </em><code class="descclassname">yaocptool.methods.base.optimizationresult.</code><code class="descname">OptimizationResult</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/base/optimizationresult.html#OptimizationResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.methods.base.optimizationresult.OptimizationResult.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/base/optimizationresult.html#OptimizationResult.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.optimizationresult.OptimizationResult.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="yaocptool.methods.base.optimizationresult.OptimizationResult.dataset">
@@ -456,7 +448,7 @@ If degree_control &gt; 1, then a piecewise polynomial approximation will be used
 
 <dl class="method">
 <dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_optimization_result">
-<code class="descname">create_optimization_result</code><span class="sig-paren">(</span><em>raw_solution_dict</em>, <em>p=None</em>, <em>theta=None</em>, <em>x_0=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.create_optimization_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_optimization_result" title="Permalink to this definition">¶</a></dt>
+<code class="descname">create_optimization_result</code><span class="sig-paren">(</span><em>raw_solution_dict</em>, <em>p</em>, <em>theta</em>, <em>x_0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/base/solutionmethodsbase.html#SolutionMethodsBase.create_optimization_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_optimization_result" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -502,16 +494,6 @@ If degree_control &gt; 1, then a piecewise polynomial approximation will be used
 </tbody>
 </table>
 </dd></dl>
-
-<dl class="attribute">
-<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_and_u">
-<code class="descname">split_x_and_u</code><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_and_u" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_y_and_u">
-<code class="descname">split_x_y_and_u</code><a class="headerlink" href="#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_y_and_u" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 <dl class="attribute">
 <dt id="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.time_breakpoints">

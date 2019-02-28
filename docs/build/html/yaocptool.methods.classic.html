@@ -22,7 +22,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="yaocptool.modelling package" href="yaocptool.modelling.html" />
@@ -185,14 +186,6 @@ If no p or theta is given, an vector of zeros of appropriate size is used.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="yaocptool.methods.classic.collocationscheme.CollocationScheme.create_nlp_symbolic_variables">
-<code class="descname">create_nlp_symbolic_variables</code><span class="sig-paren">(</span><em>nlp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/collocationscheme.html#CollocationScheme.create_nlp_symbolic_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.collocationscheme.CollocationScheme.create_nlp_symbolic_variables" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create the symbolic variables that will be used by the NLP problem
-:param NonlinearOptimizationProblem nlp: nonlinear optimization problem in which the variables will be created
-:rtype: tuple</p>
-</dd></dl>
-
-<dl class="method">
 <dt id="yaocptool.methods.classic.collocationscheme.CollocationScheme.discretize">
 <code class="descname">discretize</code><span class="sig-paren">(</span><em>x_0=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>last_u=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/collocationscheme.html#CollocationScheme.discretize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.collocationscheme.CollocationScheme.discretize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Discretize the OCP, returning a Optimization Problem</p>
@@ -250,26 +243,6 @@ identifier, VALUE is a CasADi Function with model.all_sym as input</li>
 :type raw_solution_dict: dict</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="yaocptool.methods.classic.collocationscheme.CollocationScheme.split_x_y_and_u">
-<code class="descname">split_x_y_and_u</code><span class="sig-paren">(</span><em>decision_variables</em>, <em>all_subinterval=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/collocationscheme.html#CollocationScheme.split_x_y_and_u"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.collocationscheme.CollocationScheme.split_x_y_and_u" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>all_subinterval</strong> – Bool ‘Returns all elements of the subinterval (or only the first one)’</li>
-<li><strong>decision_variables</strong> – DM</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">X, Y, and U -&gt; list with a DM for each element</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 <dl class="attribute">
 <dt id="yaocptool.methods.classic.collocationscheme.CollocationScheme.time_interpolation">
 <code class="descname">time_interpolation</code><a class="headerlink" href="#yaocptool.methods.classic.collocationscheme.CollocationScheme.time_interpolation" title="Permalink to this definition">¶</a></dt>
@@ -278,11 +251,6 @@ identifier, VALUE is a CasADi Function with model.all_sym as input</li>
 <dl class="attribute">
 <dt id="yaocptool.methods.classic.collocationscheme.CollocationScheme.time_interpolation_algebraics">
 <code class="descname">time_interpolation_algebraics</code><a class="headerlink" href="#yaocptool.methods.classic.collocationscheme.CollocationScheme.time_interpolation_algebraics" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="yaocptool.methods.classic.collocationscheme.CollocationScheme.time_interpolation_controls">
-<code class="descname">time_interpolation_controls</code><a class="headerlink" href="#yaocptool.methods.classic.collocationscheme.CollocationScheme.time_interpolation_controls" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -358,17 +326,18 @@ identifier, VALUE is a CasADi Function with model.all_sym as input</li>
 <p>&#64;author: marco</p>
 <dl class="class">
 <dt id="yaocptool.methods.classic.indirectmethod.IndirectMethod">
-<em class="property">class </em><code class="descclassname">yaocptool.methods.classic.indirectmethod.</code><code class="descname">IndirectMethod</code><span class="sig-paren">(</span><em>problem</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/indirectmethod.html#IndirectMethod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.indirectmethod.IndirectMethod" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">yaocptool.methods.classic.indirectmethod.</code><code class="descname">IndirectMethod</code><span class="sig-paren">(</span><em>problem</em>, <em>create_cost_state=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/indirectmethod.html#IndirectMethod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.indirectmethod.IndirectMethod" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase" title="yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase</span></code></a></p>
 <dl class="method">
 <dt id="yaocptool.methods.classic.indirectmethod.IndirectMethod.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>problem</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/indirectmethod.html#IndirectMethod.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.indirectmethod.IndirectMethod.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>problem</em>, <em>create_cost_state=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/indirectmethod.html#IndirectMethod.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.indirectmethod.IndirectMethod.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>problem</strong> – yaocptool.modelling.ocp.OptimalControlProblem</li>
+<li><strong>create_cost_state</strong> (<em>bool</em>) – If True a cost state will be created to keep track of the dynamic cost.</li>
 <li><strong>integrator_type</strong> – str</li>
 <li><strong>solution_method</strong> – str</li>
 <li><strong>degree</strong> – int</li>
@@ -385,9 +354,9 @@ identifier, VALUE is a CasADi Function with model.all_sym as input</li>
 <code class="descname">calculate_optimal_control</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/indirectmethod.html#IndirectMethod.calculate_optimal_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.indirectmethod.IndirectMethod.calculate_optimal_control" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
-<dt id="yaocptool.methods.classic.indirectmethod.IndirectMethod.include_adjoint_states">
-<code class="descname">include_adjoint_states</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/indirectmethod.html#IndirectMethod.include_adjoint_states"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.indirectmethod.IndirectMethod.include_adjoint_states" title="Permalink to this definition">¶</a></dt>
+<dl class="attribute">
+<dt id="yaocptool.methods.classic.indirectmethod.IndirectMethod.degree_control">
+<code class="descname">degree_control</code><a class="headerlink" href="#yaocptool.methods.classic.indirectmethod.IndirectMethod.degree_control" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -461,13 +430,6 @@ If no p or theta is given, an vector of zeros o appropriate size is used.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.create_nlp_symbolic_variables">
-<code class="descname">create_nlp_symbolic_variables</code><span class="sig-paren">(</span><em>nlp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/multipleshooting.html#MultipleShootingScheme.create_nlp_symbolic_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.create_nlp_symbolic_variables" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create the symbolic variables that will be used by the NLP problem
-:rtype: (MX, List[List[MX]], List[List[MX]], List[MX], MX, MX, List[MX)</p>
-</dd></dl>
-
-<dl class="method">
 <dt id="yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.discretize">
 <code class="descname">discretize</code><span class="sig-paren">(</span><em>x_0=None</em>, <em>p=None</em>, <em>theta=None</em>, <em>last_u=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/multipleshooting.html#MultipleShootingScheme.discretize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.discretize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Discretize the OCP, returning a Optimization Problem</p>
@@ -520,26 +482,6 @@ identifier, VALUE is a CasADi Function with model.all_sym as input</li>
 <dd><p>Set the raw data received from the solver and put it in the Optimization Result object
 :param OptimizationResult optimization_result:
 :param dict raw_solution_dict:</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.split_x_y_and_u">
-<code class="descname">split_x_y_and_u</code><span class="sig-paren">(</span><em>results_vector</em>, <em>all_subinterval=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/methods/classic/multipleshooting.html#MultipleShootingScheme.split_x_y_and_u"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.split_x_y_and_u" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>all_subinterval</strong> – Bool ‘Returns all elements of the subinterval (or only the first one)’</li>
-<li><strong>results_vector</strong> – DM</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">X, Y, and U -&gt; list with a DM for each element</p>
-</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 <dl class="method">

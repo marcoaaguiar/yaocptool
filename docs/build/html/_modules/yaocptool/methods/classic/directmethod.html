@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
   
@@ -105,7 +106,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">solution_class</span> <span class="o">=</span> <span class="s1">&#39;direct&#39;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">hasCostState</span> <span class="o">=</span> <span class="kc">False</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_cost_state</span> <span class="o">=</span> <span class="kc">False</span></div>
 
     <span class="k">def</span> <span class="nf">_parametrize_control</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">u_pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_control_approximation</span><span class="p">()</span>
@@ -124,9 +125,10 @@
         <span class="k">return</span> <span class="n">u_pol</span>
 
     <span class="k">def</span> <span class="nf">_create_cost_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasCostState</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">create_cost_state</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">hasCostState</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_cost_state</span><span class="p">:</span>
+            <span class="n">x_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">create_cost_state</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">has_cost_state</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">V</span> <span class="o">+</span> <span class="n">x_c</span>
 
 <div class="viewcode-block" id="DirectMethod.prepare"><a class="viewcode-back" href="../../../../yaocptool.methods.classic.html#yaocptool.methods.classic.directmethod.DirectMethod.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DirectMethod</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>

@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   
@@ -83,9 +84,9 @@
 <span></span><span class="kn">import</span> <span class="nn">math</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">DM</span><span class="p">,</span> <span class="n">SX</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">chol</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">exp</span>
-<span class="kn">from</span> <span class="nn">scipy.stats.distributions</span> <span class="k">import</span> <span class="n">norm</span>
 <span class="kn">import</span> <span class="nn">sobol_seq</span>
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">DM</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">chol</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">exp</span>
+<span class="kn">from</span> <span class="nn">scipy.stats.distributions</span> <span class="k">import</span> <span class="n">norm</span>
 
 
 <div class="viewcode-block" id="sample_parameter_normal_distribution_with_sobol"><a class="viewcode-back" href="../../../yaocptool.stochastic.html#yaocptool.stochastic.util.sample_parameter_normal_distribution_with_sobol">[docs]</a><span class="k">def</span> <span class="nf">sample_parameter_normal_distribution_with_sobol</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">covariance</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>

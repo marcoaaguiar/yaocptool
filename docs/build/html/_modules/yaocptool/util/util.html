@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   
@@ -80,10 +81,17 @@
           <div class="document clearer body">
             
   <h1>Source code for yaocptool.util.util</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">is_equal</span><span class="p">,</span> <span class="n">DM</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">integrator</span><span class="p">,</span> <span class="n">MX</span><span class="p">,</span> <span class="n">repmat</span>
+<span></span><span class="kn">from</span> <span class="nn">casadi</span> <span class="k">import</span> <span class="n">is_equal</span><span class="p">,</span> <span class="n">DM</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">integrator</span><span class="p">,</span> <span class="n">MX</span><span class="p">,</span> <span class="n">repmat</span><span class="p">,</span> <span class="n">OP_LT</span><span class="p">,</span> <span class="n">OP_LE</span><span class="p">,</span> <span class="n">OP_EQ</span><span class="p">,</span> <span class="n">SX</span>
 
 
 <div class="viewcode-block" id="find_variables_indices_in_vector"><a class="viewcode-back" href="../../../yaocptool.util.html#yaocptool.util.util.find_variables_indices_in_vector">[docs]</a><span class="k">def</span> <span class="nf">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">vector</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given symbolic variables return the indices of the variables in a vector</span>
+
+<span class="sd">    :param casadi.SX|casadi.MX var:</span>
+<span class="sd">    :param casadi.SX|casadi.MX vector:</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">index</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">vector</span><span class="o">.</span><span class="n">size1</span><span class="p">()):</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()):</span>
@@ -206,6 +214,32 @@
     <span class="n">res</span> <span class="o">=</span> <span class="n">integrator_map</span><span class="p">(</span><span class="n">x0</span><span class="o">=</span><span class="n">DM</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">dim</span><span class="p">),</span> <span class="n">p</span><span class="o">=</span><span class="n">repmat</span><span class="p">(</span><span class="n">vec</span><span class="p">(</span><span class="n">a_matrix</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">a_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])))[</span><span class="s1">&#39;xf&#39;</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">res</span></div>
+
+
+<div class="viewcode-block" id="is_inequality"><a class="viewcode-back" href="../../../yaocptool.util.html#yaocptool.util.util.is_inequality">[docs]</a><span class="k">def</span> <span class="nf">is_inequality</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Return true if an expression is an inequality (e.g.: x &lt; 1, x &lt;= 2)</span>
+
+<span class="sd">    :param MX|SX expr: symbolic expression</span>
+<span class="sd">    :return: True if &#39;expr&#39; is an inequality, False otherwise</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="p">(</span><span class="n">MX</span><span class="p">,</span> <span class="n">SX</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">expr</span><span class="o">.</span><span class="n">op</span><span class="p">()</span> <span class="o">==</span> <span class="n">OP_LE</span> <span class="ow">or</span> <span class="n">expr</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="n">OP_LT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="is_equality"><a class="viewcode-back" href="../../../yaocptool.util.html#yaocptool.util.util.is_equality">[docs]</a><span class="k">def</span> <span class="nf">is_equality</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Return true if an expression is an equality (e.g.: x == 2)</span>
+
+<span class="sd">    :param MX|SX expr: symbolic expression</span>
+<span class="sd">    :return: True if &#39;expr&#39; is an inequality, False otherwise</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="p">(</span><span class="n">MX</span><span class="p">,</span> <span class="n">SX</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">expr</span><span class="o">.</span><span class="n">op</span><span class="p">()</span> <span class="o">==</span> <span class="n">OP_EQ</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
 </pre></div>
 
           </div>

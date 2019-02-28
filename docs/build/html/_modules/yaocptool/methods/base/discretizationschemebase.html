@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
   
@@ -135,9 +136,11 @@
     <span class="k">def</span> <span class="nf">time_breakpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">time_breakpoints</span>
 
-<div class="viewcode-block" id="DiscretizationSchemeBase.split_x_and_u"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_and_u">[docs]</a>    <span class="k">def</span> <span class="nf">split_x_and_u</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">results_vector</span><span class="p">,</span> <span class="n">all_subinterval</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="n">x_values</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">u_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_x_y_and_u</span><span class="p">(</span><span class="n">results_vector</span><span class="p">,</span> <span class="n">all_subinterval</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">x_values</span><span class="p">,</span> <span class="n">u_values</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">time_interpolation_controls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">tau_list</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree_control</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">collocation_points</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">degree_control</span><span class="p">,</span>
+                                                                                                 <span class="n">with_zero</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[[</span><span class="n">t</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">delta_t</span> <span class="o">*</span> <span class="n">tau</span> <span class="k">for</span> <span class="n">tau</span> <span class="ow">in</span> <span class="n">tau_list</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_breakpoints</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
 
 <div class="viewcode-block" id="DiscretizationSchemeBase.vectorize"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.vectorize">[docs]</a>    <span class="k">def</span> <span class="nf">vectorize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vector</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vector</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
@@ -165,9 +168,6 @@
             <span class="n">function_dict</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_expr_el</span>
         <span class="k">return</span> <span class="n">function_dict</span>
 
-<div class="viewcode-block" id="DiscretizationSchemeBase.split_x_y_and_u"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_y_and_u">[docs]</a>    <span class="k">def</span> <span class="nf">split_x_y_and_u</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">all_subinterval</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
-
 <div class="viewcode-block" id="DiscretizationSchemeBase.discretize"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.discretize">[docs]</a>    <span class="k">def</span> <span class="nf">discretize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">last_u</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Discretize the OCP, returning a Optimization Problem</span>
 
@@ -179,12 +179,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
-<div class="viewcode-block" id="DiscretizationSchemeBase.create_nlp_symbolic_variables"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_nlp_symbolic_variables">[docs]</a>    <span class="k">def</span> <span class="nf">create_nlp_symbolic_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nlp</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_create_nlp_symbolic_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nlp</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create the symbolic variables that will be used by the NLP problem</span>
 <span class="sd">        :rtype: (DM, List[List[DM]], List(List(DM)), List(DM), DM, DM, DM)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
 <div class="viewcode-block" id="DiscretizationSchemeBase.get_system_at_given_times"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.get_system_at_given_times">[docs]</a>    <span class="k">def</span> <span class="nf">get_system_at_given_times</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">time_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">functions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                   <span class="n">start_at_t_0</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>

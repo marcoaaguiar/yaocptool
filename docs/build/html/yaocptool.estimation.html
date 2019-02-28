@@ -22,7 +22,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="yaocptool.methods package" href="yaocptool.methods.html" />
@@ -129,10 +130,12 @@
 <dl class="class">
 <dt id="yaocptool.estimation.estimator_abstract.EstimatorAbstract">
 <em class="property">class </em><code class="descclassname">yaocptool.estimation.estimator_abstract.</code><code class="descname">EstimatorAbstract</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/estimator_abstract.html#EstimatorAbstract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.estimator_abstract.EstimatorAbstract" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
 <dt id="yaocptool.estimation.estimator_abstract.EstimatorAbstract.__init__">
 <code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/estimator_abstract.html#EstimatorAbstract.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.estimator_abstract.EstimatorAbstract.__init__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="yaocptool.estimation.estimator_abstract.EstimatorAbstract.estimate">
@@ -182,7 +185,11 @@ Nonlinear State Estimation of Differential Algebraic Systems. Proceedings of the
 <dl class="method">
 <dt id="yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.estimate">
 <code class="descname">estimate</code><span class="sig-paren">(</span><em>t_k</em>, <em>y_k</em>, <em>u_k</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/extended_kalman_filter.html#ExtendedKalmanFilter.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.estimate" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Estimate the state given the measurement y_k and the control u_k
+:param DM t_k: time of the measurements
+:param DM y_k: measurement
+:param DM u_k: control</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.n_meas">
@@ -237,7 +244,11 @@ y_meas = C*[x y_alg] + D*u. note that it has to have n_x + n_y (algebraic) colum
 <dl class="method">
 <dt id="yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter.estimate">
 <code class="descname">estimate</code><span class="sig-paren">(</span><em>t_k</em>, <em>y_k</em>, <em>u_k</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/pce_kalman_filter.html#PCEKalmanFilter.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter.estimate" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Estimate the state given the measurement y_k and the control u_k
+:param DM t_k: time of the measurements
+:param DM y_k: measurement
+:param DM u_k: control</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter.n_pol_parameters">
@@ -295,7 +306,11 @@ y_meas = C*[x y_alg] + D*u. note that it has to have n_x + n_y (algebraic) colum
 <dl class="method">
 <dt id="yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.estimate">
 <code class="descname">estimate</code><span class="sig-paren">(</span><em>t_k</em>, <em>y_k</em>, <em>u_k</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/unscented_kalman_filter.html#UnscentedKalmanFilter.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.estimate" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Estimate the state given the measurement y_k and the control u_k
+:param DM t_k: time of the measurements
+:param DM y_k: measurement
+:param DM u_k: control</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.n_meas">

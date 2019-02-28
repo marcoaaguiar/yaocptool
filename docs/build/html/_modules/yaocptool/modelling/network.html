@@ -22,7 +22,8 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   
@@ -102,8 +103,8 @@
 <span class="sd">            z_sym[0:1] in Node 1 is connected to z_sym[1:2] in Node 4</span>
 <span class="sd">            connections_dict = {1: [{1:[0,1]}, {4:[1,2]}]}</span>
 
-<span class="sd">        :type nodes: object</span>
-<span class="sd">        :type connections_settings_dict: object</span>
+<span class="sd">        :param nodes:</span>
+<span class="sd">        :param connections_settings_dict:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">connections_settings_dict</span> <span class="o">=</span> <span class="n">connections_settings_dict</span>
@@ -154,9 +155,9 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Connection class for Network systems</span>
 
-<span class="sd">        :type nodes: list</span>
-<span class="sd">        :type z_sym_indices_list: dict</span>
-<span class="sd">        :type connection_id: int</span>
+<span class="sd">        :param list nodes:</span>
+<span class="sd">        :param dict z_sym_indices_list:</span>
+<span class="sd">        :param int connection_id:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">z_sym_indices_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">z_sym_indices_list</span> <span class="o">=</span> <span class="p">{}</span>

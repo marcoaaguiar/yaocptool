@@ -81,7 +81,7 @@
 \newlabel{yaocptool.methods.base:yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.__init__}{{1.1.2.1}{3}{yaocptool.methods.base.discretizationschemebase module}{section*.23}{}}
 \newlabel{yaocptool.methods.base:yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_initial_guess}{{1.1.2.1}{3}{yaocptool.methods.base.discretizationschemebase module}{section*.24}{}}
 \newlabel{yaocptool.methods.base:yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_initial_guess_with_simulation}{{1.1.2.1}{4}{yaocptool.methods.base.discretizationschemebase module}{section*.25}{}}
-\newlabel{yaocptool.methods.base:yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_nlp_symbolic_variables}{{1.1.2.1}{4}{yaocptool.methods.base.discretizationschemebase module}{section*.26}{}}
+\newlabel{yaocptool.methods.base:yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase._create_nlp_symbolic_variables}{{1.1.2.1}{4}{yaocptool.methods.base.discretizationschemebase module}{section*.26}{}}
 \newlabel{yaocptool.methods.base:yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.degree}{{1.1.2.1}{4}{yaocptool.methods.base.discretizationschemebase module}{section*.27}{}}
 \newlabel{yaocptool.methods.base:yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.degree_control}{{1.1.2.1}{4}{yaocptool.methods.base.discretizationschemebase module}{section*.28}{}}
 \newlabel{yaocptool.methods.base:yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.delta_t}{{1.1.2.1}{4}{yaocptool.methods.base.discretizationschemebase module}{section*.29}{}}
@@ -140,7 +140,7 @@
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.collocationscheme.CollocationScheme}{{1.1.2.1}{7}{yaocptool.methods.classic.collocationscheme module}{section*.71}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.collocationscheme.CollocationScheme.create_initial_guess}{{1.1.2.1}{7}{yaocptool.methods.classic.collocationscheme module}{section*.72}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.collocationscheme.CollocationScheme.create_initial_guess_with_simulation}{{1.1.2.1}{7}{yaocptool.methods.classic.collocationscheme module}{section*.73}{}}
-\newlabel{yaocptool.methods.classic:yaocptool.methods.classic.collocationscheme.CollocationScheme.create_nlp_symbolic_variables}{{1.1.2.1}{7}{yaocptool.methods.classic.collocationscheme module}{section*.74}{}}
+\newlabel{yaocptool.methods.classic:yaocptool.methods.classic.collocationscheme.CollocationScheme._create_nlp_symbolic_variables}{{1.1.2.1}{7}{yaocptool.methods.classic.collocationscheme module}{section*.74}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.collocationscheme.CollocationScheme.discretize}{{1.1.2.1}{7}{yaocptool.methods.classic.collocationscheme module}{section*.75}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.collocationscheme.CollocationScheme.get_system_at_given_times}{{1.1.2.1}{7}{yaocptool.methods.classic.collocationscheme module}{section*.76}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.collocationscheme.CollocationScheme.set_data_to_optimization_result_from_raw_data}{{1.1.2.1}{8}{yaocptool.methods.classic.collocationscheme module}{section*.77}{}}
@@ -162,7 +162,7 @@
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.indirectmethod.IndirectMethod}{{1.1.2.1}{9}{yaocptool.methods.classic.indirectmethod module}{section*.89}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.indirectmethod.IndirectMethod.__init__}{{1.1.2.1}{9}{yaocptool.methods.classic.indirectmethod module}{section*.90}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.indirectmethod.IndirectMethod.calculate_optimal_control}{{1.1.2.1}{9}{yaocptool.methods.classic.indirectmethod module}{section*.91}{}}
-\newlabel{yaocptool.methods.classic:yaocptool.methods.classic.indirectmethod.IndirectMethod.include_adjoint_states}{{1.1.2.1}{9}{yaocptool.methods.classic.indirectmethod module}{section*.92}{}}
+\newlabel{yaocptool.methods.classic:yaocptool.methods.classic.indirectmethod.IndirectMethod.create_adjoint_states}{{1.1.2.1}{9}{yaocptool.methods.classic.indirectmethod module}{section*.92}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.indirectmethod.IndirectMethod.prepare}{{1.1.2.1}{9}{yaocptool.methods.classic.indirectmethod module}{section*.93}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.indirectmethod.IndirectMethod.replace_with_optimal_control}{{1.1.2.1}{9}{yaocptool.methods.classic.indirectmethod module}{section*.94}{}}
 \@writefile{toc}{\contentsline {subparagraph}{yaocptool.methods.classic.multipleshooting module}{9}{subparagraph*.95}}
@@ -171,7 +171,7 @@
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.multipleshooting.MultipleShootingScheme}{{1.1.2.1}{9}{yaocptool.methods.classic.multipleshooting module}{section*.96}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.create_initial_guess}{{1.1.2.1}{9}{yaocptool.methods.classic.multipleshooting module}{section*.97}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.create_initial_guess_with_simulation}{{1.1.2.1}{10}{yaocptool.methods.classic.multipleshooting module}{section*.98}{}}
-\newlabel{yaocptool.methods.classic:yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.create_nlp_symbolic_variables}{{1.1.2.1}{10}{yaocptool.methods.classic.multipleshooting module}{section*.99}{}}
+\newlabel{yaocptool.methods.classic:yaocptool.methods.classic.multipleshooting.MultipleShootingScheme._create_nlp_symbolic_variables}{{1.1.2.1}{10}{yaocptool.methods.classic.multipleshooting module}{section*.99}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.discretize}{{1.1.2.1}{10}{yaocptool.methods.classic.multipleshooting module}{section*.100}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.get_system_at_given_times}{{1.1.2.1}{10}{yaocptool.methods.classic.multipleshooting module}{section*.101}{}}
 \newlabel{yaocptool.methods.classic:yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.set_data_to_optimization_result_from_raw_data}{{1.1.2.1}{11}{yaocptool.methods.classic.multipleshooting module}{section*.102}{}}

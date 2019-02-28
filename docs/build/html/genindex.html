@@ -23,7 +23,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" />
   
@@ -147,9 +148,7 @@
 </li>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.__init__">(yaocptool.modelling.ocp.OptimalControlProblem method)</a>
 </li>
-        <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.SuperOCP.__init__">(yaocptool.modelling.ocp.SuperOCP method)</a>
-</li>
-        <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.__init__">(yaocptool.modelling.simualtion_result.SimulationResult method)</a>
+        <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.__init__">(yaocptool.modelling.simulation_result.SimulationResult method)</a>
 </li>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.__init__">(yaocptool.modelling.stochastic_ocp.StochasticOCP method)</a>
 </li>
@@ -180,9 +179,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.optimization.html#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem">AbstractOptimizationProblem (class in yaocptool.optimization.abstract_optimization_problem)</a>
 </li>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.all_sym">all_sym (yaocptool.modelling.system_model.SystemModel attribute)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.all_sym">all_sym (yaocptool.modelling.system_model.SystemModel attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.all_sym_names">all_sym_names() (yaocptool.modelling.system_model.SystemModel static method)</a>
 </li>
       <li><a href="yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian">AugmentedLagrangian (class in yaocptool.methods.augmented_lagrangian)</a>
 </li>
@@ -202,8 +203,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod.calculate_optimal_control">calculate_optimal_control() (yaocptool.methods.classic.indirectmethod.IndirectMethod method)</a>
 </li>
-      <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.call_solver">call_solver() (yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase method)</a>
+      <li><a href="yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.call_solver">call_solver() (yaocptool.methods.augmented_lagrangian.AugmentedLagrangian method)</a>
+
+      <ul>
+        <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.call_solver">(yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase method)</a>
 </li>
+      </ul></li>
       <li><a href="yaocptool.estimation.html#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.cholupdate">cholupdate() (yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter static method)</a>
 </li>
       <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.collocation_points">collocation_points() (yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase static method)</a>
@@ -226,6 +231,8 @@
 </li>
       <li><a href="yaocptool.stochastic.html#yaocptool.stochastic.pce.PCEConverter.convert_socp_to_ocp_with_pce">convert_socp_to_ocp_with_pce() (yaocptool.stochastic.pce.PCEConverter method)</a>
 </li>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_adjoint_states">create_adjoint_states() (yaocptool.modelling.ocp.OptimalControlProblem method)</a>
+</li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_algebraic">create_algebraic() (yaocptool.modelling.ocp.OptimalControlProblem method)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.create_algebraic_variable">create_algebraic_variable() (yaocptool.modelling.system_model.SystemModel method)</a>
@@ -242,6 +249,8 @@
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.create_entry">create_entry() (yaocptool.modelling.dataset.DataSet method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_initial_guess">create_initial_guess() (yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase method)</a>
 
       <ul>
@@ -250,8 +259,6 @@
         <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.create_initial_guess">(yaocptool.methods.classic.multipleshooting.MultipleShootingScheme method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_initial_guess_with_simulation">create_initial_guess_with_simulation() (yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase method)</a>
 
       <ul>
@@ -260,14 +267,8 @@
         <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.create_initial_guess_with_simulation">(yaocptool.methods.classic.multipleshooting.MultipleShootingScheme method)</a>
 </li>
       </ul></li>
-      <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.create_nlp_symbolic_variables">create_nlp_symbolic_variables() (yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase method)</a>
-
-      <ul>
-        <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.collocationscheme.CollocationScheme.create_nlp_symbolic_variables">(yaocptool.methods.classic.collocationscheme.CollocationScheme method)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.create_input">create_input() (yaocptool.modelling.system_model.SystemModel method)</a>
 </li>
-        <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.create_nlp_symbolic_variables">(yaocptool.methods.classic.multipleshooting.MultipleShootingScheme method)</a>
-</li>
-      </ul></li>
       <li><a href="yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.create_nu_initial_guess">create_nu_initial_guess() (yaocptool.methods.augmented_lagrangian.AugmentedLagrangian method)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_optimization_parameter">create_optimization_parameter() (yaocptool.modelling.ocp.OptimalControlProblem method)</a>
@@ -323,7 +324,11 @@
       <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.degree">degree (yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase attribute)</a>
 </li>
       <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.degree_control">degree_control (yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase attribute)</a>
+
+      <ul>
+        <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod.degree_control">(yaocptool.methods.classic.indirectmethod.IndirectMethod attribute)</a>
 </li>
+      </ul></li>
       <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.delta_t">delta_t (yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase attribute)</a>
 
       <ul>
@@ -344,6 +349,8 @@
         <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.discretize">(yaocptool.methods.classic.multipleshooting.MultipleShootingScheme method)</a>
 </li>
       </ul></li>
+      <li><a href="yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.discretizer">discretizer (yaocptool.methods.augmented_lagrangian.AugmentedLagrangian attribute)</a>
+</li>
       <li><a href="yaocptool.methods.html#yaocptool.methods.distributed_solution.DistributedSolution">DistributedSolution (class in yaocptool.methods.distributed_solution)</a>
 </li>
   </ul></td>
@@ -371,7 +378,7 @@
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.extend">extend() (yaocptool.modelling.dataset.DataSet method)</a>
 
       <ul>
-        <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.extend">(yaocptool.modelling.simualtion_result.SimulationResult method)</a>
+        <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.extend">(yaocptool.modelling.simulation_result.SimulationResult method)</a>
 </li>
       </ul></li>
       <li><a href="yaocptool.estimation.html#yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter">ExtendedKalmanFilter (class in yaocptool.estimation.extended_kalman_filter)</a>
@@ -382,7 +389,7 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.final_condition">final_condition() (yaocptool.modelling.simualtion_result.SimulationResult method)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.final_condition">final_condition() (yaocptool.modelling.simulation_result.SimulationResult method)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.find_algebraic_variable">find_algebraic_variable() (yaocptool.modelling.system_model.SystemModel method)</a>
 </li>
@@ -414,6 +421,8 @@
       </ul></li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_dae_system">get_dae_system() (yaocptool.modelling.system_model.SystemModel method)</a>
 </li>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_deepcopy">get_deepcopy() (yaocptool.modelling.system_model.SystemModel method)</a>
+</li>
       <li><a href="yaocptool.optimization.html#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_default_call_dict">get_default_call_dict() (yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem method)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.get_entry">get_entry() (yaocptool.modelling.dataset.DataSet method)</a>
@@ -421,8 +430,6 @@
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.get_entry_names">get_entry_names() (yaocptool.modelling.dataset.DataSet method)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.get_entry_size">get_entry_size() (yaocptool.modelling.dataset.DataSet method)</a>
-</li>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_hardcopy">get_hardcopy() (yaocptool.modelling.system_model.SystemModel method)</a>
 </li>
       <li><a href="yaocptool.stochastic.html#yaocptool.stochastic.pce.get_ls_factor">get_ls_factor() (in module yaocptool.stochastic.pce)</a>
 </li>
@@ -480,14 +487,14 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.indirectmethod.IndirectMethod.include_adjoint_states">include_adjoint_states() (yaocptool.methods.classic.indirectmethod.IndirectMethod method)</a>
-</li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_algebraic">include_algebraic() (yaocptool.modelling.ocp.OptimalControlProblem method)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_algebraic">(yaocptool.modelling.system_model.SystemModel method)</a>
 </li>
       </ul></li>
+      <li><a href="yaocptool.optimization.html#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_constraint">include_constraint() (yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem method)</a>
+</li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_control">include_control() (yaocptool.modelling.ocp.OptimalControlProblem method)</a>
 
       <ul>
@@ -554,7 +561,13 @@
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.is_dae">is_dae (yaocptool.modelling.dae_system.DAESystem attribute)</a>
 </li>
+      <li><a href="yaocptool.util.html#yaocptool.util.util.is_equality">is_equality() (in module yaocptool.util.util)</a>
+</li>
+      <li><a href="yaocptool.util.html#yaocptool.util.util.is_inequality">is_inequality() (in module yaocptool.util.util)</a>
+</li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.is_ode">is_ode (yaocptool.modelling.dae_system.DAESystem attribute)</a>
+</li>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.is_parametrized">is_parametrized() (yaocptool.modelling.system_model.SystemModel method)</a>
 </li>
       <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.optimizationresult.OptimizationResult.is_valid">is_valid (yaocptool.methods.base.optimizationresult.OptimizationResult attribute)</a>
 </li>
@@ -656,31 +669,33 @@
         <li><a href="yaocptool.stochastic.html#yaocptool.stochastic.pce.PCEConverter.n_pol_parameters">(yaocptool.stochastic.pce.PCEConverter attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.methods.html#yaocptool.methods.distributed_solution.DistributedSolution.n_subsystems">n_subsystems (yaocptool.methods.distributed_solution.DistributedSolution attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.n_theta">n_theta (yaocptool.modelling.system_model.SystemModel attribute)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.n_theta_opt">n_theta_opt (yaocptool.modelling.ocp.OptimalControlProblem attribute)</a>
 </li>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.n_u">n_u (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.n_u">n_u (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.n_u">(yaocptool.modelling.system_model.SystemModel attribute)</a>
 </li>
       </ul></li>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.n_u_par">n_u_par (yaocptool.modelling.system_model.SystemModel attribute)</a>
+</li>
       <li><a href="yaocptool.stochastic.html#yaocptool.stochastic.pce.PCEConverter.n_uncertain">n_uncertain (yaocptool.stochastic.pce.PCEConverter attribute)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.n_uncertain_initial_condition">n_uncertain_initial_condition (yaocptool.modelling.stochastic_ocp.StochasticOCP attribute)</a>
 </li>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.n_x">n_x (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.n_x">n_x (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.n_x">(yaocptool.modelling.system_model.SystemModel attribute)</a>
 </li>
       </ul></li>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.n_y">n_y (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.n_y">n_y (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.n_y">(yaocptool.modelling.system_model.SystemModel attribute)</a>
@@ -714,6 +729,12 @@
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.p_names">p_names (yaocptool.modelling.system_model.SystemModel attribute)</a>
 </li>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.parametrize_control">parametrize_control() (yaocptool.modelling.ocp.OptimalControlProblem method)</a>
+
+      <ul>
+        <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.parametrize_control">(yaocptool.modelling.system_model.SystemModel method)</a>
+</li>
+      </ul></li>
       <li><a href="yaocptool.stochastic.html#yaocptool.stochastic.pce.PCEConverter">PCEConverter (class in yaocptool.stochastic.pce)</a>
 </li>
       <li><a href="yaocptool.estimation.html#yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter">PCEKalmanFilter (class in yaocptool.estimation.pce_kalman_filter)</a>
@@ -762,8 +783,6 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.relaxed_alg">relaxed_alg (yaocptool.methods.augmented_lagrangian.AugmentedLagrangian attribute)</a>
-</li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.remove_algebraic">remove_algebraic() (yaocptool.modelling.ocp.OptimalControlProblem method)</a>
 
       <ul>
@@ -782,10 +801,10 @@
 </li>
       <li><a href="yaocptool.util.html#yaocptool.util.util.remove_variables_from_vector">remove_variables_from_vector() (in module yaocptool.util.util)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.util.html#yaocptool.util.util.remove_variables_from_vector_by_indices">remove_variables_from_vector_by_indices() (in module yaocptool.util.util)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.replace_variable">replace_variable() (yaocptool.modelling.ocp.OptimalControlProblem method)</a>
 
       <ul>
@@ -842,13 +861,15 @@
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.set_theta_as_optimization_theta">set_theta_as_optimization_theta() (yaocptool.modelling.ocp.OptimalControlProblem method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.simulate">simulate() (yaocptool.modelling.dae_system.DAESystem method)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.simulate">(yaocptool.modelling.system_model.SystemModel method)</a>
 </li>
       </ul></li>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult">SimulationResult (class in yaocptool.modelling.simualtion_result)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult">SimulationResult (class in yaocptool.modelling.simulation_result)</a>
 </li>
       <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase">SolutionMethodsBase (class in yaocptool.methods.base.solutionmethodsbase)</a>
 </li>
@@ -860,41 +881,13 @@
         <li><a href="yaocptool.optimization.html#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.solve">(yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.solve_raw">solve_raw() (yaocptool.methods.augmented_lagrangian.AugmentedLagrangian method)</a>
-</li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.sort">sort() (yaocptool.modelling.dataset.DataSet method)</a>
 </li>
-      <li><a href="yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.split_x_and_u">split_x_and_u (yaocptool.methods.augmented_lagrangian.AugmentedLagrangian attribute)</a>
-
-      <ul>
-        <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_and_u">(yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_and_u">split_x_and_u() (yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase method)</a>
-</li>
-      <li><a href="yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.split_x_y_and_u">split_x_y_and_u (yaocptool.methods.augmented_lagrangian.AugmentedLagrangian attribute)</a>
-
-      <ul>
-        <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.split_x_y_and_u">(yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.split_x_y_and_u">split_x_y_and_u() (yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase method)</a>
-
-      <ul>
-        <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.collocationscheme.CollocationScheme.split_x_y_and_u">(yaocptool.methods.classic.collocationscheme.CollocationScheme method)</a>
-</li>
-        <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.multipleshooting.MultipleShootingScheme.split_x_y_and_u">(yaocptool.methods.classic.multipleshooting.MultipleShootingScheme method)</a>
-</li>
-      </ul></li>
       <li><a href="yaocptool.methods.html#yaocptool.methods.distributed_solution.DistributedSolution.start">start() (yaocptool.methods.distributed_solution.DistributedSolution method)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP">StochasticOCP (class in yaocptool.modelling.stochastic_ocp)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.substitute_variable">substitute_variable() (yaocptool.modelling.dae_system.DAESystem method)</a>
-</li>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.ocp.SuperOCP">SuperOCP (class in yaocptool.modelling.ocp)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.system_type">system_type (yaocptool.modelling.system_model.SystemModel attribute)</a>
 </li>
@@ -906,7 +899,7 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.t">t (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.t">t (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 </li>
       <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.theta">theta (yaocptool.modelling.system_model.SystemModel attribute)</a>
 </li>
@@ -924,7 +917,7 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.collocationscheme.CollocationScheme.time_interpolation_algebraics">time_interpolation_algebraics (yaocptool.methods.classic.collocationscheme.CollocationScheme attribute)</a>
 </li>
-      <li><a href="yaocptool.methods.classic.html#yaocptool.methods.classic.collocationscheme.CollocationScheme.time_interpolation_controls">time_interpolation_controls (yaocptool.methods.classic.collocationscheme.CollocationScheme attribute)</a>
+      <li><a href="yaocptool.methods.base.html#yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase.time_interpolation_controls">time_interpolation_controls (yaocptool.methods.base.discretizationschemebase.DiscretizationSchemeBase attribute)</a>
 </li>
       <li><a href="yaocptool.methods.html#yaocptool.methods.augmented_lagrangian.AugmentedLagrangian.time_interpolation_nu">time_interpolation_nu (yaocptool.methods.augmented_lagrangian.AugmentedLagrangian attribute)</a>
 </li>
@@ -940,13 +933,13 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.u">u (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.u">u (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.u">(yaocptool.modelling.system_model.SystemModel attribute)</a>
 </li>
       </ul></li>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.u_names">u_names (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.u_names">u_names (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.u_names">(yaocptool.modelling.system_model.SystemModel attribute)</a>
@@ -988,7 +981,7 @@
 <h2 id="X">X</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.x">x (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.x">x (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.x">(yaocptool.modelling.system_model.SystemModel attribute)</a>
@@ -996,7 +989,7 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.x_names">x_names (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.x_names">x_names (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.x_names">(yaocptool.modelling.system_model.SystemModel attribute)</a>
@@ -1010,13 +1003,13 @@
 <h2 id="Y">Y</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.y">y (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.y">y (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.y">(yaocptool.modelling.system_model.SystemModel attribute)</a>
 </li>
       </ul></li>
-      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simualtion_result.SimulationResult.y_names">y_names (yaocptool.modelling.simualtion_result.SimulationResult attribute)</a>
+      <li><a href="yaocptool.modelling.html#yaocptool.modelling.simulation_result.SimulationResult.y_names">y_names (yaocptool.modelling.simulation_result.SimulationResult attribute)</a>
 
       <ul>
         <li><a href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.y_names">(yaocptool.modelling.system_model.SystemModel attribute)</a>
@@ -1074,7 +1067,7 @@
 </li>
       <li><a href="yaocptool.modelling.html#module-yaocptool.modelling.ocp">yaocptool.modelling.ocp (module)</a>
 </li>
-      <li><a href="yaocptool.modelling.html#module-yaocptool.modelling.simualtion_result">yaocptool.modelling.simualtion_result (module)</a>
+      <li><a href="yaocptool.modelling.html#module-yaocptool.modelling.simulation_result">yaocptool.modelling.simulation_result (module)</a>
 </li>
       <li><a href="yaocptool.modelling.html#module-yaocptool.modelling.stochastic_ocp">yaocptool.modelling.stochastic_ocp (module)</a>
 </li>
