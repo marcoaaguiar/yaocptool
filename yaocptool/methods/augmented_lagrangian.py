@@ -29,6 +29,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
     def __init__(self, problem, ocp_solver_class, solver_options=None, **kwargs):
         """
+            Augmented Lagrange Method (Aguiar 2016)
 
         :param yaocptool.modelling.OptimalControlProblem: Optimal Control Problem
         :param yaocptool.methods.SolutionMethodsBase ocp_solver_class: Class of Solution Method (Direct/Indirect Method)
