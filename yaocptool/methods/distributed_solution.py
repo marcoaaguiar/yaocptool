@@ -47,7 +47,7 @@ class DistributedSolution:
 
             worker = Worker(subsystem_class, parameters_list[s], 'solve',
                             queue_in=queue_in,
-                            queue_out=self.queues_out[s].values() + [self.queue_listener[s]])
+                            queue_out=list(self.queues_out[s].values()) + [self.queue_listener[s]])
             self.workers.append(worker)
 
         self.initialize()
