@@ -28,7 +28,7 @@ def sample_parameter_normal_distribution_with_sobol(mean, covariance, n_samples=
     unscaled_sample = DM.zeros(n_uncertain, n_samples)
 
     for i in range(n_samples):
-        unscaled_sample[:, i] = mean + mtimes(sobol_samples[:, i], chol(covariance)).T
+        unscaled_sample[:, i] = mean + mtimes(chol(covariance).T, sobol_samples[:, i])
 
     return unscaled_sample
 
