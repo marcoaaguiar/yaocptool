@@ -62,9 +62,6 @@ class MPC:
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-        if self.n_x is None:
-            self.n_x = self.solution_method.model.n_x
-
         # set last_control_as_parameter to True, so the optimization problem can take last_u
         self.solution_method.last_control_as_parameter = True
 
@@ -116,7 +113,7 @@ class MPC:
         :return: DM
         """
         if self.estimator is None:
-            x_k = y_k[:self.n_x]
+            x_k = y_k[:self.solution_method.model.n_x]
             p_k = DM.zeros(x_k.shape)
         else:
             x_k, p_k = self.estimator.estimate(t_k, y_k, u_k)

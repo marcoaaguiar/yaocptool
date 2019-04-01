@@ -67,7 +67,7 @@ class DistributedSolution:
                 if (r, s) in self.connection_list:
                     self.queues_in[s][r].put(None)
 
-    def solve(self, x_0, initial_guess_dict=None):
+    def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         if initial_guess_dict is None:
             initial_guess_dict = [None] * self.n_subsystems
 
