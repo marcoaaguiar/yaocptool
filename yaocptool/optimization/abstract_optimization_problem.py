@@ -5,8 +5,8 @@ from yaocptool import is_inequality, is_equality
 
 
 class AbstractOptimizationProblem(object):
-    def __init__(self, **kwargs):
-        """
+    def __init__(self, name='optimization_problem', **kwargs):
+        r"""
             Abstract Optimization Problem class
             Optimization problem
 
@@ -19,9 +19,10 @@ class AbstractOptimizationProblem(object):
             x -> optimization variables
             g -> constraint
 
-        :param n_x: int
+        :param str name: Optimization problem name
+        :param dict kwargs:
         """
-        self.name = 'optimization_problem'
+        self.name = name
 
         self.f = []
         self.g = []
@@ -37,18 +38,18 @@ class AbstractOptimizationProblem(object):
 
         self._solver = None
 
-        for (k, v) in kwargs.items():
-            setattr(self, k, v)
+        for (key, val) in kwargs.items():
+            setattr(self, key, val)
 
     def create_variable(self, name, size=1, lb=-inf, ub=inf):
         """Create an optimization variable
 
         :param str name: Name of the optimization variable.
         :param int size: Size of the variable (default = 1)
-        :param lb: Lower bound of the variable. If the given 'size' is greater than one but a scalar is passed as lower
-            bound, a vector of lb of size 'size' will be used as a lower bound. (default = [-inf]*size)
-        :param ub: Upper bound of the variable. If the given 'size' is greater than one but a scalar is passed as upper
-            bound, a vector of ub of size 'size' will be used as a upper bound. (default = [inf]*size)
+        :param MX|SX lb: Lower bound of the variable. If the given 'size' is greater than one but a scalar is passed as
+            lower bound, a vector of lb of size 'size' will be used as a lower bound. (default = [-inf]*size)
+        :param MX|SX ub: Upper bound of the variable. If the given 'size' is greater than one but a scalar is passed as
+            upper bound, a vector of ub of size 'size' will be used as a upper bound. (default = [inf]*size)
         :return: Return the variable
         :rtype: MX
         """
@@ -56,6 +57,9 @@ class AbstractOptimizationProblem(object):
             lb = repmat(lb, size)
         if isinstance(ub, Number):
             ub = repmat(ub, size)
+        if lb.is_symbolic() and depends_on(lb, self.p) or ub.is_symbolic() and depends_on(ub, self.p):
+            raise ValueError("Neither the lower or the upper bound can depend on the optimization problem parameter. "
+                             "lb={}, ub={}".format(lb, ub))
 
         new_x = MX.sym(name, size)
 
@@ -82,21 +86,50 @@ class AbstractOptimizationProblem(object):
             ub = repmat(ub, variable.numel())
 
         if not variable.numel() == lb.numel() or not variable.numel() == ub.numel():
-            raise Exception("Lower bound or upper bound has different size of the given variable")
+            raise ValueError("Lower bound or upper bound has different size of the given variable")
+
+        for i in range(variable.numel()):
+            if lb[i] > ub[i]:
+                raise ValueError('Lower bound is greater than upper bound for index {}. '
+                                 'The inequality {} <= {} <= is infeasible'.format(i, lb[i], variable[i], ub[i]))
 
         self.x = vertcat(self.x, variable)
         self.x_lb = vertcat(self.x_lb, lb)
         self.x_ub = vertcat(self.x_ub, ub)
 
     def create_parameter(self, name, size=1):
+        """
+            Create parameter for in the Optimization Problem
+
+        :param str name: variable name
+        :param int size: number of rows
+        :return: created variable
+        :rtype: MX|SX
+        """
         new_p = MX.sym(name, size)
         self.include_parameter(new_p)
         return new_p
 
     def include_parameter(self, par):
+        """
+            Include parameter for in the Optimization Problem
+
+        :param MX|SX par: parameter to be included
+        """
         self.p = vertcat(self.p, par)
 
     def set_objective(self, expr):
+        """
+            Set objective function
+
+        :param MX|SX expr: objective function
+        """
+        if isinstance(expr, list):
+            expr = vertcat(*expr)
+
+        if expr.numel() > 1:
+            raise ValueError('Objective function should be an scalar. '
+                             'Given objective has shape = {}'.format(expr.shape))
         self.f = expr
 
     def include_inequality(self, expr, lb=None, ub=None):
@@ -109,34 +142,46 @@ class AbstractOptimizationProblem(object):
         :param ub: Upper bound of the inequality. If the  'expr' size is greater than one but a scalar is passed as
             upper bound, a vector of ub with size of  'expr' will be used as a upper bound. (default = [inf]*size)
         """
+        # check expr
         if isinstance(expr, list):
             expr = vertcat(expr)
         if expr.size2() > 1:
             raise Exception("Given expression is not a vector, number of columns is {}".format(expr.size2()))
+
+        # check lower bound
         if lb is None:
-            lb = -inf * DM.ones(expr.size1())
+            lb = -DM.inf(expr.size1())
         else:
             lb = vertcat(lb)
             if lb.numel() == 1 and expr.numel() > 1:
                 lb = repmat(lb, expr.numel())
 
-            if not expr.shape == lb.shape:
-                msg = "Expression and lower bound does not have the same size: expr.shape={}, lb.shape=={}".format(
-                    expr.shape, lb.shape)
-                raise ValueError(msg)
+        # check lb correct size
+        if not expr.shape == lb.shape:
+            raise ValueError("Expression and lower bound does not have the same size: "
+                             "expr.shape={}, lb.shape=={}".format(expr.shape, lb.shape))
+        # check upper bound
         if ub is None:
-            ub = inf * DM.ones(expr.size1())
+            ub = DM.inf(expr.size1())
         else:
             ub = vertcat(ub)
             if ub.numel() == 1 and expr.numel() > 1:
                 ub = repmat(ub, expr.numel())
-            if not expr.shape == ub.shape:
-                msg = "Expression and upper bound does not have the same size: expr.shape={}, ub.shape=={}".format(
-                    expr.shape, ub.shape)
-                raise ValueError(msg)
-        if depends_on(lb, vertcat(self.x, self.p)) or depends_on(ub, vertcat(self.x, self.p)):
+
+        # check ub correct size
+        if not expr.shape == ub.shape:
+            raise ValueError("Expression and lower bound does not have the same size: "
+                             "expr.shape={}, lb.shape=={}".format(expr.shape, ub.shape))
+
+        # check for if lb or ub have 'x's and 'p's
+        if depends_on(vertcat(lb, ub), vertcat(self.x, self.p)):
             raise ValueError("The lower and upper bound cannot contain variables from the optimization problem."
                              "LB: {}, UB: {}".format(lb, ub))
+
+        for i in range(expr.numel()):
+            if lb[i] > ub[i]:
+                raise ValueError('Lower bound is greater than upper bound for index {}. '
+                                 'The inequality {} <= {} <= is infeasible'.format(i, lb[i], expr[i], ub[i]))
 
         self.g = vertcat(self.g, expr)
         self.g_lb = vertcat(self.g_lb, lb)
@@ -167,6 +212,8 @@ class AbstractOptimizationProblem(object):
                 msg = "Expression and the right hand side does not have the same size: " \
                       "expr.shape={}, rhs.shape=={}".format(expr.shape, rhs.shape)
                 raise ValueError(msg)
+
+        # check for if rhs have 'x's and 'p's
         if depends_on(rhs, vertcat(self.x, self.p)):
             raise ValueError("Right-hand side cannot contain variables from the optimization problem. "
                              "RHS = {}".format(rhs))
@@ -233,14 +280,34 @@ class AbstractOptimizationProblem(object):
         return {'f': self.f, 'g': self.g, 'x': self.x, 'p': self.p}
 
     def get_solver(self):
+        """
+            Get optimization solver
+
+        :return:
+        """
         if self._solver is None:
             self._solver = self._create_solver()
         return self._solver
 
     def _create_solver(self):
+        """
+            create optimization solver
+
+        :rtype: casadi.nlpsol
+        """
         raise NotImplementedError
 
     def get_default_call_dict(self):
+        """
+            Return a dictionary of the settings that will be used on calling the solver
+            The keys are:
+                - 'lbx': lower bound on the variables
+                - 'ubx': upper bound on the variables
+                - 'lbg': lower bound on the constraints
+                - 'ubg': upper bound on the constraints
+
+        :return:
+        """
         return {'lbx': self.x_lb,
                 'ubx': self.x_ub,
                 'lbg': self.g_lb,

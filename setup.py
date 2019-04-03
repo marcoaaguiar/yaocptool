@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='yaocptool',
-    version='0.3.3',
+    version='0.3.4',
     packages=['yaocptool', 'yaocptool.mpc', 'yaocptool.util', 'yaocptool.methods', 'yaocptool.methods.base',
               'yaocptool.methods.classic', 'yaocptool.parallel', 'yaocptool.modelling', 'yaocptool.estimation',
               'yaocptool.stochastic', 'yaocptool.optimization'],
