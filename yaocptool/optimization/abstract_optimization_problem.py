@@ -57,9 +57,6 @@ class AbstractOptimizationProblem(object):
             lb = repmat(lb, size)
         if isinstance(ub, Number):
             ub = repmat(ub, size)
-        if lb.is_symbolic() and depends_on(lb, self.p) or ub.is_symbolic() and depends_on(ub, self.p):
-            raise ValueError("Neither the lower or the upper bound can depend on the optimization problem parameter. "
-                             "lb={}, ub={}".format(lb, ub))
 
         new_x = MX.sym(name, size)
 
@@ -87,6 +84,10 @@ class AbstractOptimizationProblem(object):
 
         if not variable.numel() == lb.numel() or not variable.numel() == ub.numel():
             raise ValueError("Lower bound or upper bound has different size of the given variable")
+
+        if not lb.is_constant() and depends_on(lb, self.p) or not ub.is_constant() and depends_on(ub, self.p):
+            raise ValueError("Neither the lower or the upper bound can depend on the optimization problem parameter. "
+                             "lb={}, ub={}".format(lb, ub))
 
         for i in range(variable.numel()):
             if lb[i] > ub[i]:
@@ -179,9 +180,10 @@ class AbstractOptimizationProblem(object):
                              "LB: {}, UB: {}".format(lb, ub))
 
         for i in range(expr.numel()):
-            if lb[i] > ub[i]:
-                raise ValueError('Lower bound is greater than upper bound for index {}. '
-                                 'The inequality {} <= {} <= is infeasible'.format(i, lb[i], expr[i], ub[i]))
+            if lb.is_constant() and ub.is_constant():
+                if lb[i] > ub[i]:
+                    raise ValueError('Lower bound is greater than upper bound for index {}. '
+                                     'The inequality {} <= {} <= is infeasible'.format(i, lb[i], expr[i], ub[i]))
 
         self.g = vertcat(self.g, expr)
         self.g_lb = vertcat(self.g_lb, lb)
@@ -247,7 +249,7 @@ class AbstractOptimizationProblem(object):
                 indep_term = indep_term.to_DM()
         else:
             dep_term = expr.dep(1)
-            indep_term = expr.dep(0).to_DM()
+            indep_term = expr.dep(0)
             if indep_term.is_constant():
                 indep_term = indep_term.to_DM()
 

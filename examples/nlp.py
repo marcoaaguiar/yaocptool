@@ -18,8 +18,7 @@ nlp.set_objective((x - center[0]) ** 2 + (y - center[1]) ** 2)
 
 # include a constraint by passing it mathematically
 # note: casadi/python does not allow for double bounded constraint (e.g.: 1 <= x + y <=3)
-par = MX.sym('p')
-nlp.include_constraint(x ** 2 + y ** 2 <= par)
+nlp.include_constraint(x ** 2 + y ** 2 <= 3)
 
 # optionally constraints can be included with
 nlp.include_equality(x + y, 0)  # x + u = 0

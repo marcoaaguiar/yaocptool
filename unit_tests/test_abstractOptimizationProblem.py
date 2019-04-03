@@ -192,11 +192,11 @@ class TestAbstractOptimizationProblem(TestCase):
                           x[0] - x[1], lb=lb, ub=ub)
 
     def test_include_inequality_scalar_bound(self):
-        lb = 5
-        ub = 1
+        lb = 1
+        ub = 4
         aop = AbstractOptimizationProblem()
         x = aop.create_variable('x', 2)
-        g = x[0] - x[1]
+        g = 2 * x
         aop.include_inequality(g, lb=lb, ub=ub)
         self.assertTrue(is_equal(aop.g_lb, repmat(lb, 2)))
         self.assertTrue(is_equal(aop.g_ub, repmat(ub, 2)))
@@ -209,6 +209,29 @@ class TestAbstractOptimizationProblem(TestCase):
         g = x[0] - x[1]
         self.assertRaises(ValueError, aop.include_inequality,
                           g, lb=lb, ub=ub)
+
+    def test_include_inequality_w_external_variable_in_bound(self):
+        theta = MX.sym('theta')
+        lb = -theta
+        ub = theta
+        aop = AbstractOptimizationProblem()
+        x = aop.create_variable('x', 2)
+        g = x[0] - x[1]
+        aop.include_inequality(g, lb=lb, ub=ub)
+        self.assertTrue(is_equal(aop.g, g))
+        self.assertTrue(is_equal(aop.g_lb, lb))
+        self.assertTrue(is_equal(aop.g_ub, ub))
+
+    def test_include_inequality_w_external_variable_in_expr(self):
+        theta = MX.sym('theta')
+
+        aop = AbstractOptimizationProblem()
+        x = aop.create_variable('x', 2)
+        g = theta * x[0] - x[1]
+        aop.include_inequality(g)
+        self.assertTrue(is_equal(aop.g, g))
+        self.assertTrue(is_equal(aop.g_lb, -inf))
+        self.assertTrue(is_equal(aop.g_ub, inf))
 
     def test_include_equality(self):
         aop = AbstractOptimizationProblem()
@@ -233,7 +256,7 @@ class TestAbstractOptimizationProblem(TestCase):
         rhs = 2
         aop = AbstractOptimizationProblem()
         x = aop.create_variable('x', 2)
-        g = x[0] - x[1]
+        g = 2 * x
         aop.include_equality(g, rhs=rhs)
         self.assertTrue(is_equal(aop.g_lb, repmat(rhs, 2)))
         self.assertTrue(is_equal(aop.g_ub, repmat(rhs, 2)))
@@ -246,5 +269,51 @@ class TestAbstractOptimizationProblem(TestCase):
         self.assertRaises(ValueError, aop.include_equality,
                           g, rhs)
 
-    def test_include_constraint(self):
-        pass
+    def test_include_equality_w_external_variable_in_bound(self):
+        theta = MX.sym('theta')
+
+        aop = AbstractOptimizationProblem()
+        x = aop.create_variable('x', 2)
+        g = x[0] - x[1]
+        aop.include_equality(g, theta)
+        self.assertTrue(is_equal(aop.g, g))
+        self.assertTrue(is_equal(aop.g_lb, theta))
+        self.assertTrue(is_equal(aop.g_ub, theta))
+
+    def test_include_equality_w_external_variable_in_expr(self):
+        theta = MX.sym('theta')
+
+        aop = AbstractOptimizationProblem()
+        x = aop.create_variable('x', 2)
+        g = theta * x[0] - x[1]
+        aop.include_equality(g)
+        self.assertTrue(is_equal(aop.g, g))
+        self.assertTrue(is_equal(aop.g_lb, 0))
+        self.assertTrue(is_equal(aop.g_ub, 0))
+
+    def test_include_constraint_inequality(self):
+        aop = AbstractOptimizationProblem()
+        x = aop.create_variable('x', 2)
+
+        aop.include_constraint(x + 2 <= 1)
+
+    def test_include_constraint_equality(self):
+        aop = AbstractOptimizationProblem()
+        x = aop.create_variable('x', 2)
+
+        aop.include_constraint(x + 2 == 1)
+
+    def test_include_constraint_inequality_w_external_var(self):
+        theta = MX.sym('theta')
+        aop = AbstractOptimizationProblem()
+        x = aop.create_variable('x', 2)
+
+        aop.include_constraint(x + 2 <= theta)
+
+    def test_include_constraint_equality_w_external_var(self):
+        theta = MX.sym('theta')
+
+        aop = AbstractOptimizationProblem()
+        x = aop.create_variable('x', 2)
+
+        aop.include_constraint(x + 2 == theta)
