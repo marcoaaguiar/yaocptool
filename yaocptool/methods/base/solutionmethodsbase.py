@@ -3,6 +3,7 @@ import warnings
 from casadi import SX, MX, vertcat, collocation_points, vec, reshape, DM
 
 from yaocptool import config, create_constant_theta, find_variables_indices_in_vector
+from yaocptool.methods import SolutionMethodInterface
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
@@ -10,7 +11,7 @@ from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 from yaocptool.modelling import OptimalControlProblem
 
 
-class SolutionMethodsBase(object):
+class SolutionMethodsBase(SolutionMethodInterface):
     def __init__(self, problem, **kwargs):
         """
         :param OptimalControlProblem problem:
@@ -35,7 +36,7 @@ class SolutionMethodsBase(object):
         self.degree_control = 1
         self.finite_elements = 10
         self.integrator_type = 'implicit'
-        self.discretization_scheme = 'multiple-shooting'
+        self.discretization_scheme = 'collocation'
         self.initial_condition_as_parameter = True
         self.nlpsol_opts = {}
         self.initial_guess_heuristic = 'simulation'  # 'problem_info'

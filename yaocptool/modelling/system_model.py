@@ -14,8 +14,6 @@ from yaocptool import remove_variables_from_vector, config, find_variables_indic
 from yaocptool.modelling import DAESystem, SimulationResult
 
 
-# TODO: Check linearize method
-
 class SystemModel:
     def __init__(self, name='model', n_x=0, n_y=0, n_u=0, n_p=0, n_theta=0, **kwargs):
         """
@@ -74,6 +72,8 @@ class SystemModel:
         self._parametrized_controls = []
         self.u_par = vertcat(self.u_sym)
         self.u_expr = vertcat(self.u_sym)
+
+        self.verbosity = 0
 
     @property
     def system_type(self):
@@ -163,6 +163,22 @@ class SystemModel:
     @theta.setter
     def theta(self, value):
         self.theta_sym = value
+
+    @property
+    def t(self):
+        return self.t_sym
+
+    @t.setter
+    def t(self, value):
+        self.t_sym = value
+
+    @property
+    def tau(self):
+        return self.tau_sym
+
+    @tau.setter
+    def tau(self, value):
+        self.tau_sym = value
 
     @property
     def x_names(self):
@@ -333,6 +349,7 @@ class SystemModel:
         :param size: int
         :return:
         """
+        return self.create_control(name, size)
 
     def create_parameter(self, name='p', size=1):
         """
@@ -426,7 +443,8 @@ class SystemModel:
                                                                                   replacement.numel()))
 
         if original.numel() > 0:
-            print('Replacing: {} with {}'.format(original, replacement))
+            if self.verbosity > 2:
+                print('Replacing: {} with {}'.format(original, replacement))
             self.ode = substitute(self.ode, original, replacement)
             self.alg = substitute(self.alg, original, replacement)
 
@@ -451,6 +469,44 @@ class SystemModel:
 
     def remove_theta(self, var):
         self.theta_sym = remove_variables_from_vector(var, self.theta_sym)
+
+    def has_variable(self, var):
+        """
+
+        :param casadi.SX var: variable to be checked if it is in the SystemModel
+        """
+
+        for i in range(self.n_x):
+            ind = find_variables_indices_in_vector(var, self.x_sym)
+            if len(ind) > 0:
+                return True
+
+        for i in range(self.n_y):
+            ind = find_variables_indices_in_vector(var, self.y_sym)
+            if len(ind) > 0:
+                return True
+
+        for i in range(self.n_u):
+            ind = find_variables_indices_in_vector(var, self.u_sym)
+            if len(ind) > 0:
+                return True
+
+        for i in range(self.n_p):
+            ind = find_variables_indices_in_vector(var, self.p_sym)
+            if len(ind) > 0:
+                return True
+
+        for i in range(self.n_theta):
+            ind = find_variables_indices_in_vector(var, self.theta_sym)
+            if len(ind) > 0:
+                return True
+
+        for i in range(self.n_u_par):
+            ind = find_variables_indices_in_vector(var, self.u_par)
+            if len(ind) > 0:
+                return True
+
+        return False
 
     def is_parametrized(self, u=None):
         """
@@ -547,8 +603,10 @@ class SystemModel:
         :param y: algebraic variable
         """
         # fix types
-        u = vertcat(u)
-        y = vertcat(y)
+        if isinstance(u, list):
+            u = vertcat(*u)
+        if isinstance(y, list):
+            y = vertcat(*y)
 
         # check if same size
         if not u.numel() == y.numel():

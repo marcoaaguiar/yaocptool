@@ -13,7 +13,7 @@ x_0 = DM([1, 1])
 initial_control = [0.01]
 
 # Prediction window, finite elements, and sampling time
-prediction_window = 5.
+prediction_window = 20
 finite_elements = 20
 t_s = prediction_window / finite_elements
 
@@ -87,7 +87,7 @@ pce_problem = pce_converter.convert_socp_to_ocp_with_pce()
 solution_method = DirectMethod(pce_problem, finite_elements=20, discretization_scheme='collocation')
 
 # Solve the problem and get the result
-result = solution_method.solve(p=[0.071e-2] + [0]*6)
+result = solution_method.solve(p=[0.071e-2] + [0] * 6)
 
 # Make one plot with the element with h_0 and h_1 for every sample, notice that it has an additional state that is the
 # cost at each sample.
