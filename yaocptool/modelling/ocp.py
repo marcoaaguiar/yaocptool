@@ -6,8 +6,10 @@ Created on Mon Apr 03 11:15:03 2017
 """
 
 import copy
+
 from casadi import DM, repmat, vertcat, substitute, mtimes, is_equal, SX, inf, gradient, dot, jacobian
-from yaocptool import find_variables_indices_in_vector
+
+from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector_by_indices
 from yaocptool.modelling import SystemModel
 
 
@@ -45,15 +47,24 @@ class OptimalControlProblem:
 
     """
 
-    def __init__(self, model, **kwargs):
-        if not hasattr(self, 't_0'):
-            self.t_0 = 0.
-        if not hasattr(self, 't_f'):
-            self.t_f = 1.
-        if not hasattr(self, 'x_0'):
-            self.x_0 = DM([])
+    def __init__(self, model=None, name="OCP", x_0=None, t_0=0.0, t_f=1.0, **kwargs):
+        """
 
-        self.name = 'OCP'
+        :param yaocptool.modelling.SystemModel model:
+        :param str name:
+        :param casadi.DM|list x_0: initial conditions
+        :param t_0:
+        :param t_f:
+        :param kwargs:
+        """
+        if x_0 is None:
+            x_0 = DM([])
+
+        self.t_0 = t_0
+        self.t_f = t_f
+        self.x_0 = x_0
+
+        self.name = name
         self.model = None  # type: SystemModel
         self._model = model  # type: SystemModel
         self.reset_working_model()
@@ -166,6 +177,10 @@ class OptimalControlProblem:
         new_p = self.model.create_parameter(name=name, size=size)
         return new_p
 
+    def create_theta(self, name, size=1):
+        new_theta = self.model.create_theta(name=name, size=size)
+        return new_theta
+
     def create_optimization_parameter(self, name, size=1, p_opt_min=None, p_opt_max=None):
         new_p_opt = self.model.create_parameter(name=name, size=size)
 
@@ -248,6 +263,19 @@ class OptimalControlProblem:
             y_min = -DM.inf(var.numel())
         if y_max is None:
             y_max = DM.inf(var.numel())
+
+        if isinstance(y_min, list):
+            y_min = vertcat(*y_min)
+        if isinstance(y_max, list):
+            y_max = vertcat(*y_max)
+
+        if not var.numel() == y_min.numel():
+            raise ValueError(
+                "Given 'var' and 'y_min' does not have the same size, {}!={}".format(var.numel(), y_min.numel()))
+        if not var.numel() == y_max.numel():
+            raise ValueError(
+                "Given 'var' and 'y_max' does not have the same size, {}!={}".format(var.numel(), y_max.numel()))
+
         if self.y_guess is not None:
             if y_guess is None:
                 self.y_guess = vertcat(self.y_guess, DM.zeros(var.numel()))
@@ -258,7 +286,10 @@ class OptimalControlProblem:
         self.y_min = vertcat(self.y_min, y_min)
         self.y_max = vertcat(self.y_max, y_max)
 
-    def include_control(self, var, u_min=None, u_max=None, delta_u_min=None, delta_u_max=None):
+    def include_control(self, var, u_min=None, u_max=None, delta_u_min=None, delta_u_max=None, u_guess=None):
+        if isinstance(var, list):
+            var = vertcat(*var)
+
         if u_min is None:
             u_min = -DM.inf(var.numel())
         if u_max is None:
@@ -268,11 +299,51 @@ class OptimalControlProblem:
         if delta_u_max is None:
             delta_u_max = DM.inf(var.numel())
 
-        self.model.include_control(var)
+        if isinstance(u_min, list):
+            u_min = vertcat(*u_min)
+        if isinstance(u_max, list):
+            u_max = vertcat(*u_max)
+        if isinstance(delta_u_min, list):
+            delta_u_min = vertcat(*delta_u_min)
+        if isinstance(delta_u_max, list):
+            delta_u_max = vertcat(*delta_u_max)
+
+        if not var.numel() == u_min.numel():
+            raise ValueError(
+                "Given 'var' and 'u_min' does not have the same size, {}!={}".format(var.numel(), u_min.numel()))
+        if not var.numel() == u_max.numel():
+            raise ValueError(
+                "Given 'var' and 'u_max' does not have the same size, {}!={}".format(var.numel(), u_max.numel()))
+        if not var.numel() == delta_u_min.numel():
+            raise ValueError(
+                "Given 'var' and 'delta_u_min' does not have the same size, {}!={}".format(var.numel(),
+                                                                                           delta_u_min.numel()))
+        if not var.numel() == delta_u_max.numel():
+            raise ValueError(
+                "Given 'var' and 'delta_u_max' does not have the same size, {}!={}".format(var.numel(),
+                                                                                           delta_u_max.numel()))
+
         self.u_min = vertcat(self.u_min, u_min)
         self.u_max = vertcat(self.u_max, u_max)
         self.delta_u_min = vertcat(self.delta_u_min, delta_u_min)
         self.delta_u_max = vertcat(self.delta_u_max, delta_u_max)
+
+        if u_guess is not None:
+            if isinstance(u_guess, list):
+                u_guess = vertcat(*u_guess)
+            if not var.numel() == u_min.numel():
+                raise ValueError(
+                    "Given 'var' and 'u_min' does not have the same size, {}!={}".format(var.numel(), u_min.numel()))
+            if self.model.n_u == 0:
+                self.u_guess = u_guess
+
+        self.model.include_control(var)
+
+    def include_parameter(self, p):
+        self.model.include_parameter(p)
+
+    def include_theta(self, theta):
+        self.model.include_theta(theta)
 
     def include_optimization_parameter(self, var, p_opt_min=None, p_opt_max=None):
         if p_opt_min is None:
@@ -364,24 +435,23 @@ class OptimalControlProblem:
         to_remove = find_variables_indices_in_vector(var, self.model.y_sym)
         to_remove.reverse()
 
-        for it in to_remove:
-            self.y_max.remove([it], [])
-            self.y_min.remove([it], [])
+        self.y_max = remove_variables_from_vector_by_indices(self.y_max, to_remove)
+        self.y_min = remove_variables_from_vector_by_indices(self.y_min, to_remove)
+        if self.y_guess is not None:
+            self.y_guess = remove_variables_from_vector_by_indices(self.y_guess, to_remove)
+
         self.model.remove_algebraic(var, eq)
 
     def remove_control(self, var):
-        to_remove = []
-        for j in range(self.model.n_u):
-            for i in range(var.numel()):
-                if is_equal(self.model.u_sym[j], var[i]):
-                    to_remove.append(j)
+        to_remove = find_variables_indices_in_vector(var, self.model.u_sym)
 
-        to_remove.sort(reverse=True)
-        for it in to_remove:
-            self.u_max.remove([it], [])
-            self.u_min.remove([it], [])
-            self.delta_u_max.remove([it], [])
-            self.delta_u_min.remove([it], [])
+        self.u_max = remove_variables_from_vector_by_indices(self.u_max, to_remove)
+        self.u_min = remove_variables_from_vector_by_indices(self.u_min, to_remove)
+        self.delta_u_max = remove_variables_from_vector_by_indices(self.delta_u_max, to_remove)
+        self.delta_u_min = remove_variables_from_vector_by_indices(self.delta_u_min, to_remove)
+
+        if self.u_guess is not None:
+            self.u_guess = remove_variables_from_vector_by_indices(self.u_guess, to_remove)
 
         self.model.remove_control(var)
 
@@ -393,10 +463,17 @@ class OptimalControlProblem:
         :param replacement:
         :param variable_type:
         """
+        if isinstance(original, list):
+            original = vertcat(*original)
+        if isinstance(replacement, list):
+            replacement = vertcat(*replacement)
+
+        if not original.numel() == replacement.numel():
+            raise ValueError('Size of "original" and "replacement" are not equal, {}!={}'.format(original.numel(),
+                                                                                                 replacement.numel()))
+        # if original.numel():
         self.L = substitute(self.L, original, replacement)
-        if variable_type == 'p':
-            # TODO: is this really necessary?
-            self.V = substitute(self.V, original, replacement)
+        self.V = substitute(self.V, original, replacement)
         self.S = substitute(self.S, original, replacement)
 
         # change its own variables
@@ -450,12 +527,19 @@ class OptimalControlProblem:
         if self.u_guess is not None:
             self.u_guess = vertcat(self.u_guess)
 
+        if isinstance(self.L, (int, float)):
+            self.L = DM(self.L)
+        if isinstance(self.V, (int, float)):
+            self.V = DM(self.V)
+        if isinstance(self.S, (int, float)):
+            self.S = DM(self.S)
+
     def pre_solve_check(self):
         self._fix_types()
 
         # Check if Objective Function was provided
-        if self.L.is_zero() and self.V.is_zero() and self.S.is_zero() and not self.NULL_OBJ:
-            raise Exception('No objective, if this is intentional use problem.NULL_OBJ = True')
+        # if self.L.is_zero() and self.V.is_zero() and self.S.is_zero() and not self.NULL_OBJ:
+        #     raise Exception('No objective, if this is intentional use problem.NULL_OBJ = True')
 
         # Check if the objective function has the proper size
         if not self.L.numel() == 1:
@@ -500,7 +584,7 @@ class OptimalControlProblem:
         else:
             x_min = -inf
 
-        x_c = self.create_state('x_c', size=1, ode=self.L, x_0=0, x_min=x_min)
+        x_c = self.create_state(self.name + '_x_c', size=1, ode=self.L, x_0=0, x_min=x_min)
         self.x_cost = x_c
         return x_c
 
@@ -528,24 +612,69 @@ class OptimalControlProblem:
             self.V += mtimes(mtimes(self.model.x_sym.T, par_dict['Rv']), self.model.x_sym)
 
     def merge(self, problems):
+        """
+
+        :param list of OptimalControlProblem problems:
+        """
         for problem in problems:
-            self.L += problem.L
-            self.V += problem.V
+            if not self.t_0 == problem.t_0:
+                raise ValueError('Problems "{}" and "{}" have different "t_0", {}!={}'.format(self.name, problem.name,
+                                                                                          self.t_0, problem.t_0))
+            if not self.t_f == problem.t_f:
+                raise ValueError('Problems "{}" and "{}" have different "t_f", {}!={}'.format(self.name, problem.name,
+                                                                                          self.t_f, problem.t_f))
+
+            self.x_0 = vertcat(self.x_0, problem.x_0)
+
+            self.eta = vertcat(self.eta, problem.eta)
+            self.p_opt = vertcat(self.p_opt, problem.p_opt)
+            self.theta_opt = vertcat(self.theta_opt, problem.theta_opt)
 
             self.x_max = vertcat(self.x_max, problem.x_max)
             self.y_max = vertcat(self.y_max, problem.y_max)
             self.u_max = vertcat(self.u_max, problem.u_max)
-            self.delta_u_max = vertcat(self.u_max, problem.u_max)
+            self.delta_u_max = vertcat(self.delta_u_max, problem.delta_u_max)
+            self.p_opt_max = vertcat(self.p_opt_max, problem.p_opt_max)
+            self.theta_opt_max = vertcat(self.theta_opt_max, problem.theta_opt_max)
 
             self.x_min = vertcat(self.x_min, problem.x_min)
             self.y_min = vertcat(self.y_min, problem.y_min)
             self.u_min = vertcat(self.u_min, problem.u_min)
-            self.delta_u_min = vertcat(self.u_min, problem.u_min)
+            self.delta_u_min = vertcat(self.delta_u_min, problem.delta_u_min)
+            self.p_opt_min = vertcat(self.p_opt_min, problem.p_opt_min)
+            self.theta_opt_min = vertcat(self.theta_opt_min, problem.theta_opt_min)
 
+            self.h = vertcat(self.h, problem.h)
             self.h_initial = vertcat(self.h_initial, problem.h_initial)
             self.h_final = vertcat(self.h_final, problem.h_final)
-            self.g_ineq = vertcat(self.g_ineq, problem.g_ineq)
 
+            self.g_eq = vertcat(self.g_eq, problem.g_eq)
+            self.g_ineq = vertcat(self.g_ineq, problem.g_ineq)
+            self.time_g_eq = self.time_g_eq + problem.time_g_eq
+            self.time_g_ineq = self.time_g_ineq + problem.time_g_ineq
+
+            self.L = self.L + problem.L
+            self.V = self.V + problem.V
+            self.S = self.S + problem.S
+
+            if self.last_u is not None and problem.last_u is not None:
+                self.last_u = vertcat(self.last_u, problem.last_u)
+            else:
+                self.last_u = None
+
+            if self.y_guess is not None and problem.y_guess is not None:
+                self.y_guess = vertcat(self.y_guess, problem.y_guess)
+            else:
+                self.y_guess = None
+
+            if self.u_guess is not None and problem.u_guess is not None:
+                self.u_guess = vertcat(self.u_guess, problem.u_guess)
+            else:
+                self.u_guess = None
+
+            self.positive_objective = self.positive_objective and problem.positive_objective
+
+            # Merge models
             self.model.merge([problem.model])
 
     def set_parameter_as_optimization_parameter(self, new_p_opt, new_p_opt_min=None, new_p_opt_max=None):
@@ -595,3 +724,43 @@ class OptimalControlProblem:
 
     def get_theta_opt_indices(self):
         return find_variables_indices_in_vector(self.theta_opt, self.model.theta_sym)
+
+    def connect(self, u, y):
+        """
+        Connect an input 'u' to a algebraic variable 'y', u = y.
+        The function will perform the following actions:
+        - include an algebraic equation u - y = 0
+        - remove 'u' from the input vector (since it is not a free variable anymore)
+        - include 'u' into the algebraic vector, since it is an algebraic variable now.
+        - move associated bounds (u_max, u_min) to (y_max, y_min), remove delta_u_max/delta_u_min
+
+        :param u: input variable
+        :param y: algebraic variable
+        """
+        # fix types
+        if isinstance(u, list):
+            u = vertcat(*u)
+        if isinstance(y, list):
+            y = vertcat(*y)
+
+        # check if same size
+        if not u.numel() == y.numel():
+            raise ValueError('Size of "u" and "y" are not the same, u={} and y={}'.format(u.numel(), y.numel()))
+
+        ind_u = find_variables_indices_in_vector(u, self.model.u)
+
+        self.model.connect(u, y)
+
+        self.y_max = vertcat(self.y_max, self.u_max[ind_u])
+        self.y_min = vertcat(self.y_min, self.u_min[ind_u])
+
+        if self.u_guess is not None and self.y_guess is not None:
+            self.y_guess = vertcat(self.y_guess, self.u_guess[ind_u])
+
+        self.u_max = remove_variables_from_vector_by_indices(self.u_max, ind_u)
+        self.u_min = remove_variables_from_vector_by_indices(self.u_min, ind_u)
+        if self.u_guess is not None:
+            self.u_guess = remove_variables_from_vector_by_indices(self.u_guess, ind_u)
+
+        self.delta_u_max = remove_variables_from_vector_by_indices(self.delta_u_max, ind_u)
+        self.delta_u_min = remove_variables_from_vector_by_indices(self.delta_u_min, ind_u)

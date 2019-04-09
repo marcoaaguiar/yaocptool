@@ -11,12 +11,13 @@ from collections import defaultdict
 
 from casadi import SX, inf, vertcat, dot, vec, Function, MX, horzcat, mtimes, repmat, mmax, fabs, substitute
 
-from yaocptool import find_variables_indices_in_vector, join_thetas, create_constant_theta
+from yaocptool import find_variables_indices_in_vector, join_thetas, create_constant_theta, \
+    remove_variables_from_vector_by_indices
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
 class AugmentedLagrangian(SolutionMethodsBase):
-    """
+    r"""
         For a minimization problem in the form
             min f(x,u) = \int L(x,u) dt
             s.t.: \dot{x} = f(x,u),
@@ -32,7 +33,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
             Augmented Lagrange Method (Aguiar 2016)
 
         :param yaocptool.modelling.OptimalControlProblem: Optimal Control Problem
-        :param yaocptool.methods.SolutionMethodsBase ocp_solver_class: Class of Solution Method (Direct/Indirect Method)
+        :param type ocp_solver_class: Class of Solution Method (Direct/Indirect Method)
         :param solver_options: Options for the Solution Method class given
         :param relax_algebraic_index: Index for the algebraic equations that will be relaxed, if not given all the
         algebraic equations will be relaxed
@@ -49,35 +50,44 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
         self.n_relax = 0
         self.mu_sym = None
-        self.nu_sym = []
+        self.nu_sym = vertcat([])
         self.nu_par = vertcat([])
         self.nu_pol = vertcat([])
 
-        self.max_iter = 3
-        self.mu_0 = 10.
+        self.max_iter = 20
+        self.mu_0 = 1.
         self.beta = 4.
         self.mu_max = self.mu_0 * self.beta ** 10
         self.nu = None
         self.nu_tilde = None
         self.last_violation_error = -1
         self.alg_violation = None
-        self.new_nu_func = None  # type: Function
+        self.eq_violation = None
+        self.new_nu_func = None
 
-        self.tol = 1e-4
+        self.tol = 1e-6
         self.last_solution = ()
 
         self.solver = None
-        self.ocp_solver = None  # type: SolutionMethodsBase
+        self.ocp_solver = None
         self.solver_initialized = False
 
         self.relax_algebraic_index = None
         self.relax_algebraic_var_index = None
+        self.relax_time_equality_index = None
+        self.relax_time_equality_var_index = None
         self.relax_state_bounds = False
 
         self.relaxed_alg = []
+        self.relaxed_eq = []
+
+        self.no_update_after_solving = False
+
+        self.verbose = 1
 
         self._debug_skip_parametrize = False
         self._debug_skip_initialize = False
+        self._debug_skip_compute_nu_and_error = False
         self._debug_skip_update_nu = False
         self._debug_skip_update_mu = False
 
@@ -92,8 +102,16 @@ class AugmentedLagrangian(SolutionMethodsBase):
             self.relax_algebraic_index = range(self.model.n_y)
         if self.relax_algebraic_var_index is None:
             self.relax_algebraic_var_index = self.relax_algebraic_index
+        if self.relax_time_equality_index is None:
+            self.relax_time_equality_index = []
+        if self.relax_time_equality_var_index is None:
+            self.relax_time_equality_var_index = []
 
-        self._relax_algebraic_equations()
+        if self.model.alg[self.relax_algebraic_index].numel() > 0:
+            self._relax_algebraic_equations()
+
+        if self.model.alg[self.relax_time_equality_index].numel() > 0:
+            self._relax_time_equalities()
 
         if self.relax_state_bounds:
             self._relax_states_constraints()
@@ -105,8 +123,13 @@ class AugmentedLagrangian(SolutionMethodsBase):
             if self.nu is None:
                 self.nu = self.create_nu_initial_guess()
             if self.alg_violation is None:
-                self.alg_violation = create_constant_theta(constant=0, dimension=self.n_relax * self.degree,
+                self.alg_violation = create_constant_theta(constant=0,
+                                                           dimension=len(self.relax_algebraic_index) * self.degree,
                                                            finite_elements=self.finite_elements)
+            if self.eq_violation is None:
+                self.eq_violation = create_constant_theta(constant=0,
+                                                          dimension=len(self.relax_time_equality_index) * self.degree,
+                                                          finite_elements=self.finite_elements)
 
         # make sure that the ocp_solver and the augmented_lagrangian has the same options
         for attr in ['degree', 'finite_elements', 'degree_control', 'integrator_type']:
@@ -122,11 +145,15 @@ class AugmentedLagrangian(SolutionMethodsBase):
         solver_options['integrator_type'] = self.integrator_type
 
         # Initialize OCP solver
-        self.ocp_solver = ocp_solver_class(self.problem, **solver_options)  # type: SolutionMethodsBase
+        self.ocp_solver = ocp_solver_class(self.problem, **solver_options)
 
     # region # PROPERTY
     @property
     def model(self):
+        """
+
+        :rtype: yaocptool.modelling.SystemModel
+        """
         return self.problem.model
 
     @property
@@ -160,19 +187,45 @@ class AugmentedLagrangian(SolutionMethodsBase):
         self.nu_sym = vertcat(self.nu_sym, nu_alg)
 
         # save the relaxed algebraic equations for computing the update later
-        self.relaxed_alg = vertcat(self.relaxed_alg, self.model.alg[self.relax_algebraic_index])
+        self.relaxed_alg = vertcat(self.relaxed_alg, alg_relax)
 
         # include the penalization term in the objective
-        self.problem.L += (mtimes(nu_alg.T, self.model.alg[self.relax_algebraic_index])
-                           + self.mu_sym / 2. * mtimes(self.model.alg[self.relax_algebraic_index].T,
-                                                       self.model.alg[self.relax_algebraic_index]))
+        self.problem.L += (mtimes(nu_alg.T, alg_relax) + self.mu_sym / 2. * mtimes(alg_relax.T, alg_relax))
 
         # include the relaxed y_sym as controls
+        u_guess = self.problem.y_guess[self.relax_algebraic_index] if self.problem.y_guess is not None else None
+
         self.problem.include_control(self.model.y_sym[self.relax_algebraic_var_index],
                                      u_max=self.problem.y_max[self.relax_algebraic_var_index],
-                                     u_min=self.problem.y_min[self.relax_algebraic_var_index])
+                                     u_min=self.problem.y_min[self.relax_algebraic_var_index],
+                                     u_guess=u_guess)
         self.problem.remove_algebraic(self.model.y_sym[self.relax_algebraic_var_index],
-                                      self.model.alg[self.relax_algebraic_index])
+                                      alg_relax)
+
+    def _relax_time_equalities(self):
+        # get the equations to relax
+        eq_relax = self.problem.g_eq[self.relax_time_equality_index]
+        n_eq_relax = eq_relax.numel()
+
+        self.n_relax += n_eq_relax
+
+        # create a symbolic nu
+        nu_alg = SX.sym('AL_nu_eq', n_eq_relax)
+        self.nu_sym = vertcat(self.nu_sym, nu_alg)
+
+        # save the relaxed algebraic equations for computing the update later
+        self.relaxed_eq = vertcat(self.relaxed_eq, eq_relax)
+
+        # include the penalization term in the objective
+        self.problem.L = self.problem.L + (mtimes(nu_alg.T, eq_relax)
+                                           + self.mu_sym / 2. * mtimes(eq_relax.T,
+                                                                       eq_relax))
+
+        # Remove equality
+        self.problem.g_eq = remove_variables_from_vector_by_indices(self.problem.g_eq, self.relax_time_equality_index)
+
+        for ind in sorted(self.relax_time_equality_index, reverse=True):
+            self.problem.time_g_eq.pop(ind)
 
     def _relax_states_constraints(self):
         for i in range(self.model.n_x):
@@ -194,32 +247,20 @@ class AugmentedLagrangian(SolutionMethodsBase):
     def _relax_inequalities(self):
         raise Exception('Not implemented')
 
-    # endregion
-    # ==============================================================================
-
-    # ==============================================================================
-    # region NU
-    # ==============================================================================
-    def _parametrize_nu(self, nu_sym=None, n_r=None):
-        if nu_sym is None:
-            nu_sym = self.nu_sym
-        if n_r is None:
-            n_r = self.n_relax
-
-        nu_pol, nu_par = self.create_variable_polynomial_approximation(n_r, self.degree, 'nu')
+    def _parametrize_nu(self):
+        nu_pol, nu_par = self.create_variable_polynomial_approximation(self.n_relax, self.degree, 'nu')
 
         self.nu_pol = vertcat(self.nu_pol, nu_pol)
         self.nu_par = vertcat(self.nu_par, nu_par)
 
-        self.problem.replace_variable(nu_sym, nu_pol)
+        self.problem.replace_variable(self.nu_sym, nu_pol)
         self.problem.model.include_theta(vec(nu_par))
 
         return nu_pol, nu_par
 
-    def create_nu_initial_guess(self, n_r=None):
-        if n_r is None:
-            n_r = self.n_relax
-        nu = create_constant_theta(constant=0, dimension=n_r * self.degree, finite_elements=self.finite_elements)
+    def create_nu_initial_guess(self):
+        nu = create_constant_theta(constant=0, dimension=self.n_relax * self.degree,
+                                   finite_elements=self.finite_elements)
         return nu
 
     def _create_nu_update_func(self):
@@ -230,18 +271,23 @@ class AugmentedLagrangian(SolutionMethodsBase):
                       for i in range(self.finite_elements)])
         theta_var = vertcat(*[theta[i] for i in range(self.finite_elements)])
 
-        time_dict = defaultdict(dict)
+        time_dict = dict([(i, {}) for i in range(self.finite_elements)])
 
         for el in range(self.finite_elements):
             time_dict[el]['t_0'] = self.time_breakpoints[el]
             time_dict[el]['t_f'] = self.time_breakpoints[el + 1]
             time_dict[el]['f_nu'] = self.time_interpolation_nu[el]
             time_dict[el]['f_relax_alg'] = self.time_interpolation_nu[el]
+            time_dict[el]['f_relax_eq'] = self.time_interpolation_nu[el]
 
         functions = defaultdict(dict)
         for el in range(self.finite_elements):
             func_rel_alg = self.model.convert_expr_from_tau_to_time(
                 substitute(self.relaxed_alg, self.model.u, self.model.u_expr),
+                self.time_breakpoints[el],
+                self.time_breakpoints[el + 1])
+            func_rel_eq = self.model.convert_expr_from_tau_to_time(
+                substitute(self.relaxed_eq, self.model.u, self.model.u_expr),
                 self.time_breakpoints[el],
                 self.time_breakpoints[el + 1])
             nu_time_dependent = self.model.convert_expr_from_tau_to_time(self.nu_pol,
@@ -250,29 +296,40 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
             f_nu = Function('f_nu', self.model.all_sym, [nu_time_dependent])
             f_relax_alg = Function('f_relax_alg', self.model.all_sym, [func_rel_alg])
+            f_relax_eq = Function('f_relax_eq', self.model.all_sym, [func_rel_eq])
 
             functions['f_nu'][el] = f_nu
             functions['f_relax_alg'][el] = f_relax_alg
+            functions['f_relax_eq'][el] = f_relax_eq
 
+        # get values (symbolically)
         results = self.ocp_solver.discretizer.get_system_at_given_times(x_var, y_var, u_var, time_dict, p=par,
                                                                         theta=theta,
                                                                         functions=functions)
 
+        # compute new nu
         mu_mx = par[find_variables_indices_in_vector(self.mu_sym, self.model.p)]
         new_nu = []
         rel_alg = []
+        rel_eq = []
         for el in range(self.finite_elements):
             new_nu_k = []
             rel_alg_k = []
+            rel_eq_k = []
             for j in range(self.degree):
                 nu_kj = results[el]['f_nu'][j]
                 rel_alg_kj = results[el]['f_relax_alg'][j]
-                new_nu_k = horzcat(new_nu_k, nu_kj + mu_mx * rel_alg_kj)
+                rel_eq_kj = results[el]['f_relax_eq'][j]
+                rel_kj = vertcat(rel_alg_kj, rel_eq_kj)
+
+                new_nu_k = horzcat(new_nu_k, nu_kj + mu_mx * rel_kj)
                 rel_alg_k = horzcat(rel_alg_k, rel_alg_kj)
+                rel_eq_k = horzcat(rel_eq_k, rel_eq_kj)
             new_nu.append(vec(new_nu_k))
             rel_alg.append(vec(rel_alg_k))
+            rel_eq.append(vec(rel_eq_k))
 
-        output = new_nu + rel_alg
+        output = new_nu + rel_alg + rel_eq
         self.new_nu_func = Function('nu_update_function', [v, par, theta_var], output)
 
     def _compute_new_nu_and_error(self, p=None, theta=None, raw_solution_dict=None):
@@ -286,19 +343,22 @@ class AugmentedLagrangian(SolutionMethodsBase):
         if self.new_nu_func is None:
             self._create_nu_update_func()
 
-        if not self._debug_skip_update_nu:
+        if not self._debug_skip_compute_nu_and_error:
             raw_decision_variables = raw_solution_dict['x']
             theta_vector = vertcat(*[theta[i] for i in range(self.finite_elements)])
             output = self.new_nu_func(raw_decision_variables, p, theta_vector)
+
+            # get from update
             new_nu = output[:self.finite_elements]
-            rel_alg = output[self.finite_elements:2 * self.finite_elements]
+            rel_alg = output[self.finite_elements:self.finite_elements * 2]
+            rel_eq = output[self.finite_elements * 2:self.finite_elements * 3]
 
-            self.nu_tilde = dict([(i, new_nu[i]) for i in range(self.finite_elements)])
+            if not self._debug_skip_update_nu:
+                self.nu_tilde = dict([(i, new_nu[i]) for i in range(self.finite_elements)])
             self.alg_violation = dict([(i, rel_alg[i]) for i in range(self.finite_elements)])
+            self.eq_violation = dict([(i, rel_eq[i]) for i in range(self.finite_elements)])
 
-            error = max([mmax(fabs(rel_alg[i])) for i in range(self.finite_elements)])
-
-            print("Violation: ", error)
+            error = max([mmax(fabs(vertcat(rel_alg[i], rel_eq[i]))) for i in range(self.finite_elements)])
         else:
             error = 0
         return error
@@ -314,13 +374,6 @@ class AugmentedLagrangian(SolutionMethodsBase):
         if not self._debug_skip_update_mu:
             self.mu = min(self.mu_max, self.mu * self.beta)
 
-    # endregion
-    # ==============================================================================
-
-    # ==============================================================================
-    # SOLVE
-    # ==============================================================================
-
     def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         if self.opt_problem is None:
             self.ocp_solver.create_optimization_problem()
@@ -330,15 +383,15 @@ class AugmentedLagrangian(SolutionMethodsBase):
             x_0 = self.problem.x_0
 
         if not vertcat(x_0).numel() == self.model.n_x:
-            raise Exception('Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, '
-                            'x_0.numel() = {}, model.n_x = {}'.format(vertcat(x_0).numel(), self.model.n_x))
+            raise ValueError('Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, '
+                             'x_0.numel() = {}, model.n_x = {}'.format(vertcat(x_0).numel(), self.model.n_x))
 
         # parameters
         if p is None:
             if self.problem.n_p_opt == self.model.n_p:
                 p = repmat(0, self.problem.n_p_opt)
             elif self.problem.model.n_p - 1 > 0:
-                raise Exception("A parameter 'p' of size {} should be given.".format(self.problem.model.n_p))
+                raise ValueError("A parameter 'p' of size {} should be given.".format(self.problem.model.n_p))
             else:
                 p = []
 
@@ -347,7 +400,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
             if self.problem.n_theta_opt == self.model.n_theta:
                 theta = create_constant_theta(0, self.problem.n_theta_opt, self.finite_elements)
             elif self.problem.model.n_theta - self.n_relax * self.degree > 0:
-                raise Exception("A parameter 'theta' of size {} should be given".format(self.problem.model.n_theta))
+                raise ValueError("A parameter 'theta' of size {} should be given".format(self.problem.model.n_theta))
 
         # last control
         if not self.last_control_as_parameter and last_u is not None:
@@ -360,10 +413,12 @@ class AugmentedLagrangian(SolutionMethodsBase):
             elif self.problem.last_u is not None:
                 last_u = self.problem.last_u
 
+        # initialize variables
         it = 0
+        t_0 = time.time()
 
-        t1 = time.time()
         while True:
+            t1 = time.time()
             if self.nu_tilde is not None:
                 self.nu = self.nu_tilde
 
@@ -372,7 +427,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
             # build the optimization parameter vector
             if theta_k is not None:
-                theta_k_vector = vertcat(*[theta_k[i] for i in range(self.finite_elements)])
+                theta_k_vector = vertcat(*theta_k.values())
                 par = vertcat(p_k, theta_k_vector)
             else:
                 par = p_k
@@ -386,18 +441,6 @@ class AugmentedLagrangian(SolutionMethodsBase):
             elif self.problem.last_u is not None:
                 par = vertcat(par, self.problem.last_u)
 
-            # if initial_guess_dict is None:
-            #     if initial_guess is None:
-            #         if self.initial_guess_heuristic == 'simulation':
-            #             initial_guess = self.ocp_solver.discretizer.create_initial_guess_with_simulation(p=p_k,
-            #                                                                                              theta=theta_k)
-            #         elif self.initial_guess_heuristic == 'problem_info':
-            #             initial_guess = self.ocp_solver.discretizer.create_initial_guess(p_k, theta_k)
-            #         else:
-            #             raise ValueError(
-            #                 'initial_guess_heuristic did not recognized, available options: "simulation" and '
-            #                 '"problem_info". Given: {}'.format(self.initial_guess_heuristic))
-
             if initial_guess_dict is None:
                 args = dict(initial_guess=initial_guess, p=par)
             else:
@@ -410,25 +453,44 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
             it += 1
 
-            error = self._compute_new_nu_and_error(p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict)
-            self._update_mu()
-            self.last_violation_error = error
-
-            if it == self.max_iter:
-                break
+            if not self.no_update_after_solving:
+                error = self._compute_new_nu_and_error(p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict)
+                self._update_mu()
+                self.last_violation_error = error
             else:
-                pass
-        print('Solution time: {}'.format(time.time() - t1))
-        print('Approximation error: {}'.format(error))
-        return raw_solution_dict, p, theta, x_0, last_u
+                error = None
+
+            if self.verbose >= 2:
+                if it == 1:
+                    print('{} | {} | {}'.format('Iter.', ' Viol. Error', 'Sol. Time'))
+
+                if error is not None:
+                    print('{:>5} | {:e} | {:>9.3f}'.format(it, float(error), time.time() - t1))
+                else:
+                    print('{:>5} | {} | {:>9.3f}'.format(it, 'Not computed', time.time() - t1))
+
+            # Exit condition: error < tol
+            if error is not None and error < self.tol:
+                if self.verbose:
+                    print('=== Exiting: {} | Viol. Error: {} | Total time: {} ==='.format('Tolerance met', error,
+                                                                                          time.time() - t_0))
+                break
+
+            # Exit condition: max_iter
+            if it == self.max_iter:
+                if self.verbose:
+                    print(
+                        '=== Exiting: {} | Viol. Error: {} | Total time: {} ==='.format('Max iteration reached', error,
+                                                                                        time.time() - t_0))
+                break
+
+        return raw_solution_dict, p_k, theta_k, x_0, last_u
 
     def create_optimization_result(self, raw_solution_dict, p=None, theta=None, x_0=None):
         if p is None:
             p = []
         if theta is None:
             theta = {}
-        p = vertcat(p, self.mu)
-        theta = self.join_nu_to_theta(self.nu, theta)
 
         optimization_result = super(AugmentedLagrangian, self).create_optimization_result(raw_solution_dict, p=p,
                                                                                           theta=theta, x_0=x_0)
@@ -441,6 +503,11 @@ class AugmentedLagrangian(SolutionMethodsBase):
                                                                       for d in range(self.degree)]
                                                                      for el in range(self.finite_elements)]
         optimization_result.other_data['alg_violation']['time'] = self.time_interpolation_nu
+
+        optimization_result.other_data['eq_violation']['values'] = [[self.unvec(self.eq_violation[el])[:, d]
+                                                                     for d in range(self.degree)]
+                                                                    for el in range(self.finite_elements)]
+        optimization_result.other_data['eq_violation']['time'] = self.time_interpolation_nu
 
         optimization_result.violation_error = self.last_violation_error
         return optimization_result

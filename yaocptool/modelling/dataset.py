@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import copy
+import re
 from collections import defaultdict
 from functools import partial
 
@@ -38,8 +39,8 @@ class DataSet:
         self.max_delta_t = None
         self.find_discontinuity = True
 
-        for (k, v) in kwargs.items():
-            setattr(self, k, v)
+        for (k, val) in kwargs.items():
+            setattr(self, k, val)
 
     def create_entry(self, entry, size, names=None, plot_style=None):
         """
@@ -88,7 +89,17 @@ class DataSet:
         return self.data[entry]['size']
 
     def insert_data(self, entry, time, value):
+        """Insert data on the datatset
+
+        :param str entry: entry name ('x', 'y', 'u', ...)
+        :param float|DM time: time or time vector of the data
+        :param DM value: vector or matrix of values for the entry (column represent time)
+        """
         value = vertcat(value)
+
+        if not time.shape[1] == value.shape[1]:
+            raise ValueError('Number of columns of "time" and "value" should be the same, '
+                             'time.shape={} and value.shape={}'.format(time.shape[1], value.shape))
 
         # TODO: Here is a correction for a BUG on CASADI horzcat with DM([]), refactor when CASADI corrects this
         if self.data[entry]['values'].numel() > 0:
@@ -143,7 +154,8 @@ class DataSet:
             entries = self.data.keys()
 
         for entry in entries:
-            time = [self.data[entry]['time'][i] for i in range(self.data[entry]['time'].shape[1])]
+            entry_length = self.data[entry]['time'].shape[1]
+            time = [self.data[entry]['time'][i] for i in range(entry_length)]
             values = [self.data[entry]['values'][:, i] for i in range(self.data[entry]['values'].shape[1])]
             time, values = (list(t) for t in zip(*sorted(zip(time, values), key=lambda point: point[0])))
             self.data[entry]['time'] = horzcat(*time)
@@ -155,10 +167,13 @@ class DataSet:
 
         if plot_style not in ['plot', 'step']:
             raise ValueError('Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(plot_style))
+
         if plot_style == 'plot':
             return plt.plot(t_vector.T, data_vector[row, :].T, label=label)
-        elif plot_style == 'step':
+        if plot_style == 'step':
             return plt.step(t_vector.T, data_vector[row, :].T, label=label, where='post')
+
+        raise ValueError('"plot_style" not recognized. Given {}, available: "step" or "plot"'.format(plot_style))
 
     def _find_discontinuity_for_plotting(self, time, values):
         tolerance = 1.2
@@ -183,56 +198,71 @@ class DataSet:
                 delta_t = delta_t_comparison
         return out_time, out_values
 
-    def plot(self, plot_list, figures=None, show=True):
+    def plot(self, plot_list, figures=None, show=True, exact=False):
         """Plot DataSet information.
         It takes as input a list of dictionaries, each dictionary represents a plot.  In the dictionary use keyword 'x'
         to specify which states you want to print, the value of the dictionary should be a list of index of the states
         to be printed.
 
-        :param list plot_list: List of dictionaries to generate the plots.
+        Usage:
+            result.plot({'x':'all', 'y':'all', 'u':'all'})  # print all variables in a single plot
+            result.plot([{'x':[0,3]}, {'y':'all'}, {'u':['v_1', 'q_out']}])  # create 3 plots, with the selected vars
+            result.plot('all')  # create 3 plots one with all 'x', one with all 'y', and one with all 'u'
+
+        :param list|str plot_list: List of dictionaries to generate the plots.
         :param list figures: list of figures to be plotted on top (optional)
         :param bool show: if the plotted figures should be shown after plotting (optional, default=True).
         """
+
+        if plot_list == 'all':
+            plot_list = [{'x': 'all'}, {'y': 'all'}, {'u': 'all'}]
 
         if isinstance(plot_list, dict):
             plot_list = [plot_list]
 
         used_figures = []
 
+        # for each plot asked
         for k, entry_dict in enumerate(plot_list):
             if figures is not None:
                 fig = plt.figure(figures[k].number)
             else:
                 fig = plt.figure(k)
-
             used_figures.append(fig)
 
             lines = []
-            # Plot optimization x data
+            # for each entry (dict key) e.g. 'x', 'y'
             for entry in entry_dict:
                 if entry not in self.data:
-                    raise Exception("Entry not found in the dataset. Entries: {}".format(self.data.keys()))
+                    raise Exception("Entry '{}' not found in the dataset. Entries: {}".format(entry, self.data.keys()))
 
+                # if a custom plot style was asked, otherwise use default
                 if 'plot_style' in self.data[entry]:
                     plot_style = self.data[entry]['plot_style']
                 else:
                     plot_style = self.plot_style
 
-                indexes = entry_dict[entry]
+                indexes_or_names = entry_dict[entry]
                 # if it is 'all'
-                if indexes == 'all':
-                    indexes = range(self.data[entry]['size'])
+                if indexes_or_names == 'all':
+                    indexes_or_names = range(self.data[entry]['size'])
+
+                var_names = self.get_entry_names(entry)
+                # identify variables with regex
+                if not exact:
+                    for i, regex in enumerate(indexes_or_names):
+                        if isinstance(regex, ("".__class__, u"".__class__)):
+                            indexes_or_names[i:i + 1] = [v_name for v_name in var_names if re.match(regex, v_name)]
 
                 # if it is a variable name
-                names = self.get_entry_names(entry)
-                for i, item in enumerate(indexes):
+                for i, item in enumerate(indexes_or_names):
                     if isinstance(item, ("".__class__, u"".__class__)):
-                        indexes[i] = names.index(item)
+                        indexes_or_names[i] = var_names.index(item)
 
                 # plot entry/indexes
-                for l in indexes:
-                    line = self._plot_entry(self.data[entry]['time'], self.data[entry]['values'], l,
-                                            label=self.data[entry]['names'][l], plot_style=plot_style)
+                for ind in indexes_or_names:
+                    line = self._plot_entry(self.data[entry]['time'], self.data[entry]['values'], ind,
+                                            label=self.data[entry]['names'][ind], plot_style=plot_style)
                     lines.append(line)
 
             plt.grid()

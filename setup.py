@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='yaocptool',
-    version='0.3.5',
+    version='0.3.6',
     packages=['yaocptool', 'yaocptool.mpc', 'yaocptool.util', 'yaocptool.methods', 'yaocptool.methods.base',
               'yaocptool.methods.classic', 'yaocptool.parallel', 'yaocptool.modelling', 'yaocptool.estimation',
               'yaocptool.stochastic', 'yaocptool.optimization'],
@@ -16,6 +16,6 @@ setup(
         'scipy',
         'matplotlib',
         'casadi',
-        'sobol_seq'
+        'sobol_seq', 'networkx'
     ]
 )

@@ -7,9 +7,9 @@ Created on Wed Nov 16 15:27:37 2016
 
 SOLVER_OPTIONS = {
     'nlpsol_options': {
-        # 'ipopt.print_level': 0,
-        # 'print_time': False,
-        # "ipopt.linear_solver": "ma27",
+        'ipopt.print_level': 0,
+        'print_time': False,
+        "ipopt.linear_solver": "ma27",
         # 'ipopt.mumps_pivtol': 1e-8,
         # "ipopt.ma27_liw_init_factor": 15,
         # "ipopt.ma27_la_init_factor": 15,

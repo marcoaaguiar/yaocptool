@@ -49,5 +49,5 @@ class DirectMethod(SolutionMethodsBase):
 
     def prepare(self):
         super(DirectMethod, self).prepare()
-        self._parametrize_control()
         self._create_cost_state()
+        self._parametrize_control()

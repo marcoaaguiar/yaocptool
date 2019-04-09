@@ -7,11 +7,8 @@ Created on Wed Nov 02 18:55:27 2016
 import sys
 from os.path import dirname, abspath
 
-from casadi import mtimes
-
-from tests.models.linear_models import MIMO2x2DAE, StabilizationMIMO2x2, StabilizationMIMO2x2WithInequality
+from tests.models.linear_models import MIMO2x2DAE, StabilizationMIMO2x2WithInequality
 from yaocptool.methods import DirectMethod, AugmentedLagrangian, IndirectMethod
-from yaocptool.modelling import SystemModel, OptimalControlProblem
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 
@@ -25,6 +22,8 @@ discretization_scheme = 'collocation'
 degree = 3
 degree_control = 3
 finite_elements = 60
+
+figs = []
 
 if AUG_LAGRANGIAN:
     model = MIMO2x2DAE('aug_lag_1')
@@ -40,7 +39,7 @@ if AUG_LAGRANGIAN:
                                           degree=degree,
                                           degree_control=degree_control,
                                           finite_elements=finite_elements,
-                                          max_iter=3,
+                                          max_iter=5,
                                           mu_max=1e6
                                           )
 
@@ -62,7 +61,7 @@ if INDIRECT:
     result2 = solution_method2.solve(p=[1], x_0=[2, 3, 0, 0])
     figs = result2.plot([
         {'x': [0, 1]},
-        {'u':'all'},
+        {'u': 'all'},
         {'y': [2, 3]}
     ], figures=figs, show=True)
 

@@ -91,6 +91,24 @@ class OptimizationResult:
         u_0 = self.u_data['values'][0][0]
         return u_0
 
+    def get_variable(self, var_type, indices):
+        """Get all the data for a variable (var_type
+
+        :param str var_type: variable type ('x', 'y', 'u'
+        :param int|list of int ind: variable indices
+        """
+
+        if var_type == 'x':
+            data = self.x_data['values']
+        elif var_type == 'y':
+            data = self.y_data['values']
+        elif var_type == 'u':
+            data = self.u_data['values']
+        else:
+            raise NotImplementedError
+
+        return [[vec[indices] for vec in list_vec] for list_vec in data]
+
     def to_dataset(self):
         """
             Return a dataset with the data of x, y, and u
@@ -141,13 +159,9 @@ class OptimizationResult:
 
         return dataset
 
-    def plot(self, plot_list, figures=None, show=True):
-        """Plot the optimization result.
-        It takes as input a list of dictionaries, each dictionary represents a plot.  In the dictionary use keyword 'x'
-        to specify which states you want to print, the value of the dictionary should be a list of state to be printed.
-        The keywords that are accepted are: 'x', 'y', 'u'
-        :param list plot_list: List of dictionaries to generate the plots.
-        :param list figures: OPTIONAL: list of figures to be plotted in. If not provided it will create new figures.
-        :param bool show: OPTIONAL: select if matplotlib.pyplot.show should be applied after the plots.
-        """
-        return self.dataset.plot(plot_list, figures, show)
+    @property
+    def plot(self):
+        return self.dataset.plot
+
+    # inherit docsting
+    plot.__doc__ = DataSet.plot.__doc__
