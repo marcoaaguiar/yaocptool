@@ -1,18 +1,20 @@
-from casadi import is_equal, DM, vec, vertcat, substitute, mtimes, integrator, MX, repmat, OP_LT, OP_LE, OP_EQ, SX
+from casadi import is_equal, DM, vec, vertcat, substitute, mtimes, integrator, MX, repmat, OP_LT, OP_LE, OP_EQ, SX, \
+    collocation_points
 
 
-def find_variables_indices_in_vector(var, vector):
+def find_variables_indices_in_vector(var, vector, depth=0):
     """
         Given symbolic variables return the indices of the variables in a vector
 
     :param casadi.SX|casadi.MX var:
     :param casadi.SX|casadi.MX vector:
+    :param int depth: depth for which is_equal will check for equality
     :rtype: list
     """
     index = []
     for j in range(vector.size1()):
         for i in range(var.numel()):
-            if is_equal(vector[j], var[i]):
+            if is_equal(vector[j], var[i], depth):
                 index.append(j)
     return index
 
@@ -157,3 +159,61 @@ def is_equality(expr):
         if expr.op() == OP_EQ:
             return True
     return False
+
+
+def _create_lagrangian_polynomial_basis(tau, degree, starting_index=0):
+    tau_root = [0] + collocation_points(degree, 'radau')  # All collocation time points
+
+    # For all collocation points: eq 10.4 or 10.17 in Biegler's book
+    # Construct Lagrange polynomials to get the polynomial basis at the collocation point
+    l_list = []
+    for j in range(starting_index, degree + 1):
+        ell = 1
+        for j2 in range(starting_index, degree + 1):
+            if j2 != j:
+                ell *= (tau - tau_root[j2]) / (tau_root[j] - tau_root[j2])
+        l_list.append(ell)
+
+    return tau, l_list
+
+
+def create_polynomial_approximation(tau, size, degree, name='var_appr', point_at_zero=False):
+    """
+
+    :param casadi.SX tau:
+    :param int size: size of the approximated variable (number of rows)
+    :param int degree: approximation degree
+    :param list|str name: name for created parameters
+    :param bool point_at_zero: if the polynomial has an collocation point at tau=0
+
+    :return: (pol, par), returns the polynomial and a vector of parameters
+    """
+    if not isinstance(name, list):
+        name = [name + '_' + str(i) for i in range(size)]
+
+    if degree == 1:
+        if size > 0:
+            points = vertcat(*[SX.sym(name[s], 1, degree) for s in range(size)])
+        else:
+            points = SX.sym('empty_sx', size, degree)
+        par = vec(points)
+        u_pol = points
+
+    else:
+        if point_at_zero:
+            if size > 0:
+                points = vertcat(*[SX.sym(name[s], 1, degree + 1) for s in range(size)])
+            else:
+                points = SX.sym('empty_sx', size, degree)
+            tau, ell_list = _create_lagrangian_polynomial_basis(tau=tau, degree=degree, starting_index=0)
+            u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree + 1)])
+        else:
+            if size > 0:
+                points = vertcat(*[SX.sym(name[s], 1, degree) for s in range(size)])
+            else:
+                points = SX.sym('empty_sx', size, degree)
+            tau, ell_list = _create_lagrangian_polynomial_basis(tau=tau, degree=degree, starting_index=1, )
+            u_pol = sum([ell_list[j] * points[:, j] for j in range(0, degree)])
+        par = vec(points)
+
+    return u_pol, par

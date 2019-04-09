@@ -12,18 +12,19 @@ from yaocptool.stochastic import sample_parameter_normal_distribution_with_sobol
 
 
 class PCEConverter:
-    def __init__(self, socp, **kwargs):
+    def __init__(self, socp, pc_order=3, n_samples=None, **kwargs):
         """
 
         :param StochasticOCP socp: Stochastic Optimal Control Problem
-        :param int n_samples: number of samples of the parameters. If none is provided, the minimum number of samples
-            will be used, depending on the number of uncertain parameters and polynomial order
         :param int pc_order: order of the polynomial, for the polynomial approximation. (default: 3)
+        :param int n_samples: number of samples of the parameters. If None is provided, the minimum number of samples
+            will be used, depending on the number of uncertain parameters and polynomial order
+        :param kwargs:
 
         """
         self.socp = socp
-        self.n_samples = None
-        self.pc_order = 3
+        self.n_samples = n_samples
+        self.pc_order = pc_order
         self.lamb = 0.0
 
         self.variable_type = 'theta'

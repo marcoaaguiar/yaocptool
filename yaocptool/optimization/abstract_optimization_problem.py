@@ -127,6 +127,8 @@ class AbstractOptimizationProblem(object):
         """
         if isinstance(expr, list):
             expr = vertcat(*expr)
+        if isinstance(expr, (float, int)):
+            expr = vertcat(expr)
 
         if expr.numel() > 1:
             raise ValueError('Objective function should be an scalar. '
