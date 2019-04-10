@@ -19,6 +19,8 @@ sys.path.insert(0, os.path.abspath('..//..//yaocptool//'))
 sys.path.insert(0, os.path.abspath('..//..//'))
 print(sys.path)
 
+import setup
+
 # -- Project information -----------------------------------------------------
 
 project = 'YAOCPTool'
@@ -28,7 +30,7 @@ author = 'Marco Aurelio S. de Aguiar'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.2.0'
+release = setup.version
 
 # -- General configuration ---------------------------------------------------
 
