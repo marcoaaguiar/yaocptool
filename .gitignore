@@ -1,10 +1,10 @@
 .idea/
 docs/build/
+__pycache__/
+scripts/
+paper/
 docs/rst/
 *.pyc
 *.pyo
-__pycache__/
 tmp/
-scripts/
-paper/
 config.py
