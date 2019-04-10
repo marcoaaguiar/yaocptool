@@ -227,9 +227,10 @@ class AbstractOptimizationProblem(object):
         self.g_ub = vertcat(self.g_ub, rhs)
 
     def include_constraint(self, expr):
-        """Includes an inequality or inequality to the optimization problem, example:
-            opt_problem.include_constraint(1 <= x**2)
-            opt_problem.include_constraint(x + y == 1)
+        """Includes an inequality or inequality to the optimization problem,
+        Example:
+        opt_problem.include_constraint(1 <= x**2)
+        opt_problem.include_constraint(x + y == 1)
         Due to limitations on CasADi it does not allows for double inequalities (e.g.: 0 <= x <= 1)
 
         :param casadi.MX expr: equality or inequality expression
@@ -303,14 +304,15 @@ class AbstractOptimizationProblem(object):
 
     def get_default_call_dict(self):
         """
-            Return a dictionary of the settings that will be used on calling the solver
-            The keys are:
-                - 'lbx': lower bound on the variables
-                - 'ubx': upper bound on the variables
-                - 'lbg': lower bound on the constraints
-                - 'ubg': upper bound on the constraints
+        Return a dictionary of the settings that will be used on calling the solver
+        The keys are:
+        - 'lbx': lower bound on the variables
+        - 'ubx': upper bound on the variables
+        - 'lbg': lower bound on the constraints
+        - 'ubg': upper bound on the constraints
 
-        :return:
+        :return: dict with default values
+        :rtype: dict
         """
         return {'lbx': self.x_lb,
                 'ubx': self.x_ub,

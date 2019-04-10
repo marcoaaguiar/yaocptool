@@ -62,6 +62,7 @@ class Network:
     def problems(self):
         """
             List of problems of all nodes
+
         :rtype: list of OptimalControlProblem
         :return: list of all problems
         """

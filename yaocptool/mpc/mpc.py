@@ -31,8 +31,8 @@ class MPC:
             in the p vector.
         :param function state_rearrangement_function: A function that can be used to rearrange the initial condition in
             cases where the estimated states is not equal to initial condition vector of the OCP. For instance, when the
-             OCP has multiple representations of the system. The provided function has the estimated stated as input and
-              has to return a initial condition vector.
+            OCP has multiple representations of the system. The provided function has the estimated stated as input and
+            has to return a initial condition vector.
         """
         self.plant = plant
         self.solution_method = solution_method

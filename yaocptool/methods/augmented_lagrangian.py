@@ -18,14 +18,14 @@ from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 class AugmentedLagrangian(SolutionMethodsBase):
     r"""
-        For a minimization problem in the form
-            min f(x,u) = \int L(x,u) dt
-            s.t.: \dot{x} = f(x,u),
-            g_ineq (x,u) \leq 0
+    For a minimization problem in the form
+        min f(x,u) = \int L(x,u) dt
+        s.t.: \dot{x} = f(x,u),
+        g_ineq (x,u) \leq 0
 
-        Transforms the problem in a sequence of solution of the problem
-            min f(x,u) = \int L(x,u) -\mu \sum \log(-g_ineq(x,u)) dt
-            s.t.: \dot{x} = f(x,u),
+    Transforms the problem in a sequence of solution of the problem
+        min f(x,u) = \int L(x,u) -\mu \sum \log(-g_ineq(x,u)) dt
+        s.t.: \dot{x} = f(x,u),
     """
 
     def __init__(self, problem, ocp_solver_class, solver_options=None, **kwargs):
@@ -36,9 +36,9 @@ class AugmentedLagrangian(SolutionMethodsBase):
         :param type ocp_solver_class: Class of Solution Method (Direct/Indirect Method)
         :param solver_options: Options for the Solution Method class given
         :param relax_algebraic_index: Index for the algebraic equations that will be relaxed, if not given all the
-        algebraic equations will be relaxed
+            algebraic equations will be relaxed
         :param relax_algebraic_var_index: Index for the algebraic variables that will be relaxed, if not given it will
-        be assumed the same as the 'relax_algebraic_index'
+            be assumed the same as the 'relax_algebraic_index'
         :param relax_state_bounds: This relax the states bounds and put then in the objective, via an algebraic variable
         :param kwargs:
         """

@@ -1,4 +1,6 @@
 .idea/
+docs/build/
+docs/rst/
 *.pyc
 *.pyo
 __pycache__/

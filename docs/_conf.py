@@ -14,6 +14,10 @@
 #
 import os
 import sys
+from recommonmark.parser import CommonMarkParser
+from recommonmark.transform import AutoStructify
+import sphinx_rtd_theme
+
 
 sys.path.insert(0, os.path.abspath('..//..//yaocptool//'))
 sys.path.insert(0, os.path.abspath('..//..//'))
@@ -55,7 +59,7 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
@@ -84,16 +88,24 @@ pygments_style = None
 # Guzzle
 import guzzle_sphinx_theme
 
-html_theme_path = guzzle_sphinx_theme.html_theme_path()
-html_theme = 'guzzle_sphinx_theme'
+# html_theme_path = guzzle_sphinx_theme.html_theme_path()
+# html_theme = 'guzzle_sphinx_theme'
+
+html_theme = "sphinx_rtd_theme"
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Register the theme as an extension to generate a sitemap.xml
 extensions.append("guzzle_sphinx_theme")
 
 # Guzzle theme options (see theme.conf for more information)
+# html_theme_options = {
+#     # Set the name of the project to appear in the sidebar
+#     "project_nav_name": "Project Name",
+# }
+
 html_theme_options = {
-    # Set the name of the project to appear in the sidebar
-    "project_nav_name": "Project Name",
+    'display_version': False,
+    'navigation_depth': 2,
 }
 
 # html_theme = 'default'
@@ -199,5 +211,14 @@ def skip(app, what, name, obj, skip, options):
     return skip
 
 
+source_parsers = {
+    '.md': CommonMarkParser,
+}
+
+
 def setup(app):
     app.connect("autodoc-skip-member", skip)
+    app.add_config_value('recommonmark_config', {
+        'enable_eval_rst': True,
+    }, True)
+    app.add_transform(AutoStructify)
