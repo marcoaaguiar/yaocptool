@@ -17,13 +17,14 @@ import sys
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 import sphinx_rtd_theme
+# import guzzle_sphinx_theme
 
 
-sys.path.insert(0, os.path.abspath('..//..//yaocptool//'))
-sys.path.insert(0, os.path.abspath('..//..//'))
+sys.path.insert(0, os.path.abspath('..//yaocptool//'))
+sys.path.insert(0, os.path.abspath('..//'))
 print(sys.path)
 
-import setup
+# import setup
 
 # -- Project information -----------------------------------------------------
 
@@ -34,7 +35,7 @@ author = 'Marco Aurelio S. de Aguiar'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = setup.version
+release = '0.3.6'
 
 # -- General configuration ---------------------------------------------------
 
@@ -86,7 +87,6 @@ pygments_style = None
 #
 
 # Guzzle
-import guzzle_sphinx_theme
 
 # html_theme_path = guzzle_sphinx_theme.html_theme_path()
 # html_theme = 'guzzle_sphinx_theme'
@@ -201,6 +201,9 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
+
+
+add_module_names = False
 
 
 # -- Extension configuration -------------------------------------------------
