@@ -3,7 +3,7 @@ python:
   - "3.6"
 
 install:            # Install requirement as "Environment Setup Section"
-  - pip install casadi numpy scipy sobol_seq matplotlib
+  - pip install casadi numpy scipy sobol_seq matplotlib networkx
   - pip install -r docs/requirements.txt
 script:             # build sphinx document
   - cd docs/
