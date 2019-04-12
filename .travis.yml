@@ -37,7 +37,7 @@ matrix:
       python: "2.7"
       install:
         - pip install casadi numpy scipy sobol_seq matplotlib networkx
-        - pip install codecov nose
+        - pip install codecov nose mock
       # Run the unit test
       script:
         - cd unit_tests
