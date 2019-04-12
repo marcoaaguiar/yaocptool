@@ -8,7 +8,9 @@ matrix:
   include:
     - name: "DOC"
       python: "3.6"
-      install: pip install -r docs/requirements.txt
+      install:
+        - pip install casadi numpy scipy sobol_seq matplotlib networkx
+        - pip install -r docs/requirements.txt
       script:
         - cd docs/
         - make html
@@ -20,7 +22,9 @@ matrix:
           github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
     - name: "TEST_36"
       python: "3.6"
-      install: pip install codecov nose
+      install:
+        - pip install casadi numpy scipy sobol_seq matplotlib networkx
+        - pip install codecov nose
       # Run the unit test
       script:
         - cd unit_tests
@@ -31,7 +35,9 @@ matrix:
         - codecov
     - name: "TEST_27"
       python: "2.7"
-      install: pip install codecov nose
+      install:
+        - pip install casadi numpy scipy sobol_seq matplotlib networkx
+        - pip install codecov nose
       # Run the unit test
       script:
         - cd unit_tests
