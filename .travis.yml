@@ -20,15 +20,17 @@ matrix:
           skip_cleanup: true
           local_dir: docs/build/html
           github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
-    - name: "TEST_36"
-      python: "3.6"
+    - name: "TEST_3X"
+      python:
+        - "3.6"
+        - "3.7"
       install:
         - pip install casadi numpy scipy sobol_seq matplotlib networkx
         - pip install codecov nose
       # Run the unit test
       script:
         - cd unit_tests
-        - nosetests --with-coverage
+        - nosetests --with-coverage --cover-package=yaocptool
         #- coverage run tests.py
       # Push the results back to codecov
       after_success:
@@ -41,7 +43,7 @@ matrix:
       # Run the unit test
       script:
         - cd unit_tests
-        - nosetests --with-coverage
+        - nosetests --with-coverage --cover-package=yaocptool
         #- coverage run tests.py
       # Push the results back to codecov
       after_success:
