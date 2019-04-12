@@ -476,57 +476,37 @@ class SystemModel:
         :param casadi.SX var: variable to be checked if it is in the SystemModel
         """
 
-        for i in range(self.n_x):
-            ind = find_variables_indices_in_vector(var, self.x_sym)
-            if len(ind) > 0:
-                return True
-
-        for i in range(self.n_y):
-            ind = find_variables_indices_in_vector(var, self.y_sym)
-            if len(ind) > 0:
-                return True
-
-        for i in range(self.n_u):
-            ind = find_variables_indices_in_vector(var, self.u_sym)
-            if len(ind) > 0:
-                return True
-
-        for i in range(self.n_p):
-            ind = find_variables_indices_in_vector(var, self.p_sym)
-            if len(ind) > 0:
-                return True
-
-        for i in range(self.n_theta):
-            ind = find_variables_indices_in_vector(var, self.theta_sym)
-            if len(ind) > 0:
-                return True
-
-        for i in range(self.n_u_par):
-            ind = find_variables_indices_in_vector(var, self.u_par)
-            if len(ind) > 0:
-                return True
+        ind = find_variables_indices_in_vector(var, vertcat(self.x_sym, self.y_sym, self.u_sym,
+                                                            self.p_sym, self.theta_sym, self.u_par))
+        if len(ind) > 0:
+            return True
 
         return False
 
-    def is_parametrized(self, u=None):
+    def is_parametrized_by(self, u):
         """
-            Check if the model is para metrized if no parameter "u" is given, otherwise check if the control "u" is
+            Check if the model is parametrized if no parameter "u" is given, otherwise check if the control "u" is
             parametrized
 
         :param casadi.SX u:
         :rtype bool:
         """
-        # if no u is provided (checking if the model is parametrized)
-        if u is None:
-            return len(self._parametrized_controls) > 0
-
-        # if u is provided checking if the control is parametrized
         u = vertcat(u)
         if not u.numel() == 1:
             raise ValueError('The parameter "u" is expected to be of size 1x1, given: {}x{}'.format(*u.shape))
         if any([is_equal(u, parametrized_u) for parametrized_u in self._parametrized_controls]):
             return True
         return False
+
+    def is_parametrized(self):
+        """
+            Check if the model is parametrized.
+
+        :param casadi.SX u:
+        :rtype bool:
+        """
+        # if no u is provided (checking if the model is parametrized)
+        return len(self._parametrized_controls) > 0
 
     def parametrize_control(self, u_sym, expr, u_par=None):
         """
@@ -552,7 +532,7 @@ class SystemModel:
 
         # Update self.u_expr vector
         for i in range(u_sym.numel()):
-            if self.is_parametrized(u_sym[i]):
+            if self.is_parametrized_by(u_sym[i]):
                 raise ValueError('The control "{}" is already parametrized.'.format(u_sym[i]))
             self._parametrized_controls.append(u_sym[i])
 
