@@ -1,7 +1,9 @@
 from collections import defaultdict
 from functools import partial
-from yaocptool.modelling import DataSet
+
 from casadi import horzcat, DM
+
+from yaocptool.modelling import DataSet
 
 try:
     import matplotlib.pyplot as plt
@@ -95,7 +97,7 @@ class OptimizationResult:
         """Get all the data for a variable (var_type
 
         :param str var_type: variable type ('x', 'y', 'u'
-        :param int|list of int ind: variable indices
+        :param int|list of int indices: variable indices
         """
 
         if var_type == 'x':
@@ -162,6 +164,3 @@ class OptimizationResult:
     @property
     def plot(self):
         return self.dataset.plot
-
-    # inherit docsting
-    plot.__doc__ = DataSet.plot.__doc__

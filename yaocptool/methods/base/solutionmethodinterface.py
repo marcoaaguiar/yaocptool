@@ -6,7 +6,7 @@ Created on
 """
 
 
-class SolutionMethodInterface:
+class SolutionMethodInterface(object):
     def solve(self):
         """
             Method that will solve the yaoctool.modelling.OptimalControlProblem and return a

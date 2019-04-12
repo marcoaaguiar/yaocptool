@@ -4,8 +4,12 @@ Created on $date
 
 @author: Marco Aurelio Schmitz de Aguiar
 """
+import sys
 from unittest import TestCase
-from unittest.mock import Mock
+if sys.version_info >= (3, 3):
+    from unittest.mock import Mock
+else:
+    from mock import Mock
 
 from casadi import is_equal, DM, MX, inf, repmat
 

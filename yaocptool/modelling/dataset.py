@@ -200,9 +200,10 @@ class DataSet:
 
     def plot(self, plot_list, figures=None, show=True, exact=False):
         """Plot DataSet information.
-        It takes as input a list of dictionaries, each dictionary represents a plot.  In the dictionary use keyword 'x'
-        to specify which states you want to print, the value of the dictionary should be a list of index of the states
-        to be printed.
+        It takes as input a list of dictionaries, each dictionary represents a plot. In the dictionary use keyword 'x',
+        'u', 'y', etc., to specify which entry you want to print, the value of the dictionary should be a list of
+        index, names, or regex expressions of the entries to be printed. Alternatively, instead of a list a string
+        'all' can be passed so all the elements of the entry are plotted.
 
         Usage:
             result.plot({'x':'all', 'y':'all', 'u':'all'})  # print all variables in a single plot
@@ -212,6 +213,8 @@ class DataSet:
         :param list|str plot_list: List of dictionaries to generate the plots.
         :param list figures: list of figures to be plotted on top (optional)
         :param bool show: if the plotted figures should be shown after plotting (optional, default=True).
+        :param bool exact: If true only precise match of entry elements will be plotted, otherwise a regex match will
+            be used
         """
 
         if plot_list == 'all':
