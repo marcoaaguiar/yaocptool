@@ -1,12 +1,6 @@
 from setuptools import setup
 
-from yaocptool import metadata
-
-
-def readme():
-    with open('README.rst') as f:
-        return f.read()
-
+import metadata
 
 setup(
     name='yaocptool',
@@ -19,7 +13,6 @@ setup(
     author=metadata.__author__,
     author_email=metadata.__authoremail__,
     description='',
-    long_description=readme(),
     install_requires=[
         'numpy',
         'scipy',

@@ -24,7 +24,7 @@ from recommonmark.transform import AutoStructify
 sys.path.insert(0, os.path.abspath('..//yaocptool//'))
 sys.path.insert(0, os.path.abspath('..//'))
 
-from yaocptool import metadata
+import metadata
 
 # -- Project information -----------------------------------------------------
 
