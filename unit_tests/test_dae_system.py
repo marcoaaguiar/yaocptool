@@ -9,10 +9,15 @@ from unittest import TestCase
 
 from casadi import SX, is_equal, substitute, vertcat
 
+from yaocptool import config
 from yaocptool.modelling import DAESystem
 
 
 class TestDAESystem(TestCase):
+    def test___init__(self):
+        empty_sys = DAESystem()
+        self.assertIsInstance(empty_sys, DAESystem)
+
     def test_is_dae_true(self):
         x = SX.sym('x', 2)
         y = SX.sym('y', 1)
@@ -418,6 +423,24 @@ class TestDAESystem(TestCase):
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
 
         # Test
+        res = sys.simulate(x_0=0, t_f=5, t_0=0, y_0=1)
+
+        self.assertAlmostEqual(res['xf'], 5)
+        self.assertAlmostEqual(res['zf'], 0)
+
+    def test_simulate_with_options(self):
+        # Make system 1
+        x = SX.sym('x')
+        y = SX.sym('y')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
+
+        ode = SX(1)
+        alg = y - (5 - t)
+
+        sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
+
+        # Test
         res = sys.simulate(x_0=0, t_f=5, t_0=0, y_0=1, integrator_options={'abstol': 1e-10})
 
         self.assertAlmostEqual(res['xf'], 5)
@@ -466,8 +489,10 @@ class TestDAESystem(TestCase):
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
 
         # Test
-        sys._create_integrator(options={'abstol': 1e-10,  # abs. tolerance
-                                        'reltol': 1e-10})  # rel. tolerance}
+        OLD_INTEGRATOR_OPTION = copy.copy(config.INTEGRATOR_OPTIONS)
+        config.INTEGRATOR_OPTIONS = {'abstol': 1e-10}
+        sys._create_integrator(options={'reltol': 1e-10})
+        config.INTEGRATOR_OPTIONS = OLD_INTEGRATOR_OPTION
 
     def test__create_integrator_alg_implicit(self):
         x = SX.sym('x')
@@ -523,6 +548,19 @@ class TestDAESystem(TestCase):
 
         # Test
         sys._create_integrator(integrator_type='rk')
+
+    def test__create_integrator_explicit(self):
+        # Make system 1
+        x = SX.sym('x')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
+
+        ode = SX(1)
+
+        sys = DAESystem(x=x, ode=ode, tau=tau, t=t)
+
+        # Test
+        sys._create_integrator(integrator_type='explicit')
 
     def test__create_integrator_invalid_type(self):
         # Make system 1

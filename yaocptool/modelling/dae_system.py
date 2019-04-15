@@ -1,25 +1,41 @@
-from casadi import vertcat, integrator, SX, substitute, depends_on
+from casadi import vertcat, integrator, substitute, depends_on
 
 from yaocptool import convert_expr_from_tau_to_time, config, find_variables_indices_in_vector
 
 
 class DAESystem(object):
-    def __init__(self, x=vertcat([]), y=vertcat([]), p=vertcat([]), ode=vertcat([]), alg=vertcat([]), t=None,
-                 tau=None, **kwargs):
+    """
+        DAE System class used primarily for simulation by the SystemModel class
+
+    For modelling it is recommended the use of the SystemModel class, use this class if you need more control of
+    the integrator.
+    """
+
+    def __init__(self, x=None, y=None, p=None, ode=None, alg=None, t=None, tau=None):
         """
-            DAE System class used primarly for simulation by the SystemModel class
+            DAE System class used primarily for simulation by the SystemModel class
 
         For modelling it is recommended the use of the SystemModel class, use this class if you need more control of
         the integrator.
 
-        :param SX ode: ODE equations
-        :param SX alg: Algebraic equations
-        :param SX x: State variables
-        :param SX y: Algebraic variables
-        :param SX p: Parameters
-        :param SX t: Time variable
-        :param SX tau: Tau variable
+        :param casadi.SX ode: ODE equations
+        :param casadi.SX alg: Algebraic equations
+        :param casadi.SX x: State variables
+        :param casadi.SX y: Algebraic variables
+        :param casadi.SX p: Parameters
+        :param casadi.SX t: Time variable
+        :param casadi.SX tau: Tau variable
         """
+        if x is None:
+            x = vertcat([])
+        if y is None:
+            y = vertcat([])
+        if p is None:
+            p = vertcat([])
+        if alg is None:
+            alg = vertcat([])
+        if ode is None:
+            ode = vertcat([])
 
         self.x = x
         self.y = y
@@ -29,30 +45,51 @@ class DAESystem(object):
         self.t = t
         self.tau = tau
 
-        for (k, v) in kwargs.items():
-            setattr(self, k, v)
-
     @property
     def is_dae(self):
+        """
+            Return True if it is a DAE system (with non empty algebraic equations)
+
+        :rtype: bool
+        """
         return self.type == 'dae'
 
     @property
     def is_ode(self):
+        """
+            Return True if it is a ODE system (no algebraic equations)
+
+        :rtype: bool
+        """
         return self.type == 'ode'
 
     @property
     def type(self):
+        """
+            Return 'ode' if the system has no algebraic equations, 'dae' otherwise
+
+        :rtype: str
+        """
         if self.alg.numel() == 0:
             return 'ode'
-        else:
-            return 'dae'
+        return 'dae'
 
     @property
     def has_parameters(self):
+        """
+            Return True if the attribute 'p' is not empty
+
+        :rtype: bool
+        """
         return self.p.numel() > 0
 
     @property
     def dae_system_dict(self):
+        """
+            Return the dictionary of variables and equations needed to create the CasADi integrator.
+
+        :rtype: dict
+        """
         if self.is_ode:
             dae_sys_dict = {'x': self.x, 'ode': self.ode, 't': self.t}
         else:
@@ -99,6 +136,12 @@ class DAESystem(object):
         self.ode = convert_expr_from_tau_to_time(expr=self.ode, t_sym=self.t, tau_sym=self.tau, t_k=t_k, t_kp1=t_kp1)
 
     def substitute_variable(self, old_var, new_var):
+        """
+            Substitute 'old_var' with 'new_var' in the system equations (alg, ode) and in the set of variables (x, y, p)
+
+        :param casadi.SX old_var:
+        :param casadi.SX new_var:
+        """
         self.ode = substitute(self.ode, old_var, new_var)
         self.alg = substitute(self.alg, old_var, new_var)
         self.x = substitute(self.x, old_var, new_var)
@@ -106,6 +149,11 @@ class DAESystem(object):
         self.p = substitute(self.p, old_var, new_var)
 
     def join(self, dae_sys):
+        """
+            Include all the variables and equations from the DAESystem 'dae_sys' into this object
+
+        :param DAESystem dae_sys:
+        """
         self.ode = vertcat(self.ode, dae_sys.ode)
         self.alg = vertcat(self.alg, dae_sys.alg)
         self.x = vertcat(self.x, dae_sys.x)
@@ -115,7 +163,21 @@ class DAESystem(object):
         self.substitute_variable(dae_sys.t, self.t)
         self.substitute_variable(dae_sys.tau, self.tau)
 
-    def simulate(self, x_0, t_f, t_0=0, p=None, y_0=None, integrator_type='implicit', integrator_options=None):
+    def simulate(self, x_0, t_f, t_0=0.0, p=None, y_0=None,
+                 integrator_type='implicit', integrator_options=None):
+        """
+            Create an integrator and simulate a system from 't_0' to 't_f'.
+
+        :param list|DM|MX x_0: initial condition
+        :param float|int|DM t_f: final time
+        :param float|int|DM t_0: initial time
+        :param list|DM|MX p: system parameters
+        :param list|DM|MX y_0: initial guess for the algebraic variable
+        :param str integrator_type: integrator type, options available are: 'cvodes', 'idas',
+            'implicit' (default, auto-select between 'idas' and 'cvodes'), 'rk', and 'collocation'.
+        :param dict integrator_options: casadi.integrator options
+        :rtype: dict
+        """
         if t_f == t_0:
             raise ValueError("Initial time and final time must be different, t_0!=t_f. t_0={}, t_f={}".format(t_0, t_f))
 
@@ -143,6 +205,14 @@ class DAESystem(object):
         return integrator_(**call)
 
     def _create_integrator(self, options=None, integrator_type='implicit'):
+        """
+            Create casadi.integrator for the DAESystem.
+
+        :param dict options: casadi.integrator options
+        :param str integrator_type: integrator type, options available are: 'cvodes', 'idas',
+            'implicit' (default, auto-select between 'idas' and 'cvodes'), 'rk', and 'collocation'.
+        :return:
+        """
         if options is None:
             options = {}
 
