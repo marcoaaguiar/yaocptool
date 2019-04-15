@@ -14,17 +14,17 @@
 #
 import os
 import sys
+
+import sphinx_rtd_theme
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
-import sphinx_rtd_theme
+
 # import guzzle_sphinx_theme
-from yaocptool import metadata
 
 sys.path.insert(0, os.path.abspath('..//yaocptool//'))
 sys.path.insert(0, os.path.abspath('..//'))
-print(sys.path)
 
-# import setup
+from yaocptool import metadata
 
 # -- Project information -----------------------------------------------------
 
@@ -201,7 +201,6 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
-
 
 add_module_names = False
 
