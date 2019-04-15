@@ -412,7 +412,7 @@ class TestDAESystem(TestCase):
         t = SX.sym('t')
         tau = SX.sym('tau')
 
-        ode = 1
+        ode = SX(1)
         alg = y - (5 - t)
 
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
@@ -423,10 +423,116 @@ class TestDAESystem(TestCase):
         self.assertAlmostEqual(res['xf'], 5)
         self.assertAlmostEqual(res['zf'], 0)
 
-    def test__create_integrator(self):
-        # self.fail()
-        pass
+    def test__create_integrator_default(self):
+        # Make system 1
+        x = SX.sym('x')
+        y = SX.sym('y')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
 
-    def test__create_explicit_integrator(self):
-        # self.fail()
-        pass
+        ode = SX(1)
+        alg = y - (5 - t)
+
+        sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
+
+        # Test
+        sys._create_integrator()
+
+    def test__create_integrator_w_name(self):
+        # Make system 1
+        x = SX.sym('x')
+        y = SX.sym('y')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
+
+        ode = SX(1)
+        alg = y - (5 - t)
+
+        sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
+
+        # Test
+        sys._create_integrator(options={"name": "integrator"})
+
+    def test__create_integrator_w_integrator_options(self):
+        # Make system 1
+        x = SX.sym('x')
+        y = SX.sym('y')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
+
+        ode = SX(1)
+        alg = y - (5 - t)
+
+        sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
+
+        # Test
+        sys._create_integrator(options={'abstol': 1e-10,  # abs. tolerance
+                                        'reltol': 1e-10})  # rel. tolerance}
+
+    def test__create_integrator_alg_implicit(self):
+        x = SX.sym('x')
+        y = SX.sym('y')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
+
+        ode = SX(1)
+        alg = y - (5 - t)
+
+        sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
+
+        # Test
+        sys._create_integrator(integrator_type='implicit')
+
+    def test__create_integrator_ode_implicit(self):
+        # Make system 1
+        x = SX.sym('x')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
+
+        ode = SX(1)
+
+        sys = DAESystem(x=x, ode=ode, tau=tau, t=t)
+
+        # Test
+        sys._create_integrator(integrator_type='implicit')
+
+    def test__create_integrator_collocation(self):
+        # Make system 1
+        x = SX.sym('x')
+        y = SX.sym('y')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
+
+        ode = SX(1)
+        alg = y - (5 - t)
+
+        sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
+
+        # Test
+        sys._create_integrator(integrator_type='collocation')
+
+    def test__create_integrator_rk(self):
+        # Make system 1
+        x = SX.sym('x')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
+
+        ode = SX(1)
+
+        sys = DAESystem(x=x, ode=ode, tau=tau, t=t)
+
+        # Test
+        sys._create_integrator(integrator_type='rk')
+
+    def test__create_integrator_invalid_type(self):
+        # Make system 1
+        x = SX.sym('x')
+        t = SX.sym('t')
+        tau = SX.sym('tau')
+
+        ode = SX(1)
+
+        sys = DAESystem(x=x, ode=ode, tau=tau, t=t)
+
+        # Test
+        self.assertRaises(ValueError, sys._create_integrator, integrator_type='foo')

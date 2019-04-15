@@ -1,10 +1,11 @@
-from casadi import vertcat, integrator, Function, SX, DM, substitute, depends_on
+from casadi import vertcat, integrator, SX, substitute, depends_on
 
 from yaocptool import convert_expr_from_tau_to_time, config, find_variables_indices_in_vector
 
 
-class DAESystem:
-    def __init__(self, **kwargs):
+class DAESystem(object):
+    def __init__(self, x=vertcat([]), y=vertcat([]), p=vertcat([]), ode=vertcat([]), alg=vertcat([]), t=None,
+                 tau=None, **kwargs):
         """
             DAE System class used primarly for simulation by the SystemModel class
 
@@ -12,22 +13,21 @@ class DAESystem:
         the integrator.
 
         :param SX ode: ODE equations
-        :param alg: Algebraic equations
-        :param x: State variables
-        :param y: Algebraic variables
-        :param p: Parameters
-        :param t: Time variable
-        :param tau: Tau variable
+        :param SX alg: Algebraic equations
+        :param SX x: State variables
+        :param SX y: Algebraic variables
+        :param SX p: Parameters
+        :param SX t: Time variable
+        :param SX tau: Tau variable
         """
 
-        self.x = vertcat([])
-        self.y = vertcat([])
-        self.p = vertcat([])
-        self.ode = vertcat([])
-        self.alg = vertcat([])
-        self.t = None
-        self.tau = None
-        self._integrator_is_valid = False
+        self.x = x
+        self.y = y
+        self.p = p
+        self.ode = ode
+        self.alg = alg
+        self.t = t
+        self.tau = tau
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -66,7 +66,7 @@ class DAESystem:
         """
             Return True if the var is one of the system variables (x, y, p, t, tau)
 
-        :param SX var:
+        :param casadi.SX var:
         :rtype: bool
         """
         ind = find_variables_indices_in_vector(var, vertcat(self.x, self.y, self.p, self.t, self.tau))
@@ -76,7 +76,7 @@ class DAESystem:
         """
             Return True if the system of equations ('ode' and 'alg')depends on 'var' (contains 'var' in the equations).
 
-        :param SX var:
+        :param casadi.SX var:
         :rtype: bool
         """
         return depends_on(vertcat(self.ode, self.alg), var)
@@ -146,75 +146,28 @@ class DAESystem:
         if options is None:
             options = {}
 
+        # Integrator Function name
         if 'name' in options:
             name = options.pop('name')
         else:
             name = 'integrator'
+
+        # Load default options from the config file, if a 'options' dict was passed use that to override the default.
         for k in config.INTEGRATOR_OPTIONS:
             if k not in options:
                 options[k] = config.INTEGRATOR_OPTIONS[k]
 
-        if (integrator_type == 'implicit' and self.is_ode) or integrator_type == 'cvodes':
+        # For backwards compatibility, previously option 'explicit' was a custom Runge-Kutta. CasADi now has it built-in
+        if integrator_type == 'explicit':
+            integrator_type = 'rk'
+
+        # Return the specified integrator
+        if integrator_type == 'implicit' and self.is_ode:
             return integrator(name, "cvodes", self.dae_system_dict, options)
-        elif (integrator_type == 'implicit' and self.is_dae) or integrator_type == 'idas':
+        if integrator_type == 'implicit' and self.is_dae:
             return integrator(name, "idas", self.dae_system_dict, options)
-        elif integrator_type == 'rk':
-            return integrator(name, "rk", self.dae_system_dict, options)
-        elif integrator_type == 'collocation':
-            return integrator(name, "collocation", self.dae_system_dict, options)
-        elif integrator_type == 'explicit':
-            if self.is_ode:
-                return self._create_explicit_integrator('explicit_integrator', 'rk4', self.dae_system_dict,
-                                                        options)
-            else:
-                raise Exception('Explicit integrator not implemented for DAE systems')
-        else:
-            raise ValueError("'integrator_type'={} not available. Options available are: 'cvodes', 'idas', implicit "
-                             "(default, auto-select between 'idas' and 'cvodes'), 'rk', 'collocation', 'explicit' "
-                             "(own 4th order Runge-Kutta implementation).".format(integrator_type))
-
-    @staticmethod
-    def _create_explicit_integrator(name, integrator_type, dae_sys, options=None):
-        default_options = {'t0': 0, 'tf': 1, 'iterations': 4}
-        if options is None:
-            options = default_options
-        for k in default_options:
-            if k not in options:
-                options[k] = default_options[k]
-
-        if 'alg' in dae_sys:
-            raise Exception('Explicit integrator not implemented for DAE systems')
-        f_in = [dae_sys['t'], dae_sys['x']]
-        if 'p' in dae_sys:
-            f_in.append(dae_sys['p'])
-        else:
-            f_in.append(SX.sym('fake_p'))
-        f = Function(name, f_in, [dae_sys['ode']])
-
-        t_0 = options['t0']
-        t_f = options['tf']
-        iterations = options['iterations']
-        n_states = dae_sys['x'].numel()
-        if integrator_type == 'rk4':
-            def runge_kutta_4th_order(x0=DM.zeros(n_states, 1), p=None, n_iter=iterations):
-                if n_iter < 1:
-                    raise Exception(
-                        "The given number of Runge Kutta iterations is less than one, given {}".format(n_iter))
-                if p is None:
-                    p = []
-
-                x_f = x0
-                h = (t_f - t_0) / n_iter
-                t = t_0
-                for it in range(n_iter):
-                    k1 = h * f(t, x0, p)
-                    k2 = h * f(t + 0.5 * h, x0 + 0.5 * k1, p)
-                    k3 = h * f(t + 0.5 * h, x0 + 0.5 * k2, p)
-                    k4 = h * f(t + h, x0 + k3, p)
-
-                    x_f = x0 + 1 / 6. * k1 + 1 / 3. * k2 + 1 / 3. * k3 + 1 / 6. * k4
-                    x0 = x_f
-                    t += h
-                return {'xf': x_f, 'zf': DM([])}
-
-            return runge_kutta_4th_order
+        if integrator_type in ['rk', 'collocation', 'cvodes', 'idas']:
+            return integrator(name, integrator_type, self.dae_system_dict, options)
+        raise ValueError("'integrator_type'={} not available. Options available are: 'cvodes', 'idas', implicit "
+                         "(default, auto-select between 'idas' and 'cvodes'), 'rk',"
+                         " and 'collocation'.".format(integrator_type))
