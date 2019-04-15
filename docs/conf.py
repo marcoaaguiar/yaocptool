@@ -18,7 +18,7 @@ from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 import sphinx_rtd_theme
 # import guzzle_sphinx_theme
-
+from yaocptool import metadata
 
 sys.path.insert(0, os.path.abspath('..//yaocptool//'))
 sys.path.insert(0, os.path.abspath('..//'))
@@ -30,12 +30,12 @@ print(sys.path)
 
 project = 'YAOCPTool'
 copyright = '2018, Marco Aurelio S. de Aguiar'
-author = 'Marco Aurelio S. de Aguiar'
+author = metadata.__author__
 
 # The short X.Y version
-version = ''
+version = metadata.__version__
 # The full version, including alpha/beta/rc tags
-release = '0.3.6'
+release = metadata.__version__
 
 # -- General configuration ---------------------------------------------------
 
