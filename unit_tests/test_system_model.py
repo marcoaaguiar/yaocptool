@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from casadi import SX, is_equal
 
-from .models import create_siso, create_2x1_mimo, create_2x2_mimo
+from unit_tests.models import create_siso, create_2x1_mimo, create_2x2_mimo
 
 
 class TestSystemModel(TestCase):

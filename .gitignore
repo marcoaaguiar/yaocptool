@@ -3,8 +3,9 @@ docs/build/
 __pycache__/
 scripts/
 paper/
+tmp/
 docs/rst/
 *.pyc
 *.pyo
-tmp/
+.coverage
 config.py
