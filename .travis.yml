@@ -53,8 +53,13 @@ matrix:
     # Install in Python3.6
     - name: "INSTALL_36"
       python: "3.6"
-      script: pip install .
+      script:
+        - pip install .
+        - python -c 'from __future__ import print_function; import yaocptool; print(yaocptool)'
     # Install in Python2.7
     - name: "INSTALL_27"
       python: "2.7"
-      script: pip install .
+      script:
+        - pip install .
+        - python -c 'from __future__ import print_function; import yaocptool; print(yaocptool)'
+
