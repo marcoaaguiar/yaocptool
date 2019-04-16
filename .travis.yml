@@ -55,11 +55,11 @@ matrix:
       python: "3.6"
       script:
         - pip install .
-        - python -c 'from __future__ import print_function; import yaocptool; print(yaocptool)'
+        - python -c 'from __future__ import print_function; import sys; sys.path.remove(""); import yaocptool; print(yaocptool)'
     # Install in Python2.7
     - name: "INSTALL_27"
       python: "2.7"
       script:
         - pip install .
-        - python -c 'from __future__ import print_function; import yaocptool; print(yaocptool)'
+        - python -c 'from __future__ import print_function; import sys; sys.path.remove(""); import yaocptool; print(yaocptool)'
 
