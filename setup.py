@@ -1,13 +1,11 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 import metadata
 
 setup(
     name='yaocptool',
     version=metadata.__version__,
-    packages=['yaocptool', 'yaocptool.mpc', 'yaocptool.util', 'yaocptool.methods', 'yaocptool.methods.base',
-              'yaocptool.methods.classic', 'yaocptool.parallel', 'yaocptool.modelling', 'yaocptool.estimation',
-              'yaocptool.stochastic', 'yaocptool.optimization'],
+    packages=find_packages(where='yaocptool'),
     url='https://github.com/marcoaaguiar/yaocptool',
     license='',
     author=metadata.__author__,
