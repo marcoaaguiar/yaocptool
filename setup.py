@@ -5,8 +5,7 @@ import metadata
 setup(
     name='yaocptool',
     version=metadata.__version__,
-    packages=find_packages(where='yaocptool'),
-    package_dir={'': 'yaocptool'},
+    packages=find_packages(include=['yaocptool*']),
     url='https://github.com/marcoaaguiar/yaocptool',
     license='',
     author=metadata.__author__,
