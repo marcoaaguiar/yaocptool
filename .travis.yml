@@ -6,6 +6,7 @@ install:            # Install requirement as "Environment Setup Section"
   - pip install casadi numpy scipy sobol_seq matplotlib networkx
 matrix:
   include:
+    # Documentaiton
     - name: "DOC"
       python: "3.6"
       install:
@@ -20,10 +21,12 @@ matrix:
           skip_cleanup: true
           local_dir: docs/build/html
           github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+          on:
+            branch: master
+    # Run unittests in Python 3
     - name: "TEST_3X"
       python:
         - "3.6"
-        - "3.7"
       install:
         - pip install casadi numpy scipy sobol_seq matplotlib networkx
         - pip install codecov nose
@@ -31,16 +34,15 @@ matrix:
       script:
         - cd unit_tests
         - nosetests --with-coverage --cover-package=yaocptool
-        #- coverage run tests.py
       # Push the results back to codecov
       after_success:
         - codecov
+    # Run unittests in Python 2.7
     - name: "TEST_27"
       python: "2.7"
       install:
         - pip install casadi numpy scipy sobol_seq matplotlib networkx
         - pip install codecov nose mock
-      # Run the unit test
       script:
         - cd unit_tests
         - nosetests --with-coverage --cover-package=yaocptool
@@ -48,3 +50,16 @@ matrix:
       # Push the results back to codecov
       after_success:
         - codecov
+    # Install in Python3.6
+    - name: "INSTALL_36"
+      python: "3.6"
+      script:
+        - pip install .
+        - python -c 'from __future__ import print_function; import sys; sys.path.remove(""); import yaocptool; print(yaocptool)'
+    # Install in Python2.7
+    - name: "INSTALL_27"
+      python: "2.7"
+      script:
+        - pip install .
+        - python -c 'from __future__ import print_function; import sys; sys.path.remove(""); import yaocptool; print(yaocptool)'
+

@@ -14,28 +14,28 @@
 #
 import os
 import sys
+
+import sphinx_rtd_theme
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
-import sphinx_rtd_theme
-# import guzzle_sphinx_theme
 
+# import guzzle_sphinx_theme
 
 sys.path.insert(0, os.path.abspath('..//yaocptool//'))
 sys.path.insert(0, os.path.abspath('..//'))
-print(sys.path)
 
-# import setup
+import metadata
 
 # -- Project information -----------------------------------------------------
 
 project = 'YAOCPTool'
 copyright = '2018, Marco Aurelio S. de Aguiar'
-author = 'Marco Aurelio S. de Aguiar'
+author = metadata.__author__
 
 # The short X.Y version
-version = ''
+version = metadata.__version__
 # The full version, including alpha/beta/rc tags
-release = '0.3.6'
+release = metadata.__version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -201,7 +201,6 @@ epub_title = project
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
-
 
 add_module_names = False
 
