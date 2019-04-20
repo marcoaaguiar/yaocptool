@@ -15,8 +15,8 @@ from yaocptool.modelling import DAESystem, SimulationResult
 
 
 class SystemModel:
-    def __init__(self, name='model', n_x=0, n_y=0, n_u=0, n_p=0, n_theta=0, **kwargs):
-        """
+    def __init__(self, name='model', n_x=0, n_y=0, n_u=0, n_p=0, n_theta=0, model_name_as_prefix=False, **kwargs):
+        r"""
             Continuous-time Dynamic System Model
 
         .. math::
@@ -45,7 +45,7 @@ class SystemModel:
         self.ode = vertcat([])  # ODE
         self.alg = vertcat([])  # Algebraic equations
 
-        self.model_name_as_prefix = False
+        self.model_name_as_prefix = model_name_as_prefix
         self.has_adjoint_variables = False
 
         for (k, v) in kwargs.items():
@@ -502,7 +502,6 @@ class SystemModel:
         """
             Check if the model is parametrized.
 
-        :param casadi.SX u:
         :rtype bool:
         """
         # if no u is provided (checking if the model is parametrized)

@@ -24,5 +24,5 @@ clean:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@sphinx-apidoc -o "$(SOURCEDIR)" "$(PROJECTDIR)" -f
-	@cp "$(SOURCEDIR)"/modules.rst "$(SOURCEDIR)"/index.rst
+	@cp $(SOURCEDIR)/modules.rst $(SOURCEDIR)/index.rst
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" -c "$(CONFIGDIR)" $(SPHINXOPTS) $(O)

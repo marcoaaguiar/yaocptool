@@ -95,7 +95,10 @@ class DataSet:
         :param float|DM time: time or time vector of the data
         :param DM value: vector or matrix of values for the entry (column represent time)
         """
-        value = vertcat(value)
+        if isinstance(time, list):
+            time = horzcat(*time)
+        if isinstance(time, (float, int)):
+            time = DM(time)
 
         if not time.shape[1] == value.shape[1]:
             raise ValueError('Number of columns of "time" and "value" should be the same, '
@@ -253,9 +256,10 @@ class DataSet:
                 var_names = self.get_entry_names(entry)
                 # identify variables with regex
                 if not exact:
-                    for i, regex in enumerate(indexes_or_names):
+                    for regex in indexes_or_names[:]:
+                        regex_ind = indexes_or_names.index(regex)
                         if isinstance(regex, ("".__class__, u"".__class__)):
-                            indexes_or_names[i:i + 1] = [v_name for v_name in var_names if re.match(regex, v_name)]
+                            indexes_or_names[regex_ind:regex_ind + 1] = [v_name for v_name in var_names if re.match(regex, v_name)]
 
                 # if it is a variable name
                 for i, item in enumerate(indexes_or_names):
