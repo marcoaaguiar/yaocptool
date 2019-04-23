@@ -5,7 +5,9 @@ import re
 from collections import defaultdict
 from functools import partial
 
-from casadi import horzcat, vertcat, DM, sum2
+from casadi import horzcat, DM, sum2
+
+from yaocptool.config import PLOT_INTERACTIVE
 
 try:
     import matplotlib.pyplot as plt
@@ -89,7 +91,7 @@ class DataSet:
         return self.data[entry]['size']
 
     def insert_data(self, entry, time, value):
-        """Insert data on the datatset
+        """Insert data on the dataset
 
         :param str entry: entry name ('x', 'y', 'u', ...)
         :param float|DM time: time or time vector of the data
@@ -259,7 +261,8 @@ class DataSet:
                     for regex in indexes_or_names[:]:
                         regex_ind = indexes_or_names.index(regex)
                         if isinstance(regex, ("".__class__, u"".__class__)):
-                            indexes_or_names[regex_ind:regex_ind + 1] = [v_name for v_name in var_names if re.match(regex, v_name)]
+                            indexes_or_names[regex_ind:regex_ind + 1] = [v_name for v_name in var_names if
+                                                                         re.match(regex, v_name)]
 
                 # if it is a variable name
                 for i, item in enumerate(indexes_or_names):
@@ -277,7 +280,7 @@ class DataSet:
             axes[0].ticklabel_format(useOffset=False)
             plt.legend()
 
-        plt.interactive(True)
+        plt.interactive(PLOT_INTERACTIVE)
         if show:
             plt.show()
 

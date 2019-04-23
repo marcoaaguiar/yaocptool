@@ -10,11 +10,11 @@ import copy
 from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec, horzcat, is_equal
 
 from yaocptool import remove_variables_from_vector, config, find_variables_indices_in_vector, \
-    remove_variables_from_vector_by_indices
+    remove_variables_from_vector_by_indices, find_variables_in_vector_by_name
 from yaocptool.modelling import DAESystem, SimulationResult
 
 
-class SystemModel:
+class SystemModel(object):
     def __init__(self, name='model', n_x=0, n_y=0, n_u=0, n_p=0, n_theta=0, model_name_as_prefix=False, **kwargs):
         r"""
             Continuous-time Dynamic System Model
@@ -470,6 +470,40 @@ class SystemModel:
     def remove_theta(self, var):
         self.theta_sym = remove_variables_from_vector(var, self.theta_sym)
 
+    def get_variable_by_name(self, name='', var_type=None):
+        result = self.get_variables_by_names(name, var_type)
+        # if only one is found return it
+        if len(result) == 1:
+            return result[-1]
+        # if multiple where found raise exception
+        if len(result) > 1:
+            raise ValueError('Multiple variables where found with the name: {}. Found: {}'.format(name, result))
+        # if none was found raise exception
+        raise ValueError('No variable was found with name: {}'.format(name))
+
+    def get_variables_by_names(self, names='', var_type=None):
+        """
+
+        :param str|list of str names:
+        :param str var_type:
+        """
+        # if only one name is passed
+        if not isinstance(names, list):
+            names = [names]
+        # if no specific type is passed, look into all
+        if var_type is None:
+            var_type = ['x', 'y', 'u', 'p', 'theta']
+        # make the passed one into a list so we can iterate over
+        if not isinstance(var_type, list):
+            var_type = [var_type]
+
+        result = []
+        for var_t in var_type:
+            var = getattr(self, var_t)
+            result.extend(find_variables_in_vector_by_name(names, var))
+
+        return result
+
     def has_variable(self, var):
         """
 
@@ -721,8 +755,9 @@ class SystemModel:
             integrator_options = {}
         if p is None:
             p = []
-        else:
-            p = vertcat(p)
+        if isinstance(p, list):
+            p = vertcat(*p)
+        p = vertcat(p)
 
         if u is None:  # if control is not given
             u = [[]] * len(t_f)

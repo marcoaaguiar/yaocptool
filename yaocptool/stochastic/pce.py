@@ -1,11 +1,11 @@
-from math import factorial, ceil
 from itertools import product
+from math import factorial, ceil
 
 import numpy as np
+import sobol_seq
 from casadi import DM, SX, Function, mtimes, chol, solve, vertcat, substitute, repmat, depends_on, inf, is_equal, \
     sqrt, fmax, diagcat
 from scipy.stats.distributions import norm
-import sobol_seq
 
 from yaocptool.modelling import OptimalControlProblem, SystemModel, StochasticOCP
 from yaocptool.stochastic import sample_parameter_normal_distribution_with_sobol
@@ -30,8 +30,8 @@ class PCEConverter:
         self.variable_type = 'theta'
         self.stochastic_variables = []
 
-        self.model = None  # type: SystemModel
-        self.problem = None  # type: OptimalControlProblem
+        self.model = None
+        self.problem = None
         self.sampled_parameters = None
 
         for (k, v) in kwargs.items():
@@ -63,7 +63,7 @@ class PCEConverter:
         elif self.socp.n_uncertain_initial_condition > 0:
             covariance = self.socp.uncertain_initial_conditions_cov
         else:
-            raise ValueError("No uncertanties found n_p_unc = {}, "
+            raise ValueError("No uncertainties found n_p_unc = {}, "
                              "n_uncertain_initial_condition={}".format(self.socp.n_p_unc,
                                                                        self.socp.n_uncertain_initial_condition))
 

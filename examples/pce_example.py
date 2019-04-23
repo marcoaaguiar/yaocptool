@@ -62,7 +62,7 @@ problem.L = (h_1 - 2) ** 2 + 0 * (h_2 - 1) ** 2 + u ** 2
 problem.u_min = 0.00001
 
 # include uncertain parameter
-problem.set_parameter_as_uncertain_parameter(a, mean=a_mean, var=[1e-8], distribution='normal')
+problem.set_parameter_as_uncertain_parameter(a, mean=a_mean, cov=[1e-8], distribution='normal')
 
 # Include chance constraint
 problem.include_time_chance_inequality(a * sqrt(2 * g * h_1), rhs=[0.01], prob=[0.9])

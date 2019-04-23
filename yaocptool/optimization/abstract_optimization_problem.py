@@ -1,6 +1,7 @@
 from numbers import Number
 
 from casadi import vertcat, MX, inf, DM, repmat, is_equal, depends_on
+
 from yaocptool import is_inequality, is_equality
 
 
@@ -24,15 +25,15 @@ class AbstractOptimizationProblem(object):
         """
         self.name = name
 
-        self.f = []
-        self.g = []
-        self.x = []
-        self.p = []
+        self.f = vertcat([])
+        self.g = vertcat([])
+        self.x = vertcat([])
+        self.p = vertcat([])
 
-        self.g_lb = []
-        self.g_ub = []
-        self.x_lb = []
-        self.x_ub = []
+        self.g_lb = vertcat([])
+        self.g_ub = vertcat([])
+        self.x_lb = vertcat([])
+        self.x_ub = vertcat([])
 
         self.solver_options = {}
 
@@ -334,6 +335,7 @@ class AbstractOptimizationProblem(object):
             call_dict = self.get_default_call_dict()
         if p is None:
             p = []
+
         call_dict = dict(call_dict)
         if initial_guess is not None:
             call_dict['x0'] = initial_guess
@@ -342,7 +344,12 @@ class AbstractOptimizationProblem(object):
         if lam_g is not None:
             call_dict['lam_g0'] = lam_g
 
-        call_dict['p'] = p
+        call_dict['p'] = vertcat(p)
+
+        if call_dict['p'].numel() != self.p.numel():
+            raise ValueError('Passed parameter "p" has size {}, '
+                             'while problem.p has size {}'.format(call_dict['p'].numel(), self.p.numel()))
+
         solver = self.get_solver()
 
         return solver(**call_dict)

@@ -1,3 +1,5 @@
+import re
+
 from casadi import is_equal, DM, vec, vertcat, substitute, mtimes, integrator, MX, repmat, OP_LT, OP_LE, OP_EQ, SX, \
     collocation_points
 
@@ -9,14 +11,38 @@ def find_variables_indices_in_vector(var, vector, depth=0):
     :param casadi.SX|casadi.MX var:
     :param casadi.SX|casadi.MX vector:
     :param int depth: depth for which is_equal will check for equality
+    :return: list of indices
     :rtype: list
     """
-    index = []
+    indices = []
     for j in range(vector.size1()):
         for i in range(var.numel()):
             if is_equal(vector[j], var[i], depth):
-                index.append(j)
-    return index
+                indices.append(j)
+    return indices
+
+
+def find_variables_in_vector_by_name(names, vector, exact=False):
+    """
+
+    :param str|list of str names: variable names
+    :param casadi.SX|casadi.MX vector:
+    :param bool exact: defautl: False. If true it will use an exact match otherwise it will use an regex match
+    """
+    if not isinstance(names, list):
+        names = [names]
+
+    result = []
+    if exact:
+        for n in names:
+            for i in range(vector.numel()):
+                if vector[i].name() == n:
+                    result.append(vector[i])
+    else:
+        for regex in names[:]:
+            result.extend([vector[i] for i in range(vector.numel()) if re.match(regex, vector[i].name())])
+
+    return result
 
 
 def remove_variables_from_vector(var, vector):
