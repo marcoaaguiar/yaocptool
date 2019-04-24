@@ -5,8 +5,6 @@ Created on Mon Apr 03 11:15:03 2017
 @author: marco
 """
 
-import copy
-
 from casadi import DM, repmat, vertcat, substitute, mtimes, is_equal, SX, inf, gradient, dot, jacobian
 
 from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector_by_indices
@@ -65,7 +63,6 @@ class OptimalControlProblem(object):
         self.x_0 = x_0
 
         self.name = name
-        self.model = None  # type: SystemModel
         self._model = model  # type: SystemModel
         self.model = model.get_copy()  # type: SystemModel
 
@@ -300,6 +297,7 @@ class OptimalControlProblem(object):
         if isinstance(var, list):
             var = vertcat(*var)
 
+        # if not given
         if u_min is None:
             u_min = -DM.inf(var.numel())
         if u_max is None:
@@ -370,11 +368,6 @@ class OptimalControlProblem(object):
         self.delta_u_max = vertcat(self.delta_u_max, delta_u_max)
 
         if u_guess is not None:
-            if isinstance(u_guess, list):
-                u_guess = vertcat(*u_guess)
-            if not var.numel() == u_min.numel():
-                raise ValueError(
-                    "Given 'var' and 'u_min' does not have the same size, {}!={}".format(var.numel(), u_min.numel()))
             if self.model.n_u == 0:
                 self.u_guess = u_guess
             else:
@@ -504,7 +497,6 @@ class OptimalControlProblem(object):
 
         :param original:
         :param replacement:
-        :param variable_type:
         """
         if isinstance(original, list):
             original = vertcat(*original)
