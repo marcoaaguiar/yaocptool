@@ -331,7 +331,7 @@ def get_ls_factor(n_uncertain, n_samples, pc_order, lamb=0.0):
     sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, ceil(np.log2(n_samples)))
     sobol_samples = np.transpose(sobol_design)
     for i in range(n_uncertain):
-        sobol_samples[:, i] = norm(loc=0., scale=1.).ppf(sobol_samples[:, i])
+        sobol_samples[i, :] = norm(loc=0., scale=1).ppf(sobol_samples[i, :])
 
     # Polynomial function definition
     x = SX.sym('x')

@@ -471,23 +471,23 @@ class OptimalControlProblem(object):
         to_remove = find_variables_indices_in_vector(var, self.model.y_sym)
         to_remove.reverse()
 
-        self.y_max = remove_variables_from_vector_by_indices(self.y_max, to_remove)
-        self.y_min = remove_variables_from_vector_by_indices(self.y_min, to_remove)
+        self.y_max = remove_variables_from_vector_by_indices(to_remove, self.y_max)
+        self.y_min = remove_variables_from_vector_by_indices(to_remove, self.y_min)
         if self.y_guess is not None:
-            self.y_guess = remove_variables_from_vector_by_indices(self.y_guess, to_remove)
+            self.y_guess = remove_variables_from_vector_by_indices(to_remove, self.y_guess)
 
         self.model.remove_algebraic(var, eq)
 
     def remove_control(self, var):
         to_remove = find_variables_indices_in_vector(var, self.model.u_sym)
 
-        self.u_max = remove_variables_from_vector_by_indices(self.u_max, to_remove)
-        self.u_min = remove_variables_from_vector_by_indices(self.u_min, to_remove)
-        self.delta_u_max = remove_variables_from_vector_by_indices(self.delta_u_max, to_remove)
-        self.delta_u_min = remove_variables_from_vector_by_indices(self.delta_u_min, to_remove)
+        self.u_max = remove_variables_from_vector_by_indices(to_remove, self.u_max)
+        self.u_min = remove_variables_from_vector_by_indices(to_remove, self.u_min)
+        self.delta_u_max = remove_variables_from_vector_by_indices(to_remove, self.delta_u_max)
+        self.delta_u_min = remove_variables_from_vector_by_indices(to_remove, self.delta_u_min)
 
         if self.u_guess is not None:
-            self.u_guess = remove_variables_from_vector_by_indices(self.u_guess, to_remove)
+            self.u_guess = remove_variables_from_vector_by_indices(to_remove, self.u_guess)
 
         self.model.remove_control(var)
 
@@ -792,10 +792,10 @@ class OptimalControlProblem(object):
         if self.u_guess is not None and self.y_guess is not None:
             self.y_guess = vertcat(self.y_guess, self.u_guess[ind_u])
 
-        self.u_max = remove_variables_from_vector_by_indices(self.u_max, ind_u)
-        self.u_min = remove_variables_from_vector_by_indices(self.u_min, ind_u)
+        self.u_max = remove_variables_from_vector_by_indices(ind_u, self.u_max)
+        self.u_min = remove_variables_from_vector_by_indices(ind_u, self.u_min)
         if self.u_guess is not None:
-            self.u_guess = remove_variables_from_vector_by_indices(self.u_guess, ind_u)
+            self.u_guess = remove_variables_from_vector_by_indices(ind_u, self.u_guess)
 
-        self.delta_u_max = remove_variables_from_vector_by_indices(self.delta_u_max, ind_u)
-        self.delta_u_min = remove_variables_from_vector_by_indices(self.delta_u_min, ind_u)
+        self.delta_u_max = remove_variables_from_vector_by_indices(ind_u, self.delta_u_max)
+        self.delta_u_min = remove_variables_from_vector_by_indices(ind_u, self.delta_u_min)

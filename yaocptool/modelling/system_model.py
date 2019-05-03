@@ -459,8 +459,8 @@ class SystemModel(object):
             self.alg = remove_variables_from_vector(eq, self.alg)
 
     def remove_control(self, var):
-        self.u_expr = remove_variables_from_vector_by_indices(self.u_expr,
-                                                              find_variables_indices_in_vector(var, self.u_sym))
+        self.u_expr = remove_variables_from_vector_by_indices(find_variables_indices_in_vector(var, self.u_sym),
+                                                              self.u_expr)
         self.u_sym = remove_variables_from_vector(var, self.u_sym)
         self.u_par = remove_variables_from_vector(var, self.u_par)
 

@@ -222,7 +222,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
                                                                        eq_relax))
 
         # Remove equality
-        self.problem.g_eq = remove_variables_from_vector_by_indices(self.problem.g_eq, self.relax_time_equality_index)
+        self.problem.g_eq = remove_variables_from_vector_by_indices(self.relax_time_equality_index, self.problem.g_eq)
 
         for ind in sorted(self.relax_time_equality_index, reverse=True):
             self.problem.time_g_eq.pop(ind)

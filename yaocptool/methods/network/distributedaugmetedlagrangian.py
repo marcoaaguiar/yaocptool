@@ -7,8 +7,8 @@ Created on
 import time
 from collections import defaultdict
 
-from casadi import inf
 import matplotlib.pyplot as plt
+from casadi import inf
 
 from yaocptool import create_polynomial_approximation, find_variables_indices_in_vector, DM, vertcat, join_thetas
 from yaocptool.methods import SolutionMethodInterface, AugmentedLagrangian
@@ -102,7 +102,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         # If no result is available
         if self._last_result.get(node) is None:
             if variable_type == 'y' and node.problem.y_guess is not None:
-                return [[node.problem.y_guess[var_indices] for j in range(self.degree)] for i in
+                return [[node.problem.y_guess[var_indices] for _ in range(self.degree)] for i in
                         range(self.finite_elements)]
             elif variable_type == 'u' and node.problem.u_guess is not None:
                 return [[node.problem.u_guess[var_indices] for j in range(self.degree)] for i in

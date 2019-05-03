@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 import copy
+import os
+import pickle
 import re
 from collections import defaultdict
 from functools import partial
@@ -165,6 +167,20 @@ class DataSet:
             time, values = (list(t) for t in zip(*sorted(zip(time, values), key=lambda point: point[0])))
             self.data[entry]['time'] = horzcat(*time)
             self.data[entry]['values'] = horzcat(*values)
+
+    def save(self, file_path):
+        """
+            Save this object in the "file_path" using pickle (.p extension).
+            It can be retrieved using using pickle.load
+
+        :param str file_path: path with file name of the file to be saved. Example: files/result.p
+        """
+        directory = os.path.abspath(os.path.dirname(file_path))
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        with open(file_path, 'wb+') as f:
+            pickle.dump(self, f)
 
     def _plot_entry(self, t_vector, data_vector, row, label='', plot_style='plot'):
         if self.find_discontinuity:

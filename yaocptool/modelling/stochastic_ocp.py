@@ -89,7 +89,7 @@ class StochasticOCP(OptimalControlProblem):
             self.uncertain_initial_conditions_cov = self.uncertain_initial_conditions_cov
 
     def get_p_without_p_unc(self):
-        return remove_variables_from_vector_by_indices(self.model.p_sym, self.get_p_unc_indices())
+        return remove_variables_from_vector_by_indices(self.get_p_unc_indices(), self.model.p_sym)
 
     def get_p_unc_indices(self):
         return find_variables_indices_in_vector(self.p_unc, self.model.p_sym)
