@@ -15,6 +15,9 @@ from yaocptool.modelling import DAESystem, SimulationResult
 
 
 class SystemModel(object):
+    t_sym = SX.sym('t')
+    tau_sym = SX.sym('tau')
+
     def __init__(self, name='model', n_x=0, n_y=0, n_u=0, n_p=0, n_theta=0, model_name_as_prefix=False, **kwargs):
         r"""
             Continuous-time Dynamic System Model
@@ -66,9 +69,6 @@ class SystemModel(object):
         self.p_sym = SX.sym(self.name + '_p', n_p)
         self.theta_sym = SX.sym(self.name + '_theta', n_theta)
 
-        self.t_sym = SX.sym('t')
-        self.tau_sym = SX.sym('tau')
-
         self._parametrized_controls = []
         self.u_par = vertcat(self.u_sym)
         self.u_expr = vertcat(self.u_sym)
@@ -77,10 +77,15 @@ class SystemModel(object):
 
     @property
     def system_type(self):
+        '''
+            Return the system type.
+
+        :return: 'ode'  if an ODE system and 'dae' if an DAE system
+        :rtype: str
+        '''
         if self.n_y > 0:
             return 'dae'
-        else:
-            return 'ode'
+        return 'ode'
 
     @property
     def n_x(self):
@@ -384,6 +389,17 @@ class SystemModel(object):
     def include_system_equations(self, ode=None, alg=None):
         """
             Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)
+            
+        Same as 'include_equations' method.
+
+        :param list|casadi.SX ode: (ordinary) differential equation
+        :param list|casadi.SX alg: algebraic equation
+        """
+        return self.include_equations(ode=ode, alg=alg)
+
+    def include_equations(self, ode=None, alg=None):
+        """
+            Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)
 
         :param list|casadi.SX ode: (ordinary) differential equation
         :param list|casadi.SX alg: algebraic equation
@@ -397,6 +413,41 @@ class SystemModel(object):
             if isinstance(alg, list):  # if alg is list or tuple
                 alg = vertcat(*alg)
             self.alg = vertcat(self.alg, alg)
+
+    def include_variables(self, x=None, y=None, u=None, p=None, theta=None):
+        """
+            Include variables (x, y, u, p, and theta) to the model.
+
+        :param SX|list|None x: state variable
+        :param SX|list|None y: algebraic variable
+        :param SX|list|None u: control/input variable
+        :param SX|list|None p: parameter variable
+        :param SX|list|None theta: element dependent variable
+        """
+        if x is not None:
+            if isinstance(x, list):
+                x = vertcat(*x)
+            self.include_state(x)
+
+        if y is not None:
+            if isinstance(y, list):
+                y = vertcat(*y)
+            self.include_algebraic(y)
+
+        if u is not None:
+            if isinstance(x, list):
+                u = vertcat(*u)
+            self.include_control(u)
+
+        if p is not None:
+            if isinstance(p, list):
+                p = vertcat(*p)
+            self.include_parameter(p)
+
+        if theta is not None:
+            if isinstance(theta, list):
+                theta = vertcat(*theta)
+            self.include_theta(theta)
 
     def include_state(self, var, ode=None, x_0_sym=None):
         if ode is None:
@@ -430,13 +481,16 @@ class SystemModel(object):
         """
             Replace a variable or parameter by an variable or expression.
 
-            :param replacement:
-            :param original: SX: and replacement, and also variable type which
+            :param SX|list replacement:
+            :param SX|list original: and replacement, and also variable type which
                 describes which type of variable is being remove to it from the
                 counters. Types: 'x', 'y', 'u', 'p', 'ignore'
         """
-        original = vertcat(original)
-        replacement = vertcat(replacement)
+        if isinstance(original, list):
+            original = vertcat(*original)
+        if isinstance(replacement, list):
+            replacement = vertcat(*replacement)
+
         if not original.numel() == replacement.numel():
             raise ValueError("Original and replacement must have the same number of elements!"
                              "original.numel()={}, replacement.numel()={}".format(original.numel(),
@@ -448,10 +502,16 @@ class SystemModel(object):
             self.ode = substitute(self.ode, original, replacement)
             self.alg = substitute(self.alg, original, replacement)
 
+            # TODO: Im commenting the  following line because I think they are wrong
             self.u_par = substitute(self.u_par, original, replacement)
             self.u_expr = substitute(self.u_expr, original, replacement)
 
     # region REMOVE
+
+    def remove_state(self, var, eq=None):
+        self.x_sym = remove_variables_from_vector(var, self.x_sym)
+        if eq is not None:
+            self.ode = remove_variables_from_vector(eq, self.ode)
 
     def remove_algebraic(self, var, eq=None):
         self.y_sym = remove_variables_from_vector(var, self.y_sym)
@@ -471,6 +531,17 @@ class SystemModel(object):
         self.theta_sym = remove_variables_from_vector(var, self.theta_sym)
 
     def get_variable_by_name(self, name='', var_type=None):
+        """
+            Return a variable with a specified name (Regex accepted).
+
+        If no or multiple variables are found with the specified 'name' an ValueError exception is raised.
+        To specify the search in a single variable type (x/y/u/p/theta) use the 'var_type'
+
+        :param str name: variable name/regex
+        :param str var_type: variable type (optional)
+        :return: variable
+        :rtype: SX
+        """
         result = self.get_variables_by_names(name, var_type)
         # if only one is found return it
         if len(result) == 1:
@@ -484,7 +555,7 @@ class SystemModel(object):
     def get_variables_by_names(self, names='', var_type=None):
         """
 
-        :param str|list of str names:
+        :param str|list of str names: list of variables names
         :param str var_type:
         """
         # if only one name is passed
@@ -517,10 +588,9 @@ class SystemModel(object):
 
         return False
 
-    def is_parametrized_by(self, u):
+    def control_is_parametrized(self, u):
         """
-            Check if the model is parametrized if no parameter "u" is given, otherwise check if the control "u" is
-            parametrized
+            Check if  the control "u" is parametrized
 
         :param casadi.SX u:
         :rtype bool:
@@ -550,24 +620,29 @@ class SystemModel(object):
         :param list|casadi.SX u_par:
         """
         # input check
-        u_sym = vertcat(u_sym)
-        expr = vertcat(expr)
+        if isinstance(u_sym, list):
+            u_sym = vertcat(*u_sym)
+        if isinstance(u_par, list):
+            u_par = vertcat(*u_par)
+        if isinstance(expr, list):
+            expr = vertcat(*expr)
 
         if not u_sym.numel() == expr.numel():
             raise ValueError("Passed control and parametrization expression does not have same size. "
                              "u_sym ({}) and expr ({})".format(u_sym.numel(), expr.numel()))
 
+        # Check and register the control parametrization.
+        for i in range(u_sym.numel()):
+            if self.control_is_parametrized(u_sym[i]):
+                raise ValueError('The control "{}" is already parametrized.'.format(u_sym[i]))
+            self._parametrized_controls = self._parametrized_controls + [u_sym[i]]  # to get have a new memory address,
+
         # Remove u from u_par if they are going to be parametrized
+        self.u_par = remove_variables_from_vector(u_sym, self.u_par)
         if u_par is not None:
             self.u_par = vertcat(self.u_par, u_par)
-        else:
-            self.u_par = remove_variables_from_vector(u_sym, self.u_par)
 
-        # Update self.u_expr vector
-        for i in range(u_sym.numel()):
-            if self.is_parametrized_by(u_sym[i]):
-                raise ValueError('The control "{}" is already parametrized.'.format(u_sym[i]))
-            self._parametrized_controls.append(u_sym[i])
+            # and make .get_copy work
 
         # Replace u by expr into the system
         self.replace_variable(u_sym, expr)
@@ -663,7 +738,9 @@ class SystemModel(object):
 
     def get_copy(self):
         """
-            Get a copy of this model
+            Get a copy of this model.
+
+        Uses copy.copy to get copy of this object.
 
         :rtype: SystemModel
         """
@@ -671,7 +748,7 @@ class SystemModel(object):
 
     def get_deepcopy(self):
         """
-            Get a hard copy of this model, differently from "get_copy", the variables of the original copy and the
+            Get a deep copy of this model, differently from "get_copy", the variables of the original copy and the
             hard copy will not be the same, i.e. model.x_sym != copy.x_sym
 
         :rtype: SystemModel
@@ -682,6 +759,7 @@ class SystemModel(object):
         u_copy = vertcat([])
         p_copy = vertcat([])
         theta_copy = vertcat([])
+        u_par_copy = vertcat([])
 
         if self.n_x > 0:
             x_copy = vertcat(*[model_copy.create_state(self.x_sym[i].name()) for i in range(self.n_x)])
@@ -695,15 +773,19 @@ class SystemModel(object):
         if self.n_theta > 0:
             theta_copy = vertcat(*[model_copy.create_theta(self.theta_sym[i].name()) for i in range(self.n_theta)])
 
+        if self.n_u_par > 0:
+            u_par_copy = vertcat(*[SX.sym(self.u_par[i].name()) for i in range(self.n_u_par)])
+
         model_copy.include_system_equations(ode=self.ode, alg=self.alg)
-        model_copy.u_expr = self.u_expr
         model_copy.u_par = self.u_par
+        model_copy.u_expr = self.u_expr
 
         model_copy.replace_variable(self.x_sym, x_copy)
         model_copy.replace_variable(self.y_sym, y_copy)
         model_copy.replace_variable(self.u_sym, u_copy)
         model_copy.replace_variable(self.p_sym, p_copy)
         model_copy.replace_variable(self.theta_sym, theta_copy)
+        model_copy.replace_variable(self.u_par, u_par_copy)
 
         model_copy.has_adjoint_variables = self.has_adjoint_variables
 

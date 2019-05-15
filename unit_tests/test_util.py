@@ -15,7 +15,7 @@ from yaocptool import find_variables_indices_in_vector, find_variables_in_vector
 from yaocptool.util.util import _create_lagrangian_polynomial_basis
 
 
-class TestStringMethods(unittest.TestCase):
+class TestUtil(unittest.TestCase):
     def setUp(self):
         self.x_vector = vertcat(SX.sym('x'),
                                 SX.sym('other_name'),
