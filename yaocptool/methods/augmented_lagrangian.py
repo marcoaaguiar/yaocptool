@@ -9,7 +9,7 @@ import time
 import warnings
 from collections import defaultdict
 
-from casadi import SX, inf, vertcat, dot, vec, Function, MX, horzcat, mtimes, repmat, mmax, fabs, substitute
+from casadi import SX, inf, vertcat, dot, vec, Function, MX, horzcat, mtimes, repmat, mmax, fabs, substitute, DM
 
 from yaocptool import find_variables_indices_in_vector, join_thetas, create_constant_theta, \
     remove_variables_from_vector_by_indices
@@ -50,9 +50,9 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
         self.n_relax = 0
         self.mu_sym = None
-        self.nu_sym = vertcat([])
-        self.nu_par = vertcat([])
-        self.nu_pol = vertcat([])
+        self.nu_sym = DM([])
+        self.nu_par = DM([])
+        self.nu_pol = DM([])
 
         self.max_iter = 20
         self.mu_0 = 1.
@@ -222,7 +222,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
                                                                        eq_relax))
 
         # Remove equality
-        self.problem.g_eq = remove_variables_from_vector_by_indices(self.problem.g_eq, self.relax_time_equality_index)
+        self.problem.g_eq = remove_variables_from_vector_by_indices(self.relax_time_equality_index, self.problem.g_eq)
 
         for ind in sorted(self.relax_time_equality_index, reverse=True):
             self.problem.time_g_eq.pop(ind)
@@ -374,10 +374,13 @@ class AugmentedLagrangian(SolutionMethodsBase):
         if not self._debug_skip_update_mu:
             self.mu = min(self.mu_max, self.mu * self.beta)
 
+    def create_optimization_problem(self):
+        self.ocp_solver.create_optimization_problem()
+        self.opt_problem = self.ocp_solver.opt_problem
+
     def call_solver(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
         if self.opt_problem is None:
-            self.ocp_solver.create_optimization_problem()
-            self.opt_problem = self.ocp_solver.opt_problem
+            self.create_optimization_problem()
 
         if x_0 is None:
             x_0 = self.problem.x_0
@@ -453,6 +456,7 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
             it += 1
 
+            # update parameters
             if not self.no_update_after_solving:
                 error = self._compute_new_nu_and_error(p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict)
                 self._update_mu()

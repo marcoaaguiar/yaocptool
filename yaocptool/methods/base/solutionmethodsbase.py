@@ -9,6 +9,7 @@ from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
 from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 from yaocptool.modelling import OptimalControlProblem
+from yaocptool.optimization.abstract_optimization_problem import AbstractOptimizationProblem
 
 
 class SolutionMethodsBase(SolutionMethodInterface):
@@ -25,7 +26,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
             parameter for the NLP generated from the OCP. This is useful for MPCs, where the initial condition changes
             every iteration.
         """
-        self.opt_problem = None
+        self.opt_problem = None  # type: AbstractOptimizationProblem
         self.problem = problem
         self.solution_class = ''
         self.prepared = False
@@ -180,30 +181,35 @@ class SolutionMethodsBase(SolutionMethodInterface):
                           or self.problem.last_u is not None)
 
         # parameters MX
-        p_mx = MX.sym('p', self.model.n_p)
+        p_mx = MX.sym('mx_p', self.model.n_p)
 
         # theta MX
-        theta_mx = MX.sym('theta_', self.model.n_theta, self.finite_elements)
+        theta_mx = MX.sym('mx_theta_', self.model.n_theta, self.finite_elements)
         theta = dict([(i, vec(theta_mx[:, i])) for i in range(self.finite_elements)])
 
         # initial cond MX
-        p_mx_x_0 = MX.sym('x_0_p', self.model.n_x)
+        p_mx_x_0 = MX.sym('mx_x_0_p', self.model.n_x)
 
         # last control MX
         if self.last_control_as_parameter:
-            p_last_u = MX.sym('last_u', self.model.n_u)
+            p_last_u = MX.sym('mx_last_u', self.model.n_u)
         else:
             p_last_u = []
 
         all_mx = vertcat(p_mx, vec(theta_mx), p_mx_x_0, p_last_u)
 
-        args = dict(p=p_mx, x_0=p_mx_x_0, theta=theta, last_u=p_last_u)
+        args = {'p': p_mx,
+                'x_0': p_mx_x_0,
+                'theta': theta,
+                'last_u': p_last_u}
 
         # Discretize the problem
         opt_problem = self.discretizer.discretize(**args)
 
         if has_parameters:
             opt_problem.include_parameter(all_mx)
+
+        opt_problem.solver_options = self.nlpsol_opts
 
         self.opt_problem = opt_problem
 

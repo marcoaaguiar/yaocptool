@@ -15,7 +15,8 @@ class Plant:
 
 
 class PlantSimulation(Plant):
-    """Simulates a plant using a model.
+    """
+        Simulates a plant using a model.
 
     """
 

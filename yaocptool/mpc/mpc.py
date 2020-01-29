@@ -47,8 +47,8 @@ class MPC:
         self.iteration = 0
 
         # Options
-        self.default_p = None
-        self.default_theta = None
+        self.p = None
+        self.theta = None
         self.verbosity = 1
 
         self.include_cost_in_state_vector = False
@@ -64,6 +64,33 @@ class MPC:
 
         # set last_control_as_parameter to True, so the optimization problem can take last_u
         self.solution_method.last_control_as_parameter = True
+
+    def get_measurement(self):
+        """Get measurements from the plant. It will return a tuple with the current measurement and the current control
+
+        :rtype: tuple
+        """
+
+        return self.plant.get_measurement()
+
+    def get_states(self, t_k, y_k, u_k):
+        """Get states out of a measurement.
+
+        :param DM t_k: time of the measurement
+        :param DM y_k: measurements
+        :param DM u_k: controls
+        :return: DM
+        """
+        if self.estimator is None:
+            x_k = y_k[:self.solution_method.model.n_x]
+            cov_x_k = DM.zeros(x_k.shape)
+        else:
+            x_k, cov_x_k = self.estimator.estimate(t_k, y_k, u_k)
+
+        if self.include_cost_in_state_vector:
+            x_k = vertcat(x_k, 0)
+
+        return x_k, cov_x_k
 
     def get_new_control(self, x_k, u_k, p=None):
         """Use solution_method to obtain new controls
@@ -89,14 +116,6 @@ class MPC:
         self.statistics['iteration_time'].append(time.time() - start_time)
         return vertcat(*control)
 
-    def get_measurement(self):
-        """Get measurements from the plant. It will return a tuple with the current measurement and the current control
-
-        :rtype: tuple
-        """
-
-        return self.plant.get_measurement()
-
     def send_control(self, u):
         """Sent controls to the plant.
 
@@ -104,24 +123,17 @@ class MPC:
         """
         self.plant.set_control(u)
 
-    def get_states(self, t_k, y_k, u_k):
-        """Get states out of a measurement.
+    def post_process_measurement(self, t, meas, u):
+        return t, meas, u
 
-        :param DM t_k: time of the measurement
-        :param DM y_k: measurements
-        :param DM u_k: controls
-        :return: DM
-        """
-        if self.estimator is None:
-            x_k = y_k[:self.solution_method.model.n_x]
-            p_k = DM.zeros(x_k.shape)
-        else:
-            x_k, p_k = self.estimator.estimate(t_k, y_k, u_k)
+    def post_process_states(self, x_k, cov_x_k):
+        return x_k, cov_x_k
 
-        if self.include_cost_in_state_vector:
-            x_k = vertcat(x_k, 0)
+    def post_process_get_new_control(self, u):
+        return u
 
-        return x_k, p_k
+    def post_process_send_control(self):
+        return
 
     def run(self, iterations=0):
         """Starts computing control and sending it to the plant.
@@ -133,13 +145,20 @@ class MPC:
             self.iteration += 1
             if self.verbosity >= 1:
                 print(' Iteration {} ({}) '.format(k, self.iteration).center(30, '='))
+
             # get new measurement from the plant
-            t_k, y_k, u_k = self.get_measurement()
+            t_k, meas_k, u_k = self.get_measurement()
+            # post process measurements
+            t_k, meas_k, u_k = self.post_process_measurement(t_k, meas_k, u_k)
+
             if self.verbosity >= 1:
                 print('Time: {}'.format(t_k))
 
             # estimate the states out of the measurement
-            x_k, p_k = self.get_states(t_k, y_k, u_k)
+            x_k, p_k = self.get_states(t_k, meas_k, u_k)
+            # post process estimator result
+            x_k, p_k = self.post_process_states(x_k, p_k)
+
             if self.verbosity >= 1:
                 print('Estimated state: {}'.format(x_k))
 
@@ -151,17 +170,19 @@ class MPC:
             time_start_new_control = time.time()
             p = self._get_parameter(x_k, p_k)
             new_u = self.get_new_control(x_k=x_k_ocp, u_k=u_k, p=p)
+            new_u = self.post_process_get_new_control(new_u)
             if self.verbosity >= 1:
                 print('Control calculated: {}'.format(new_u))
                 print('Time taken to obtain control: {}'.format(time.time() - time_start_new_control))
             self.send_control(new_u)
+            new_u = self.send_control(new_u)
 
             if k >= iterations - 1:
                 print('End of MPC.un'.center(30, '='))
                 break
 
     def _get_parameter(self, x_k, p_k):
-        p = self.default_p
+        p = self.p
 
         if self.mean_as_parameter:
             for mean_index, p_index in self.mean_p_indices:

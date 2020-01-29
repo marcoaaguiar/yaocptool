@@ -5,16 +5,14 @@ Created on Mon Apr 03 11:15:03 2017
 @author: marco
 """
 
-import copy
-
 from casadi import DM, repmat, vertcat, substitute, mtimes, is_equal, SX, inf, gradient, dot, jacobian
 
 from yaocptool import find_variables_indices_in_vector, remove_variables_from_vector_by_indices
 from yaocptool.modelling import SystemModel
 
 
-class OptimalControlProblem:
-    """ Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)
+class OptimalControlProblem(object):
+    r""" Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)
     It has the following form:
 
     .. math::
@@ -53,8 +51,8 @@ class OptimalControlProblem:
         :param yaocptool.modelling.SystemModel model:
         :param str name:
         :param casadi.DM|list x_0: initial conditions
-        :param t_0:
-        :param t_f:
+        :param float t_0:
+        :param float t_f:
         :param kwargs:
         """
         if x_0 is None:
@@ -65,14 +63,13 @@ class OptimalControlProblem:
         self.x_0 = x_0
 
         self.name = name
-        self.model = None  # type: SystemModel
         self._model = model  # type: SystemModel
-        self.reset_working_model()
+        self.model = model.get_copy()  # type: SystemModel
 
         self.x_cost = None
         self.eta = SX()
-        self.p_opt = vertcat([])
-        self.theta_opt = vertcat([])
+        self.p_opt = DM([])
+        self.theta_opt = DM([])
 
         self.x_max = repmat(inf, self.model.n_x)
         self.y_max = repmat(inf, self.model.n_y)
@@ -88,12 +85,12 @@ class OptimalControlProblem:
         self.p_opt_min = repmat(-inf, self.n_p_opt)
         self.theta_opt_min = repmat(-inf, self.n_theta_opt)
 
-        self.h = vertcat([])
+        self.h = DM([])
         self.h_initial = self.model.x_sym - self.model.x_0_sym
-        self.h_final = vertcat([])
+        self.h_final = DM([])
 
-        self.g_eq = vertcat([])
-        self.g_ineq = vertcat([])
+        self.g_eq = DM([])
+        self.g_ineq = DM([])
         self.time_g_eq = []
         self.time_g_ineq = []
 
@@ -163,15 +160,25 @@ class OptimalControlProblem:
             has_element_diff_from_inf = (not is_equal(self.delta_u_min[i], -inf)) or has_element_diff_from_inf
         return has_element_diff_from_inf
 
-    def create_state(self, name, size, ode=None, x_0=None, x_max=None, x_min=None, h_initial=None):
+    def create_state(self, name, size=1, ode=None, x_0=None, x_max=None, x_min=None, h_initial=None):
         var = SX.sym(name, size)
         self.include_state(var, ode=ode, x_0=x_0, x_min=x_min, x_max=x_max, h_initial=h_initial)
         return var
 
-    def create_algebraic(self, name, size, alg=None, y_max=None, y_min=None, y_guess=None):
+    def create_algebraic(self, name, size=1, alg=None, y_max=None, y_min=None, y_guess=None):
         var = SX.sym(name, size)
         self.include_algebraic(var, alg=alg, y_min=y_min, y_max=y_max, y_guess=y_guess)
         return var
+
+    def create_control(self, name, size=1, u_min=None, u_max=None, delta_u_min=None, delta_u_max=None, u_guess=None):
+        var = SX.sym(name, size)
+        self.include_control(var, u_min=u_min, u_max=u_max,
+                             delta_u_min=delta_u_min, delta_u_max=delta_u_max, u_guess=u_guess)
+        return var
+
+    @property
+    def create_input(self):
+        return self.create_control
 
     def create_parameter(self, name, size=1):
         new_p = self.model.create_parameter(name=name, size=size)
@@ -290,6 +297,7 @@ class OptimalControlProblem:
         if isinstance(var, list):
             var = vertcat(*var)
 
+        # if not given
         if u_min is None:
             u_min = -DM.inf(var.numel())
         if u_max is None:
@@ -298,7 +306,13 @@ class OptimalControlProblem:
             delta_u_min = -DM.inf(var.numel())
         if delta_u_max is None:
             delta_u_max = DM.inf(var.numel())
+        if u_guess is None and self.u_guess is not None:
+            raise ValueError('The OptimalControlProblem already has a control guess ("ocp.u_guess"), but no guess was '
+                             'passed for the new variable (parameter "u_guess" is None). Either remove all guesses '
+                             '("ocp.u_guess = None") before including the new variable, or pass a guess for the control'
+                             ' using the parameter "u_guess"')
 
+        # if given as a list
         if isinstance(u_min, list):
             u_min = vertcat(*u_min)
         if isinstance(u_max, list):
@@ -307,7 +321,28 @@ class OptimalControlProblem:
             delta_u_min = vertcat(*delta_u_min)
         if isinstance(delta_u_max, list):
             delta_u_max = vertcat(*delta_u_max)
+        if u_guess is not None and isinstance(u_guess, list):
+            u_guess = vertcat(*u_guess)
 
+        # if not a casadi type
+        u_min = vertcat(u_min)
+        u_max = vertcat(u_max)
+        delta_u_min = vertcat(delta_u_min)
+        delta_u_max = vertcat(delta_u_max)
+        if u_guess is not None:
+            u_guess = vertcat(u_guess)
+
+        # if passed a scalar but meant a vector of that scalar
+        if u_min.numel() == 1 and var.numel() > 1:
+            u_min = repmat(u_min, var.numel())
+        if u_max.numel() == 1 and var.numel() > 1:
+            u_max = repmat(u_max, var.numel())
+        if delta_u_min.numel() == 1 and var.numel() > 1:
+            delta_u_min = repmat(delta_u_min, var.numel())
+        if delta_u_max.numel() == 1 and var.numel() > 1:
+            delta_u_max = repmat(delta_u_max, var.numel())
+
+        # if passed but has a wrong size
         if not var.numel() == u_min.numel():
             raise ValueError(
                 "Given 'var' and 'u_min' does not have the same size, {}!={}".format(var.numel(), u_min.numel()))
@@ -322,6 +357,10 @@ class OptimalControlProblem:
             raise ValueError(
                 "Given 'var' and 'delta_u_max' does not have the same size, {}!={}".format(var.numel(),
                                                                                            delta_u_max.numel()))
+        if u_guess is not None and var.numel() != u_guess.numel():
+            raise ValueError(
+                "Given 'var' and 'u_guess' does not have the same size, {}!={}".format(var.numel(),
+                                                                                       u_guess.numel()))
 
         self.u_min = vertcat(self.u_min, u_min)
         self.u_max = vertcat(self.u_max, u_max)
@@ -329,13 +368,10 @@ class OptimalControlProblem:
         self.delta_u_max = vertcat(self.delta_u_max, delta_u_max)
 
         if u_guess is not None:
-            if isinstance(u_guess, list):
-                u_guess = vertcat(*u_guess)
-            if not var.numel() == u_min.numel():
-                raise ValueError(
-                    "Given 'var' and 'u_min' does not have the same size, {}!={}".format(var.numel(), u_min.numel()))
             if self.model.n_u == 0:
                 self.u_guess = u_guess
+            else:
+                self.u_guess = vertcat(self.u_guess, u_guess)
 
         self.model.include_control(var)
 
@@ -384,7 +420,7 @@ class OptimalControlProblem:
         self.h_final = vertcat(self.h_final, eq)
 
     def include_time_inequality(self, eq, when='default'):
-        """Include time dependent inequality.
+        r"""Include time dependent inequality.
         g_ineq(..., t) <= 0, for t \in [t_0, t_f]
 
         The inequality is concatenated to "g_ineq"
@@ -403,7 +439,7 @@ class OptimalControlProblem:
         self.time_g_ineq.extend([when] * eq.numel())
 
     def include_time_equality(self, eq, when='default'):
-        """Include time dependent equality.
+        r"""Include time dependent equality.
         g_eq(..., t) = 0, for t \in [t_0, t_f]
 
         The inequality is concatenated to "g_ineq"
@@ -435,33 +471,32 @@ class OptimalControlProblem:
         to_remove = find_variables_indices_in_vector(var, self.model.y_sym)
         to_remove.reverse()
 
-        self.y_max = remove_variables_from_vector_by_indices(self.y_max, to_remove)
-        self.y_min = remove_variables_from_vector_by_indices(self.y_min, to_remove)
+        self.y_max = remove_variables_from_vector_by_indices(to_remove, self.y_max)
+        self.y_min = remove_variables_from_vector_by_indices(to_remove, self.y_min)
         if self.y_guess is not None:
-            self.y_guess = remove_variables_from_vector_by_indices(self.y_guess, to_remove)
+            self.y_guess = remove_variables_from_vector_by_indices(to_remove, self.y_guess)
 
         self.model.remove_algebraic(var, eq)
 
     def remove_control(self, var):
         to_remove = find_variables_indices_in_vector(var, self.model.u_sym)
 
-        self.u_max = remove_variables_from_vector_by_indices(self.u_max, to_remove)
-        self.u_min = remove_variables_from_vector_by_indices(self.u_min, to_remove)
-        self.delta_u_max = remove_variables_from_vector_by_indices(self.delta_u_max, to_remove)
-        self.delta_u_min = remove_variables_from_vector_by_indices(self.delta_u_min, to_remove)
+        self.u_max = remove_variables_from_vector_by_indices(to_remove, self.u_max)
+        self.u_min = remove_variables_from_vector_by_indices(to_remove, self.u_min)
+        self.delta_u_max = remove_variables_from_vector_by_indices(to_remove, self.delta_u_max)
+        self.delta_u_min = remove_variables_from_vector_by_indices(to_remove, self.delta_u_min)
 
         if self.u_guess is not None:
-            self.u_guess = remove_variables_from_vector_by_indices(self.u_guess, to_remove)
+            self.u_guess = remove_variables_from_vector_by_indices(to_remove, self.u_guess)
 
         self.model.remove_control(var)
 
-    def replace_variable(self, original, replacement, variable_type='other'):
+    def replace_variable(self, original, replacement):
         """
             Replace 'original' by 'replacement' in the problem and model equations
 
         :param original:
         :param replacement:
-        :param variable_type:
         """
         if isinstance(original, list):
             original = vertcat(*original)
@@ -571,10 +606,10 @@ class OptimalControlProblem:
         return True
 
     def reset_working_model(self):
-        self.model = copy.copy(self._model)
+        self.model = self._model.get_copy()
 
     def create_cost_state(self):
-        """Create and state with the dynamics equal to L from \int_{t_0}^{t_f} L(...) dt:
+        r"""Create and state with the dynamics equal to L from \int_{t_0}^{t_f} L(...) dt:
         \dot{x}_c = L(...)
 
         :rtype: casadi.SX
@@ -619,10 +654,10 @@ class OptimalControlProblem:
         for problem in problems:
             if not self.t_0 == problem.t_0:
                 raise ValueError('Problems "{}" and "{}" have different "t_0", {}!={}'.format(self.name, problem.name,
-                                                                                          self.t_0, problem.t_0))
+                                                                                              self.t_0, problem.t_0))
             if not self.t_f == problem.t_f:
                 raise ValueError('Problems "{}" and "{}" have different "t_f", {}!={}'.format(self.name, problem.name,
-                                                                                          self.t_f, problem.t_f))
+                                                                                              self.t_f, problem.t_f))
 
             self.x_0 = vertcat(self.x_0, problem.x_0)
 
@@ -757,10 +792,10 @@ class OptimalControlProblem:
         if self.u_guess is not None and self.y_guess is not None:
             self.y_guess = vertcat(self.y_guess, self.u_guess[ind_u])
 
-        self.u_max = remove_variables_from_vector_by_indices(self.u_max, ind_u)
-        self.u_min = remove_variables_from_vector_by_indices(self.u_min, ind_u)
+        self.u_max = remove_variables_from_vector_by_indices(ind_u, self.u_max)
+        self.u_min = remove_variables_from_vector_by_indices(ind_u, self.u_min)
         if self.u_guess is not None:
-            self.u_guess = remove_variables_from_vector_by_indices(self.u_guess, ind_u)
+            self.u_guess = remove_variables_from_vector_by_indices(ind_u, self.u_guess)
 
-        self.delta_u_max = remove_variables_from_vector_by_indices(self.delta_u_max, ind_u)
-        self.delta_u_min = remove_variables_from_vector_by_indices(self.delta_u_min, ind_u)
+        self.delta_u_max = remove_variables_from_vector_by_indices(ind_u, self.delta_u_max)
+        self.delta_u_min = remove_variables_from_vector_by_indices(ind_u, self.delta_u_min)

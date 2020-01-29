@@ -8,4 +8,5 @@ docs/rst/
 *.pyc
 *.pyo
 .coverage
-config.py
+yaocptoool/config.py
+.gitignore

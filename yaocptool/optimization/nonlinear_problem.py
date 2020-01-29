@@ -6,7 +6,7 @@ from yaocptool.optimization.abstract_optimization_problem import AbstractOptimiz
 
 class NonlinearOptimizationProblem(AbstractOptimizationProblem):
     def __init__(self, **kwargs):
-        """
+        r"""
             Nonlinear Optimization Problem class
             Optimization problem
 

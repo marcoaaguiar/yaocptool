@@ -16,7 +16,7 @@ class OptimizationResult:
     def __init__(self, **kwargs):
         # Raw Information
         self.raw_solution_dict = {}
-        self.raw_decision_variables = None  # type: list
+        self.raw_decision_variables = None  # type: list|None
 
         # Data from the method
         self.method_name = ''  # type: str
@@ -33,10 +33,10 @@ class OptimizationResult:
         self.time_breakpoints = []
         self.collocation_points = []
 
-        self.objective_opt_problem = None  # type: DM
-        self.v_final = None  # type: DM
-        self.x_c_final = None  # type: DM
-        self.constraints_values = None  # type: DM
+        self.objective_opt_problem = None  # type: DM|None
+        self.v_final = None  # type: DM|None
+        self.x_c_final = None  # type: DM|None
+        self.constraints_values = None  # type: DM|None
 
         self.x_names = []
         self.y_names = []

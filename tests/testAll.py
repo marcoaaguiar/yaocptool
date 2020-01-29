@@ -17,4 +17,3 @@ import tests.testTwoTanks
 import tests.testDirectMethodWithAdjointStates
 import tests.testAugmentedLagrange
 import tests.testParametrizeControl
-import tests.testNetwork

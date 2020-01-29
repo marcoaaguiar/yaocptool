@@ -19,18 +19,18 @@ sys.path.append(abspath(dirname(dirname(__file__))))
 model = MIMO2x2()
 problem = StabilizationMIMO2x2(model)
 
-solution_method = DirectMethod(problem,
-                               degree=3,
-                               degree_control=3,
-                               finite_elements=20,
-                               integrator_type='implicit',
-                               # discretization_scheme = 'multiple-shooting'
-                               discretization_scheme='collocation'
-                               )
+for discretization_scheme in ['collocation', 'multiple-shooting'][1:]:
+    solution_method = DirectMethod(problem,
+                                   degree=3,
+                                   degree_control=3,
+                                   finite_elements=20,
+                                   integrator_type='implicit',
+                                   discretization_scheme=discretization_scheme
+                                   )
 
-result = solution_method.solve()
-result.plot([  # {'x': [0]},
-    {'x': 'all'},
-    {'u': 'all'}
-])
+    result = solution_method.solve()
+    result.plot([  # {'x': [0]},
+        {'x': 'all'},
+        {'u': 'all'}
+    ])
 # x, y, u, t= solution_method.plot_simulate(x_sol, u_sol, [{'x':[0]},{'x':[2,3]},{'u':[0]}], 5)

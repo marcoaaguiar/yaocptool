@@ -7,8 +7,8 @@ Created on
 import time
 from collections import defaultdict
 
-from casadi import inf
 import matplotlib.pyplot as plt
+from casadi import inf
 
 from yaocptool import create_polynomial_approximation, find_variables_indices_in_vector, DM, vertcat, join_thetas
 from yaocptool.methods import SolutionMethodInterface, AugmentedLagrangian
@@ -32,6 +32,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         self.degree = 3
         self.finite_elements = 20
         self.max_iter_inner = 4
+        self.max_iter_inner_first = 4
         self.max_iter_outer = 30
         self.abs_tol = 1e-6
         self.mu_0 = 1.0
@@ -102,7 +103,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         # If no result is available
         if self._last_result.get(node) is None:
             if variable_type == 'y' and node.problem.y_guess is not None:
-                return [[node.problem.y_guess[var_indices] for j in range(self.degree)] for i in
+                return [[node.problem.y_guess[var_indices] for _ in range(self.degree)] for i in
                         range(self.finite_elements)]
             elif variable_type == 'u' and node.problem.u_guess is not None:
                 return [[node.problem.u_guess[var_indices] for j in range(self.degree)] for i in
@@ -169,7 +170,8 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         max_error = inf
         for outer_it in range(self.max_iter_outer):
             print("Starting outer iteration: {}".format(outer_it).center(40, '='))
-            for inner_it in range(self.max_iter_inner):
+            for inner_it in range(self.max_iter_inner_first if outer_it == 0 and self.max_iter_inner_first is not None
+                                  else self.max_iter_inner):
                 print("Starting inner iteration: {}".format(inner_it).center(30, '='))
 
                 # for node in self.network.nodes:  # sorted(self.network.nodes, key=lambda x: x.node_id):
@@ -197,7 +199,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     # print("Finished: {}".format(node))
 
             # update nu
-            for node in self.network.nodes:
+            for node in sorted(self.network.nodes, key=lambda x: x.node_id):
                 node_theta[node] = self._get_node_theta(node)
                 theta_k = join_thetas(node_theta[node], node.solution_method.nu)
                 p_k = node.solution_method.mu

@@ -23,7 +23,7 @@ def sample_parameter_normal_distribution_with_sobol(mean, covariance, n_samples=
     sobol_design = sobol_seq.i4_sobol_generate(n_uncertain, n_samples, math.ceil(np.log2(n_samples)))
     sobol_samples = DM(sobol_design.T)
     for i in range(n_uncertain):
-        sobol_samples[:, i] = norm(loc=0., scale=1.).ppf(sobol_samples[:, i])
+        sobol_samples[i, :] = norm(loc=0., scale=1).ppf(sobol_samples[i, :])
 
     unscaled_sample = DM.zeros(n_uncertain, n_samples)
 

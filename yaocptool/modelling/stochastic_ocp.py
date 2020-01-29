@@ -6,18 +6,18 @@ from yaocptool.modelling import OptimalControlProblem
 
 class StochasticOCP(OptimalControlProblem):
     def __init__(self, model, **kwargs):
-        self.g_stochastic_ineq = vertcat([])
-        self.g_stochastic_rhs = vertcat([])
-        self.g_stochastic_prob = vertcat([])
+        self.g_stochastic_ineq = DM([])
+        self.g_stochastic_rhs = DM([])
+        self.g_stochastic_prob = DM([])
 
-        self.p_unc = vertcat([])
-        self.p_unc_mean = vertcat([])
-        self.p_unc_cov = vertcat([])
+        self.p_unc = DM([])
+        self.p_unc_mean = DM([])
+        self.p_unc_cov = DM([])
         self.p_unc_dist = []
 
-        self.uncertain_initial_conditions = vertcat([])
-        self.uncertain_initial_conditions_mean = vertcat([])
-        self.uncertain_initial_conditions_cov = vertcat([])
+        self.uncertain_initial_conditions = DM([])
+        self.uncertain_initial_conditions_mean = DM([])
+        self.uncertain_initial_conditions_cov = DM([])
         self.uncertain_initial_conditions_distribution = []
 
         OptimalControlProblem.__init__(self, model, **kwargs)
@@ -40,25 +40,29 @@ class StochasticOCP(OptimalControlProblem):
         self.set_parameter_as_uncertain_parameter(par, mean, var, distribution=distribution)
         return par
 
-    def include_uncertain_parameter(self, par, mean, var, distribution='normal'):
+    def include_uncertain_parameter(self, par, mean, cov, distribution='normal'):
         self.model.include_parameter(par)
-        self.set_parameter_as_uncertain_parameter(par, mean, var, distribution=distribution)
+        self.set_parameter_as_uncertain_parameter(par, mean, cov, distribution=distribution)
 
-    def set_parameter_as_uncertain_parameter(self, par, mean, var, distribution='normal'):
+    def set_parameter_as_uncertain_parameter(self, par, mean, cov, distribution='normal'):
         par = vertcat(par)
         mean = vertcat(mean)
-        var = vertcat(var)
+        cov = vertcat(cov)
 
         if not par.numel() == mean.numel():
             raise ValueError('Size of "par" and "mean" differ. par.numel()={} '
                              'and mean.numel()={}'.format(par.numel(), mean.numel()))
-        if not var.shape == (mean.numel(), mean.numel()):
-            raise ValueError('The input "var" is not a square matrix of same size as "mean". '
-                             'var.shape={} and mean.numel()={}'.format(var.shape, mean.numel()))
+        if not cov.shape == (mean.numel(), mean.numel()):
+            raise ValueError('The input "cov" is not a square matrix of same size as "mean". '
+                             'cov.shape={} and mean.numel()={}'.format(cov.shape, mean.numel()))
 
         self.p_unc = vertcat(self.p_unc, par)
         self.p_unc_mean = vertcat(self.p_unc_mean, mean)
-        self.p_unc_cov = vertcat(self.p_unc_cov, var)
+        # TODO: Work around for casadi diagcat bug, remove when patched.
+        if self.p_unc_cov.numel() == 0:
+            self.p_unc_cov = cov
+        else:
+            self.p_unc_cov = diagcat(self.p_unc_cov, cov)
         self.p_unc_dist = self.p_unc_dist + [distribution] * par.numel()
 
     def set_initial_condition_as_uncertain(self, par, mean, cov, distribution='normal'):
@@ -85,7 +89,7 @@ class StochasticOCP(OptimalControlProblem):
             self.uncertain_initial_conditions_cov = self.uncertain_initial_conditions_cov
 
     def get_p_without_p_unc(self):
-        return remove_variables_from_vector_by_indices(self.model.p_sym, self.get_p_unc_indices())
+        return remove_variables_from_vector_by_indices(self.get_p_unc_indices(), self.model.p_sym)
 
     def get_p_unc_indices(self):
         return find_variables_indices_in_vector(self.p_unc, self.model.p_sym)
@@ -94,7 +98,7 @@ class StochasticOCP(OptimalControlProblem):
         return find_variables_indices_in_vector(self.uncertain_initial_conditions, self.model.x_0_sym)
 
     def include_time_chance_inequality(self, ineq, prob, rhs=None, when='default'):
-        """Include time dependent chance inequality.
+        r"""Include time dependent chance inequality.
         Prob[ineq(..., t) <= rhs] <= prob, for t \in [t_0, t_f]
 
         The inequality is concatenated to "g_stochastic_ineq"
