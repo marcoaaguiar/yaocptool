@@ -25,15 +25,15 @@ class AbstractOptimizationProblem(object):
         """
         self.name = name
 
-        self.f = vertcat([])
-        self.g = vertcat([])
-        self.x = vertcat([])
-        self.p = vertcat([])
+        self.f = DM([])
+        self.g = DM([])
+        self.x = DM([])
+        self.p = DM([])
 
-        self.g_lb = vertcat([])
-        self.g_ub = vertcat([])
-        self.x_lb = vertcat([])
-        self.x_ub = vertcat([])
+        self.g_lb = DM([])
+        self.g_ub = DM([])
+        self.x_lb = DM([])
+        self.x_ub = DM([])
 
         self.solver_options = {}
 

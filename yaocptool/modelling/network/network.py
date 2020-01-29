@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import networkx
 from casadi import vertcat, SX
 
-from yaocptool import find_variables_indices_in_vector
+from yaocptool import find_variables_indices_in_vector, DM
 from yaocptool.modelling import SystemModel, OptimalControlProblem
 from yaocptool.modelling.network.node import Node
 
@@ -119,7 +119,7 @@ class Network:
         if not node2.model.has_variable(u):
             raise ValueError('"node2" ({}) does not have the passed "u" ({})'.format(node2.name, y))
         if not (node1, node2) in self.graph.edges:
-            self.graph.add_edge(node1, node2, y=vertcat([]), u=vertcat([]))
+            self.graph.add_edge(node1, node2, y=DM([]), u=DM([]))
 
         self.graph.edges[node1, node2]['y'] = vertcat(self.graph.edges[node1, node2]['y'], y)
         self.graph.edges[node1, node2]['u'] = vertcat(self.graph.edges[node1, node2]['u'], u)

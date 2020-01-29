@@ -27,15 +27,15 @@ class DAESystem(object):
         :param casadi.SX tau: Tau variable
         """
         if x is None:
-            x = vertcat([])
+            x = DM([])
         if y is None:
-            y = vertcat([])
+            y = DM([])
         if p is None:
-            p = vertcat([])
+            p = DM([])
         if alg is None:
-            alg = vertcat([])
+            alg = DM([])
         if ode is None:
-            ode = vertcat([])
+            ode = DM([])
 
         self.x = x
         self.y = y

@@ -7,7 +7,7 @@ Created on Thu Jun 09 10:50:48 2016
 import collections
 import copy
 
-from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec, horzcat, is_equal
+from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec, horzcat, is_equal, DM
 
 from yaocptool import remove_variables_from_vector, config, find_variables_indices_in_vector, \
     remove_variables_from_vector_by_indices, find_variables_in_vector_by_name
@@ -45,8 +45,8 @@ class SystemModel(object):
         """
         self.name = name
 
-        self.ode = vertcat([])  # ODE
-        self.alg = vertcat([])  # Algebraic equations
+        self.ode = DM([])  # ODE
+        self.alg = DM([])  # Algebraic equations
 
         self.model_name_as_prefix = model_name_as_prefix
         self.has_adjoint_variables = False
@@ -754,12 +754,13 @@ class SystemModel(object):
         :rtype: SystemModel
         """
         model_copy = SystemModel(name=self.name)
-        x_copy = vertcat([])
-        y_copy = vertcat([])
-        u_copy = vertcat([])
-        p_copy = vertcat([])
-        theta_copy = vertcat([])
-        u_par_copy = vertcat([])
+        x_copy = DM([])
+        y_copy = DM([])
+        u_copy = DM([])
+        p_copy = DM([])
+        theta_copy = DM([])
+        u_par_copy = DM([])
+        u_par_copy = DM([])
 
         if self.n_x > 0:
             x_copy = vertcat(*[model_copy.create_state(self.x_sym[i].name()) for i in range(self.n_x)])

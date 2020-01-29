@@ -68,8 +68,8 @@ class OptimalControlProblem(object):
 
         self.x_cost = None
         self.eta = SX()
-        self.p_opt = vertcat([])
-        self.theta_opt = vertcat([])
+        self.p_opt = DM([])
+        self.theta_opt = DM([])
 
         self.x_max = repmat(inf, self.model.n_x)
         self.y_max = repmat(inf, self.model.n_y)
@@ -85,12 +85,12 @@ class OptimalControlProblem(object):
         self.p_opt_min = repmat(-inf, self.n_p_opt)
         self.theta_opt_min = repmat(-inf, self.n_theta_opt)
 
-        self.h = vertcat([])
+        self.h = DM([])
         self.h_initial = self.model.x_sym - self.model.x_0_sym
-        self.h_final = vertcat([])
+        self.h_final = DM([])
 
-        self.g_eq = vertcat([])
-        self.g_ineq = vertcat([])
+        self.g_eq = DM([])
+        self.g_ineq = DM([])
         self.time_g_eq = []
         self.time_g_ineq = []
 

@@ -352,4 +352,3 @@ class TestUtil(unittest.TestCase):
 
         self.assertEqual(pol.shape, (size_zero, 1))
         self.assertEqual(par.shape, (size_zero * (degree + 1), 1))
-u

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from casadi import SX, is_equal, vertcat, vec
+from casadi import SX, is_equal, vertcat, vec, DM
 
 from yaocptool.modelling import SystemModel
 
@@ -272,28 +272,28 @@ class TestSystemModel(TestCase):
         self.assertTrue(is_equal(self.ode_model.theta[-n_new_theta:], theta))
 
     def test_include_system_equations(self):
-        self.ode_model.ode = vertcat([])
+        self.ode_model.ode = DM([])
 
         ode = -self.ode_model.x + self.ode_model.u
         self.ode_model.include_system_equations(ode=ode)
         self.assertTrue(is_equal(self.ode_model.ode, ode, 20))
 
         # test for the dae system
-        self.dae_model.ode = vertcat([])
+        self.dae_model.ode = DM([])
 
         ode = -self.dae_model.x - self.dae_model.y + self.dae_model.u
         self.dae_model.include_system_equations(ode=ode)
         self.assertTrue(is_equal(self.dae_model.ode, ode, 20))
 
-        self.dae_model.alg = vertcat([])
+        self.dae_model.alg = DM([])
 
         alg = -self.dae_model.x - self.dae_model.y + self.dae_model.u
         self.dae_model.include_system_equations(alg=alg)
         self.assertTrue(is_equal(self.dae_model.alg, alg, 20))
 
         # test for list input
-        self.dae_model.ode = vertcat([])
-        self.dae_model.alg = vertcat([])
+        self.dae_model.ode = DM([])
+        self.dae_model.alg = DM([])
 
         ode = [-self.dae_model.x - self.dae_model.y + self.dae_model.u]
         alg = [-self.dae_model.x - self.dae_model.y + self.dae_model.u]
@@ -302,28 +302,28 @@ class TestSystemModel(TestCase):
         self.assertTrue(is_equal(self.dae_model.alg, vertcat(*alg), 20))
 
     def test_include_equations(self):
-        self.ode_model.ode = vertcat([])
+        self.ode_model.ode = DM([])
 
         ode = -self.ode_model.x + self.ode_model.u
         self.ode_model.include_equations(ode=ode)
         self.assertTrue(is_equal(self.ode_model.ode, ode, 20))
 
         # test for the dae system
-        self.dae_model.ode = vertcat([])
+        self.dae_model.ode = DM([])
 
         ode = -self.dae_model.x - self.dae_model.y + self.dae_model.u
         self.dae_model.include_equations(ode=ode)
         self.assertTrue(is_equal(self.dae_model.ode, ode, 20))
 
-        self.dae_model.alg = vertcat([])
+        self.dae_model.alg = DM([])
 
         alg = -self.dae_model.x - self.dae_model.y + self.dae_model.u
         self.dae_model.include_equations(alg=alg)
         self.assertTrue(is_equal(self.dae_model.alg, alg, 20))
 
         # test for list input
-        self.dae_model.ode = vertcat([])
-        self.dae_model.alg = vertcat([])
+        self.dae_model.ode = DM([])
+        self.dae_model.alg = DM([])
 
         ode = [-self.dae_model.x - self.dae_model.y + self.dae_model.u]
         alg = [-self.dae_model.x - self.dae_model.y + self.dae_model.u]

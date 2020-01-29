@@ -9,7 +9,7 @@ import time
 import warnings
 from collections import defaultdict
 
-from casadi import SX, inf, vertcat, dot, vec, Function, MX, horzcat, mtimes, repmat, mmax, fabs, substitute
+from casadi import SX, inf, vertcat, dot, vec, Function, MX, horzcat, mtimes, repmat, mmax, fabs, substitute, DM
 
 from yaocptool import find_variables_indices_in_vector, join_thetas, create_constant_theta, \
     remove_variables_from_vector_by_indices
@@ -50,9 +50,9 @@ class AugmentedLagrangian(SolutionMethodsBase):
 
         self.n_relax = 0
         self.mu_sym = None
-        self.nu_sym = vertcat([])
-        self.nu_par = vertcat([])
-        self.nu_pol = vertcat([])
+        self.nu_sym = DM([])
+        self.nu_par = DM([])
+        self.nu_pol = DM([])
 
         self.max_iter = 20
         self.mu_0 = 1.
