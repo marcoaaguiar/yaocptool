@@ -9,3 +9,4 @@ docs/rst/
 *.pyo
 .coverage
 yaocptoool/config.py
+.gitignore

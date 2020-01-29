@@ -28,4 +28,4 @@ INTEGRATOR_OPTIONS = {
     # 'reltol': 1e-10  # rel. tolerance
 }
 
-PLOT_INTERACTIVE = False
+PLOT_INTERACTIVE = True

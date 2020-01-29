@@ -8,11 +8,12 @@ from yaocptool.modelling import SystemModel, OptimalControlProblem, Network
 t_f = 200
 dal_options = {'finite_elements': 60,
                'degree': 3,
-               'mu_0': 1e1,
+               'mu_0': 1e2,
                'mu_max': 1e20,
                'abs_tol': 1e-6,
-               'max_iter_inner': 3,
-               'max_iter_outer': 30}
+               'max_iter_inner': 5,
+               'max_iter_inner_first': None,
+               'max_iter_outer': 10}
 
 
 class Tank(SystemModel):
@@ -205,6 +206,8 @@ n = create_four_tanks()
 # n = create_two_pumps_two_tanks()
 # Draw the networkTrue
 # n.plot()
+n.insert_intermediary_nodes()
+
 CLASSIC = False
 CENTRALIZED_AUG_LAG = False
 DISTRIBUTED = True
@@ -249,7 +252,8 @@ if DISTRIBUTED:
     solution_method = DistributedAugmentedLagrangian(network=n,
                                                      solution_method_class=DirectMethod,
                                                      solution_method_options={'discretization_scheme': 'collocation',
-                                                                              'initial_guess_heuristic': 'problem_info'},
+                                                                              # 'initial_guess_heuristic': 'problem_info'
+                                                                              },
                                                      **dal_options)
 
     r = solution_method.solve()

@@ -67,9 +67,10 @@ def remove_variables_from_vector_by_indices(indices, vector):
     """
         Returns a vector with items removed
 
-    :param vector: vector which will have items removed
     :param list indices: list of indices for which the variables need to be removed.
-    :return:
+    :param SX|MX|DM vector: vector which will have items removed
+    :return: the vector with the variables removed
+    :rtype: SX|MX|DM
     """
     if len(indices) > 0:
         numel = vector.numel()
@@ -82,6 +83,9 @@ def remove_variables_from_vector_by_indices(indices, vector):
 
     remaining_ind = [ind for ind in range(vector.numel()) if ind not in indices]
     vector = vector[remaining_ind]
+
+    if vector.shape == (1, 0):
+        vector = vector.reshape((0, 1))
     return vector
 
 

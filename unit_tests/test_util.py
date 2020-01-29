@@ -110,6 +110,16 @@ class TestUtil(unittest.TestCase):
                                                                          self.x_vector),
                                  self.x_vector))
 
+        # Test remove emptying a vector
+        res = remove_variables_from_vector_by_indices(list(range(self.x_vector.numel())), self.x_vector)
+        self.assertEqual(res.numel(), 0)
+        self.assertEqual(res.shape, (0, 1))
+
+        # Test remove emptying a 1x1 vector
+        res = remove_variables_from_vector_by_indices([0], self.x_vector[0])
+        self.assertEqual(res.numel(), 0)
+        self.assertEqual(res.shape, (0, 1))
+
         # Test removing out of bounds
         self.assertRaises(ValueError, remove_variables_from_vector_by_indices, [100], self.x_vector)
         self.assertRaises(ValueError, remove_variables_from_vector_by_indices, [-100], self.x_vector)
@@ -342,3 +352,4 @@ class TestUtil(unittest.TestCase):
 
         self.assertEqual(pol.shape, (size_zero, 1))
         self.assertEqual(par.shape, (size_zero * (degree + 1), 1))
+u

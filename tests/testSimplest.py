@@ -11,9 +11,9 @@ problem = OptimalControlProblem(model, obj={'Q': 1, 'R': 1}, x_0=[1], t_f=5.0)
 # problem.x_min[0] = 0.6
 
 solution_method = IndirectMethod(problem, degree_control=3,
-                                 # discretization_scheme='multiple-shooting',
-                                 discretization_scheme='collocation',
-                                 degree=3, finite_elements=5, integrator_type='implicit')
+                                 discretization_scheme='multiple-shooting',
+                                 # discretization_scheme='collocation',
+                                 degree=3, finite_elements=30, integrator_type='implicit')
 
 solution = solution_method.solve()
 

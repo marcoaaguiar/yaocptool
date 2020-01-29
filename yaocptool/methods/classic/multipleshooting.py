@@ -24,27 +24,27 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         x, y, u = [], [], []
 
         for el in range(self.finite_elements + 1):
-            x_k = [nlp.create_variable('x_' + str(el), self.model.n_x, lb=self.problem.x_min, ub=self.problem.x_max)]
+            x_k = [nlp.create_variable('mx_x_' + str(el), self.model.n_x, lb=self.problem.x_min, ub=self.problem.x_max)]
             x.append(x_k)
 
         for el in range(self.finite_elements):
-            y_k = [nlp.create_variable('y_' + str(el), self.model.n_y, lb=self.problem.y_min, ub=self.problem.y_max)]
+            y_k = [nlp.create_variable('mx_y_' + str(el), self.model.n_y, lb=self.problem.y_min, ub=self.problem.y_max)]
             y.append(y_k)
 
         for el in range(self.finite_elements):
             u_k = []
             if self.model.n_u_par > 0:
                 for n in range(self.degree_control):
-                    u_k.append(nlp.create_variable('u_' + str(el) + '_' + str(n), self.model.n_u,
+                    u_k.append(nlp.create_variable('mx_u_' + str(el) + '_' + str(n), self.model.n_u,
                                                    lb=self.problem.u_min, ub=self.problem.u_max))
             u.append(u_k)
 
-        eta = nlp.create_variable('eta', self.problem.n_eta)
-        p_opt = nlp.create_variable('p_opt', self.problem.n_p_opt, lb=self.problem.p_opt_min, ub=self.problem.p_opt_max)
+        eta = nlp.create_variable('mx_eta', self.problem.n_eta)
+        p_opt = nlp.create_variable('mx_p_opt', self.problem.n_p_opt, lb=self.problem.p_opt_min, ub=self.problem.p_opt_max)
 
         theta_opt = []
         for el in range(self.finite_elements):
-            theta_opt.append(nlp.create_variable('theta_opt_' + str(el), self.problem.n_theta_opt,
+            theta_opt.append(nlp.create_variable('mx_theta_opt_' + str(el), self.problem.n_theta_opt,
                                                  lb=self.problem.theta_opt_min, ub=self.problem.theta_opt_max))
 
         v_x = self.vectorize(x)
