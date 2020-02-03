@@ -25,3 +25,9 @@ def sparsity(M, psi):
 def grad_tanh(z):
     return np.diag(1 - np.tanh(z.flatten()) ** 2)
 
+def normalize_std_deviation(data):
+    means = np.atleast_2d(np.mean(data, axis=0))
+    std = np.atleast_2d(np.std(data, axis=0))
+
+    normal_input = (data - means) / std
+    return normal_input

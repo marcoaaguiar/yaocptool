@@ -96,7 +96,7 @@ class DataSet:
         """Insert data on the dataset
 
         :param str entry: entry name ('x', 'y', 'u', ...)
-        :param float|DM time: time or time vector of the data
+        :param float|list|DM time: time or time vector of the data
         :param DM value: vector or matrix of values for the entry (column represent time)
         """
         if isinstance(time, list):
@@ -108,13 +108,8 @@ class DataSet:
             raise ValueError('Number of columns of "time" and "value" should be the same, '
                              'time.shape={} and value.shape={}'.format(time.shape[1], value.shape))
 
-        # TODO: Here is a correction for a BUG on CASADI horzcat with DM([]), refactor when CASADI corrects this
-        if self.data[entry]['values'].numel() > 0:
-            self.data[entry]['values'] = horzcat(self.data[entry]['values'], value)
-            self.data[entry]['time'] = horzcat(self.data[entry]['time'], time)
-        else:
-            self.data[entry]['values'] = value
-            self.data[entry]['time'] = time
+        self.data[entry]['values'] = horzcat(self.data[entry]['values'], value)
+        self.data[entry]['time'] = horzcat(self.data[entry]['time'], time)
 
         if self.data[entry]['size'] is None:
             self.data['entry']['size'] = value.size1()
@@ -258,7 +253,7 @@ class DataSet:
             # for each entry (dict key) e.g. 'x', 'y'
             for entry in entry_dict:
                 if entry not in self.data:
-                    raise Exception("Entry '{}' not found in the dataset. Entries: {}".format(entry, self.data.keys()))
+                    raise Exception(f"Entry '{entry}' not found in the dataset. Entries: {self.data.keys()}")
 
                 # if a custom plot style was asked, otherwise use default
                 if 'plot_style' in self.data[entry]:
