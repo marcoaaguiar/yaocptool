@@ -4,7 +4,7 @@ import unittest
 
 from casadi import DM, inf
 
-from unit_tests.models import create_2x2_mimo
+from .models import create_2x2_mimo
 from yaocptool.methods import DirectMethod, IndirectMethod
 
 class MIMO2x2TestCase(unittest.TestCase):
