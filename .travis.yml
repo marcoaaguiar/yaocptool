@@ -32,7 +32,6 @@ matrix:
         - pip install codecov nose
       # Run the unit test
       script:
-        - cd unit_tests
         - pytest --cov=yaocptool/
     # Run unittests in Python 3.7
     - name: "TEST_37"
@@ -43,7 +42,6 @@ matrix:
         - pip install codecov nose
       # Run the unit test
       script:
-        - cd unit_tests
         - pytest --cov=yaocptool/
     # Run unittests in Python 3.8
     - name: "TEST_38"
@@ -54,7 +52,6 @@ matrix:
         - pip install codecov nose
       # Run the unit test
       script:
-        - cd unit_tests
         - pytest --cov=yaocptool/
       # Push the results back to codecov
       after_success:
