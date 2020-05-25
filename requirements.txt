@@ -1,0 +1,6 @@
+casadi
+numpy
+scipy
+sobol_seq
+matplotlib
+networkx
