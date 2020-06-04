@@ -5,15 +5,16 @@ Created on Wed Nov 02 19:20:39 2016
 @author: marco
 """
 
-import tests.testDeltaUMinMax
-import tests.testDirectMethod
-import tests.testIndirectMethod
-import tests.testLinearMimo
-import tests.testOCPwithDAE
-import tests.testPCE
-import tests.testSimplest
-import tests.testSimulation
-import tests.testTwoTanks
-import tests.testDirectMethodWithAdjointStates
-import tests.testAugmentedLagrange
-import tests.testParametrizeControl
+import manual_tests.testDeltaUMinMax
+import manual_tests.testDirectMethod
+import manual_tests.testIndirectMethod
+import manual_tests.testLinearMimo
+import manual_tests.testOCPwithDAE
+import manual_tests.testPCE
+import manual_tests.testSimplest
+import manual_tests.testSimulation
+import manual_tests.testTwoTanks
+import manual_tests.testDirectMethodWithAdjointStates
+import manual_tests.testAugmentedLagrange
+import manual_tests.testParametrizeControl
+

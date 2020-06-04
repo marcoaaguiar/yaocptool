@@ -9,7 +9,7 @@ SOLVER_OPTIONS = {
     'nlpsol_options': {
         # 'ipopt.print_level': 0,
         # 'print_time': False,
-        # "ipopt.linear_solver": "ma27",
+        "ipopt.linear_solver": "ma27",
         # 'expand': True,
         # 'jit': True,
         # 'ipopt.mumps_pivtol': 1e-8,

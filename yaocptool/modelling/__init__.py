@@ -12,3 +12,4 @@ from .ocp import OptimalControlProblem
 from .stochastic_ocp import StochasticOCP
 from .network.network import Network
 from .network.node import Node
+from .utils import der

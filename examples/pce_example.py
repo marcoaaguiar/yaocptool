@@ -22,24 +22,26 @@ t_s = prediction_window / finite_elements
 ######################
 # Create a new model with 2 Tanks, the output of the first tank is connected on the second tank
 
-model = SystemModel(name='2-Tanks')
+model = SystemModel(name="2-Tanks")
 
 # Get the symbolic variables
-h_1, h_2 = model.create_state('h_1'), model.create_state('h_2')
-u = model.create_control('u')
+h_1, h_2 = model.create_state("h_1"), model.create_state("h_2")
+u = model.create_control("u")
 
 # Model Parameters
-a = model.create_parameter('a')  # (m^2) Holes cross section
-a_mean = model.create_parameter('a_mean')  # (m^2) Holes cross section
+a = model.create_parameter("a")  # (m^2) Holes cross section
+a_mean = model.create_parameter("a_mean")  # (m^2) Holes cross section
 A = 28e-3  # (m^2) the tank area
 g = 9.8  # gravitational acceleration
 
 # Define the model ODEs
-ode = [(u - a * sqrt(2 * g * h_1)) / A,
-       (a * sqrt(2 * g * h_1) - a * sqrt(2 * g * h_2)) / A]
+ode = [
+    (u - a * sqrt(2 * g * h_1)) / A,
+    (a * sqrt(2 * g * h_1) - a * sqrt(2 * g * h_2)) / A,
+]
 
 # Include the equations in the model
-model.include_system_equations(ode=ode)
+model.include_equations(ode=ode)
 
 # Print the model for debugging purposes
 print(model)
@@ -62,7 +64,9 @@ problem.L = (h_1 - 2) ** 2 + 0 * (h_2 - 1) ** 2 + u ** 2
 problem.u_min = 0.00001
 
 # include uncertain parameter
-problem.set_parameter_as_uncertain_parameter(a, mean=a_mean, cov=[1e-8], distribution='normal')
+problem.set_parameter_as_uncertain_parameter(
+    a, mean=a_mean, cov=[1e-8], distribution="normal"
+)
 
 # Include chance constraint
 problem.include_time_chance_inequality(a * sqrt(2 * g * h_1), rhs=[0.01], prob=[0.9])
@@ -84,7 +88,9 @@ pce_problem = pce_converter.convert_socp_to_ocp_with_pce()
 #  Solution Method   #
 ######################
 # Initialize a DirectMethod to solve the OCP using collocation
-solution_method = DirectMethod(pce_problem, finite_elements=20, discretization_scheme='collocation')
+solution_method = DirectMethod(
+    pce_problem, finite_elements=20, discretization_scheme="collocation"
+)
 
 # Solve the problem and get the result
 result = solution_method.solve(p=[0.071e-2] + [0] * 6)
@@ -92,7 +98,9 @@ result = solution_method.solve(p=[0.071e-2] + [0] * 6)
 # Make one plot with the element with h_0 and h_1 for every sample, notice that it has an additional state that is the
 # cost at each sample.
 result.plot(
-    [{'x': range(0, 3 * pce_converter.n_samples, 3)},
-     {'x': range(1, 3 * pce_converter.n_samples, 3)},
-     {'u': [0]}]
+    [
+        {"x": range(0, 3 * pce_converter.n_samples, 3)},
+        {"x": range(1, 3 * pce_converter.n_samples, 3)},
+        {"u": [0]},
+    ]
 )

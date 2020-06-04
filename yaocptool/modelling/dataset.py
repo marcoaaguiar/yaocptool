@@ -14,7 +14,8 @@ from yaocptool.config import PLOT_INTERACTIVE
 try:
     import matplotlib.pyplot as plt
 except ImportError:
-    print('Failed to import matplotlib. Make sure that it is properly installed')
+    print(
+        'Failed to import matplotlib. Make sure that it is properly installed')
     plt = None
 
 
@@ -37,7 +38,9 @@ class DataSet:
             discontinuity on the data, and plot it separately.
         """
         self.name = name
-        self.data = defaultdict(partial(dict, [('time', DM([])), ('names', None), ('values', DM([])), ('size', None)]))
+        self.data = defaultdict(
+            partial(dict, [('time', DM([])), ('names', None),
+                           ('values', DM([])), ('size', None)]))
 
         self.plot_style = 'step'
         self.max_delta_t = None
@@ -105,8 +108,10 @@ class DataSet:
             time = DM(time)
 
         if not time.shape[1] == value.shape[1]:
-            raise ValueError('Number of columns of "time" and "value" should be the same, '
-                             'time.shape={} and value.shape={}'.format(time.shape[1], value.shape))
+            raise ValueError(
+                'Number of columns of "time" and "value" should be the same, '
+                'time.shape={} and value.shape={}'.format(
+                    time.shape[1], value.shape))
 
         self.data[entry]['values'] = horzcat(self.data[entry]['values'], value)
         self.data[entry]['time'] = horzcat(self.data[entry]['time'], time)
@@ -135,13 +140,19 @@ class DataSet:
         """
 
         for entry in other_dataset.data:
-            if not self.get_entry_size(entry) == other_dataset.get_entry_size(entry):
-                raise ValueError('The size of the same entry is different in the two datasets, '
-                                 '{}!={}'.format(self.get_entry_size(entry), other_dataset.get_entry_size(entry)))
+            if not self.get_entry_size(entry) == other_dataset.get_entry_size(
+                    entry):
+                raise ValueError(
+                    'The size of the same entry is different in the two datasets, '
+                    '{}!={}'.format(self.get_entry_size(entry),
+                                    other_dataset.get_entry_size(entry)))
             if entry not in self.data:
-                self.create_entry(entry, size=other_dataset.get_entry_size(entry),
+                self.create_entry(entry,
+                                  size=other_dataset.get_entry_size(entry),
                                   names=other_dataset.get_entry_names(entry))
-            self.insert_data(entry, time=other_dataset.data[entry]['time'], value=other_dataset.data[entry]['values'])
+            self.insert_data(entry,
+                             time=other_dataset.data[entry]['time'],
+                             value=other_dataset.data[entry]['values'])
 
         self.sort()
 
@@ -158,8 +169,12 @@ class DataSet:
         for entry in entries:
             entry_length = self.data[entry]['time'].shape[1]
             time = [self.data[entry]['time'][i] for i in range(entry_length)]
-            values = [self.data[entry]['values'][:, i] for i in range(self.data[entry]['values'].shape[1])]
-            time, values = (list(t) for t in zip(*sorted(zip(time, values), key=lambda point: point[0])))
+            values = [
+                self.data[entry]['values'][:, i]
+                for i in range(self.data[entry]['values'].shape[1])
+            ]
+            time, values = (list(t) for t in zip(
+                *sorted(zip(time, values), key=lambda point: point[0])))
             self.data[entry]['time'] = horzcat(*time)
             self.data[entry]['values'] = horzcat(*values)
 
@@ -177,19 +192,32 @@ class DataSet:
         with open(file_path, 'wb+') as f:
             pickle.dump(self, f)
 
-    def _plot_entry(self, t_vector, data_vector, row, label='', plot_style='plot'):
+    def _plot_entry(self,
+                    t_vector,
+                    data_vector,
+                    row,
+                    label='',
+                    plot_style='plot'):
         if self.find_discontinuity:
-            t_vector, data_vector = self._find_discontinuity_for_plotting(t_vector, data_vector)
+            t_vector, data_vector = self._find_discontinuity_for_plotting(
+                t_vector, data_vector)
 
         if plot_style not in ['plot', 'step']:
-            raise ValueError('Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(plot_style))
+            raise ValueError(
+                'Plot style not recognized: "{}". Allowed : "plot" and "step"'.
+                format(plot_style))
 
         if plot_style == 'plot':
             return plt.plot(t_vector.T, data_vector[row, :].T, label=label)
         if plot_style == 'step':
-            return plt.step(t_vector.T, data_vector[row, :].T, label=label, where='post')
+            return plt.step(t_vector.T,
+                            data_vector[row, :].T,
+                            label=label,
+                            where='post')
 
-        raise ValueError('"plot_style" not recognized. Given {}, available: "step" or "plot"'.format(plot_style))
+        raise ValueError(
+            '"plot_style" not recognized. Given {}, available: "step" or "plot"'
+            .format(plot_style))
 
     def _find_discontinuity_for_plotting(self, time, values):
         tolerance = 1.2
@@ -233,6 +261,8 @@ class DataSet:
             be used
         """
 
+        if plot_list is None:
+            plot_list == 'all'
         if plot_list == 'all':
             plot_list = [{'x': 'all'}, {'y': 'all'}, {'u': 'all'}]
 
@@ -253,7 +283,9 @@ class DataSet:
             # for each entry (dict key) e.g. 'x', 'y'
             for entry in entry_dict:
                 if entry not in self.data:
-                    raise Exception(f"Entry '{entry}' not found in the dataset. Entries: {self.data.keys()}")
+                    raise Exception(
+                        f"Entry '{entry}' not found in the dataset. Entries: {self.data.keys()}"
+                    )
 
                 # if a custom plot style was asked, otherwise use default
                 if 'plot_style' in self.data[entry]:
@@ -272,8 +304,10 @@ class DataSet:
                     for regex in indexes_or_names[:]:
                         regex_ind = indexes_or_names.index(regex)
                         if isinstance(regex, ("".__class__, u"".__class__)):
-                            indexes_or_names[regex_ind:regex_ind + 1] = [v_name for v_name in var_names if
-                                                                         re.match(regex, v_name)]
+                            indexes_or_names[regex_ind:regex_ind + 1] = [
+                                v_name for v_name in var_names
+                                if re.match(regex, v_name)
+                            ]
 
                 # if it is a variable name
                 for i, item in enumerate(indexes_or_names):
@@ -282,8 +316,12 @@ class DataSet:
 
                 # plot entry/indexes
                 for ind in indexes_or_names:
-                    line = self._plot_entry(self.data[entry]['time'], self.data[entry]['values'], ind,
-                                            label=self.data[entry]['names'][ind], plot_style=plot_style)
+                    line = self._plot_entry(
+                        self.data[entry]['time'],
+                        self.data[entry]['values'],
+                        ind,
+                        label=self.data[entry]['names'][ind],
+                        plot_style=plot_style)
                     lines.append(line)
 
             plt.grid()
