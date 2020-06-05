@@ -11,10 +11,12 @@ from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfind
 from yaocptool import remove_variables_from_vector, config, find_variables_indices_in_vector, remove_variables_from_vector_by_indices, find_variables_in_vector_by_name
 from yaocptool.modelling import DAESystem, SimulationResult
 from yaocptool.modelling.utils import EqualityEquation, Derivative
+from yaocptool.modelling.mixins import StateMixin, AlgebraicMixin, ControlMixin
 from itertools import islice
+from contextlib import suppress
 
 
-class SystemModel(object):
+class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
     t = SX.sym("t")
     tau = SX.sym("tau")
 
@@ -38,20 +40,15 @@ class SystemModel(object):
         :param bool model_name_as_prefix: if true all variables create will have the model name as prefix
             e.g.: 'tank_h', where 'tank' is model name and 'h' is the state created
         """
+        super().__init__(**kwargs)
         self.name = name
 
-        self._ode = dict()
-        self.alg = SX([])
         self.model_name_as_prefix = model_name_as_prefix
         self.has_adjoint_variables = False
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-        self.x = SX([])
-        self.x_0 = SX([])
-        self.y = SX([])
-        self.u = SX([])
         self.p = SX([])
         self.theta = SX([])
 
@@ -69,32 +66,10 @@ class SystemModel(object):
         :return: 'ode'  if an ODE system and 'dae' if an DAE system
         :rtype: str
         """
-        if self.n_y > 0:
-            return "dae"
+        with suppress(AttributeError):
+            if self.n_y > 0:
+                return "dae"
         return "ode"
-
-    @property
-    def ode(self):
-        try:
-            return vertcat(*self._ode.values())
-        except NotImplementedError:
-            return SX.zeros(0, 1)
-
-    #  @property
-    #  def alg(self):
-    #  return vertcat(*self._alg.values())
-
-    @property
-    def n_x(self):
-        return self.x.numel()
-
-    @property
-    def n_y(self):
-        return self.y.numel()
-
-    @property
-    def n_u(self):
-        return self.u.numel()
 
     @property
     def n_p(self):
@@ -132,46 +107,6 @@ class SystemModel(object):
             self.theta,
             self.u_par,
         )
-
-    @property
-    def x_sym(self):
-        raise DeprecationWarning
-        return self.x
-
-    @x_sym.setter
-    def x_sym(self, value):
-        raise DeprecationWarning
-        self.x = value
-
-    @property
-    def x_0_sym(self):
-        raise DeprecationWarning
-        return self.x_0
-
-    @x_0_sym.setter
-    def x_0_sym(self, value):
-        raise DeprecationWarning
-        self.x_0 = value
-
-    @property
-    def y_sym(self):
-        raise DeprecationWarning
-        return self.y
-
-    @y_sym.setter
-    def y_sym(self, value):
-        raise DeprecationWarning
-        self.y = value
-
-    @property
-    def u_sym(self):
-        raise DeprecationWarning
-        return self.u
-
-    @u_sym.setter
-    def u_sym(self, value):
-        raise DeprecationWarning
-        self.u = value
 
     @property
     def p_sym(self):
@@ -319,58 +254,6 @@ class SystemModel(object):
             print(line)
         print(("=" * column_size + header_separator) * 5)
 
-    def create_state(self, name="x", size=1):
-        """
-        Create a new state with the name "name" and size "size".
-        Size can be an int or a tuple (e.g. (2,2)). However, the new state will be vectorized (casadi.vec) to be
-        included in the state vector (model.x).
-
-        :param name: str
-        :param size: int|tuple
-        :return:
-        """
-        if self.model_name_as_prefix:
-            name = self.name + "_" + name
-
-        new_x = SX.sym(name, size)
-        new_x_0 = SX.sym(name + "_0_sym", size)
-        self.include_state(vec(new_x), ode=None, x_0=vec(new_x_0))
-        return new_x
-
-    def create_algebraic_variable(self, name="y", size=1):
-        """
-        Create a new algebraic variable with the name "name" and size "size".
-        Size can be an int or a tuple (e.g. (2,2)). However, the new algebraic variable will be vectorized (casadi.vec)
-        to be included in the algebraic vector (model.y).
-
-        :param str name:
-        :param int||tuple size:
-        :return:
-        """
-        if self.model_name_as_prefix:
-            name = self.name + "_" + name
-
-        new_y = SX.sym(name, size)
-        self.include_algebraic(vec(new_y))
-        return new_y
-
-    def create_control(self, name="u", size=1):
-        """
-        Create a new control variable name "name" and size "size".
-        Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
-        to be included in the control vector (model.u).
-
-        :param name: str
-        :param size: int
-        :return:
-        """
-        if self.model_name_as_prefix:
-            name = self.name + "_" + name
-
-        new_u = SX.sym(name, size)
-        self.include_control(vec(new_u))
-        return new_u
-
     def create_input(self, name="u", size=1):
         """
         Same as the "model.create_control" function.
@@ -423,6 +306,7 @@ class SystemModel(object):
         :param list|casadi.SX ode: (ordinary) differential equation
         :param list|casadi.SX alg: algebraic equation
         """
+        raise DeprecationWarning
         return self.include_equations(ode=ode, alg=alg)
 
     def include_equations(self, *args, ode=None, alg=None, x=None):
@@ -436,27 +320,12 @@ class SystemModel(object):
             raise ValueError(
                 "Either pass list of functions or `ode` and `alg`.")
         # cast to casadi types
-        if isinstance(ode, collections.abc.Sequence):
-            ode = vertcat(*ode)
         if isinstance(alg, collections.abc.Sequence):
             alg = vertcat(*alg)
 
-        # if ode was passed but not x, try to guess the x
-        if x is None and ode is not None:
-            # Check if None are all sequential, ortherwise we don't know who it belongs
-            first_none = list(self._ode.values()).index(None)
-            if not all(eq is None
-                       for eq in islice(self._ode.values(), 0, first_none)):
-                raise ValueError(
-                    "ODE should be inserted on the equation form or in the list form."
-                    "You can't mix both without explicit passing the states associated with the equation."
-                )
-            x = list(self._ode.keys())[first_none:first_none + ode.numel()]
         if x is None and ode is None:
             x = DM()
             ode = DM()
-        if isinstance(x, collections.abc.Sequence):
-            x = vertcat(*x)
 
         for eq in args:
             if isinstance(eq, EqualityEquation):
@@ -464,15 +333,8 @@ class SystemModel(object):
                     ode = vertcat(ode, eq.rhs)
                     x = vertcat(x, eq.lhs.inner)
 
-        if ode is not None and ode.numel() > 0:
-            for x_i in vertcat(x).nz:
-                if self._ode[x_i] is not None:
-                    raise Warning(
-                        f'State "{x_i}" already had an ODE associated, overriding it!'
-                    )
-            ode_dict = dict(self._ode)
-            ode_dict.update({x_i: ode[ind] for ind, x_i in enumerate(x.nz)})
-            self._ode = ode_dict
+        self.include_ode_equation(ode, x)
+
         if alg is not None:
             self.alg = vertcat(self.alg, alg)
 
@@ -511,31 +373,6 @@ class SystemModel(object):
                 theta = vertcat(*theta)
             self.include_theta(theta)
 
-    def include_state(self, var, ode=None, x_0=None):
-        n_x = var.numel()
-        self.x = vertcat(self.x, var)
-
-        if x_0 is None:
-            x_0 = vertcat(*[SX.sym(var_i.name()) for var_i in var.nz])
-        self.x_0 = vertcat(self.x_0, x_0)
-
-        # crate entry for included state
-        for ind, x_i in enumerate(var.nz):
-            if x_i in self._ode:
-                raise ValueError(f'State "{x_i}" already in this model')
-            self._ode[x_i] = None
-        self.include_equations(ode=ode, x=var)
-        return x_0
-
-    def include_algebraic(self, var, alg=None):
-        self.y = vertcat(self.y, var)
-        self.include_system_equations(alg=alg)
-
-    def include_control(self, var):
-        self.u = vertcat(self.u, var)
-        self.u_expr = vertcat(self.u_expr, var)
-        self.u_par = vertcat(self.u_par, var)
-
     def include_parameter(self, p):
         self.p = vertcat(self.p, p)
 
@@ -572,23 +409,6 @@ class SystemModel(object):
             # TODO: Im commenting the  following line because I think they are wrong
             self.u_par = substitute(self.u_par, original, replacement)
             self.u_expr = substitute(self.u_expr, original, replacement)
-
-    def remove_state(self, var, eq=None):
-        self.x = remove_variables_from_vector(var, self.x)
-
-        for x_i in var.nz:
-            del self._ode[x_i]
-
-    def remove_algebraic(self, var, eq=None):
-        self.y = remove_variables_from_vector(var, self.y)
-        if eq is not None:
-            self.alg = remove_variables_from_vector(eq, self.alg)
-
-    def remove_control(self, var):
-        self.u_expr = remove_variables_from_vector_by_indices(
-            find_variables_indices_in_vector(var, self.u), self.u_expr)
-        self.u = remove_variables_from_vector(var, self.u)
-        self.u_par = remove_variables_from_vector(var, self.u_par)
 
     def remove_parameter(self, var):
         self.p = remove_variables_from_vector(var, self.p)
@@ -671,25 +491,6 @@ class SystemModel(object):
 
         return False
 
-    def control_is_parametrized(self, u):
-        """
-            Check if  the control "u" is parametrized
-
-        :param casadi.SX u:
-        :rtype bool:
-        """
-        u = vertcat(u)
-        if not u.numel() == 1:
-            raise ValueError(
-                'The parameter "u" is expected to be of size 1x1, given: {}x{}'
-                .format(*u.shape))
-        if any([
-                is_equal(u, parametrized_u)
-                for parametrized_u in self._parametrized_controls
-        ]):
-            return True
-        return False
-
     def is_parametrized(self):
         """
             Check if the model is parametrized.
@@ -698,46 +499,6 @@ class SystemModel(object):
         """
         # if no u is provided (checking if the model is parametrized)
         return len(self._parametrized_controls) > 0
-
-    def parametrize_control(self, u, expr, u_par=None):
-        """
-            Parametrize a control variables so it is a function of a set of parameters or other model variables.
-
-        :param list|casadi.SX u:
-        :param list|casadi.SX expr:
-        :param list|casadi.SX u_par:
-        """
-        # input check
-        if isinstance(u, list):
-            u = vertcat(*u)
-        if isinstance(u_par, list):
-            u_par = vertcat(*u_par)
-        if isinstance(expr, list):
-            expr = vertcat(*expr)
-
-        if not u.numel() == expr.numel():
-            raise ValueError(
-                "Passed control and parametrization expression does not have same size. "
-                "u ({}) and expr ({})".format(u.numel(), expr.numel()))
-
-        # Check and register the control parametrization.
-        for i in range(u.numel()):
-            if self.control_is_parametrized(u[i]):
-                raise ValueError(
-                    'The control "{}" is already parametrized.'.format(u[i]))
-            self._parametrized_controls = self._parametrized_controls + [
-                u[i]
-            ]  # to get have a new memory address,
-
-        # Remove u from u_par if they are going to be parametrized
-        self.u_par = remove_variables_from_vector(u, self.u_par)
-        if u_par is not None:
-            self.u_par = vertcat(self.u_par, u_par)
-
-            # and make .get_copy work
-
-        # Replace u by expr into the system
-        self.replace_variable(u, expr)
 
     def include_models(self, models):
         """
@@ -769,7 +530,7 @@ class SystemModel(object):
 
         self.include_models(models_list)
 
-        self.include_system_equations(alg=connecting_equations)
+        self.include_equations(alg=connecting_equations)
 
     def connect(self, u, y):
         """
@@ -790,11 +551,10 @@ class SystemModel(object):
 
         # check if same size
         if not u.numel() == y.numel():
-            raise ValueError(
-                'Size of "u" and "y" are not the same, u={} and y={}'.format(
-                    u.numel(), y.numel()))
+            raise ValueError(f'Size of "u" and "y" are not the same, '
+                             f'u={u.numel()} and y={y.numel()}')
 
-        self.include_system_equations(alg=[u - y])
+        self.include_equations(alg=[u - y])
         self.remove_control(u)
         self.include_algebraic(u)
 
@@ -892,7 +652,7 @@ class SystemModel(object):
             u_par_copy = vertcat(
                 *[SX.sym(self.u_par[i].name()) for i in range(self.n_u_par)])
 
-        model_copy.include_system_equations(ode=self.ode, alg=self.alg)
+        model_copy.include_equations(ode=self.ode, alg=self.alg)
         model_copy.u_par = self.u_par
         model_copy.u_expr = self.u_expr
 
@@ -1053,38 +813,6 @@ class SystemModel(object):
 
         return simulation_result
 
-    def find_algebraic_variable(self,
-                                x,
-                                u,
-                                guess=None,
-                                t=0.0,
-                                p=None,
-                                theta_value=None,
-                                rootfinder_options=None):
-        if guess is None:
-            guess = [1] * self.n_y
-        if rootfinder_options is None:
-            rootfinder_options = dict(
-                nlpsol="ipopt",
-                nlpsol_options=config.SOLVER_OPTIONS["nlpsol_options"])
-        if p is None:
-            p = []
-        if theta_value is None:
-            theta_value = []
-
-        # replace known variables
-        alg = self.alg
-        known_var = vertcat(self.t, self.x, self.u, self.p, self.theta)
-        known_var_values = vertcat(t, x, u, p, theta_value)
-        alg = substitute(alg, known_var, known_var_values)
-
-        f_alg = Function("f_alg", [self.y], [alg])
-
-        rf = rootfinder("rf_algebraic_variable", "nlpsol", f_alg,
-                        rootfinder_options)
-        res = rf(guess)
-        return res
-
     def linearize(self, x_bar, u_bar):
         """
         Returns a linearized model at a given points (X_BAR, U_BAR)
@@ -1095,7 +823,7 @@ class SystemModel(object):
                             [jacobian(self.ode, self.u)])(x_bar, u_bar)
 
         linear_model = SystemModel(n_x=self.n_x, n_u=self.n_u)
-        linear_model.include_system_equations(ode=[
+        linear_model.include_equations(ode=[
             mtimes(a_matrix, linear_model.x) + mtimes(b_matrix, linear_model.u)
         ])
         linear_model.name = "linearized_" + self.name

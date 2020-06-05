@@ -274,7 +274,7 @@ class OptimalControlProblem(object):
             mtimes(jacobian(self.h_final, self.model.x_sys_sym).T, self.eta))
 
     def include_system_equations(self, ode=None, alg=None):
-        self.model.include_system_equations(ode=ode, alg=alg)
+        self.model.include_equations(ode=ode, alg=alg)
 
     def include_state(self,
                       var,
