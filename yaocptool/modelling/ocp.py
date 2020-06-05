@@ -91,7 +91,7 @@ class OptimalControlProblem(object):
         self.theta_opt_min = repmat(-inf, self.n_theta_opt)
 
         self.h = DM([])
-        self.h_initial = self.model.x_sym - self.model.x_0_sym
+        self.h_initial = self.model.x - self.model.x_0
         self.h_final = DM([])
 
         self.g_eq = DM([])
@@ -260,8 +260,8 @@ class OptimalControlProblem(object):
 
         self.H = self.L + dot(lamb, self.model.ode) + dot(nu, self.model.alg)
 
-        l_dot = -gradient(self.H, self.model.x_sym)
-        alg_eq = gradient(self.H, self.model.y_sym)
+        l_dot = -gradient(self.H, self.model.x)
+        alg_eq = gradient(self.H, self.model.y)
 
         self.include_state(lamb, l_dot, suppress=True)
         self.model.has_adjoint_variables = True
@@ -553,7 +553,7 @@ class OptimalControlProblem(object):
         self.h = vertcat(self.h, eq)
 
     def remove_algebraic(self, var, eq=None):
-        to_remove = find_variables_indices_in_vector(var, self.model.y_sym)
+        to_remove = find_variables_indices_in_vector(var, self.model.y)
         to_remove.reverse()
 
         self.y_max = remove_variables_from_vector_by_indices(
@@ -567,7 +567,7 @@ class OptimalControlProblem(object):
         self.model.remove_algebraic(var, eq)
 
     def remove_control(self, var):
-        to_remove = find_variables_indices_in_vector(var, self.model.u_sym)
+        to_remove = find_variables_indices_in_vector(var, self.model.u)
 
         self.u_max = remove_variables_from_vector_by_indices(
             to_remove, self.u_max)
@@ -615,19 +615,19 @@ class OptimalControlProblem(object):
         # apply to the model
         self.model.replace_variable(original, replacement)
 
-    def parametrize_control(self, u_sym, expr, u_par=None):
+    def parametrize_control(self, u, expr, u_par=None):
         """
             Parametrize the control variable
 
-        :param u_sym:
+        :param u:
         :param expr:
         :param u_par:
         """
         # parametrize on the model
-        self.model.parametrize_control(u_sym=u_sym, expr=expr, u_par=u_par)
+        self.model.parametrize_control(u=u, expr=expr, u_par=u_par)
 
         # replace the OCP equations
-        self.replace_variable(u_sym, expr)
+        self.replace_variable(u, expr)
 
     def _fix_types(self):
         """
@@ -748,22 +748,22 @@ class OptimalControlProblem(object):
 
         if 'Q' in par_dict:
             self.L += mtimes(
-                mtimes((self.model.x_sym - par_dict['x_ref']).T,
-                       par_dict['Q']), (self.model.x_sym - par_dict['x_ref']))
+                mtimes((self.model.x - par_dict['x_ref']).T, par_dict['Q']),
+                (self.model.x - par_dict['x_ref']))
 
         if 'R' in par_dict:
             self.L += mtimes(
-                mtimes((self.model.u_sym - par_dict['u_ref']).T,
-                       par_dict['R']), (self.model.u_sym - par_dict['u_ref']))
+                mtimes((self.model.u - par_dict['u_ref']).T, par_dict['R']),
+                (self.model.u - par_dict['u_ref']))
 
         if 'Qv' in par_dict:
             self.V += mtimes(
-                mtimes((self.model.x_sym - par_dict['x_ref']).T,
-                       par_dict['Qv']), (self.model.x_sym - par_dict['x_ref']))
+                mtimes((self.model.x - par_dict['x_ref']).T, par_dict['Qv']),
+                (self.model.x - par_dict['x_ref']))
 
         if 'Rv' in par_dict:
-            self.V += mtimes(mtimes(self.model.x_sym.T, par_dict['Rv']),
-                             self.model.x_sym)
+            self.V += mtimes(mtimes(self.model.x.T, par_dict['Rv']),
+                             self.model.x)
 
     def merge(self, problems):
         """
@@ -890,11 +890,11 @@ class OptimalControlProblem(object):
         return new_theta_opt
 
     def get_p_opt_indices(self):
-        return find_variables_indices_in_vector(self.p_opt, self.model.p_sym)
+        return find_variables_indices_in_vector(self.p_opt, self.model.p)
 
     def get_theta_opt_indices(self):
         return find_variables_indices_in_vector(self.theta_opt,
-                                                self.model.theta_sym)
+                                                self.model.theta)
 
     def connect(self, u, y):
         """

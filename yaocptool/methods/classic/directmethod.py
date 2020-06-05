@@ -28,16 +28,16 @@ class DirectMethod(SolutionMethodsBase):
     def _parametrize_control(self):
         u_pol = self.create_control_approximation()
 
-        self.problem.replace_variable(self.model.u_sym, u_pol)
+        self.problem.replace_variable(self.model.u, u_pol)
 
         if hasattr(self.problem, 'H'):
-            self.problem.H = substitute(self.problem.H, self.model.u_sym, u_pol)
+            self.problem.H = substitute(self.problem.H, self.model.u, u_pol)
         if hasattr(self, 's'):
-            self.s = substitute(self.s, self.model.u_sym, u_pol)
+            self.s = substitute(self.s, self.model.u, u_pol)
 
         if 'g' in self.__dict__:
             g = self.g
-            g = substitute(g, self.model.u_sym, u_pol)
+            g = substitute(g, self.model.u, u_pol)
             self.g = g
         return u_pol
 

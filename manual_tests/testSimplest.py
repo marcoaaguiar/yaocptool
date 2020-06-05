@@ -2,7 +2,7 @@ from yaocptool.methods import IndirectMethod
 from yaocptool.modelling import SystemModel, OptimalControlProblem
 
 model = SystemModel(n_x=1, n_u=1)
-model.include_equations(ode=(-model.x_sym[0] + model.u_sym[0]))
+model.include_equations(ode=(-model.x[0] + model.u_sym[0]))
 
 problem = OptimalControlProblem(model, obj={"Q": 1, "R": 1}, x_0=[1], t_f=5.0)
 # problem.u_min[0] = 0

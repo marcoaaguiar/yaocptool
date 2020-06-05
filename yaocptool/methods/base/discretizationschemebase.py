@@ -16,7 +16,8 @@ class DiscretizationSchemeBase:
         if self.solution_method.degree_control > 1 and self.solution_method.problem.has_delta_u:
             raise Exception(
                 'Maximum and minimum value for Delta u only defined for "degree_control" == 1. '
-                'Current "degree_control":{}'.format(self.solution_method.degree_control))
+                'Current "degree_control":{}'.format(
+                    self.solution_method.degree_control))
 
     @property
     def model(self):
@@ -55,16 +56,20 @@ class DiscretizationSchemeBase:
 
     @property
     def time_interpolation_controls(self):
-        tau_list = [0.] if self.degree_control == 1 else self.solution_method.collocation_points(self.degree_control,
-                                                                                                 with_zero=False)
-        return [[t + self.solution_method.delta_t * tau for tau in tau_list] for t in self.time_breakpoints[:-1]]
+        tau_list = [
+            0.
+        ] if self.degree_control == 1 else self.solution_method.collocation_points(
+            self.degree_control, with_zero=False)
+        return [[t + self.solution_method.delta_t * tau for tau in tau_list]
+                for t in self.time_breakpoints[:-1]]
 
     def vectorize(self, vector):
         if len(vector) > 0:
             if not isinstance(vector[0], list):
                 return vertcat(*vector)
             else:
-                return vertcat(*[self.vectorize(sub_vector) for sub_vector in vector])
+                return vertcat(
+                    *[self.vectorize(sub_vector) for sub_vector in vector])
         else:
             return vertcat(vector)
 
@@ -79,9 +84,11 @@ class DiscretizationSchemeBase:
         """
         function_dict = {}
         for el in range(self.finite_elements):
-            expr_el = convert_expr_from_tau_to_time(expr, self.model.t_sym, self.model.tau_sym,
-                                                    self.time_breakpoints[el], self.time_breakpoints[el + 1])
-            f_expr_el = Function(name + '_' + str(el), self.model.all_sym, [expr_el])
+            expr_el = convert_expr_from_tau_to_time(
+                expr, self.model.t, self.model.tau, self.time_breakpoints[el],
+                self.time_breakpoints[el + 1])
+            f_expr_el = Function(name + '_' + str(el), self.model.all_sym,
+                                 [expr_el])
             function_dict[el] = f_expr_el
         return function_dict
 
@@ -103,12 +110,21 @@ class DiscretizationSchemeBase:
         """
         raise NotImplementedError
 
-    def get_system_at_given_times(self, x, y, u, time_dict=None, p=None, theta=None, functions=None,
+    def get_system_at_given_times(self,
+                                  x,
+                                  y,
+                                  u,
+                                  time_dict=None,
+                                  p=None,
+                                  theta=None,
+                                  functions=None,
                                   start_at_t_0=False):
         # TODO: calculate quadratures, for error evaluation of aug lagrange
         raise NotImplementedError
 
-    def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
+    def set_data_to_optimization_result_from_raw_data(self,
+                                                      optimization_result,
+                                                      raw_solution_dict):
         """
         Set the raw data received from the solver and put it in the Optimization Result object
         :type optimization_result: yaocptool.methods.optimizationresult.OptimizationResult

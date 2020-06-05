@@ -51,33 +51,38 @@ class IndirectMethod(SolutionMethodsBase):
     def _check_bounds(self):
         for i in range(self.model.n_x):
             if not self.problem.x_min[i] == -inf:
-                warnings.warn('Problem contains state constraints, they will be ignored')
+                warnings.warn(
+                    'Problem contains state constraints, they will be ignored')
                 self.problem.x_min[i] = -inf
 
             if not self.problem.x_max[i] == inf:
-                warnings.warn('Problem contains state constraints, they will be ignored')
+                warnings.warn(
+                    'Problem contains state constraints, they will be ignored')
                 self.problem.x_max[i] = inf
 
         for i in range(self.model.n_y):
             if not self.problem.y_min[i] == -inf:
-                warnings.warn('Problem contains state constraints, they will be ignored')
+                warnings.warn(
+                    'Problem contains state constraints, they will be ignored')
                 self.problem.y_min[i] = -inf
 
             if not self.problem.y_max[i] == inf:
-                warnings.warn('Problem contains state constraints, they will be ignored')
+                warnings.warn(
+                    'Problem contains state constraints, they will be ignored')
                 self.problem.y_max[i] = inf
 
     def calculate_optimal_control(self):
-        dd_h_dudu, d_h_du = hessian(self.problem.H, self.model.u_sym)
+        dd_h_dudu, d_h_du = hessian(self.problem.H, self.model.u)
         if is_equal(dd_h_dudu, DM.zeros(self.model.n_u, self.model.n_u)):
             # TODO: Implement the case where the controls are linear on the Hamiltonian ("Bang-Bang" control)
-            raise Exception('The Hamiltonian "H" is not strictly convex with respect to the control "u". '
-                            + 'The obtained hessian d^2 H/du^2 = 0')
+            raise Exception(
+                'The Hamiltonian "H" is not strictly convex with respect to the control "u". '
+                + 'The obtained hessian d^2 H/du^2 = 0')
         # if not ddH_dudu.is_constant():
         #     raise NotImplementedError('The Hessian of the Hamiltonian with respect to "u" is not constant,
         #                                this case has not been implemented')
 
-        u_opt = -mtimes(inv(dd_h_dudu), substitute(d_h_du, self.model.u_sym, 0))
+        u_opt = -mtimes(inv(dd_h_dudu), substitute(d_h_du, self.model.u, 0))
 
         for i in range(self.model.n_u):
             if not self.problem.u_min[i] == -inf:
@@ -88,4 +93,4 @@ class IndirectMethod(SolutionMethodsBase):
         return u_opt
 
     def replace_with_optimal_control(self, u_opt):
-        self.problem.parametrize_control(self.model.u_sym, u_opt)
+        self.problem.parametrize_control(self.model.u, u_opt)

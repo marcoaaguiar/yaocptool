@@ -43,8 +43,8 @@ class TestSystemModel(TestCase):
         self.assertEqual(self.dae_model.n_p, 0)
 
         # with p
-        self.ode_model.p_sym = SX.sym("p", 4)
-        self.dae_model.p_sym = SX.sym("p", 4)
+        self.ode_model.p = SX.sym("p", 4)
+        self.dae_model.p = SX.sym("p", 4)
 
         self.assertEqual(self.ode_model.n_p, 4)
         self.assertEqual(self.dae_model.n_p, 4)
@@ -54,8 +54,8 @@ class TestSystemModel(TestCase):
         self.assertEqual(self.dae_model.n_theta, 0)
 
         # with theta
-        self.ode_model.theta_sym = SX.sym("theta", 4)
-        self.dae_model.theta_sym = SX.sym("theta", 4)
+        self.ode_model.theta = SX.sym("theta", 4)
+        self.dae_model.theta = SX.sym("theta", 4)
 
         self.assertEqual(self.ode_model.n_theta, 4)
         self.assertEqual(self.dae_model.n_theta, 4)
@@ -65,10 +65,7 @@ class TestSystemModel(TestCase):
         self.assertEqual(self.dae_model.n_u_par, 3)
 
     def test_x_sys_sym(self):
-        self.assertTrue(
-            is_equal(self.ode_model.x_sys_sym, self.ode_model.x_sym))
-        self.assertTrue(
-            is_equal(self.dae_model.x_sys_sym, self.dae_model.x_sym))
+        self.assertTrue(is_equal(self.ode_model.x_sys_sym, self.ode_model.x))
 
         # with adjoints
         ode_x = self.ode_model.x[:]
@@ -99,11 +96,11 @@ class TestSystemModel(TestCase):
     def test_all_sym(self):
         for model in [self.ode_model, self.dae_model]:
             answer = [
-                model.t_sym,
-                model.x_sym,
-                model.y_sym,
-                model.p_sym,
-                model.theta_sym,
+                model.t,
+                model.x,
+                model.y,
+                model.p,
+                model.theta,
                 model.u_par,
             ]
             self.assertEqual(len(model.all_sym), len(answer))
@@ -111,104 +108,52 @@ class TestSystemModel(TestCase):
             for index in range(len(model.all_sym)):
                 self.assertTrue(is_equal(model.all_sym[index], answer[index]))
 
-    def test_x(self):
-        self.assertTrue(is_equal(self.ode_model.x, self.ode_model.x_sym))
-        self.assertTrue(is_equal(self.dae_model.x, self.dae_model.x_sym))
-
-    def test_x_setter(self):
-        new_x = SX.sym("x", 2)
-        self.ode_model.x = new_x
-        self.dae_model.x = new_x
-
-        self.assertTrue(is_equal(self.ode_model.x_sym, new_x))
-        self.assertTrue(is_equal(self.ode_model.x, new_x))
-        self.assertTrue(is_equal(self.dae_model.x_sym, new_x))
-        self.assertTrue(is_equal(self.dae_model.x, new_x))
-
-    def test_y(self):
-        self.assertTrue(is_equal(self.ode_model.y, self.ode_model.y_sym))
-        self.assertTrue(is_equal(self.dae_model.y, self.dae_model.y_sym))
-
-    def test_y_setter(self):
-        new_y = SX.sym("y", 2)
-        self.ode_model.y = new_y
-        self.dae_model.y = new_y
-
-        self.assertTrue(is_equal(self.ode_model.y_sym, new_y))
-        self.assertTrue(is_equal(self.ode_model.y, new_y))
-        self.assertTrue(is_equal(self.dae_model.y_sym, new_y))
-        self.assertTrue(is_equal(self.dae_model.y, new_y))
-
-    def test_u(self):
-        self.assertTrue(is_equal(self.ode_model.u, self.ode_model.u_sym))
-        self.assertTrue(is_equal(self.dae_model.u, self.dae_model.u_sym))
-
-    def test_u_setter(self):
-        new_u = SX.sym("u", 2)
-        self.ode_model.u = new_u
-        self.dae_model.u = new_u
-
-        self.assertTrue(is_equal(self.ode_model.u_sym, new_u))
-        self.assertTrue(is_equal(self.ode_model.u, new_u))
-        self.assertTrue(is_equal(self.dae_model.u_sym, new_u))
-        self.assertTrue(is_equal(self.dae_model.u, new_u))
-
     def test_p(self):
-        self.assertTrue(is_equal(self.ode_model.p, self.ode_model.p_sym))
-        self.assertTrue(is_equal(self.dae_model.p, self.dae_model.p_sym))
+        self.assertTrue(is_equal(self.ode_model.p, self.ode_model.p))
+        self.assertTrue(is_equal(self.dae_model.p, self.dae_model.p))
 
     def test_p_setter(self):
         new_p = SX.sym("p", 2)
         self.ode_model.p = new_p
         self.dae_model.p = new_p
 
-        self.assertTrue(is_equal(self.ode_model.p_sym, new_p))
         self.assertTrue(is_equal(self.ode_model.p, new_p))
-        self.assertTrue(is_equal(self.dae_model.p_sym, new_p))
         self.assertTrue(is_equal(self.dae_model.p, new_p))
 
     def test_theta(self):
-        self.assertTrue(
-            is_equal(self.ode_model.theta, self.ode_model.theta_sym))
-        self.assertTrue(
-            is_equal(self.dae_model.theta, self.dae_model.theta_sym))
+        self.assertTrue(is_equal(self.ode_model.theta, self.ode_model.theta))
+        self.assertTrue(is_equal(self.dae_model.theta, self.dae_model.theta))
 
     def test_theta_setter(self):
         new_theta = SX.sym("theta", 2)
         self.ode_model.theta = new_theta
         self.dae_model.theta = new_theta
 
-        self.assertTrue(is_equal(self.ode_model.theta_sym, new_theta))
         self.assertTrue(is_equal(self.ode_model.theta, new_theta))
-        self.assertTrue(is_equal(self.dae_model.theta_sym, new_theta))
         self.assertTrue(is_equal(self.dae_model.theta, new_theta))
 
     def test_t(self):
-        self.assertTrue(is_equal(self.ode_model.t, self.ode_model.t_sym))
-        self.assertTrue(is_equal(self.dae_model.t, self.dae_model.t_sym))
+        self.assertTrue(is_equal(self.ode_model.t, self.ode_model.t))
+        self.assertTrue(is_equal(self.dae_model.t, self.dae_model.t))
 
     def test_t_setter(self):
         new_t = SX.sym("t")
         self.ode_model.t = new_t
         self.dae_model.t = new_t
 
-        self.assertTrue(is_equal(self.ode_model.t_sym, new_t))
         self.assertTrue(is_equal(self.ode_model.t, new_t))
-        self.assertTrue(is_equal(self.dae_model.t_sym, new_t))
         self.assertTrue(is_equal(self.dae_model.t, new_t))
 
     def test_tau(self):
-        self.assertTrue(is_equal(self.ode_model.tau, self.ode_model.tau_sym))
-        self.assertTrue(is_equal(self.dae_model.tau, self.dae_model.tau_sym))
+        self.assertTrue(is_equal(self.ode_model.tau, self.ode_model.tau))
+        self.assertTrue(is_equal(self.dae_model.tau, self.dae_model.tau))
 
     def test_tau_setter(self):
         new_tau = SX.sym("tau")
         self.ode_model.tau = new_tau
         self.dae_model.tau = new_tau
 
-        self.assertTrue(is_equal(self.ode_model.tau_sym, new_tau))
         self.assertTrue(is_equal(self.ode_model.tau, new_tau))
-        self.assertTrue(is_equal(self.dae_model.tau_sym, new_tau))
         self.assertTrue(is_equal(self.dae_model.tau, new_tau))
 
     def test_x_names(self):
@@ -290,32 +235,32 @@ class TestSystemModel(TestCase):
         new_x_2 = SX.sym("new_x_2", 2)
         for model in [self.ode_model, self.dae_model]:
             model_n_x = model.n_x
-            new_x_0_sym_1 = model.include_state(new_x_1)
+            new_x_0_1 = model.include_state(new_x_1)
 
             self.assertEqual(
                 model.n_x,
                 model_n_x + 1,
             )  # Number of state variables has increased
             self.assertEqual(
-                model.x_0_sym.numel(), model_n_x +
+                model.x_0.numel(), model_n_x +
                 1)  # Num. of initial cond for the state has increased
             self.assertEqual(
-                new_x_0_sym_1.numel(),
+                new_x_0_1.numel(),
                 new_x_1.numel())  # The returned initial cond var == size added
-            self.assertTrue(is_equal(
-                model.x_sym[-1], new_x_1))  # The added var is the in the x_sym
+            self.assertTrue(is_equal(model.x[-1],
+                                     new_x_1))  # The added var is the in the x
 
-            new_x_0_sym_2 = model.include_state(
+            new_x_0_2 = model.include_state(
                 new_x_2)  # Number of state variables has increased
             self.assertEqual(model.n_x, model_n_x + 1 + 2)
             self.assertEqual(
-                model.x_0_sym.numel(), model_n_x + 1 +
+                model.x_0.numel(), model_n_x + 1 +
                 2)  # Num. of initial cond for the state has increased
             self.assertEqual(
-                new_x_0_sym_2.numel(),
+                new_x_0_2.numel(),
                 new_x_2.numel())  # The returned initial cond var == size added
-            self.assertTrue(is_equal(model.x_sym[-3], new_x_1))
-            self.assertTrue(is_equal(model.x_sym[-2:], new_x_2))
+            self.assertTrue(is_equal(model.x[-3], new_x_1))
+            self.assertTrue(is_equal(model.x[-2:], new_x_2))
 
     def test_include_algebraic(self):
         new_y_1 = SX.sym("new_y")
@@ -328,13 +273,13 @@ class TestSystemModel(TestCase):
                 model.n_y,
                 model_n_y + 1,
             )
-            self.assertTrue(is_equal(model.y_sym[-1], new_y_1))
+            self.assertTrue(is_equal(model.y[-1], new_y_1))
             self.assertTrue(is_equal(model.alg[-1], new_y_1 - model.x[0], 10))
 
             model.include_algebraic(new_y_2)
             self.assertEqual(model.n_y, model_n_y + 1 + 2)
-            self.assertTrue(is_equal(model.y_sym[-3], new_y_1))
-            self.assertTrue(is_equal(model.y_sym[-2:], new_y_2))
+            self.assertTrue(is_equal(model.y[-3], new_y_1))
+            self.assertTrue(is_equal(model.y[-2:], new_y_2))
 
     def test_include_control(self):
         new_u_1 = SX.sym("new_u")
@@ -347,12 +292,12 @@ class TestSystemModel(TestCase):
                 model.n_u,
                 model_n_u + 1,
             )
-            self.assertTrue(is_equal(model.u_sym[-1], new_u_1))
+            self.assertTrue(is_equal(model.u[-1], new_u_1))
 
             model.include_control(new_u_2)
             self.assertEqual(model.n_u, model_n_u + 1 + 2)
-            self.assertTrue(is_equal(model.u_sym[-3], new_u_1))
-            self.assertTrue(is_equal(model.u_sym[-2:], new_u_2))
+            self.assertTrue(is_equal(model.u[-3], new_u_1))
+            self.assertTrue(is_equal(model.u[-2:], new_u_2))
 
     def test_include_parameter(self):
         new_p_1 = SX.sym("new_p")
@@ -362,12 +307,12 @@ class TestSystemModel(TestCase):
             model.include_parameter(new_p_1)
 
             self.assertEqual(model.n_p, model_n_p + 1)
-            self.assertTrue(is_equal(model.p_sym[-1], new_p_1))
+            self.assertTrue(is_equal(model.p[-1], new_p_1))
 
             model.include_parameter(new_p_2)
             self.assertEqual(model.n_p, model_n_p + 1 + 2)
-            self.assertTrue(is_equal(model.p_sym[-3], new_p_1))
-            self.assertTrue(is_equal(model.p_sym[-2:], new_p_2))
+            self.assertTrue(is_equal(model.p[-3], new_p_1))
+            self.assertTrue(is_equal(model.p[-2:], new_p_2))
 
     def test_include_theta(self):
         new_theta_1 = SX.sym("new_theta")
@@ -377,12 +322,12 @@ class TestSystemModel(TestCase):
             model.include_theta(new_theta_1)
 
             self.assertEqual(model.n_theta, model_n_theta + 1)
-            self.assertTrue(is_equal(model.theta_sym[-1], new_theta_1))
+            self.assertTrue(is_equal(model.theta[-1], new_theta_1))
 
             model.include_theta(new_theta_2)
             self.assertEqual(model.n_theta, model_n_theta + 1 + 2)
-            self.assertTrue(is_equal(model.theta_sym[-3], new_theta_1))
-            self.assertTrue(is_equal(model.theta_sym[-2:], new_theta_2))
+            self.assertTrue(is_equal(model.theta[-3], new_theta_1))
+            self.assertTrue(is_equal(model.theta[-2:], new_theta_2))
 
     def test_get_variable_by_name(self):
         model = self.dae_model.get_copy()

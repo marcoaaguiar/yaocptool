@@ -203,12 +203,11 @@ class CollocationScheme(DiscretizationSchemeBase):
         x_pol, x_par = self.solution_method.create_variable_polynomial_approximation(
             self.model.n_x, self.degree, name=x_col_names, point_at_t0=True)
 
-        func_d_x_pol_d_tau = Function('f_dL_list', [self.model.tau_sym, x_par],
-                                      [jacobian(x_pol, self.model.tau_sym)])
+        func_d_x_pol_d_tau = Function('f_dL_list', [self.model.tau, x_par],
+                                      [jacobian(x_pol, self.model.tau)])
 
         # Initial time constraint/initial condition
-        f_h_initial = Function('h_initial',
-                               [self.model.x_sym, self.model.x_0_sym],
+        f_h_initial = Function('h_initial', [self.model.x, self.model.x_0],
                                [self.problem.h_initial])
         nlp.include_equality(f_h_initial(x_var[0][0], x_0))
 
@@ -316,19 +315,18 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         # Final time constraint
         x_f = results[self.finite_elements - 1]['x'][-1]
-        f_h_final = Function(
-            'h_final', [self.model.x_sym, self.problem.eta, self.model.p_sym],
-            [self.problem.h_final])
+        f_h_final = Function('h_final',
+                             [self.model.x, self.problem.eta, self.model.p],
+                             [self.problem.h_final])
         nlp.include_equality(f_h_final(x_f, eta, p))
 
         # Time independent constraints
-        f_h = Function('h', [self.model.p_sym], [self.problem.h])
+        f_h = Function('h', [self.model.p], [self.problem.h])
         nlp.include_equality(f_h(p))
 
         # Cost function
         if self.solution_method.solution_class == 'direct':
-            f_final_cost = Function('FinalCost',
-                                    [self.model.x_sym, self.model.p_sym],
+            f_final_cost = Function('FinalCost', [self.model.x, self.model.p],
                                     [self.problem.V])
             cost = f_final_cost(x_f, p)
             cost += s_cost
@@ -382,7 +380,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             u_func = self.model.convert_expr_from_tau_to_time(
                 self.model.u_expr, t_0, t_f)
             if self.solution_method.solution_class == 'direct':
-                f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par],
+                f_u = Function('f_u_pol', [self.model.t, self.model.u_par],
                                [u_func], ['t', 'u_par'], ['u_func'])
             else:
                 f_u = Function('f_u_pol', self.model.all_sym, [u_func],
@@ -398,7 +396,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             x_pol = self.model.convert_expr_from_tau_to_time(x_pol,
                                                              t_k=t_0,
                                                              t_kp1=t_f)
-            f_x = Function('f_x_pol', [self.model.t_sym, x_par], [x_pol])
+            f_x = Function('f_x_pol', [self.model.t, x_par], [x_pol])
 
             # Create function for obtaining y at an given time
             y_col_names = ['col_appr_' + name for name in self.model.y_names]
@@ -410,7 +408,7 @@ class CollocationScheme(DiscretizationSchemeBase):
             y_pol = self.model.convert_expr_from_tau_to_time(y_pol,
                                                              t_k=t_0,
                                                              t_kp1=t_f)
-            f_y = Function('f_y_pol', [self.model.t_sym, y_par], [y_pol])
+            f_y = Function('f_y_pol', [self.model.t, y_par], [y_pol])
 
             # Find the times that need to be evaluated
             element_breakpoints = set()
