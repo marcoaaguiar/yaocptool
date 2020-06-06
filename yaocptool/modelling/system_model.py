@@ -250,19 +250,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
             print(line)
         print(("=" * column_size + header_separator) * 5)
 
-    def create_input(self, name="u", size=1):
-        """
-        Same as the "model.create_control" function.
-        Create a new control/input variable name "name" and size "size".
-        Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
-        to be included in the control vector (model.u).
-
-        :param name: str
-        :param size: int
-        :return:
-        """
-        return self.create_control(name, size)
-
     def create_parameter(self, name="p", size=1):
         """
         Create a new parameter name "name" and size "size"
@@ -379,39 +366,13 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
                 describes which type of variable is being remove to it from the
                 counters. Types: 'x', 'y', 'u', 'p', 'ignore'
         """
-        if isinstance(original, list):
-            original = vertcat(*original)
-        if isinstance(replacement, list):
-            replacement = vertcat(*replacement)
-
-        if not original.numel() == replacement.numel():
-            raise ValueError(
-                "Original and replacement must have the same number of elements!"
-                "original.numel()={}, replacement.numel()={}".format(
-                    original.numel(), replacement.numel()))
-
-        if original.numel() > 0:
-            if self.verbosity > 2:
-                print("Replacing: {} with {}".format(original, replacement))
-            for x_i, x_i_eq in self._ode.items():
-                self._ode[x_i] = substitute(x_i_eq, original, replacement)
-            self.alg = substitute(self.alg, original, replacement)
-
-            # TODO: Im commenting the  following line because I think they are wrong
-            self.u_par = substitute(self.u_par, original, replacement)
-            self.u_expr = substitute(self.u_expr, original, replacement)
+        super().replace_variable(original, replacement)
 
     def remove_parameter(self, var):
         self.p = remove_variables_from_vector(var, self.p)
 
     def remove_theta(self, var):
         self.theta = remove_variables_from_vector(var, self.theta)
-
-    def remove_differential_equation(self, x):
-        if isinstance(x, collections.abc.Sequence):
-            x = vertcat(*x)
-        for x_i in x.nz:
-            self._ode[x_i] = None
 
     def get_variable_by_name(self, name="", var_type=None):
         """

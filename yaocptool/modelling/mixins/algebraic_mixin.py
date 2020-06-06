@@ -72,6 +72,23 @@ class AlgebraicMixin:
         if eq is not None:
             self.alg = remove_variables_from_vector(eq, self.alg)
 
+    def replace_variable(self, original, replacement):
+        if isinstance(original, list):
+            original = vertcat(*original)
+        if isinstance(replacement, list):
+            replacement = vertcat(*replacement)
+
+        if not original.numel() == replacement.numel():
+            raise ValueError(
+                "Original and replacement must have the same number of elements!"
+                "original.numel()={}, replacement.numel()={}".format(
+                    original.numel(), replacement.numel()))
+
+        if callable(getattr(super(), 'replace_variable', None)):
+            super().replace_variable(original, replacement)
+
+        self.alg = substitute(self.alg, original, replacement)
+
     def include_alg_equation(self, alg):
         if isinstance(alg, collections.abc.Sequence):
             alg = vertcat(*alg)

@@ -1,4 +1,4 @@
-from casadi.casadi import DM, SX, vec, vertcat
+from casadi.casadi import DM, substitute, SX, vec, vertcat
 from yaocptool.util.util import remove_variables_from_vector
 from contextlib import suppress
 from itertools import islice
@@ -64,6 +64,25 @@ class StateMixin:
 
         for x_i in var.nz:
             del self._ode[x_i]
+
+    def replace_variable(self, original, replacement):
+        if isinstance(original, list):
+            original = vertcat(*original)
+        if isinstance(replacement, list):
+            replacement = vertcat(*replacement)
+
+        if not original.numel() == replacement.numel():
+            raise ValueError(
+                "Original and replacement must have the same number of elements!"
+                "original.numel()={}, replacement.numel()={}".format(
+                    original.numel(), replacement.numel()))
+
+        if callable(getattr(super(), 'replace_variable', None)):
+            super().replace_variable(original, replacement)
+
+        if original.numel() > 0:
+            for x_i, x_i_eq in self._ode.items():
+                self._ode[x_i] = substitute(x_i_eq, original, replacement)
 
     def include_ode_equation(self, ode, x=None):
         # if is in the list form

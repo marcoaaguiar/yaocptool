@@ -1,4 +1,4 @@
-from casadi.casadi import is_equal, SX
+from casadi.casadi import depends_on, is_equal, SX
 import pytest
 from yaocptool.modelling.mixins.algebraic_mixin import AlgebraicMixin
 
@@ -64,3 +64,17 @@ def test_include_equations_alg(empty_model):
 
     empty_model.include_equations(alg=alg)
     assert is_equal(empty_model.alg, -y, 20)
+
+
+def test_replace_variable_state(model: AlgebraicMixin):
+    y = model.create_algebraic_variable('y', 3)
+    model.include_alg_equation(alg=[-y])
+
+    # replace y
+    original = model.y[1]
+    replacement = SX.sym("new_y", original.numel())
+
+    model.replace_variable(original, replacement)
+
+    assert not depends_on(model.alg, original)
+    assert depends_on(model.alg, replacement)

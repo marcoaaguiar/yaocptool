@@ -1,4 +1,4 @@
-from casadi.casadi import is_equal, SX, vec, vertcat
+from casadi.casadi import is_equal, substitute, SX, vec, vertcat
 from yaocptool.util.util import find_variables_indices_in_vector, remove_variables_from_vector, remove_variables_from_vector_by_indices
 
 
@@ -43,6 +43,24 @@ class ControlMixin:
         self.u = remove_variables_from_vector(var, self.u)
         self.u_par = remove_variables_from_vector(var, self.u_par)
 
+    def replace_variable(self, original, replacement):
+        if isinstance(original, list):
+            original = vertcat(*original)
+        if isinstance(replacement, list):
+            replacement = vertcat(*replacement)
+
+        if not original.numel() == replacement.numel():
+            raise ValueError(
+                "Original and replacement must have the same number of elements!"
+                "original.numel()={}, replacement.numel()={}".format(
+                    original.numel(), replacement.numel()))
+
+        if callable(getattr(super(), 'replace_variable', None)):
+            super().replace_variable(original, replacement)
+
+        #  self.u_par = substitute(self.u_par, original, replacement)
+        self.u_expr = substitute(self.u_expr, original, replacement)
+
     def parametrize_control(self, u, expr, u_par=None):
         """
             Parametrize a control variables so it is a function of a set of parameters or other model variables.
@@ -65,23 +83,33 @@ class ControlMixin:
                 "u ({}) and expr ({})".format(u.numel(), expr.numel()))
 
         # Check and register the control parametrization.
-        for i in range(u.numel()):
-            if self.control_is_parametrized(u[i]):
+        for u_i in u.nz:
+            if self.control_is_parametrized(u_i):
                 raise ValueError(
-                    'The control "{}" is already parametrized.'.format(u[i]))
-            self._parametrized_controls = self._parametrized_controls + [
-                u[i]
-            ]  # to get have a new memory address,
+                    f'The control "{u_i}" is already parametrized.')
+            # to get have a new memory address
+            self._parametrized_controls = self._parametrized_controls + [u_i]
 
         # Remove u from u_par if they are going to be parametrized
         self.u_par = remove_variables_from_vector(u, self.u_par)
         if u_par is not None:
             self.u_par = vertcat(self.u_par, u_par)
 
-            # and make .get_copy work
-
         # Replace u by expr into the system
         self.replace_variable(u, expr)
+
+    def create_input(self, name="u", size=1):
+        """
+        Same as the "model.create_control" function.
+        Create a new control/input variable name "name" and size "size".
+        Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
+        to be included in the control vector (model.u).
+
+        :param name: str
+        :param size: int
+        :return:
+        """
+        return self.create_control(name, size)
 
     def control_is_parametrized(self, u):
         """

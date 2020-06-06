@@ -1,5 +1,4 @@
 import pytest
-from yaocptool.modelling import SystemModel
 from yaocptool.modelling.mixins.state_mixin import StateMixin
 from casadi.casadi import depends_on, is_equal, SX, vertcat
 
@@ -66,3 +65,17 @@ def test_include_state(model):
     assert new_x_0_2.numel() == new_x_2.numel()
     assert is_equal(model.x[-3], new_x_1)
     assert is_equal(model.x[-2:], new_x_2)
+
+
+def test_replace_variable_state(model: StateMixin):
+    x = model.create_state('x', 3)
+    model.include_ode_equation(ode=[-x], x=x)
+
+    # replace x
+    original = model.x[1]
+    replacement = SX.sym("new_x", original.numel())
+
+    model.replace_variable(original, replacement)
+
+    assert not depends_on(model.ode, original)
+    assert depends_on(model.ode, replacement)

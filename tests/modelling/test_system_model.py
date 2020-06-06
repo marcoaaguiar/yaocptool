@@ -290,62 +290,6 @@ class TestSystemModel(TestCase):
         model.parametrize_control(model.u[0], -k * model.x[0], k)
         self.assertTrue(model.is_parametrized())
 
-    def test_parametrize_control(self):
-        model = self.dae_model.get_copy()
-
-        # wrong size for expr
-        k = SX.sym("k", 2)
-        self.assertRaises(ValueError, model.parametrize_control, model.u,
-                          k * model.t, k)
-
-        # Test parametrize by a time dependent polynomial
-        model = self.dae_model.get_copy()
-        u_par = SX.sym("u_par", 3, 2)
-        u_expr = model.tau * u_par[:, 0] + (1 - model.tau) * u_par[:, 1]
-        model.parametrize_control(model.u, u_expr, vec(u_par))
-        self.assertTrue(is_equal(model.u_par, vec(u_par)))
-        self.assertTrue(is_equal(model.u_expr, u_expr, 30))
-        for ind in range(model.n_u):
-            self.assertTrue(
-                is_equal(model._parametrized_controls[ind], model.u[ind]))
-
-        # Test for list inputs, parametrize by a time dependent polynomial
-        model = self.dae_model.get_copy()
-        u_par = SX.sym("u_par", 3, 2)
-        u_expr = model.tau * u_par[:, 0] + (1 - model.tau) * u_par[:, 1]
-        model.parametrize_control(
-            [model.u[ind] for ind in range(model.n_u)],
-            [u_expr[ind] for ind in range(model.n_u)],
-            [vec(u_par)[ind] for ind in range(u_par.numel())],
-        )
-
-        self.assertTrue(is_equal(model.u_par, vec(u_par)))
-        self.assertTrue(is_equal(model.u_expr, u_expr, 30))
-        for ind in range(model.n_u):
-            self.assertTrue(
-                is_equal(model._parametrized_controls[ind], model.u[ind]))
-
-        # test parametrize a control already parametrized
-        model = self.dae_model.get_copy()
-        k = SX.sym("k")
-        model.parametrize_control(model.u[0], -k * model.x[0], k)
-        self.assertRaises(ValueError, model.parametrize_control, model.u[0],
-                          k * model.t, k)
-
-
-def test_replace_variable_state(model: SystemModel):
-    model.alg = vertcat(*[model.x])
-    # replace x
-    original = model.x
-    replacement = SX.sym("new_x", original.numel())
-
-    model.replace_variable(original, replacement)
-
-    assert not depends_on(model.ode, original)
-    assert depends_on(model.ode, replacement)
-    assert not depends_on(model.alg, original)
-    assert depends_on(model.alg, replacement)
-
 
 def test_remove_parameter(model):
     model.create_parameter("par", 3)
@@ -373,16 +317,6 @@ def test_remove_theta(model):
     assert model.n_theta == n_theta_original - 1
     for ind in range(model.n_theta):
         assert not is_equal(model.theta[ind], to_remove)
-
-
-def test_replace_variable_u_par(model):
-    # replace a u_par
-    new_u_par = SX.sym("new_u", model.n_u)
-    new_u_expr = new_u_par
-
-    model.replace_variable(model.u_par, new_u_par)
-
-    assert is_equal(model.ode, -model.x + new_u_expr, 30)
 
 
 def test_replace_variable_wrong_size(model):
