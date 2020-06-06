@@ -35,8 +35,8 @@ class StateMixin:
         :param size: int|tuple
         :return:
         """
-        with suppress(AttributeError):
-            name = self.name_function(name)
+        if callable(getattr(self, 'name_variable', None)):
+            name = self.name_variable(name)
 
         new_x = SX.sym(name, size)
         new_x_0 = SX.sym(name + "_0_sym", size)

@@ -184,20 +184,6 @@ class TestSystemModel(TestCase):
         for model in [self.ode_model, self.dae_model]:
             model.print_variables()
 
-    def test_create_algebraic_variable(self):
-        n_y_initial = self.ode_model.n_y
-        n_new_y = 4
-        y = self.ode_model.create_algebraic_variable("y", n_new_y)
-        self.assertEqual(self.ode_model.n_y, n_y_initial + n_new_y)
-        self.assertTrue(is_equal(self.ode_model.y[-n_new_y:], y))
-
-    def test_create_control(self):
-        n_u_initial = self.ode_model.n_u
-        n_new_u = 4
-        u = self.ode_model.create_control("u", n_new_u)
-        self.assertEqual(self.ode_model.n_u, n_u_initial + n_new_u)
-        self.assertTrue(is_equal(self.ode_model.u[-n_new_u:], u))
-
     def test_create_input(self):
         n_u_initial = self.ode_model.n_u
         n_new_u = 4
@@ -218,43 +204,6 @@ class TestSystemModel(TestCase):
         theta = self.ode_model.create_theta("theta", n_new_theta)
         self.assertEqual(self.ode_model.n_theta, n_theta_initial + n_new_theta)
         self.assertTrue(is_equal(self.ode_model.theta[-n_new_theta:], theta))
-
-    def test_include_algebraic(self):
-        new_y_1 = SX.sym("new_y")
-        new_y_2 = SX.sym("new_y_2", 2)
-        for model in [self.ode_model, self.dae_model]:
-            model_n_y = model.n_y
-            model.include_algebraic(new_y_1, alg=new_y_1 - model.x[0])
-
-            self.assertEqual(
-                model.n_y,
-                model_n_y + 1,
-            )
-            self.assertTrue(is_equal(model.y[-1], new_y_1))
-            self.assertTrue(is_equal(model.alg[-1], new_y_1 - model.x[0], 10))
-
-            model.include_algebraic(new_y_2)
-            self.assertEqual(model.n_y, model_n_y + 1 + 2)
-            self.assertTrue(is_equal(model.y[-3], new_y_1))
-            self.assertTrue(is_equal(model.y[-2:], new_y_2))
-
-    def test_include_control(self):
-        new_u_1 = SX.sym("new_u")
-        new_u_2 = SX.sym("new_u_2", 2)
-        for model in [self.ode_model, self.dae_model]:
-            model_n_u = model.n_u
-            model.include_control(new_u_1)
-
-            self.assertEqual(
-                model.n_u,
-                model_n_u + 1,
-            )
-            self.assertTrue(is_equal(model.u[-1], new_u_1))
-
-            model.include_control(new_u_2)
-            self.assertEqual(model.n_u, model_n_u + 1 + 2)
-            self.assertTrue(is_equal(model.u[-3], new_u_1))
-            self.assertTrue(is_equal(model.u[-2:], new_u_2))
 
     def test_include_parameter(self):
         new_p_1 = SX.sym("new_p")
@@ -333,17 +282,6 @@ class TestSystemModel(TestCase):
         self.assertTrue(self.dae_model.has_variable(self.dae_model.x[0]))
         self.assertFalse(self.dae_model.has_variable(SX.sym("x_0")))
 
-    def test_control_is_parametrized(self):
-        model = self.dae_model.get_copy()
-        self.assertFalse(model.control_is_parametrized(model.u[0]))
-
-        # error multiple controls are passed
-        self.assertRaises(ValueError, model.control_is_parametrized, model.u)
-
-        k = model.create_parameter("k")
-        model.parametrize_control(model.u[0], -k * model.x[0], k)
-        self.assertTrue(model.control_is_parametrized(model.u[0]))
-
     def test_is_parametrized(self):
         model = self.dae_model.get_copy()
         self.assertFalse(model.is_parametrized())
@@ -407,42 +345,6 @@ def test_replace_variable_state(model: SystemModel):
     assert depends_on(model.ode, replacement)
     assert not depends_on(model.alg, original)
     assert depends_on(model.alg, replacement)
-
-
-def test_remove_algebraic(model):
-    if model.n_y > 0:
-        ind_to_remove = 0
-        to_remove = model.y[ind_to_remove]
-        to_remove_eq = model.alg[ind_to_remove]
-
-        n_y_original = model.n_y
-        n_alg_original = model.alg.numel()
-
-        model.remove_algebraic(to_remove, eq=to_remove_eq)
-
-        # removed var
-        assert model.n_y == n_y_original - 1
-        for ind in range(model.n_y):
-            assert is_equal(model.y[ind], to_remove)
-
-        # removed alg
-        assert model.alg.numel() == n_alg_original - 1
-        for ind in range(model.alg.numel()):
-            assert is_equal(model.alg[ind], to_remove_eq)
-
-
-def test_remove_control(model):
-    if model.n_u > 0:
-        ind_to_remove = 0
-        to_remove = model.u[ind_to_remove]
-        n_u_original = model.n_u
-
-        model.remove_control(to_remove)
-
-        # removed var
-        assert model.n_u == n_u_original - 1
-        for ind in range(model.n_u):
-            assert not is_equal(model.u[ind], to_remove)
 
 
 def test_remove_parameter(model):
@@ -592,14 +494,6 @@ def test_include_equations_ode_with_x(empty_model: SystemModel):
     empty_model.include_equations(ode=ode, x=x)
     assert empty_model.ode.numel() == x.numel()
     assert is_equal(empty_model.ode, ode, 20)
-
-
-def test_include_equations_alg(empty_model):
-    y = empty_model.create_algebraic_variable('y')
-    alg = -y
-
-    empty_model.include_equations(alg=alg)
-    assert is_equal(empty_model.alg, -y, 20)
 
 
 def test_include_equations_list(empty_model):

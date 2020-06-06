@@ -7,6 +7,10 @@ class ControlMixin:
         super().__init__(**kwargs)
         self.u = SX([])
 
+        self._parametrized_controls = []
+        self.u_par = vertcat(self.u)
+        self.u_expr = vertcat(self.u)
+
     @property
     def n_u(self):
         return self.u.numel()
@@ -21,8 +25,8 @@ class ControlMixin:
         :param size: int
         :return:
         """
-        if self.model_name_as_prefix:
-            name = self.name + "_" + name
+        if callable(getattr(self, 'name_variable', None)):
+            name = self.name_variable(name)
 
         new_u = SX.sym(name, size)
         self.include_control(vec(new_u))

@@ -1,6 +1,7 @@
 from casadi.casadi import Function, rootfinder, substitute, SX, vec, vertcat
 from distutils.command.config import config
 from yaocptool.util.util import remove_variables_from_vector
+import collections
 
 
 class AlgebraicMixin:
@@ -23,8 +24,8 @@ class AlgebraicMixin:
         :param int||tuple size:
         :return:
         """
-        if self.model_name_as_prefix:
-            name = self.name + "_" + name
+        if callable(getattr(self, 'name_variable', None)):
+            name = self.name_variable(name)
 
         new_y = SX.sym(name, size)
         self.include_algebraic(vec(new_y))
@@ -64,9 +65,16 @@ class AlgebraicMixin:
 
     def include_algebraic(self, var, alg=None):
         self.y = vertcat(self.y, var)
-        self.include_equations(alg=alg)
+        self.include_alg_equation(alg=alg)
 
     def remove_algebraic(self, var, eq=None):
         self.y = remove_variables_from_vector(var, self.y)
         if eq is not None:
             self.alg = remove_variables_from_vector(eq, self.alg)
+
+    def include_alg_equation(self, alg):
+        if isinstance(alg, collections.abc.Sequence):
+            alg = vertcat(*alg)
+
+        if alg is not None:
+            self.alg = vertcat(self.alg, alg)

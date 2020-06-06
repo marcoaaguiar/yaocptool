@@ -52,10 +52,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
         self.p = SX([])
         self.theta = SX([])
 
-        self._parametrized_controls = []
-        self.u_par = vertcat(self.u)
-        self.u_expr = vertcat(self.u)
-
         self.verbosity = 0
 
     @property
@@ -319,9 +315,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
         if (ode is not None or alg is not None) and not args == tuple():
             raise ValueError(
                 "Either pass list of functions or `ode` and `alg`.")
-        # cast to casadi types
-        if isinstance(alg, collections.abc.Sequence):
-            alg = vertcat(*alg)
 
         if x is None and ode is None:
             x = DM()
@@ -334,9 +327,7 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
                     x = vertcat(x, eq.lhs.inner)
 
         self.include_ode_equation(ode, x)
-
-        if alg is not None:
-            self.alg = vertcat(self.alg, alg)
+        self.include_alg_equation(alg)
 
     def include_variables(self, x=None, y=None, u=None, p=None, theta=None):
         """
