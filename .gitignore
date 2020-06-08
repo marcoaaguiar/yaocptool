@@ -10,3 +10,11 @@ docs/rst/
 .coverage
 yaocptoool/config.py
 .gitignore
+.history/
+.vim/
+.vscode/
+.vimspector.json
+.exrc
+Session.vim
+tags
+tutorial/

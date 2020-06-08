@@ -7,7 +7,13 @@ Created on Fri Jul 07 16:33:52 2017
 
 
 class Node:
-    def __init__(self, node_id=None, name='', model=None, problem=None, color=0.25, **kwargs):
+    def __init__(self,
+                 node_id=None,
+                 name='',
+                 model=None,
+                 problem=None,
+                 color=0.25,
+                 **kwargs):
         """
 
         :param int node_id:

@@ -9,7 +9,6 @@ class Worker(multiprocessing.Process):
     It will put the return of the 'function_name' call in all Queues in queue_out
 
     """
-
     def __init__(self, obj_class, obj_arg, function_name, queue_in, queue_out):
         multiprocessing.Process.__init__(self)
 

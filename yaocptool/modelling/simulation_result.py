@@ -3,12 +3,20 @@ from yaocptool.modelling import DataSet
 try:
     import matplotlib.pyplot as plt
 except ImportError:
-    print('Failed to import matplotlib. Make sure that it is properly installed')
+    print(
+        'Failed to import matplotlib. Make sure that it is properly installed')
     plt = None
 
 
 class SimulationResult(DataSet):
-    def __init__(self, n_x, n_y, n_u, x_names=None, y_names=None, u_names=None, **kwargs):
+    def __init__(self,
+                 n_x,
+                 n_y,
+                 n_u,
+                 x_names=None,
+                 y_names=None,
+                 u_names=None,
+                 **kwargs):
         self.model_name = ''
         self.delta_t = 1
         self.t_0 = 0
@@ -24,15 +32,24 @@ class SimulationResult(DataSet):
 
     @property
     def x(self):
-        return [self.data['x']['values'][:, i] for i in range(self.data['x']['values'].shape[1])]
+        return [
+            self.data['x']['values'][:, i]
+            for i in range(self.data['x']['values'].shape[1])
+        ]
 
     @property
     def y(self):
-        return [self.data['y']['values'][:, i] for i in range(self.data['y']['values'].shape[1])]
+        return [
+            self.data['y']['values'][:, i]
+            for i in range(self.data['y']['values'].shape[1])
+        ]
 
     @property
     def u(self):
-        return [self.data['u']['values'][:, i] for i in range(self.data['u']['values'].shape[1])]
+        return [
+            self.data['u']['values'][:, i]
+            for i in range(self.data['u']['values'].shape[1])
+        ]
 
     @property
     def t(self):
@@ -67,7 +84,8 @@ class SimulationResult(DataSet):
 
         :rtype: DM, DM, DM
         """
-        return self.data['x']['values'][:, -1], self.data['y']['values'][:, -1], self.data['u']['values'][:, -1]
+        return self.data['x']['values'][:, -1], self.data['y'][
+            'values'][:, -1], self.data['u']['values'][:, -1]
 
     def extend(self, other_sim_result):
         """Extend this SimulationResult with other SimulationResult.
@@ -81,9 +99,9 @@ class SimulationResult(DataSet):
         for attr in list_of_attributes_to_check:
             if not getattr(self, attr) == getattr(other_sim_result, attr):
                 raise Exception(
-                    "Attribute {} is no equal for both SimulationResults: {}!={}".format(attr, getattr(self, attr),
-                                                                                         getattr(other_sim_result,
-                                                                                                 attr)))
+                    "Attribute {} is no equal for both SimulationResults: {}!={}"
+                    .format(attr, getattr(self, attr),
+                            getattr(other_sim_result, attr)))
 
         self.t_f = max(self.t_f, other_sim_result.t_f)
         self.t_0 = min(self.t_0, other_sim_result.t_0)

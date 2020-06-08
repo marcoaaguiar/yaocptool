@@ -14,17 +14,17 @@ class Pump(SystemModel):
         self.k = 3.33e-6
 
         # super class method
-        SystemModel.__init__(self, name="pump_" + str(index),
-                             model_name_as_prefix=True, **kwargs)
+        SystemModel.__init__(
+            self, name="pump_" + str(index), model_name_as_prefix=True, **kwargs
+        )
 
         # create variables
-        v = self.create_control('v')  # Create input pump voltage
-        q = self.create_algebraic_variable('q', 2)  # Create pump flow
+        v = self.create_control("v")  # Create input pump voltage
+        q = self.create_algebraic_variable("q", 2)  # Create pump flow
 
         # create equations:
-        alg = [q[0] - self.gamma * self.k * v,
-               q[1] - (1 - self.gamma) * self.k * v]
-        self.include_system_equations(alg=alg)
+        alg = [q[0] - self.gamma * self.k * v, q[1] - (1 - self.gamma) * self.k * v]
+        self.include_equations(alg=alg)
 
 
 class Tank(SystemModel):
@@ -35,18 +35,19 @@ class Tank(SystemModel):
         self.a = 0.071e-4
 
         # super class method
-        SystemModel.__init__(self, name="tank_" + str(index),
-                             model_name_as_prefix=True, **kwargs)
+        SystemModel.__init__(
+            self, name="tank_" + str(index), model_name_as_prefix=True, **kwargs
+        )
 
         # create variables
-        h = self.create_state('h')
-        q_in = self.create_control('q_in')
-        q_out = self.create_algebraic_variable('q_out')
+        h = self.create_state("h")
+        q_in = self.create_control("q_in")
+        q_out = self.create_algebraic_variable("q_out")
 
         ode, alg = self.equations(h, q_in, q_out)
 
         # create equations:
-        self.include_system_equations(ode, alg)
+        self.include_equations(ode, alg)
 
     def equations(self, h, q_in, q_out):
         ode = [q_in - q_out]
@@ -61,8 +62,12 @@ class QuadTanks(SystemModel):
         # create the pumps
         pumps = [Pump(index=0, gamma=0.7), Pump(index=1, gamma=0.6)]
         # create the tanks
-        tanks = [Tank(index=0, n_inputs=2), Tank(index=1, n_inputs=2),
-                 Tank(index=2, n_inputs=1), Tank(index=3, n_inputs=1)]
+        tanks = [
+            Tank(index=0, n_inputs=2),
+            Tank(index=1, n_inputs=2),
+            Tank(index=2, n_inputs=1),
+            Tank(index=3, n_inputs=1),
+        ]
 
         # include all variables and equations from pumps and tanks
         self.include_models(pumps)

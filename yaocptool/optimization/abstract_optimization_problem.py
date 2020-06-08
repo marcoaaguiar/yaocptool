@@ -83,17 +83,24 @@ class AbstractOptimizationProblem(object):
         if ub.numel() == 1 and variable.numel() > 1:
             ub = repmat(ub, variable.numel())
 
-        if not variable.numel() == lb.numel() or not variable.numel() == ub.numel():
-            raise ValueError("Lower bound or upper bound has different size of the given variable")
+        if not variable.numel() == lb.numel() or not variable.numel(
+        ) == ub.numel():
+            raise ValueError(
+                "Lower bound or upper bound has different size of the given variable"
+            )
 
-        if not lb.is_constant() and depends_on(lb, self.p) or not ub.is_constant() and depends_on(ub, self.p):
-            raise ValueError("Neither the lower or the upper bound can depend on the optimization problem parameter. "
-                             "lb={}, ub={}".format(lb, ub))
+        if not lb.is_constant() and depends_on(
+                lb, self.p) or not ub.is_constant() and depends_on(ub, self.p):
+            raise ValueError(
+                "Neither the lower or the upper bound can depend on the optimization problem parameter. "
+                "lb={}, ub={}".format(lb, ub))
 
         for i in range(variable.numel()):
             if lb[i] > ub[i]:
-                raise ValueError('Lower bound is greater than upper bound for index {}. '
-                                 'The inequality {} <= {} <= is infeasible'.format(i, lb[i], variable[i], ub[i]))
+                raise ValueError(
+                    'Lower bound is greater than upper bound for index {}. '
+                    'The inequality {} <= {} <= is infeasible'.format(
+                        i, lb[i], variable[i], ub[i]))
 
         self.x = vertcat(self.x, variable)
         self.x_lb = vertcat(self.x_lb, lb)
@@ -133,7 +140,8 @@ class AbstractOptimizationProblem(object):
 
         if expr.numel() > 1:
             raise ValueError('Objective function should be an scalar. '
-                             'Given objective has shape = {}'.format(expr.shape))
+                             'Given objective has shape = {}'.format(
+                                 expr.shape))
         self.f = expr
 
     def include_inequality(self, expr, lb=None, ub=None):
@@ -150,7 +158,9 @@ class AbstractOptimizationProblem(object):
         if isinstance(expr, list):
             expr = vertcat(expr)
         if expr.size2() > 1:
-            raise Exception("Given expression is not a vector, number of columns is {}".format(expr.size2()))
+            raise Exception(
+                "Given expression is not a vector, number of columns is {}".
+                format(expr.size2()))
 
         # check lower bound
         if lb is None:
@@ -162,8 +172,9 @@ class AbstractOptimizationProblem(object):
 
         # check lb correct size
         if not expr.shape == lb.shape:
-            raise ValueError("Expression and lower bound does not have the same size: "
-                             "expr.shape={}, lb.shape=={}".format(expr.shape, lb.shape))
+            raise ValueError(
+                "Expression and lower bound does not have the same size: "
+                "expr.shape={}, lb.shape=={}".format(expr.shape, lb.shape))
         # check upper bound
         if ub is None:
             ub = DM.inf(expr.size1())
@@ -174,19 +185,23 @@ class AbstractOptimizationProblem(object):
 
         # check ub correct size
         if not expr.shape == ub.shape:
-            raise ValueError("Expression and lower bound does not have the same size: "
-                             "expr.shape={}, lb.shape=={}".format(expr.shape, ub.shape))
+            raise ValueError(
+                "Expression and lower bound does not have the same size: "
+                "expr.shape={}, lb.shape=={}".format(expr.shape, ub.shape))
 
         # check for if lb or ub have 'x's and 'p's
         if depends_on(vertcat(lb, ub), vertcat(self.x, self.p)):
-            raise ValueError("The lower and upper bound cannot contain variables from the optimization problem."
-                             "LB: {}, UB: {}".format(lb, ub))
+            raise ValueError(
+                "The lower and upper bound cannot contain variables from the optimization problem."
+                "LB: {}, UB: {}".format(lb, ub))
 
         for i in range(expr.numel()):
             if lb.is_constant() and ub.is_constant():
                 if lb[i] > ub[i]:
-                    raise ValueError('Lower bound is greater than upper bound for index {}. '
-                                     'The inequality {} <= {} <= is infeasible'.format(i, lb[i], expr[i], ub[i]))
+                    raise ValueError(
+                        'Lower bound is greater than upper bound for index {}. '
+                        'The inequality {} <= {} <= is infeasible'.format(
+                            i, lb[i], expr[i], ub[i]))
 
         self.g = vertcat(self.g, expr)
         self.g_lb = vertcat(self.g_lb, lb)
@@ -204,7 +219,9 @@ class AbstractOptimizationProblem(object):
         if isinstance(expr, list):
             expr = vertcat(expr)
         if expr.size2() > 1:
-            raise Exception("Given expression is not a vector, number of columns is {}".format(expr.size2()))
+            raise Exception(
+                "Given expression is not a vector, number of columns is {}".
+                format(expr.size2()))
 
         if rhs is None:
             rhs = DM.zeros(expr.shape)
@@ -220,8 +237,9 @@ class AbstractOptimizationProblem(object):
 
         # check for if rhs have 'x's and 'p's
         if depends_on(rhs, vertcat(self.x, self.p)):
-            raise ValueError("Right-hand side cannot contain variables from the optimization problem. "
-                             "RHS = {}".format(rhs))
+            raise ValueError(
+                "Right-hand side cannot contain variables from the optimization problem. "
+                "RHS = {}".format(rhs))
 
         self.g = vertcat(self.g, expr)
         self.g_lb = vertcat(self.g_lb, rhs)
@@ -238,12 +256,16 @@ class AbstractOptimizationProblem(object):
         """
         # Check for inconsistencies
         if not is_inequality(expr) and not is_equality(expr):
-            raise ValueError("The passed 'expr' was not recognized as an equality or inequality constraint")
+            raise ValueError(
+                "The passed 'expr' was not recognized as an equality or inequality constraint"
+            )
         if expr.dep(0).is_constant() and expr.dep(1).is_constant():
             raise ValueError('Both sides of the constraint are constant')
-        if depends_on(expr.dep(0), vertcat(self.x, self.p)) and depends_on(expr.dep(1), vertcat(self.x, self.p)):
-            raise ValueError("One of the sides of the constraint cannot depend on the problem. (e.g.: x<=1)"
-                             "lhs: {}, rhs: {}".format(expr.dep(0), expr.dep(1)))
+        if depends_on(expr.dep(0), vertcat(self.x, self.p)) and depends_on(
+                expr.dep(1), vertcat(self.x, self.p)):
+            raise ValueError(
+                "One of the sides of the constraint cannot depend on the problem. (e.g.: x<=1)"
+                "lhs: {}, rhs: {}".format(expr.dep(0), expr.dep(1)))
 
         # find the dependent and independent term
         if depends_on(expr.dep(0), vertcat(self.x, self.p)):
@@ -315,12 +337,19 @@ class AbstractOptimizationProblem(object):
         :return: dict with default values
         :rtype: dict
         """
-        return {'lbx': self.x_lb,
-                'ubx': self.x_ub,
-                'lbg': self.g_lb,
-                'ubg': self.g_ub}
+        return {
+            'lbx': self.x_lb,
+            'ubx': self.x_ub,
+            'lbg': self.g_lb,
+            'ubg': self.g_ub
+        }
 
-    def solve(self, initial_guess, call_dict=None, p=None, lam_x=None, lam_g=None):
+    def solve(self,
+              initial_guess,
+              call_dict=None,
+              p=None,
+              lam_x=None,
+              lam_g=None):
         """
 
         :param initial_guess: Initial guess
@@ -348,7 +377,8 @@ class AbstractOptimizationProblem(object):
 
         if call_dict['p'].numel() != self.p.numel():
             raise ValueError('Passed parameter "p" has size {}, '
-                             'while problem.p has size {}'.format(call_dict['p'].numel(), self.p.numel()))
+                             'while problem.p has size {}'.format(
+                                 call_dict['p'].numel(), self.p.numel()))
 
         solver = self.get_solver()
 

@@ -16,7 +16,7 @@ x_0 = DM([1, 1])
 initial_control = [0.01]
 
 # Prediction window, finite elements, and sampling time
-prediction_window = 20.
+prediction_window = 20.0
 finite_elements = 20
 t_s = prediction_window / finite_elements
 
@@ -24,11 +24,11 @@ t_s = prediction_window / finite_elements
 #      Model         #
 ######################
 # Create a new model with 2 Tanks, the output of the first tank is connected on the second tank
-model = SystemModel(name='2-Tanks')
+model = SystemModel(name="2-Tanks")
 
 # Get the symbolic variables
-h = model.create_state('h', 2)
-u = model.create_control('u')
+h = model.create_state("h", 2)
+u = model.create_control("u")
 
 # Model Parameters
 A = 28e-3  # (m^2) the tank area
@@ -36,11 +36,13 @@ a = 0.071e-2  # (m^2) Holes cross section
 g = 9.8  # gravitational acceleration
 
 # Define the model ODEs
-ode = [(u - a * sqrt(2 * g * h[0])) / A,
-       (a * sqrt(2 * g * h[0]) - a * sqrt(2 * g * h[1])) / A]
+ode = [
+    (u - a * sqrt(2 * g * h[0])) / A,
+    (a * sqrt(2 * g * h[0]) - a * sqrt(2 * g * h[1])) / A,
+]
 
 # Include the equations in the model
-model.include_system_equations(ode=ode)
+model.include_equations(ode=ode)
 
 # Print the model for debugging purposes
 print(model)
@@ -70,10 +72,9 @@ problem.include_time_inequality(h[0] + h[1] - 10)
 #  Solution Method   #
 ######################
 # Solution method will solve the OCP every iteration
-solution_method = DirectMethod(problem,
-                               finite_elements=20,
-                               discretization_scheme='collocation',
-                               )
+solution_method = DirectMethod(
+    problem, finite_elements=20, discretization_scheme="collocation",
+)
 
 ######################
 #   Estimator       #
@@ -82,12 +83,15 @@ solution_method = DirectMethod(problem,
 estimator_model = model.get_copy()
 
 # Create the estimator
-estimator = ExtendedKalmanFilter(model=estimator_model, t_s=t_s,
-                                 p_k=0.0001 * DM.eye(estimator_model.n_x),
-                                 x_mean=x_0 * 1.1, c_matrix=c_matrix,
-                                 r_v=0.00001 * DM.eye(estimator_model.n_x),
-                                 r_n=0.00001 * DM.eye(1),
-                                 )
+estimator = ExtendedKalmanFilter(
+    model=estimator_model,
+    t_s=t_s,
+    p_k=0.0001 * DM.eye(estimator_model.n_x),
+    x_mean=x_0 * 1.1,
+    c_matrix=c_matrix,
+    r_v=0.00001 * DM.eye(estimator_model.n_x),
+    r_n=0.00001 * DM.eye(1),
+)
 
 ######################
 #      Plant         #
@@ -102,7 +106,9 @@ plant = PlantSimulation(model=plant_model, x_0=x_0, c_matrix=c_matrix, u=0.1)
 #        MPC         #
 ######################
 # MPC
-mpc = MPC(plant, solution_method, estimator=estimator, include_cost_in_state_vector=True)
+mpc = MPC(
+    plant, solution_method, estimator=estimator, include_cost_in_state_vector=True
+)
 
 # Run the plant without estimator or control
 mpc.run_fixed_control(initial_control, 20)
@@ -113,5 +119,5 @@ mpc.run_fixed_control_with_estimator(initial_control, 20)
 # Run the plant with estimator and calculating the control
 mpc.run(100)
 
-figs = plant.dataset.plot([{'x': 'all'}, {'u': 'all'}])
-estimator.dataset.plot({'x': 'all'}, figures=figs)
+figs = plant.dataset.plot([{"x": "all"}, {"u": "all"}])
+estimator.dataset.plot({"x": "all"}, figures=figs)

@@ -24,28 +24,47 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         x, y, u = [], [], []
 
         for el in range(self.finite_elements + 1):
-            x_k = [nlp.create_variable('mx_x_' + str(el), self.model.n_x, lb=self.problem.x_min, ub=self.problem.x_max)]
+            x_k = [
+                nlp.create_variable('mx_x_' + str(el),
+                                    self.model.n_x,
+                                    lb=self.problem.x_min,
+                                    ub=self.problem.x_max)
+            ]
             x.append(x_k)
 
         for el in range(self.finite_elements):
-            y_k = [nlp.create_variable('mx_y_' + str(el), self.model.n_y, lb=self.problem.y_min, ub=self.problem.y_max)]
+            y_k = [
+                nlp.create_variable('mx_y_' + str(el),
+                                    self.model.n_y,
+                                    lb=self.problem.y_min,
+                                    ub=self.problem.y_max)
+            ]
             y.append(y_k)
 
         for el in range(self.finite_elements):
             u_k = []
             if self.model.n_u_par > 0:
                 for n in range(self.degree_control):
-                    u_k.append(nlp.create_variable('mx_u_' + str(el) + '_' + str(n), self.model.n_u,
-                                                   lb=self.problem.u_min, ub=self.problem.u_max))
+                    u_k.append(
+                        nlp.create_variable('mx_u_' + str(el) + '_' + str(n),
+                                            self.model.n_u,
+                                            lb=self.problem.u_min,
+                                            ub=self.problem.u_max))
             u.append(u_k)
 
         eta = nlp.create_variable('mx_eta', self.problem.n_eta)
-        p_opt = nlp.create_variable('mx_p_opt', self.problem.n_p_opt, lb=self.problem.p_opt_min, ub=self.problem.p_opt_max)
+        p_opt = nlp.create_variable('mx_p_opt',
+                                    self.problem.n_p_opt,
+                                    lb=self.problem.p_opt_min,
+                                    ub=self.problem.p_opt_max)
 
         theta_opt = []
         for el in range(self.finite_elements):
-            theta_opt.append(nlp.create_variable('mx_theta_opt_' + str(el), self.problem.n_theta_opt,
-                                                 lb=self.problem.theta_opt_min, ub=self.problem.theta_opt_max))
+            theta_opt.append(
+                nlp.create_variable('mx_theta_opt_' + str(el),
+                                    self.problem.n_theta_opt,
+                                    lb=self.problem.theta_opt_min,
+                                    ub=self.problem.theta_opt_max))
 
         v_x = self.vectorize(x)
         v_y = self.vectorize(y)
@@ -80,7 +99,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             u_k = []
             if self.model.n_u_par > 0:
                 for i in range(self.degree_control):
-                    u_k.append(decision_variables[offset:offset + self.model.n_u])
+                    u_k.append(decision_variables[offset:offset +
+                                                  self.model.n_u])
                     offset += self.model.n_u
             u.append(u_k)
 
@@ -92,7 +112,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         theta_opt = []
         for el in range(self.finite_elements):
-            theta_opt.append(decision_variables[offset:offset + self.problem.n_theta_opt])
+            theta_opt.append(decision_variables[offset:offset +
+                                                self.problem.n_theta_opt])
             offset += self.problem.n_theta_opt
 
         assert offset == decision_variables.numel()
@@ -116,10 +137,12 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             x_0 = self.problem.x_0
 
         # Create nlp object
-        nlp = NonlinearOptimizationProblem(name='multiple_shooting_' + self.problem.name)
+        nlp = NonlinearOptimizationProblem(name='multiple_shooting_' +
+                                           self.problem.name)
 
         # Create NLP symbolic variables
-        all_decision_vars, x_var, y_var, u_var, eta, p_opt, theta_opt = self._create_nlp_symbolic_variables(nlp)
+        all_decision_vars, x_var, y_var, u_var, eta, p_opt, theta_opt = self._create_nlp_symbolic_variables(
+            nlp)
         cost = 0
 
         # Put the symbolic optimization parameters in the parameter vector
@@ -127,7 +150,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             p[p_opt_index] = p_opt[i]
 
         # Put the symbolic theta_opt in the theta vector
-        for i, theta_opt_index in enumerate(self.problem.get_theta_opt_indices()):
+        for i, theta_opt_index in enumerate(
+                self.problem.get_theta_opt_indices()):
             for el in range(self.finite_elements):
                 theta[el][theta_opt_index] = theta_opt[el][i]
 
@@ -135,23 +159,33 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         time_dict = self._create_time_dict_for_multiple_shooting()
 
         # Initial time constraint/initial condition
-        f_h_initial = Function('h_initial', [self.model.x_sym, self.model.x_0_sym], [self.problem.h_initial])
+        f_h_initial = Function('h_initial', [self.model.x, self.model.x_0],
+                               [self.problem.h_initial])
         nlp.include_equality(f_h_initial(x_var[0][0], x_0))
 
         # Create functions to be evaluated
         functions = defaultdict(dict)
         for i in range(self.problem.n_g_ineq):
-            functions['g_ineq_' + str(i)] = self._create_function_from_expression('f_g_ineq_' + str(i),
-                                                                                  self.problem.g_ineq[i])
+            functions['g_ineq_' +
+                      str(i)] = self._create_function_from_expression(
+                          'f_g_ineq_' + str(i), self.problem.g_ineq[i])
 
         for i in range(self.problem.n_g_eq):
-            functions['g_eq_' + str(i)] = self._create_function_from_expression('f_g_eq_' + str(i),
-                                                                                self.problem.g_eq[i])
+            functions['g_eq_' +
+                      str(i)] = self._create_function_from_expression(
+                          'f_g_eq_' + str(i), self.problem.g_eq[i])
 
-        functions['f_s_cost'] = self._create_function_from_expression('f_s_cost', self.problem.S)
+        functions['f_s_cost'] = self._create_function_from_expression(
+            'f_s_cost', self.problem.S)
 
         # Multiple Shooting "simulation"
-        results = self.get_system_at_given_times(x_var, y_var, u_var, time_dict, p, theta, functions=functions)
+        results = self.get_system_at_given_times(x_var,
+                                                 y_var,
+                                                 u_var,
+                                                 time_dict,
+                                                 p,
+                                                 theta,
+                                                 functions=functions)
 
         # Build the NLP
         s_cost = 0
@@ -179,44 +213,62 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             if self.problem.has_delta_u:
                 if el > 0:
                     for i in range(self.model.n_u):
-                        if not is_equal(self.problem.delta_u_max[i], inf) or not is_equal(self.problem.delta_u_min[i],
-                                                                                          -inf):
-                            nlp.include_inequality(u_var[el][0][i] - u_var[el - 1][0][i],
-                                                   lb=self.problem.delta_u_min[i], ub=self.problem.delta_u_max[i])
+                        if not is_equal(self.problem.delta_u_max[i],
+                                        inf) or not is_equal(
+                                            self.problem.delta_u_min[i], -inf):
+                            nlp.include_inequality(
+                                u_var[el][0][i] - u_var[el - 1][0][i],
+                                lb=self.problem.delta_u_min[i],
+                                ub=self.problem.delta_u_max[i])
 
                 elif el == 0 and last_u is not None:
                     for i in range(self.model.n_u):
                         if (not is_equal(self.problem.delta_u_max[i], inf)
-                                or not is_equal(self.problem.delta_u_min[i], -inf)):
-                            nlp.include_inequality(u_var[el][0][i] - last_u[i],
-                                                   lb=self.problem.delta_u_min[i], ub=self.problem.delta_u_max[i])
+                                or not is_equal(self.problem.delta_u_min[i],
+                                                -inf)):
+                            nlp.include_inequality(
+                                u_var[el][0][i] - last_u[i],
+                                lb=self.problem.delta_u_min[i],
+                                ub=self.problem.delta_u_max[i])
 
             # Time dependent inequalities
             for i in range(self.problem.n_g_ineq):
-                nlp.include_inequality(results[el]['g_ineq_' + str(i)][0], ub=0)
+                nlp.include_inequality(results[el]['g_ineq_' + str(i)][0],
+                                       ub=0)
 
             # Time dependent equalities
             for i in range(self.problem.n_g_eq):
                 nlp.include_equality(results[el]['g_eq_' + str(i)][0])
 
         # Final time constraint
-        f_h_final = Function('h_final', [self.model.x_sym, self.problem.eta, self.model.p_sym], [self.problem.h_final])
+        f_h_final = Function('h_final',
+                             [self.model.x, self.problem.eta, self.model.p],
+                             [self.problem.h_final])
         nlp.include_equality(f_h_final(x_var[-1][0], eta, p))
 
         # Time independent constraints
-        f_h = Function('h', [self.model.p_sym], [self.problem.h])
+        f_h = Function('h', [self.model.p], [self.problem.h])
         nlp.include_equality(f_h(p))
 
         if self.solution_method.solution_class == 'direct':
             if not self.solution_method.cost_as_a_sum:
-                f_final_cost = Function('FinalCost', [self.model.x_sym, self.model.p_sym], [self.problem.V])
+                f_final_cost = Function('FinalCost',
+                                        [self.model.x, self.model.p],
+                                        [self.problem.V])
                 cost = f_final_cost(x_var[-1][0], p)
             cost += s_cost
         nlp.set_objective(cost)
 
         return nlp
 
-    def get_system_at_given_times(self, x_var, y_var, u_var, time_dict=None, p=None, theta=None, functions=None,
+    def get_system_at_given_times(self,
+                                  x_var,
+                                  y_var,
+                                  u_var,
+                                  time_dict=None,
+                                  p=None,
+                                  theta=None,
+                                  functions=None,
                                   start_at_t_0=False):
         """
         :param x_var: List[List[MX]]
@@ -253,9 +305,11 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             dae_sys.convert_from_tau_to_time(self.time_breakpoints[el],
                                              self.time_breakpoints[el + 1])
 
-            u_func = self.model.convert_expr_from_tau_to_time(self.model.u_expr, t_0, t_f)
+            u_func = self.model.convert_expr_from_tau_to_time(
+                self.model.u_expr, t_0, t_f)
             if self.solution_method.solution_class == 'direct':
-                f_u = Function('f_u_pol', [self.model.t_sym, self.model.u_par], [u_func])
+                f_u = Function('f_u_pol', [self.model.t, self.model.u_par],
+                               [u_func])
             elif self.solution_method.solution_class == 'indirect':
                 f_u = Function('f_u_pol', list(self.model.all_sym), [u_func])
             else:
@@ -265,7 +319,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             element_breakpoints = set()
             for key in ['x', 'y', 'u'] + list(functions.keys()):
                 if key in time_dict[el]:
-                    element_breakpoints = element_breakpoints.union(time_dict[el][key])
+                    element_breakpoints = element_breakpoints.union(
+                        time_dict[el][key])
 
             element_breakpoints = list(element_breakpoints)
             element_breakpoints.sort()
@@ -277,7 +332,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 raise NotImplementedError
             if 'u' in time_dict[el] and t_0 in time_dict[el]['u']:
                 if self.solution_method.solution_class == 'direct':
-                    results[el]['u'].append(f_u(t_0, self.vectorize(u_var[el])))
+                    results[el]['u'].append(f_u(t_0,
+                                                self.vectorize(u_var[el])))
                 elif self.solution_method.solution_class == 'indirect':
                     raise NotImplementedError
                 else:
@@ -298,10 +354,16 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                     p_i = vertcat(p, theta[el])
 
                 # Do the simulation
-                sim_result = dae_sys.simulate(x_init, t_0=t_init, t_f=t, p=p_i, y_0=self.problem.y_guess,
-                                              integrator_type=self.solution_method.integrator_type,
-                                              integrator_options={'name': 'integrator_' + str(el) + '_' + str(t_ind)}
-                                              )
+                sim_result = dae_sys.simulate(
+                    x_init,
+                    t_0=t_init,
+                    t_f=t,
+                    p=p_i,
+                    y_0=self.problem.y_guess,
+                    integrator_type=self.solution_method.integrator_type,
+                    integrator_options={
+                        'name': 'integrator_' + str(el) + '_' + str(t_ind)
+                    })
                 # Fetch values from results
                 x_t, y_t = sim_result['xf'], sim_result['zf']
 
@@ -312,16 +374,27 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                     results[el]['y'].append(y_t)
                 if 'u' in time_dict[el] and t in time_dict[el]['u']:
                     if self.solution_method.solution_class == 'direct':
-                        results[el]['u'].append(f_u(t, self.vectorize(u_var[el])))
+                        results[el]['u'].append(
+                            f_u(t, self.vectorize(u_var[el])))
                     elif self.solution_method.solution_class == 'indirect':
                         results[el]['u'].append(
-                            f_u(*self.model.put_values_in_all_sym_format(t, x=x_t, y=y_t, p=p, theta=theta[el],
-                                                                         u_par=u_var[el])))
+                            f_u(*self.model.put_values_in_all_sym_format(
+                                t,
+                                x=x_t,
+                                y=y_t,
+                                p=p,
+                                theta=theta[el],
+                                u_par=u_var[el])))
                 for f_name in functions:
                     if t in time_dict[el][f_name]:
                         f = functions[f_name][el]
-                        val = f(*self.model.put_values_in_all_sym_format(t=t, x=x_t, y=y_t, p=p, theta=theta[el],
-                                                                         u_par=self.vectorize(u_var[el])))
+                        val = f(*self.model.put_values_in_all_sym_format(
+                            t=t,
+                            x=x_t,
+                            y=y_t,
+                            p=p,
+                            theta=theta[el],
+                            u_par=self.vectorize(u_var[el])))
 
                         results[el][f_name].append(val)
                 # If the simulation should start from the begin of the simulation interval, do not change the t_init
@@ -344,19 +417,25 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
             for i in range(self.problem.n_g_ineq):
                 if self.problem.time_g_ineq[i] == 'start':
-                    time_dict[el]['g_ineq_' + str(i)] = [self.time_breakpoints[el]]
+                    time_dict[el]['g_ineq_' +
+                                  str(i)] = [self.time_breakpoints[el]]
                 if self.problem.time_g_ineq[i] == 'end':
-                    time_dict[el]['g_ineq_' + str(i)] = [self.time_breakpoints[el + 1]]
+                    time_dict[el]['g_ineq_' +
+                                  str(i)] = [self.time_breakpoints[el + 1]]
                 if self.problem.time_g_ineq[i] == 'default':
-                    time_dict[el]['g_ineq_' + str(i)] = [self.time_breakpoints[el + 1]]
+                    time_dict[el]['g_ineq_' +
+                                  str(i)] = [self.time_breakpoints[el + 1]]
 
             for i in range(self.problem.n_g_eq):
                 if self.problem.time_g_eq[i] == 'start':
-                    time_dict[el]['g_eq_' + str(i)] = [self.time_breakpoints[el]]
+                    time_dict[el]['g_eq_' +
+                                  str(i)] = [self.time_breakpoints[el]]
                 if self.problem.time_g_eq[i] == 'end':
-                    time_dict[el]['g_eq_' + str(i)] = [self.time_breakpoints[el + 1]]
+                    time_dict[el]['g_eq_' +
+                                  str(i)] = [self.time_breakpoints[el + 1]]
                 if self.problem.time_g_eq[i] == 'default':
-                    time_dict[el]['g_eq_' + str(i)] = [self.time_breakpoints[el + 1]]
+                    time_dict[el]['g_eq_' +
+                                  str(i)] = [self.time_breakpoints[el + 1]]
 
         return time_dict
 
@@ -378,15 +457,18 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         if self.model.n_u_par > 0:
             if self.problem.u_guess is not None:
-                u_init = repmat(self.problem.u_guess, self.degree_control * self.finite_elements)
+                u_init = repmat(self.problem.u_guess,
+                                self.degree_control * self.finite_elements)
             else:
-                u_init = repmat(DM.zeros(self.model.n_u), self.degree_control * self.finite_elements)
+                u_init = repmat(DM.zeros(self.model.n_u),
+                                self.degree_control * self.finite_elements)
         else:
             u_init = []
 
         eta_init = DM.zeros(self.problem.n_eta, 1)
         p_opt_init = DM.zeros(self.problem.n_p_opt, 1)
-        theta_opt_init = DM.zeros(self.problem.n_theta_opt * self.finite_elements, 1)
+        theta_opt_init = DM.zeros(
+            self.problem.n_theta_opt * self.finite_elements, 1)
 
         if p is not None:
             for k, ind in enumerate(self.problem.get_p_opt_indices()):
@@ -395,9 +477,11 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         if theta is not None:
             for el in range(self.finite_elements):
                 for k, ind in enumerate(self.problem.get_theta_opt_indices()):
-                    theta_opt_init[k + el * self.problem.n_theta_opt] = theta[el][ind]
+                    theta_opt_init[k + el *
+                                   self.problem.n_theta_opt] = theta[el][ind]
 
-        return vertcat(x_init, y_init, u_init, eta_init, p_opt_init, theta_opt_init)
+        return vertcat(x_init, y_init, u_init, eta_init, p_opt_init,
+                       theta_opt_init)
 
     def create_initial_guess_with_simulation(self, u=None, p=None, theta=None):
         """Create an initial guess for the optimal control problem using by simulating with a given control u,
@@ -439,13 +523,18 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             # get DAE system and remove tau
             dae_sys = self.model.get_dae_system()
             dae_sys.convert_from_tau_to_time(t_k=self.time_breakpoints[el],
-                                             t_kp1=self.time_breakpoints[el + 1])
+                                             t_kp1=self.time_breakpoints[el +
+                                                                         1])
 
             # Prepare for loop
             t_init = self.time_breakpoints[el]
             p_el = vertcat(p, theta[el], u)
             for t in [self.time_breakpoints[el + 1]]:
-                res = dae_sys.simulate(x_0=x_0, t_0=t_init, t_f=t, p=p_el, y_0=y_guess)
+                res = dae_sys.simulate(x_0=x_0,
+                                       t_0=t_init,
+                                       t_f=t,
+                                       p=p_el,
+                                       y_0=y_guess)
 
                 el_x.append(res['xf'])
                 el_y.append(res['zf'])
@@ -465,7 +554,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
         eta_init = DM.zeros(self.problem.n_eta, 1)
         p_opt_init = DM.zeros(self.problem.n_p_opt, 1)
-        theta_opt_init = DM.zeros(self.problem.n_theta_opt * self.finite_elements, 1)
+        theta_opt_init = DM.zeros(
+            self.problem.n_theta_opt * self.finite_elements, 1)
 
         if p is not None:
             for k, ind in enumerate(self.problem.get_p_opt_indices()):
@@ -474,11 +564,15 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         if theta is not None:
             for el in range(self.finite_elements):
                 for k, ind in enumerate(self.problem.get_theta_opt_indices()):
-                    theta_opt_init[k + el * self.problem.n_theta_opt] = theta[el][ind]
+                    theta_opt_init[k + el *
+                                   self.problem.n_theta_opt] = theta[el][ind]
 
-        return vertcat(x_init, y_init, u_init, eta_init, p_opt_init, theta_opt_init)
+        return vertcat(x_init, y_init, u_init, eta_init, p_opt_init,
+                       theta_opt_init)
 
-    def set_data_to_optimization_result_from_raw_data(self, optimization_result, raw_solution_dict):
+    def set_data_to_optimization_result_from_raw_data(self,
+                                                      optimization_result,
+                                                      raw_solution_dict):
         """
         Set the raw data received from the solver and put it in the Optimization Result object
         :param OptimizationResult optimization_result:
@@ -490,21 +584,29 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         optimization_result.objective_opt_problem = raw_solution_dict['f']
         optimization_result.constraint_values = raw_solution_dict['g']
 
-        x_values, y_values, u_values, eta, p_opt, theta_opt = self.unpack_decision_variables(raw_solution_dict['x'])
+        x_values, y_values, u_values, eta, p_opt, theta_opt = self.unpack_decision_variables(
+            raw_solution_dict['x'])
 
         optimization_result.p[self.problem.get_p_opt_indices()] = p_opt
         for el in optimization_result.theta:
-            optimization_result.theta[el][self.problem.get_theta_opt_indices()] = theta_opt[el]
+            optimization_result.theta[el][
+                self.problem.get_theta_opt_indices()] = theta_opt[el]
 
         # if u_values are all empty, u is not based on the u_par directly
         if len(u_values[0]) == 0:
-            time_dict = dict([(el, {'u': self.time_interpolation_controls[el],
-                                    't_0': self.time_breakpoints[el],
-                                    't_f': self.time_breakpoints[el + 1]}) for el in range(self.finite_elements)])
+            time_dict = dict([(el, {
+                'u': self.time_interpolation_controls[el],
+                't_0': self.time_breakpoints[el],
+                't_f': self.time_breakpoints[el + 1]
+            }) for el in range(self.finite_elements)])
 
-            result = self.get_system_at_given_times(x_values, y_values, u_values,
-                                                    time_dict=time_dict,
-                                                    p=optimization_result.p, theta=optimization_result.theta)
+            result = self.get_system_at_given_times(
+                x_values,
+                y_values,
+                u_values,
+                time_dict=time_dict,
+                p=optimization_result.p,
+                theta=optimization_result.theta)
 
             u_values = [result[el]['u'] for el in range(self.finite_elements)]
 
@@ -517,13 +619,18 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         optimization_result.y_data['values'] = y_values
         optimization_result.u_data['values'] = u_values
 
-        optimization_result.x_data['time'] = [[t] for t in self.time_breakpoints]
-        optimization_result.y_data['time'] = [[t] for t in self.time_breakpoints[1:]]
+        optimization_result.x_data['time'] = [[t]
+                                              for t in self.time_breakpoints]
+        optimization_result.y_data['time'] = [
+            [t] for t in self.time_breakpoints[1:]
+        ]
 
         if self.degree_control == 1:
-            optimization_result.u_data['time'] = [[t] for t in self.time_breakpoints[:-1]]
-        else:
             optimization_result.u_data['time'] = [
-                [t + self.delta_t * col for col in self.solution_method.collocation_points(self.degree_control)] for t
-                in
-                self.time_breakpoints[:-1]]
+                [t] for t in self.time_breakpoints[:-1]
+            ]
+        else:
+            optimization_result.u_data['time'] = [[
+                t + self.delta_t * col for col in
+                self.solution_method.collocation_points(self.degree_control)
+            ] for t in self.time_breakpoints[:-1]]
