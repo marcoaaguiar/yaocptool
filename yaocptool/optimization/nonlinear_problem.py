@@ -25,4 +25,5 @@ class NonlinearOptimizationProblem(AbstractOptimizationProblem):
 
     def _create_solver(self):
         problem_dict = self.get_problem_dict()
-        return nlpsol(self.name + '_solver', 'ipopt', problem_dict, self.solver_options)
+        return nlpsol(self.name + '_solver', 'ipopt', problem_dict,
+                      self.solver_options)

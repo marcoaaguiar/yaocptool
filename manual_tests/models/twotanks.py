@@ -11,7 +11,10 @@ from yaocptool.modelling import SystemModel, OptimalControlProblem
 
 class Tank1(SystemModel):
     def __init__(self, **kwargs):
-        SystemModel.__init__(self, name="tank_1", model_name_as_prefix=True, **kwargs)
+        SystemModel.__init__(self,
+                             name="tank_1",
+                             model_name_as_prefix=True,
+                             **kwargs)
 
         h = self.create_state("h")
         q_out = self.create_algebraic_variable("q_out")
@@ -27,7 +30,10 @@ class Tank1(SystemModel):
 
 class Tank2(SystemModel):
     def __init__(self, **kwargs):
-        SystemModel.__init__(self, name="tank_2", model_name_as_prefix=True, **kwargs)
+        SystemModel.__init__(self,
+                             name="tank_2",
+                             model_name_as_prefix=True,
+                             **kwargs)
 
         h = self.create_state("h")
         q_out = self.create_algebraic_variable("q_out")

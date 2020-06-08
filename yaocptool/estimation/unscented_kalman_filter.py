@@ -62,21 +62,31 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         # Data set
         self.dataset = DataSet(name=self.model.name)
         self.dataset.data['x']['size'] = self.model.n_x
-        self.dataset.data['x']['names'] = ['ukf_' + self.model.x_sym[i].name() for i in range(self.model.n_x)]
+        self.dataset.data['x']['names'] = [
+            'ukf_' + self.model.x_sym[i].name() for i in range(self.model.n_x)
+        ]
 
         self.dataset.data['y']['size'] = self.model.n_y
-        self.dataset.data['y']['names'] = ['ukf_' + self.model.y_sym[i].name() for i in range(self.model.n_y)]
+        self.dataset.data['y']['names'] = [
+            'ukf_' + self.model.y_sym[i].name() for i in range(self.model.n_y)
+        ]
 
-        self.dataset.data['P']['size'] = self.model.n_x ** 2
-        self.dataset.data['P']['names'] = ['ukf_P_' + str(i) + str(j) for i in range(self.model.n_x) for j in
-                                           range(self.model.n_x)]
+        self.dataset.data['P']['size'] = self.model.n_x**2
+        self.dataset.data['P']['names'] = [
+            'ukf_P_' + str(i) + str(j) for i in range(self.model.n_x)
+            for j in range(self.model.n_x)
+        ]
 
-        self.dataset.data['P_y']['size'] = self.model.n_y ** 2
-        self.dataset.data['P_y']['names'] = ['ukf_P_y_' + str(i) + str(j) for i in range(self.model.n_y) for j in
-                                             range(self.model.n_y)]
+        self.dataset.data['P_y']['size'] = self.model.n_y**2
+        self.dataset.data['P_y']['names'] = [
+            'ukf_P_y_' + str(i) + str(j) for i in range(self.model.n_y)
+            for j in range(self.model.n_y)
+        ]
 
         self.dataset.data['meas']['size'] = self.n_meas
-        self.dataset.data['meas']['names'] = ['ukf_meas_' + str(i) for i in range(self.n_meas)]
+        self.dataset.data['meas']['names'] = [
+            'ukf_meas_' + str(i) for i in range(self.n_meas)
+        ]
 
         # Choose the UKF implementation
         if self.implementation == 'standard':
@@ -96,8 +106,9 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         elif self.c_matrix is not None:
             return self.c_matrix.shape[0]
         else:
-            raise Exception("The estimator has no measurements information, neither 'h_function' or 'c_matrix' "
-                            "were given.")
+            raise Exception(
+                "The estimator has no measurements information, neither 'h_function' or 'c_matrix' "
+                "were given.")
 
     def _fix_types(self):
         self.x_mean = vertcat(self.x_mean)
@@ -111,13 +122,17 @@ class UnscentedKalmanFilter(EstimatorAbstract):
 
     def _check(self):
         if self.x_mean is None:
-            raise ValueError('A initial condition for the "x_mean" must be provided')
+            raise ValueError(
+                'A initial condition for the "x_mean" must be provided')
 
         if self.p_k is None:
-            raise ValueError('A initial condition for the "p_k" must be provided')
+            raise ValueError(
+                'A initial condition for the "p_k" must be provided')
 
         if self.h_function is None and self.c_matrix is None:
-            raise ValueError('Neither a measurement function "h_function" or a measurement matrix "c_matrix" was given')
+            raise ValueError(
+                'Neither a measurement function "h_function" or a measurement matrix "c_matrix" was given'
+            )
 
         return True
 
@@ -136,7 +151,8 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         x_cov = self.p_k
 
         # obtain the weights
-        sigma_points, weights_m, weights_c = self._get_sigma_points_and_weights(x_mean, x_cov)
+        sigma_points, weights_m, weights_c = self._get_sigma_points_and_weights(
+            x_mean, x_cov)
 
         # Obtain the unscented transformation points via simulation
         simulation_results = []
@@ -146,42 +162,58 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         meas_ut_list = []
         for i in range(self.n_sigma_points):
             x_0_i = sigma_points[i]
-            simulation_results_i = self.model.simulate(x_0=x_0_i, t_0=self.t, t_f=self.t + self.t_s,
-                                                       u=u_k, p=self.p, theta=self.theta, y_0=self.y_guess)
+            simulation_results_i = self.model.simulate(x_0=x_0_i,
+                                                       t_0=self.t,
+                                                       t_f=self.t + self.t_s,
+                                                       u=u_k,
+                                                       p=self.p,
+                                                       theta=self.theta,
+                                                       y_0=self.y_guess)
             simulation_results.append(simulation_results_i)
             x_ut_list.append(simulation_results_i.final_condition()[0])
             y_ut_list.append(simulation_results[i].final_condition()[1])
             x_aug_ut_list.append(vertcat(x_ut_list[-1], y_ut_list[-1]))
 
-            meas_ut_list.append(self._get_measurement_from_prediction(x_ut_list[i],
-                                                                      y_ut_list[i], u_k))
+            meas_ut_list.append(
+                self._get_measurement_from_prediction(x_ut_list[i],
+                                                      y_ut_list[i], u_k))
 
         # Obtain the means
-        x_aug_pred = sum([weights_m[i] * x_aug_ut_list[i] for i in range(self.n_sigma_points)])
+        x_aug_pred = sum([
+            weights_m[i] * x_aug_ut_list[i] for i in range(self.n_sigma_points)
+        ])
         x_pred = x_aug_pred[:self.model.n_x]
-        meas_pred = sum([weights_m[i] * meas_ut_list[i] for i in range(self.n_sigma_points)])
+        meas_pred = sum([
+            weights_m[i] * meas_ut_list[i] for i in range(self.n_sigma_points)
+        ])
 
         # Compute the covariances
-        cov_x_aug_pred = sum(
-            [weights_c[i] * mtimes((x_aug_ut_list[i] - x_aug_pred),
-                                   (x_aug_ut_list[i] - x_aug_pred).T)
-             for i in range(self.n_sigma_points)])
+        cov_x_aug_pred = sum([
+            weights_c[i] * mtimes((x_aug_ut_list[i] - x_aug_pred),
+                                  (x_aug_ut_list[i] - x_aug_pred).T)
+            for i in range(self.n_sigma_points)
+        ])
         cov_x_aug_pred[:self.model.n_x, :self.model.n_x] += self.r_v
 
-        cov_meas_pred = sum([weights_c[i] * mtimes((meas_ut_list[i] - meas_pred),
-                                                   (meas_ut_list[i] - meas_pred).T)
-                             for i in range(self.n_sigma_points)]) + self.r_n
+        cov_meas_pred = sum([
+            weights_c[i] * mtimes((meas_ut_list[i] - meas_pred),
+                                  (meas_ut_list[i] - meas_pred).T)
+            for i in range(self.n_sigma_points)
+        ]) + self.r_n
 
-        cov_xmeas_pred = sum([weights_c[i] * mtimes((x_aug_ut_list[i] - x_aug_pred),
-                                                    (meas_ut_list[i] - meas_pred).T)
-                              for i in range(self.n_sigma_points)])
+        cov_xmeas_pred = sum([
+            weights_c[i] * mtimes((x_aug_ut_list[i] - x_aug_pred),
+                                  (meas_ut_list[i] - meas_pred).T)
+            for i in range(self.n_sigma_points)
+        ])
 
         # Calculate the gain
         k_gain = solve(cov_meas_pred.T, cov_xmeas_pred.T).T
 
         # Correct prediction of the state estimation
         x_mean = x_aug_pred + mtimes(k_gain, (y_k - meas_pred))
-        meas_corr = self._get_measurement_from_prediction(x_mean[:self.model.n_x], x_mean[self.model.n_x:], u_k)
+        meas_corr = self._get_measurement_from_prediction(
+            x_mean[:self.model.n_x], x_mean[self.model.n_x:], u_k)
         print('Predicted state: {}'.format(x_pred))
         print('Prediction error: {}'.format(y_k - meas_pred))
         print('Correction: {}'.format(mtimes(k_gain, (y_k - meas_pred))))
@@ -190,7 +222,8 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         print('Corrected Meas.: {}'.format(meas_corr))
 
         # Correct covariance prediction
-        cov_x_aug = cov_x_aug_pred - mtimes(k_gain, mtimes(cov_meas_pred, k_gain.T))
+        cov_x_aug = cov_x_aug_pred - mtimes(k_gain,
+                                            mtimes(cov_meas_pred, k_gain.T))
 
         self.x_mean = x_mean
         self.p_k = cov_x_aug
@@ -206,7 +239,8 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         self.dataset.insert_data('y', t_k, x_mean[self.model.n_x:])
         self.dataset.insert_data('meas', t_k, meas_corr)
         self.dataset.insert_data('P', t_k, vec(self.p_k))
-        self.dataset.insert_data('P_y', t_k, cov_x_aug[self.model.n_x:, self.model.n_x:])
+        self.dataset.insert_data('P_y', t_k, cov_x_aug[self.model.n_x:,
+                                                       self.model.n_x:])
 
         return x_mean, cov_x_aug
 
@@ -220,18 +254,21 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         x = x.T
         for k in range(p):
             if sign == '+':
-                r = np.sqrt(r_matrix[k, k] ** 2 + x[k] ** 2)
+                r = np.sqrt(r_matrix[k, k]**2 + x[k]**2)
             elif sign == '-':
-                r = np.sqrt(r_matrix[k, k] ** 2 - x[k] ** 2)
+                r = np.sqrt(r_matrix[k, k]**2 - x[k]**2)
             else:
-                raise ValueError("sign can be '-' or '+', value given = {}".format(sign))
+                raise ValueError(
+                    "sign can be '-' or '+', value given = {}".format(sign))
             c = r / r_matrix[k, k]
             s = x[k] / r_matrix[k, k]
             r_matrix[k, k] = r
             if sign == '+':
-                r_matrix[k, k + 1:p] = (r_matrix[k, k + 1:p] + s * x[k + 1:p]) / c
+                r_matrix[k,
+                         k + 1:p] = (r_matrix[k, k + 1:p] + s * x[k + 1:p]) / c
             elif sign == '-':
-                r_matrix[k, k + 1:p] = (r_matrix[k, k + 1:p] - s * x[k + 1:p]) / c
+                r_matrix[k,
+                         k + 1:p] = (r_matrix[k, k + 1:p] - s * x[k + 1:p]) / c
             x[k + 1:p] = c * x[k + 1:p] - s * r_matrix[k, k + 1:p]
         return r_matrix
 
@@ -247,7 +284,7 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         alpha = 1e-3
         kappa = 0
         beta = 2
-        lamb = alpha ** 2 * (ell + kappa)
+        lamb = alpha**2 * (ell + kappa)
 
         # Sigma points
         sqr_root_matrix = chol((ell + lamb) * x_cov).T
@@ -259,7 +296,7 @@ class UnscentedKalmanFilter(EstimatorAbstract):
 
         # Weights
         weights_m.append(lamb / (ell + lamb))
-        weights_c.append(lamb / (ell + lamb) + (1 - alpha ** 2 + beta))
+        weights_c.append(lamb / (ell + lamb) + (1 - alpha**2 + beta))
         for i in range(self.n_sigma_points - 1):
             weights_m.append(1 / (2 * (ell + lamb)))
             weights_c.append(1 / (2 * (ell + lamb)))
@@ -272,7 +309,10 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         elif self.c_matrix is not None:
             measurement_prediction = mtimes(self.c_matrix, vertcat(x, y))
             if self.d_matrix is not None:
-                measurement_prediction = measurement_prediction + mtimes(self.d_matrix, u)
+                measurement_prediction = measurement_prediction + mtimes(
+                    self.d_matrix, u)
         else:
-            raise ValueError('Neither a measurement function "h_function" or a measurement matrix "c_matrix" was given')
+            raise ValueError(
+                'Neither a measurement function "h_function" or a measurement matrix "c_matrix" was given'
+            )
         return measurement_prediction

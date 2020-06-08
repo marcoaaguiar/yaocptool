@@ -115,14 +115,20 @@ class Network:
         :param node2: node2 (which has 'u')
         """
         if not node1.model.has_variable(y):
-            raise ValueError('"node1" ({}) does not have the passed "y" ({})'.format(node1.name, y))
+            raise ValueError(
+                '"node1" ({}) does not have the passed "y" ({})'.format(
+                    node1.name, y))
         if not node2.model.has_variable(u):
-            raise ValueError('"node2" ({}) does not have the passed "u" ({})'.format(node2.name, y))
+            raise ValueError(
+                '"node2" ({}) does not have the passed "u" ({})'.format(
+                    node2.name, y))
         if not (node1, node2) in self.graph.edges:
             self.graph.add_edge(node1, node2, y=DM([]), u=DM([]))
 
-        self.graph.edges[node1, node2]['y'] = vertcat(self.graph.edges[node1, node2]['y'], y)
-        self.graph.edges[node1, node2]['u'] = vertcat(self.graph.edges[node1, node2]['u'], u)
+        self.graph.edges[node1, node2]['y'] = vertcat(
+            self.graph.edges[node1, node2]['y'], y)
+        self.graph.edges[node1, node2]['u'] = vertcat(
+            self.graph.edges[node1, node2]['u'], u)
 
     def remove_connection(self, node1, node2):
         """
@@ -156,7 +162,8 @@ class Network:
         :rtype: OptimalControlProblem
         """
         model = SystemModel(name=self.name + '_model')
-        problem = OptimalControlProblem(model=model, name=self.name + '_problem')
+        problem = OptimalControlProblem(model=model,
+                                        name=self.name + '_problem')
         problem.t_0 = self.problems[0].t_0
         problem.t_f = self.problems[0].t_f
         problem.merge(self.problems)
@@ -198,9 +205,12 @@ class Network:
         colors = [node.color for node in self.nodes]
 
         networkx.draw_spring(self.graph,
-                             node_size=2000, node_color=colors,
-                             with_labels=True, labels=labels,
-                             font_weight='bold', font_color='white')
+                             node_size=2000,
+                             node_color=colors,
+                             with_labels=True,
+                             labels=labels,
+                             font_weight='bold',
+                             font_color='white')
         plt.show()
 
     def get_map_coloring_groups(self):
@@ -221,21 +231,36 @@ class Network:
             y = self.graph.edges[node1, node2]['y']
             u = self.graph.edges[node1, node2]['u']
 
-            y_guess = vertcat(*node1.problem.y_guess)[find_variables_indices_in_vector(y, node1.problem.model.y)]
-            u_guess = vertcat(*node2.problem.u_guess)[find_variables_indices_in_vector(u, node2.problem.model.u)]
+            y_guess = vertcat(
+                *node1.problem.y_guess)[find_variables_indices_in_vector(
+                    y, node1.problem.model.y)]
+            u_guess = vertcat(
+                *node2.problem.u_guess)[find_variables_indices_in_vector(
+                    u, node2.problem.model.u)]
 
-            copy_y = vertcat(*[SX.sym('Dummy_' + y[ind].name()) for ind in range(y.numel())])
-            copy_u = vertcat(*[SX.sym('Dummy_' + u[ind].name()) for ind in range(u.numel())])
+            copy_y = vertcat(
+                *
+                [SX.sym('Dummy_' + y[ind].name()) for ind in range(y.numel())])
+            copy_u = vertcat(
+                *
+                [SX.sym('Dummy_' + u[ind].name()) for ind in range(u.numel())])
 
-            new_model = SystemModel(name='Dummy_Model_{}_to_{}'.format(node1.name, node2.name))
+            new_model = SystemModel(
+                name='Dummy_Model_{}_to_{}'.format(node1.name, node2.name))
             new_model.include_variables(u=copy_y, y=copy_u)
             new_model.include_equations(alg=copy_u - copy_y)
-            new_problem = OptimalControlProblem(name='OCP_Dummy_{}_to_{}'.format(node1.name, node2.name),
-                                                model=new_model, t_f=node1.problem.t_f,
-                                                y_guess=u_guess, u_guess=y_guess)
+            new_problem = OptimalControlProblem(
+                name='OCP_Dummy_{}_to_{}'.format(node1.name, node2.name),
+                model=new_model,
+                t_f=node1.problem.t_f,
+                y_guess=u_guess,
+                u_guess=y_guess)
 
-            new_node = Node(name='Dummy_node_{}_to_{}'.format(node1.name, node2.name),
-                            model=new_model, problem=new_problem, color=0.75)
+            new_node = Node(name='Dummy_node_{}_to_{}'.format(
+                node1.name, node2.name),
+                            model=new_model,
+                            problem=new_problem,
+                            color=0.75)
 
             self.include_nodes(new_node)
 

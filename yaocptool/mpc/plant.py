@@ -19,7 +19,6 @@ class PlantSimulation(Plant):
         Simulates a plant using a model.
 
     """
-
     def __init__(self, model, x_0, **kwargs):
         """
             Plant which uses a SystemModel.simulate to obtain the measurements.
@@ -86,16 +85,24 @@ class PlantSimulation(Plant):
 
     def _initialize_dataset(self):
         self.dataset.data['x']['size'] = self.model.n_x
-        self.dataset.data['x']['names'] = [self.model.x_sym[i].name() for i in range(self.model.n_x)]
+        self.dataset.data['x']['names'] = [
+            self.model.x_sym[i].name() for i in range(self.model.n_x)
+        ]
 
         self.dataset.data['y']['size'] = self.model.n_y
-        self.dataset.data['y']['names'] = [self.model.y_sym[i].name() for i in range(self.model.n_y)]
+        self.dataset.data['y']['names'] = [
+            self.model.y_sym[i].name() for i in range(self.model.n_y)
+        ]
 
         self.dataset.data['u']['size'] = self.model.n_u
-        self.dataset.data['u']['names'] = [self.model.u_sym[i].name() for i in range(self.model.n_u)]
+        self.dataset.data['u']['names'] = [
+            self.model.u_sym[i].name() for i in range(self.model.n_u)
+        ]
 
         self.dataset.data['meas']['size'] = self.c_matrix.size1()
-        self.dataset.data['meas']['names'] = ['meas_' + str(i) for i in range(self.model.n_x)]
+        self.dataset.data['meas']['names'] = [
+            'meas_' + str(i) for i in range(self.model.n_x)
+        ]
 
     def get_measurement(self):
         """Return the plant measurement of a simulated model and advance time by 't_s'.
@@ -106,13 +113,22 @@ class PlantSimulation(Plant):
         """
         # perform the simulation
         if self.has_noise:
-            v_rand = DM(numpy.random.multivariate_normal([0] * self.r_v.shape[0], self.r_v))
+            v_rand = DM(
+                numpy.random.multivariate_normal([0] * self.r_v.shape[0],
+                                                 self.r_v))
         else:
             v_rand = 0
 
         # Simulation (Try to do the simulation with disturbance, if not able to use the disturbance, try again without)
-        sim_result = self.model.simulate(x_0=self.x, t_0=self.t, t_f=self.t + self.t_s, y_0=self.y_guess, u=self.u,
-                                         p=self.p, theta=self.theta, integrator_options=self.integrator_options)
+        sim_result = self.model.simulate(
+            x_0=self.x,
+            t_0=self.t,
+            t_f=self.t + self.t_s,
+            y_0=self.y_guess,
+            u=self.u,
+            p=self.p,
+            theta=self.theta,
+            integrator_options=self.integrator_options)
 
         x, y, u = sim_result.final_condition()
         if self.has_noise:
@@ -123,7 +139,9 @@ class PlantSimulation(Plant):
 
         measurement_wo_noise = mtimes(self.c_matrix, vertcat(x, y))
         if self.has_noise:
-            n_rand = DM(numpy.random.multivariate_normal([0] * self.r_n.shape[0], self.r_n))
+            n_rand = DM(
+                numpy.random.multivariate_normal([0] * self.r_n.shape[0],
+                                                 self.r_n))
             measurement = measurement_wo_noise + n_rand
         else:
             measurement = measurement_wo_noise
@@ -148,6 +166,8 @@ class PlantSimulation(Plant):
             u = vertcat(u)
 
         if not u.shape[0] == self.model.n_u:
-            raise ValueError("Given control does not have the same size of the plant."
-                             "Plant control size: {}, given control size: {}".format(self.model.n_u, u.shape[0]))
+            raise ValueError(
+                "Given control does not have the same size of the plant."
+                "Plant control size: {}, given control size: {}".format(
+                    self.model.n_u, u.shape[0]))
         self.u = u

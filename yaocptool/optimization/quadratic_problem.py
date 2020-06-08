@@ -22,4 +22,5 @@ class QuadraticOptimizationProblem(AbstractOptimizationProblem):
 
     def _create_solver(self):
         problem_dict = self.get_problem_dict()
-        return qpsol(self.name + '_solver', 'qpoases', problem_dict, self.solver_options)
+        return qpsol(self.name + '_solver', 'qpoases', problem_dict,
+                     self.solver_options)

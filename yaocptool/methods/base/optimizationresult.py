@@ -8,7 +8,8 @@ from yaocptool.modelling import DataSet
 try:
     import matplotlib.pyplot as plt
 except ImportError:
-    print('Failed to import matplotlib. Make sure that it is properly installed')
+    print(
+        'Failed to import matplotlib. Make sure that it is properly installed')
     plt = None
 
 
@@ -47,7 +48,8 @@ class OptimizationResult:
         self.y_data = {'values': [], 'time': []}
         self.u_data = {'values': [], 'time': []}
 
-        self.other_data = defaultdict(partial(dict, [('values', []), ('time', [])]))
+        self.other_data = defaultdict(
+            partial(dict, [('values', []), ('time', [])]))
 
         self.x_0 = DM([])
         self.theta = {}
@@ -75,14 +77,19 @@ class OptimizationResult:
 
     @property
     def is_valid(self):
-        for attr in ['finite_elements', 'degree', 'degree_control', 't_0', 't_f']:
+        for attr in [
+                'finite_elements', 'degree', 'degree_control', 't_0', 't_f'
+        ]:
             if getattr(self, attr) < 0:
-                raise Exception('{} attribute {} is lower than 0'.format(self.__class__.__name__, attr))
+                raise Exception('{} attribute {} is lower than 0'.format(
+                    self.__class__.__name__, attr))
         if len(self.time_breakpoints) < 1:
-            raise Exception('{} attribute {} (list) is empty'.format(self.__class__.__name__, 'time_breakpoints'))
+            raise Exception('{} attribute {} (list) is empty'.format(
+                self.__class__.__name__, 'time_breakpoints'))
         for attr in ['objective']:
             if getattr(self, attr) is None:
-                raise Exception('{} attribute {} is None'.format(self.__class__.__name__, attr))
+                raise Exception('{} attribute {} is None'.format(
+                    self.__class__.__name__, attr))
         return True
 
     def first_control(self):
@@ -125,11 +132,17 @@ class OptimizationResult:
         dataset.create_entry('x', size=len(self.x_names), names=self.x_names)
         dataset.create_entry('y', size=len(self.y_names), names=self.y_names)
         dataset.create_entry('u', size=len(self.u_names), names=self.u_names)
-        dataset.create_entry('theta_opt', size=len(self.theta_opt_names), names=self.theta_opt_names, plot_style='step')
+        dataset.create_entry('theta_opt',
+                             size=len(self.theta_opt_names),
+                             names=self.theta_opt_names,
+                             plot_style='step')
 
         for entry in self.other_data:
             size = self.other_data[entry]['values'][0][0].shape[0]
-            dataset.create_entry(entry, size=size, names=[entry + '_' + str(i) for i in range(size)])
+            dataset.create_entry(
+                entry,
+                size=size,
+                names=[entry + '_' + str(i) for i in range(size)])
 
         if self.degree_control > 1:
             dataset.data['u']['plot_style'] = 'plot'
@@ -151,13 +164,16 @@ class OptimizationResult:
             values_u = horzcat(*self.u_data['values'][el])
             dataset.insert_data('u', time_u, values_u)
 
-        dataset.insert_data('theta_opt', time=horzcat(*self.time_breakpoints[:-1]), value=horzcat(*self.theta_opt))
+        dataset.insert_data('theta_opt',
+                            time=horzcat(*self.time_breakpoints[:-1]),
+                            value=horzcat(*self.theta_opt))
 
         for entry in self.other_data:
             for el in range(self.finite_elements):
-                dataset.insert_data(entry,
-                                    time=horzcat(*self.other_data[entry]['time'][el]),
-                                    value=horzcat(*self.other_data[entry]['values'][el]))
+                dataset.insert_data(
+                    entry,
+                    time=horzcat(*self.other_data[entry]['time'][el]),
+                    value=horzcat(*self.other_data[entry]['values'][el]))
 
         return dataset
 

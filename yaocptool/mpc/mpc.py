@@ -102,11 +102,14 @@ class MPC:
         start_time = time.time()
         initial_guess_dict = None
         if self.last_solutions is not None:
-            initial_guess_dict = [solution.raw_solution_dict for solution in self.last_solutions]
+            initial_guess_dict = [
+                solution.raw_solution_dict for solution in self.last_solutions
+            ]
             if len(initial_guess_dict) == 1:
                 initial_guess_dict = initial_guess_dict[0]
 
-        solutions = self.solution_method.solve(x_0=x_k, initial_guess_dict=initial_guess_dict, p=p, last_u=u_k)
+        solutions = self.solution_method.solve(
+            x_0=x_k, initial_guess_dict=initial_guess_dict, p=p, last_u=u_k)
 
         if not isinstance(solutions, list):
             solutions = [solutions]
@@ -144,7 +147,8 @@ class MPC:
         for k in itertools.count(0):
             self.iteration += 1
             if self.verbosity >= 1:
-                print(' Iteration {} ({}) '.format(k, self.iteration).center(30, '='))
+                print(' Iteration {} ({}) '.format(k, self.iteration).center(
+                    30, '='))
 
             # get new measurement from the plant
             t_k, meas_k, u_k = self.get_measurement()
@@ -173,7 +177,8 @@ class MPC:
             new_u = self.post_process_get_new_control(new_u)
             if self.verbosity >= 1:
                 print('Control calculated: {}'.format(new_u))
-                print('Time taken to obtain control: {}'.format(time.time() - time_start_new_control))
+                print('Time taken to obtain control: {}'.format(
+                    time.time() - time_start_new_control))
             self.send_control(new_u)
             new_u = self.send_control(new_u)
 
@@ -209,7 +214,8 @@ class MPC:
             self.iteration += 1
 
             if self.verbosity >= 1:
-                print(' Iteration {} ({}) '.format(k, self.iteration).center(30, '='))
+                print(' Iteration {} ({}) '.format(k, self.iteration).center(
+                    30, '='))
 
             # get new measurement from the plant
             t_k, y_k, u_k = self.get_measurement()
@@ -233,7 +239,8 @@ class MPC:
             self.iteration += 1
 
             if self.verbosity:
-                print(' Iteration {} ({}) '.format(k, self.iteration).center(30, '='))
+                print(' Iteration {} ({}) '.format(k, self.iteration).center(
+                    30, '='))
 
             # get new measurement from the plant
             t_k, y_k, u_k = self.get_measurement()

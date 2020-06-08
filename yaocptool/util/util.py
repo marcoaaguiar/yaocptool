@@ -43,7 +43,10 @@ def find_variables_in_vector_by_name(names, vector, exact=False):
                     result.append(vector[i])
     else:
         for regex in names[:]:
-            result.extend([vector[i] for i in range(vector.numel()) if re.match(regex, vector[i].name())])
+            result.extend([
+                vector[i] for i in range(vector.numel())
+                if re.match(regex, vector[i].name())
+            ])
 
     return result
 
@@ -58,7 +61,9 @@ def remove_variables_from_vector(var, vector):
     """
     to_remove = find_variables_indices_in_vector(var, vector)
     if len(to_remove) == 0:
-        raise ValueError('"var" not found in "vector", var={}, vector={}'.format(var, vector))
+        raise ValueError(
+            '"var" not found in "vector", var={}, vector={}'.format(
+                var, vector))
     vector = remove_variables_from_vector_by_indices(to_remove, vector)
     return vector
 
@@ -76,12 +81,16 @@ def remove_variables_from_vector_by_indices(indices, vector):
         numel = vector.numel()
         if max(indices) > numel:
             raise ValueError(
-                'Found indices out of bounds. Index violating: {}, indices: {}'.format(max(indices), indices))
+                'Found indices out of bounds. Index violating: {}, indices: {}'
+                .format(max(indices), indices))
         if min(indices) < -numel:
             raise ValueError(
-                'Found indices out of bounds. Index violating: {}, indices: {}'.format(min(indices), indices))
+                'Found indices out of bounds. Index violating: {}, indices: {}'
+                .format(min(indices), indices))
 
-    remaining_ind = [ind for ind in range(vector.numel()) if ind not in indices]
+    remaining_ind = [
+        ind for ind in range(vector.numel()) if ind not in indices
+    ]
     vector = vector[remaining_ind]
 
     if vector.shape == (1, 0):
@@ -127,8 +136,9 @@ def join_thetas(*args):
             theta_keys = theta.keys()
             n_keys = len(theta_keys) if n_keys == 0 else n_keys
             if len(theta_keys) > 0 and not len(theta_keys) == n_keys:
-                raise ValueError('Only thetas with size zero or same size are accepted, given: {}'.format(
-                    [len(th.keys()) for th in args]))
+                raise ValueError(
+                    'Only thetas with size zero or same size are accepted, given: {}'
+                    .format([len(th.keys()) for th in args]))
             all_keys.extend(theta.keys())
 
     all_keys = list(set(all_keys))
@@ -171,7 +181,8 @@ def blockdiag(*matrices_list):
     matrix_types = [type(m) for m in matrices_list]
 
     if SX in matrix_types and MX in matrix_types:
-        raise ValueError("Can not mix MX and SX types. Types give: {}".format(matrix_types))
+        raise ValueError(
+            "Can not mix MX and SX types. Types give: {}".format(matrix_types))
 
     if SX in matrix_types:
         matrix = SX.zeros(size_1, size_2)
@@ -184,7 +195,7 @@ def blockdiag(*matrices_list):
     index_2 = 0
 
     for m in matrices_list:
-        matrix[index_1: index_1 + m.size1(), index_2: index_2 + m.size2()] = m
+        matrix[index_1:index_1 + m.size1(), index_2:index_2 + m.size2()] = m
         index_1 += m.size1()
         index_2 += m.size2()
 
@@ -207,10 +218,12 @@ def expm(a_matrix):
     ode = mtimes(a_mx, x_mx)
     dae_system_dict = {'x': x_mx, 'ode': ode, 'p': vec(a_mx)}
 
-    integrator_ = integrator("integrator", "cvodes", dae_system_dict, {'tf': 1})
+    integrator_ = integrator("integrator", "cvodes", dae_system_dict,
+                             {'tf': 1})
     integrator_map = integrator_.map(a_matrix.shape[1], 'thread')
 
-    res = integrator_map(x0=DM.eye(dim), p=repmat(vec(a_matrix), (1, a_matrix.shape[1])))['xf']
+    res = integrator_map(x0=DM.eye(dim),
+                         p=repmat(vec(a_matrix), (1, a_matrix.shape[1])))['xf']
 
     return res
 
@@ -247,7 +260,8 @@ def is_equality(expr):
 
 
 def _create_lagrangian_polynomial_basis(tau, degree, point_at_zero=False):
-    tau_root = collocation_points(degree, 'radau')  # type: list # All collocation time points
+    tau_root = collocation_points(
+        degree, 'radau')  # type: list # All collocation time points
 
     if point_at_zero:
         tau_root.insert(0, 0.0)
@@ -265,7 +279,11 @@ def _create_lagrangian_polynomial_basis(tau, degree, point_at_zero=False):
     return l_list
 
 
-def create_polynomial_approximation(tau, size, degree, name='var_appr', point_at_zero=False):
+def create_polynomial_approximation(tau,
+                                    size,
+                                    degree,
+                                    name='var_appr',
+                                    point_at_zero=False):
     """
         Create a polynomial function.
 
@@ -296,7 +314,8 @@ def create_polynomial_approximation(tau, size, degree, name='var_appr', point_at
     if degree == 1:
         pol = points
     else:
-        ell_list = _create_lagrangian_polynomial_basis(tau=tau, degree=degree, point_at_zero=point_at_zero)
+        ell_list = _create_lagrangian_polynomial_basis(
+            tau=tau, degree=degree, point_at_zero=point_at_zero)
         pol = sum([ell_list[j] * points[:, j] for j in range(n_par)])
     par = vec(points)
 

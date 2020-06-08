@@ -17,4 +17,3 @@ import manual_tests.testTwoTanks
 import manual_tests.testDirectMethodWithAdjointStates
 import manual_tests.testAugmentedLagrange
 import manual_tests.testParametrizeControl
-

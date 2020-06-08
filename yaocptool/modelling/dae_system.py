@@ -10,8 +10,14 @@ class DAESystem(object):
     For modelling it is recommended the use of the SystemModel class, use this class if you need more control of
     the integrator.
     """
-
-    def __init__(self, x=None, y=None, p=None, ode=None, alg=None, t=None, tau=None):
+    def __init__(self,
+                 x=None,
+                 y=None,
+                 p=None,
+                 ode=None,
+                 alg=None,
+                 t=None,
+                 tau=None):
         """
             DAE System class used primarily for simulation by the SystemModel class
 
@@ -93,7 +99,13 @@ class DAESystem(object):
         if self.is_ode:
             dae_sys_dict = {'x': self.x, 'ode': self.ode, 't': self.t}
         else:
-            dae_sys_dict = {'x': self.x, 'z': self.y, 'ode': self.ode, 'alg': self.alg, 't': self.t}
+            dae_sys_dict = {
+                'x': self.x,
+                'z': self.y,
+                'ode': self.ode,
+                'alg': self.alg,
+                't': self.t
+            }
 
         if self.has_parameters:
             dae_sys_dict['p'] = self.p
@@ -106,7 +118,8 @@ class DAESystem(object):
         :param casadi.SX var:
         :rtype: bool
         """
-        ind = find_variables_indices_in_vector(var, vertcat(self.x, self.y, self.p, self.t, self.tau))
+        ind = find_variables_indices_in_vector(
+            var, vertcat(self.x, self.y, self.p, self.t, self.tau))
         return len(ind) > 0
 
     def depends_on(self, var):
@@ -128,12 +141,22 @@ class DAESystem(object):
         :param t_kp1: t(k+1), the time at the end of the simulation interval
         """
         if self.t is None:
-            raise AttributeError("DAESystem.t was not set: self.t = {}".format(self.t))
+            raise AttributeError("DAESystem.t was not set: self.t = {}".format(
+                self.t))
         if self.tau is None:
-            raise AttributeError("DAESystem.t was not set: self.tau = {}".format(self.tau))
+            raise AttributeError(
+                "DAESystem.t was not set: self.tau = {}".format(self.tau))
 
-        self.alg = convert_expr_from_tau_to_time(expr=self.alg, t_sym=self.t, tau_sym=self.tau, t_k=t_k, t_kp1=t_kp1)
-        self.ode = convert_expr_from_tau_to_time(expr=self.ode, t_sym=self.t, tau_sym=self.tau, t_k=t_k, t_kp1=t_kp1)
+        self.alg = convert_expr_from_tau_to_time(expr=self.alg,
+                                                 t_sym=self.t,
+                                                 tau_sym=self.tau,
+                                                 t_k=t_k,
+                                                 t_kp1=t_kp1)
+        self.ode = convert_expr_from_tau_to_time(expr=self.ode,
+                                                 t_sym=self.t,
+                                                 tau_sym=self.tau,
+                                                 t_k=t_k,
+                                                 t_kp1=t_kp1)
 
     def substitute_variable(self, old_var, new_var):
         """
@@ -163,8 +186,14 @@ class DAESystem(object):
         self.substitute_variable(dae_sys.t, self.t)
         self.substitute_variable(dae_sys.tau, self.tau)
 
-    def simulate(self, x_0, t_f, t_0=0.0, p=None, y_0=None,
-                 integrator_type='implicit', integrator_options=None):
+    def simulate(self,
+                 x_0,
+                 t_f,
+                 t_0=0.0,
+                 p=None,
+                 y_0=None,
+                 integrator_type='implicit',
+                 integrator_options=None):
         """
             Create an integrator and simulate a system from 't_0' to 't_f'.
 
@@ -179,12 +208,15 @@ class DAESystem(object):
         :rtype: dict
         """
         if t_f == t_0:
-            raise ValueError("Initial time and final time must be different, t_0!=t_f. t_0={}, t_f={}".format(t_0, t_f))
+            raise ValueError(
+                "Initial time and final time must be different, t_0!=t_f. t_0={}, t_f={}"
+                .format(t_0, t_f))
 
         if self.depends_on(self.tau):
-            raise AttributeError("The system of equations ('ode' and 'alg') depend on the variable 'tau'. Before being"
-                                 "able to simulate it is required to transform the dependence on tau into a dependence "
-                                 "on t. Use the 'convert_from_tau_to_time' for this.")
+            raise AttributeError(
+                "The system of equations ('ode' and 'alg') depend on the variable 'tau'. Before being"
+                "able to simulate it is required to transform the dependence on tau into a dependence "
+                "on t. Use the 'convert_from_tau_to_time' for this.")
 
         if integrator_options is None:
             integrator_options = {}
@@ -238,18 +270,25 @@ class DAESystem(object):
             return integrator(name, "idas", self.dae_system_dict, options)
         if integrator_type == 'rk4':
             if self.is_ode:
-                return self._create_explicit_integrator('explicit_integrator', 'rk4', self.dae_system_dict,
-                                                        options)
+                return self._create_explicit_integrator(
+                    'explicit_integrator', 'rk4', self.dae_system_dict,
+                    options)
             else:
-                raise Exception('Explicit integrator not implemented for DAE systems')
+                raise Exception(
+                    'Explicit integrator not implemented for DAE systems')
         if integrator_type in ['rk', 'collocation', 'cvodes', 'idas']:
-            return integrator(name, integrator_type, self.dae_system_dict, options)
-        raise ValueError("'integrator_type'={} not available. Options available are: 'cvodes', 'idas', implicit "
-                         "(default, auto-select between 'idas' and 'cvodes'), 'rk',"
-                         " and 'collocation'.".format(integrator_type))
+            return integrator(name, integrator_type, self.dae_system_dict,
+                              options)
+        raise ValueError(
+            "'integrator_type'={} not available. Options available are: 'cvodes', 'idas', implicit "
+            "(default, auto-select between 'idas' and 'cvodes'), 'rk',"
+            " and 'collocation'.".format(integrator_type))
 
     @staticmethod
-    def _create_explicit_integrator(name, integrator_type, dae_sys, options=None):
+    def _create_explicit_integrator(name,
+                                    integrator_type,
+                                    dae_sys,
+                                    options=None):
         default_options = {'t0': 0, 'tf': 1, 'iterations': 4}
         if options is None:
             options = default_options
@@ -258,7 +297,8 @@ class DAESystem(object):
                 options[k] = default_options[k]
 
         if 'alg' in dae_sys:
-            raise Exception('Explicit integrator not implemented for DAE systems')
+            raise Exception(
+                'Explicit integrator not implemented for DAE systems')
         f_in = [dae_sys['t'], dae_sys['x']]
         if 'p' in dae_sys:
             f_in.append(dae_sys['p'])
@@ -271,10 +311,13 @@ class DAESystem(object):
         iterations = options['iterations']
         n_states = dae_sys['x'].numel()
         if integrator_type == 'rk4':
-            def runge_kutta_4th_order(x0=DM.zeros(n_states, 1), p=None, n_iter=iterations):
+
+            def runge_kutta_4th_order(
+                    x0=DM.zeros(n_states, 1), p=None, n_iter=iterations):
                 if n_iter < 1:
                     raise Exception(
-                        "The given number of Runge Kutta iterations is less than one, given {}".format(n_iter))
+                        "The given number of Runge Kutta iterations is less than one, given {}"
+                        .format(n_iter))
                 if p is None:
                     p = []
 

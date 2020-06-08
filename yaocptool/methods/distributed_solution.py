@@ -4,8 +4,12 @@ from yaocptool.parallel.worker import Worker
 
 
 class DistributedSolution:
-    def __init__(self, subsystem_classes_list, parameters_list, connection_list,
-                 main_to_subsystems_list=None, **kwargs):
+    def __init__(self,
+                 subsystem_classes_list,
+                 parameters_list,
+                 connection_list,
+                 main_to_subsystems_list=None,
+                 **kwargs):
         if main_to_subsystems_list is None:
             main_to_subsystems_list = []
 
@@ -45,9 +49,12 @@ class DistributedSolution:
                 queue_in += [self.external_queue[s]]
             queue_in += self.queues_in[s].values()
 
-            worker = Worker(subsystem_class, parameters_list[s], 'solve',
+            worker = Worker(subsystem_class,
+                            parameters_list[s],
+                            'solve',
                             queue_in=queue_in,
-                            queue_out=list(self.queues_out[s].values()) + [self.queue_listener[s]])
+                            queue_out=list(self.queues_out[s].values()) +
+                            [self.queue_listener[s]])
             self.workers.append(worker)
 
         self.initialize()
@@ -67,7 +74,13 @@ class DistributedSolution:
                 if (r, s) in self.connection_list:
                     self.queues_in[s][r].put(None)
 
-    def solve(self, initial_guess=None, p=None, theta=None, x_0=None, last_u=None, initial_guess_dict=None):
+    def solve(self,
+              initial_guess=None,
+              p=None,
+              theta=None,
+              x_0=None,
+              last_u=None,
+              initial_guess_dict=None):
         if initial_guess_dict is None:
             initial_guess_dict = [None] * self.n_subsystems
 
