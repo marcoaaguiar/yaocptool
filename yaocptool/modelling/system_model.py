@@ -470,7 +470,7 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
             self.include_theta(model.theta)
 
             # include equations
-            self.include_system_equations(ode=model.ode, alg=model.alg)
+            self.include_equations(ode=model.ode, x=model.x, alg=model.alg)
 
             # replace model time variables with this model time variables
             self.replace_variable(model.t, self.t)

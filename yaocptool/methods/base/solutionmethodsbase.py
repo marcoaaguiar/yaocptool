@@ -93,7 +93,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
                                             starting_index=0,
                                             tau=None):
         if tau is None:
-            tau = self.model.tau_sym  # symbolic variable
+            tau = self.model.tau  # symbolic variable
 
         tau_root = self.collocation_points(
             degree, with_zero=True)  # All collocation time points
@@ -120,7 +120,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
             name = [name + '_' + str(i) for i in range(size)]
 
         if tau is None:
-            tau = self.model.tau_sym  # Collocation point
+            tau = self.model.tau  # Collocation point
 
         if degree == 1:
             if size > 0:
@@ -388,7 +388,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
             self.model.x[i].name() for i in range(self.model.n_x)
         ]
         optimization_result.y_names = [
-            self.model.y_sym[i].name() for i in range(self.model.n_y)
+            self.model.y[i].name() for i in range(self.model.n_y)
         ]
         optimization_result.u_names = [
             self.model.u[i].name() for i in range(self.model.n_u)
