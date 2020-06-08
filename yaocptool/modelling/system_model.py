@@ -11,12 +11,12 @@ from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfind
 from yaocptool import remove_variables_from_vector, config, find_variables_indices_in_vector, remove_variables_from_vector_by_indices, find_variables_in_vector_by_name
 from yaocptool.modelling import DAESystem, SimulationResult
 from yaocptool.modelling.utils import EqualityEquation, Derivative
-from yaocptool.modelling.mixins import StateMixin, AlgebraicMixin, ControlMixin
+from yaocptool.modelling.mixins import StateMixin, AlgebraicMixin, ControlMixin, ParameterMixin
 from itertools import islice
 from contextlib import suppress
 
 
-class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
+class SystemModel(StateMixin, AlgebraicMixin, ControlMixin, ParameterMixin):
     t = SX.sym("t")
     tau = SX.sym("tau")
 
@@ -49,9 +49,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-        self.p = SX([])
-        self.theta = SX([])
-
         self.verbosity = 0
 
     @property
@@ -66,18 +63,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
             if self.n_y > 0:
                 return "dae"
         return "ode"
-
-    @property
-    def n_p(self):
-        return self.p.numel()
-
-    @property
-    def n_theta(self):
-        return self.theta.numel()
-
-    @property
-    def n_u_par(self):
-        return self.u_par.numel()
 
     @property
     def x_sys_sym(self):
@@ -105,26 +90,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
         )
 
     @property
-    def p_sym(self):
-        raise DeprecationWarning
-        return self.p
-
-    @p_sym.setter
-    def p_sym(self, value):
-        raise DeprecationWarning
-        self.p = value
-
-    @property
-    def theta_sym(self):
-        raise DeprecationWarning
-        return self.theta
-
-    @theta_sym.setter
-    def theta_sym(self, value):
-        raise DeprecationWarning
-        self.theta = value
-
-    @property
     def t_sym(self):
         return self.t
 
@@ -139,26 +104,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
     @tau_sym.setter
     def tau_sym(self, value):
         self.tau = value
-
-    @property
-    def x_names(self):
-        return [self.x[i].name() for i in range(self.n_x)]
-
-    @property
-    def y_names(self):
-        return [self.y[i].name() for i in range(self.n_y)]
-
-    @property
-    def u_names(self):
-        return [self.u[i].name() for i in range(self.n_u)]
-
-    @property
-    def p_names(self):
-        return [self.p[i].name() for i in range(self.n_p)]
-
-    @property
-    def theta_names(self):
-        return [self.theta[i].name() for i in range(self.n_theta)]
 
     def __str__(self):
         return f'{self.__class__.__name__}("{self.name}")'
@@ -250,36 +195,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
             print(line)
         print(("=" * column_size + header_separator) * 5)
 
-    def create_parameter(self, name="p", size=1):
-        """
-        Create a new parameter name "name" and size "size"
-
-        :param name: str
-        :param size: int
-        :return:
-        """
-        if self.model_name_as_prefix:
-            name = self.name + "_" + name
-
-        new_p = SX.sym(name, size)
-        self.include_parameter(vec(new_p))
-        return new_p
-
-    def create_theta(self, name="theta", size=1):
-        """
-        Create a new parameter name "name" and size "size"
-
-        :param name: str
-        :param size: int
-        :return:
-        """
-        if self.model_name_as_prefix:
-            name = self.name + "_" + name
-
-        new_theta = SX.sym(name, size)
-        self.include_theta(vec(new_theta))
-        return new_theta
-
     def include_equations(self, *args, **kwargs):
         """
             Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)
@@ -325,12 +240,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
                 theta = vertcat(*theta)
             self.include_theta(theta)
 
-    def include_parameter(self, p):
-        self.p = vertcat(self.p, p)
-
-    def include_theta(self, theta):
-        self.theta = vertcat(self.theta, theta)
-
     def replace_variable(self, original, replacement):
         """
             Replace a variable or parameter by an variable or expression.
@@ -341,12 +250,6 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
                 counters. Types: 'x', 'y', 'u', 'p', 'ignore'
         """
         super().replace_variable(original, replacement)
-
-    def remove_parameter(self, var):
-        self.p = remove_variables_from_vector(var, self.p)
-
-    def remove_theta(self, var):
-        self.theta = remove_variables_from_vector(var, self.theta)
 
     def get_variable_by_name(self, name="", var_type=None):
         """

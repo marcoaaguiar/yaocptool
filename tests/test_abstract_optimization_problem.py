@@ -53,28 +53,44 @@ class TestAbstractOptimizationProblem(TestCase):
         ub = -DM(range(1, 4))
         lb = DM(range(5, 8))
         aop = AbstractOptimizationProblem()
-        self.assertRaises(ValueError, aop.create_variable,
-                          name='x', size=3, lb=lb, ub=ub)
+        self.assertRaises(ValueError,
+                          aop.create_variable,
+                          name='x',
+                          size=3,
+                          lb=lb,
+                          ub=ub)
 
     def test_include_variable_ub_wrong_size(self):
         ub = -DM(range(1, 5))
         lb = DM(range(5, 8))
         aop = AbstractOptimizationProblem()
-        self.assertRaises(ValueError, aop.create_variable,
-                          name='x', size=3, lb=lb, ub=ub)
+        self.assertRaises(ValueError,
+                          aop.create_variable,
+                          name='x',
+                          size=3,
+                          lb=lb,
+                          ub=ub)
 
     def test_include_variable_lb_wrong_size(self):
         ub = -DM(range(1, 4))
         lb = DM(range(5, 10))
         aop = AbstractOptimizationProblem()
-        self.assertRaises(ValueError, aop.create_variable,
-                          name='x', size=3, lb=lb, ub=ub)
+        self.assertRaises(ValueError,
+                          aop.create_variable,
+                          name='x',
+                          size=3,
+                          lb=lb,
+                          ub=ub)
 
     def test_include_variable_parameter_in_bound(self):
         aop = AbstractOptimizationProblem()
         p = aop.create_parameter('p')
-        self.assertRaises(ValueError, aop.create_variable,
-                          name='x', size=3, lb=p, ub=p)
+        self.assertRaises(ValueError,
+                          aop.create_variable,
+                          name='x',
+                          size=3,
+                          lb=p,
+                          ub=p)
 
     def test_create_parameter(self):
         aop = AbstractOptimizationProblem()
@@ -102,7 +118,7 @@ class TestAbstractOptimizationProblem(TestCase):
     def test_set_objective(self):
         aop = AbstractOptimizationProblem()
         x = aop.create_variable('x', 2)
-        f = x[0] ** 2 + x[1] ** 2
+        f = x[0]**2 + x[1]**2
         aop.set_objective(f)
 
         self.assertTrue(is_equal(aop.f, f))
@@ -119,13 +135,13 @@ class TestAbstractOptimizationProblem(TestCase):
         aop = AbstractOptimizationProblem()
         x = aop.create_variable('x', 2)
 
-        self.assertRaises(ValueError, aop.set_objective, x ** 2)
+        self.assertRaises(ValueError, aop.set_objective, x**2)
 
     def test_get_problem_dict(self):
         aop = AbstractOptimizationProblem()
         x = aop.create_variable('x', 3)
         p = aop.create_parameter('p', 3)
-        f = sum([x[i] ** 2 for i in range(x.numel())])
+        f = sum([x[i]**2 for i in range(x.numel())])
         g = x[0] - x[1] + 2 * x[2]
         aop.set_objective(f)
         aop.include_inequality(g, lb=-10, ub=20)
@@ -151,7 +167,7 @@ class TestAbstractOptimizationProblem(TestCase):
 
         x = aop.create_variable('x', 3, lb=lbx, ub=ubx)
         p = aop.create_parameter('p', 3)
-        f = sum([x[i] ** 2 for i in range(x.numel())])
+        f = sum([x[i]**2 for i in range(x.numel())])
         g = x[0] - x[1] + 2 * x[2]
 
         aop.set_objective(f)
@@ -192,8 +208,11 @@ class TestAbstractOptimizationProblem(TestCase):
         ub = 1
         aop = AbstractOptimizationProblem()
         x = aop.create_variable('x', 2)
-        self.assertRaises(ValueError, aop.include_inequality,
-                          x[0] - x[1], lb=lb, ub=ub)
+        self.assertRaises(ValueError,
+                          aop.include_inequality,
+                          x[0] - x[1],
+                          lb=lb,
+                          ub=ub)
 
     def test_include_inequality_scalar_bound(self):
         lb = 1
@@ -211,8 +230,7 @@ class TestAbstractOptimizationProblem(TestCase):
         aop = AbstractOptimizationProblem()
         x = aop.create_variable('x', 2)
         g = x[0] - x[1]
-        self.assertRaises(ValueError, aop.include_inequality,
-                          g, lb=lb, ub=ub)
+        self.assertRaises(ValueError, aop.include_inequality, g, lb=lb, ub=ub)
 
     def test_include_inequality_w_external_variable_in_bound(self):
         theta = MX.sym('theta')
@@ -270,8 +288,7 @@ class TestAbstractOptimizationProblem(TestCase):
         aop = AbstractOptimizationProblem()
         x = aop.create_variable('x', 2)
         g = x[0] - x[1]
-        self.assertRaises(ValueError, aop.include_equality,
-                          g, rhs)
+        self.assertRaises(ValueError, aop.include_equality, g, rhs)
 
     def test_include_equality_w_external_variable_in_bound(self):
         theta = MX.sym('theta')

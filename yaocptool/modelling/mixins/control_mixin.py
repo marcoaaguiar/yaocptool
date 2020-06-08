@@ -15,6 +15,14 @@ class ControlMixin:
     def n_u(self):
         return self.u.numel()
 
+    @property
+    def n_u_par(self):
+        return self.u_par.numel()
+
+    @property
+    def u_names(self):
+        return [self.u[i].name() for i in range(self.n_u)]
+
     def create_control(self, name="u", size=1):
         """
         Create a new control variable name "name" and size "size".

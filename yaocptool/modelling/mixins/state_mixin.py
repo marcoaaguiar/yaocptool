@@ -19,6 +19,10 @@ class StateMixin:
         return self.x.numel()
 
     @property
+    def x_names(self):
+        return [self.x[i].name() for i in range(self.n_x)]
+
+    @property
     def ode(self):
         try:
             return vertcat(

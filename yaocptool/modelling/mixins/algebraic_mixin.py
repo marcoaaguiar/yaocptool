@@ -14,6 +14,10 @@ class AlgebraicMixin:
     def n_y(self):
         return self.y.numel()
 
+    @property
+    def y_names(self):
+        return [self.y[i].name() for i in range(self.n_y)]
+
     def create_algebraic_variable(self, name="y", size=1):
         """
         Create a new algebraic variable with the name "name" and size "size".

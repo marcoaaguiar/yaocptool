@@ -26,40 +26,6 @@ class TestSystemModel(TestCase):
         assert self.ode_model.system_type == "ode"
         assert self.dae_model.system_type, "dae"
 
-    def test_n_y(self):
-        assert self.ode_model.n_y == 0
-        assert self.dae_model.n_y == 3
-
-    def test_n_u(self):
-        assert self.ode_model.n_u == 3
-        assert self.dae_model.n_u == 3
-
-    def test_n_p(self):
-        self.assertEqual(self.ode_model.n_p, 0)
-        self.assertEqual(self.dae_model.n_p, 0)
-
-        # with p
-        self.ode_model.p = SX.sym("p", 4)
-        self.dae_model.p = SX.sym("p", 4)
-
-        self.assertEqual(self.ode_model.n_p, 4)
-        self.assertEqual(self.dae_model.n_p, 4)
-
-    def test_n_theta(self):
-        self.assertEqual(self.ode_model.n_theta, 0)
-        self.assertEqual(self.dae_model.n_theta, 0)
-
-        # with theta
-        self.ode_model.theta = SX.sym("theta", 4)
-        self.dae_model.theta = SX.sym("theta", 4)
-
-        self.assertEqual(self.ode_model.n_theta, 4)
-        self.assertEqual(self.dae_model.n_theta, 4)
-
-    def test_n_u_par(self):
-        self.assertEqual(self.ode_model.n_u_par, 3)
-        self.assertEqual(self.dae_model.n_u_par, 3)
-
     def test_x_sys_sym(self):
         self.assertTrue(is_equal(self.ode_model.x_sys_sym, self.ode_model.x))
 
@@ -104,30 +70,6 @@ class TestSystemModel(TestCase):
             for index in range(len(model.all_sym)):
                 self.assertTrue(is_equal(model.all_sym[index], answer[index]))
 
-    def test_p(self):
-        self.assertTrue(is_equal(self.ode_model.p, self.ode_model.p))
-        self.assertTrue(is_equal(self.dae_model.p, self.dae_model.p))
-
-    def test_p_setter(self):
-        new_p = SX.sym("p", 2)
-        self.ode_model.p = new_p
-        self.dae_model.p = new_p
-
-        self.assertTrue(is_equal(self.ode_model.p, new_p))
-        self.assertTrue(is_equal(self.dae_model.p, new_p))
-
-    def test_theta(self):
-        self.assertTrue(is_equal(self.ode_model.theta, self.ode_model.theta))
-        self.assertTrue(is_equal(self.dae_model.theta, self.dae_model.theta))
-
-    def test_theta_setter(self):
-        new_theta = SX.sym("theta", 2)
-        self.ode_model.theta = new_theta
-        self.dae_model.theta = new_theta
-
-        self.assertTrue(is_equal(self.ode_model.theta, new_theta))
-        self.assertTrue(is_equal(self.dae_model.theta, new_theta))
-
     def test_t(self):
         self.assertTrue(is_equal(self.ode_model.t, self.ode_model.t))
         self.assertTrue(is_equal(self.dae_model.t, self.dae_model.t))
@@ -167,19 +109,6 @@ class TestSystemModel(TestCase):
             for ind in range(model.n_u):
                 self.assertEqual(model.u[ind].name(), model.u_names[ind])
 
-    def test_p_names(self):
-        for model in [self.ode_model, self.dae_model]:
-            model.create_parameter("par", 10)
-            for ind in range(model.n_p):
-                self.assertEqual(model.p[ind].name(), model.p_names[ind])
-
-    def test_theta_names(self):
-        for model in [self.ode_model, self.dae_model]:
-            model.create_theta("theta", 10)
-            for ind in range(model.n_theta):
-                self.assertEqual(model.theta[ind].name(),
-                                 model.theta_names[ind])
-
     def test_print_variables(self):
         for model in [self.ode_model, self.dae_model]:
             model.print_variables()
@@ -190,50 +119,6 @@ class TestSystemModel(TestCase):
         u = self.ode_model.create_input("u", n_new_u)
         self.assertEqual(self.ode_model.n_u, n_u_initial + n_new_u)
         self.assertTrue(is_equal(self.ode_model.u[-n_new_u:], u))
-
-    def test_create_parameter(self):
-        n_p_initial = self.ode_model.n_p
-        n_new_p = 4
-        p = self.ode_model.create_parameter("p", n_new_p)
-        self.assertEqual(self.ode_model.n_p, n_p_initial + n_new_p)
-        self.assertTrue(is_equal(self.ode_model.p[-n_new_p:], p))
-
-    def test_create_theta(self):
-        n_theta_initial = self.ode_model.n_theta
-        n_new_theta = 4
-        theta = self.ode_model.create_theta("theta", n_new_theta)
-        self.assertEqual(self.ode_model.n_theta, n_theta_initial + n_new_theta)
-        self.assertTrue(is_equal(self.ode_model.theta[-n_new_theta:], theta))
-
-    def test_include_parameter(self):
-        new_p_1 = SX.sym("new_p")
-        new_p_2 = SX.sym("new_p_2", 2)
-        for model in [self.ode_model, self.dae_model]:
-            model_n_p = model.n_p
-            model.include_parameter(new_p_1)
-
-            self.assertEqual(model.n_p, model_n_p + 1)
-            self.assertTrue(is_equal(model.p[-1], new_p_1))
-
-            model.include_parameter(new_p_2)
-            self.assertEqual(model.n_p, model_n_p + 1 + 2)
-            self.assertTrue(is_equal(model.p[-3], new_p_1))
-            self.assertTrue(is_equal(model.p[-2:], new_p_2))
-
-    def test_include_theta(self):
-        new_theta_1 = SX.sym("new_theta")
-        new_theta_2 = SX.sym("new_theta_2", 2)
-        for model in [self.ode_model, self.dae_model]:
-            model_n_theta = model.n_theta
-            model.include_theta(new_theta_1)
-
-            self.assertEqual(model.n_theta, model_n_theta + 1)
-            self.assertTrue(is_equal(model.theta[-1], new_theta_1))
-
-            model.include_theta(new_theta_2)
-            self.assertEqual(model.n_theta, model_n_theta + 1 + 2)
-            self.assertTrue(is_equal(model.theta[-3], new_theta_1))
-            self.assertTrue(is_equal(model.theta[-2:], new_theta_2))
 
     def test_get_variable_by_name(self):
         model = self.dae_model.get_copy()
@@ -289,34 +174,6 @@ class TestSystemModel(TestCase):
         k = model.create_parameter("k")
         model.parametrize_control(model.u[0], -k * model.x[0], k)
         self.assertTrue(model.is_parametrized())
-
-
-def test_remove_parameter(model):
-    model.create_parameter("par", 3)
-    ind_to_remove = 1
-    to_remove = model.p[ind_to_remove]
-    n_p_original = model.n_p
-
-    model.remove_parameter(to_remove)
-
-    # removed var
-    assert model.n_p == n_p_original - 1
-    for ind in range(model.n_p):
-        assert not is_equal(model.p[ind], to_remove)
-
-
-def test_remove_theta(model):
-    model.create_theta("par", 3)
-    ind_to_remove = 0
-    to_remove = model.theta[ind_to_remove]
-    n_theta_original = model.n_theta
-
-    model.remove_theta(to_remove)
-
-    # removed var
-    assert model.n_theta == n_theta_original - 1
-    for ind in range(model.n_theta):
-        assert not is_equal(model.theta[ind], to_remove)
 
 
 def test_replace_variable_wrong_size(model):

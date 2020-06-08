@@ -8,6 +8,13 @@ def model():
     return AlgebraicMixin()
 
 
+def test_n_y(model):
+    assert model.n_y == 0
+
+    model.create_algebraic_variable('y', 3)
+    assert model.n_y == 3
+
+
 def test_include_algebraic(model):
     new_y_1 = SX.sym("new_y")
     new_y_2 = SX.sym("new_y_2", 2)

@@ -9,6 +9,20 @@ def model():
     return ControlMixin()
 
 
+def test_n_u(model):
+    assert model.n_u == 0
+
+    model.create_control('u', 3)
+    assert model.n_u == 3
+
+
+def test_n_u_par(model):
+    assert model.n_u_par == 0
+
+    model.create_control('u', 3)
+    assert model.n_u_par == 3
+
+
 def test_include_control(model: ControlMixin):
     new_u_1 = SX.sym("new_u")
     new_u_2 = SX.sym("new_u_2", 2)

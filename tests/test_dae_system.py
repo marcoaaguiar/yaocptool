@@ -24,7 +24,7 @@ class TestDAESystem(TestCase):
         t = SX.sym('t')
 
         ode = -2 * x
-        alg = y - x[0] + x[1] ** 2
+        alg = y - x[0] + x[1]**2
 
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, t=t)
 
@@ -57,7 +57,7 @@ class TestDAESystem(TestCase):
         t = SX.sym('t')
 
         ode = -2 * x
-        alg = y - x[0] + x[1] ** 2
+        alg = y - x[0] + x[1]**2
 
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, t=t)
 
@@ -69,7 +69,7 @@ class TestDAESystem(TestCase):
         t = SX.sym('t')
 
         ode = -2 * x
-        alg = y - x[0] + x[1] ** 2
+        alg = y - x[0] + x[1]**2
 
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, t=t)
 
@@ -93,7 +93,7 @@ class TestDAESystem(TestCase):
         p = SX.sym('p')
 
         ode = -2 * x
-        alg = y - x[0] + x[1] ** 2 + p
+        alg = y - x[0] + x[1]**2 + p
 
         sys = DAESystem(x=x, y=y, p=p, ode=ode, alg=alg, t=t)
 
@@ -105,7 +105,7 @@ class TestDAESystem(TestCase):
         t = SX.sym('t')
 
         ode = -2 * x
-        alg = y - x[0] + x[1] ** 2
+        alg = y - x[0] + x[1]**2
 
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, t=t)
 
@@ -118,7 +118,7 @@ class TestDAESystem(TestCase):
         t = SX.sym('t')
 
         ode = -2 * x
-        alg = y - x[0] + x[1] ** 2
+        alg = y - x[0] + x[1]**2
 
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, t=t, p=p)
         res = {'x': x, 'z': y, 'p': p, 'ode': ode, 'alg': alg, 't': t}
@@ -133,7 +133,7 @@ class TestDAESystem(TestCase):
         t = SX.sym('t')
 
         ode = -2 * x
-        alg = y - x[0] + x[1] ** 2
+        alg = y - x[0] + x[1]**2
 
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, t=t)
         res = {'x': x, 'z': y, 'ode': ode, 'alg': alg, 't': t}
@@ -227,7 +227,7 @@ class TestDAESystem(TestCase):
         t = SX.sym('t')
 
         ode = -2 * x
-        alg = y - x[0] + x[1] ** 2
+        alg = y - x[0] + x[1]**2
 
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, t=t, p=p)
 
@@ -242,7 +242,7 @@ class TestDAESystem(TestCase):
         tau = SX.sym('tau')
 
         ode = -2 * x
-        alg = y - x[0] + x[1] ** 2
+        alg = y - x[0] + x[1]**2
 
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, p=p)
 
@@ -286,7 +286,15 @@ class TestDAESystem(TestCase):
 
         sys.substitute_variable(x, new_x)
 
-        res = {'ode': -2 * new_x + y * p, 'alg': y - new_x - p, 'x': new_x, 'y': y, 'p': p, 't': t, 'tau': tau}
+        res = {
+            'ode': -2 * new_x + y * p,
+            'alg': y - new_x - p,
+            'x': new_x,
+            'y': y,
+            'p': p,
+            't': t,
+            'tau': tau
+        }
         for key in res:
             self.assertTrue(is_equal(res[key], sys.__dict__[key], 10))
 
@@ -308,7 +316,15 @@ class TestDAESystem(TestCase):
 
         sys.substitute_variable(y, new_y)
 
-        res = {'ode': -2 * x + new_y * p, 'alg': new_y - x - p, 'x': x, 'y': new_y, 'p': p, 't': t, 'tau': tau}
+        res = {
+            'ode': -2 * x + new_y * p,
+            'alg': new_y - x - p,
+            'x': x,
+            'y': new_y,
+            'p': p,
+            't': t,
+            'tau': tau
+        }
         for key in res:
             self.assertTrue(is_equal(res[key], sys.__dict__[key], 10))
 
@@ -330,7 +346,15 @@ class TestDAESystem(TestCase):
 
         sys.substitute_variable(p, new_p)
 
-        res = {'ode': -2 * x + y * new_p, 'alg': y - x - new_p, 'x': x, 'y': y, 'p': new_p, 't': t, 'tau': tau}
+        res = {
+            'ode': -2 * x + y * new_p,
+            'alg': y - x - new_p,
+            'x': x,
+            'y': y,
+            'p': new_p,
+            't': t,
+            'tau': tau
+        }
         for key in res:
             self.assertTrue(is_equal(res[key], sys.__dict__[key], 10))
 
@@ -365,10 +389,13 @@ class TestDAESystem(TestCase):
 
         # check if variables and equations were passed
         for key in ['x', 'y', 'ode', 'alg', 'p']:
-            self.assertTrue(is_equal(res_sys.__dict__[key][0], sys.__dict__[key], 30))
-            self.assertTrue(is_equal(res_sys.__dict__[key][1], substitute(sys2.__dict__[key],
-                                                                          vertcat(sys2.tau, sys2.t),
-                                                                          vertcat(sys.tau, sys.t)), 30))
+            self.assertTrue(
+                is_equal(res_sys.__dict__[key][0], sys.__dict__[key], 30))
+            self.assertTrue(
+                is_equal(
+                    res_sys.__dict__[key][1],
+                    substitute(sys2.__dict__[key], vertcat(sys2.tau, sys2.t),
+                               vertcat(sys.tau, sys.t)), 30))
 
         # check if t and tau was passed (it shouldn't)
         self.assertFalse(is_equal(res_sys.t, sys2.t))
@@ -441,7 +468,11 @@ class TestDAESystem(TestCase):
         sys = DAESystem(x=x, y=y, ode=ode, alg=alg, tau=tau, t=t)
 
         # Test
-        res = sys.simulate(x_0=0, t_f=5, t_0=0, y_0=1, integrator_options={'abstol': 1e-10})
+        res = sys.simulate(x_0=0,
+                           t_f=5,
+                           t_0=0,
+                           y_0=1,
+                           integrator_options={'abstol': 1e-10})
 
         self.assertAlmostEqual(res['xf'], 5)
         self.assertAlmostEqual(res['zf'], 0)
@@ -573,4 +604,6 @@ class TestDAESystem(TestCase):
         sys = DAESystem(x=x, ode=ode, tau=tau, t=t)
 
         # Test
-        self.assertRaises(ValueError, sys._create_integrator, integrator_type='foo')
+        self.assertRaises(ValueError,
+                          sys._create_integrator,
+                          integrator_type='foo')
