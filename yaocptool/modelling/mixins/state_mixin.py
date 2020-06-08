@@ -3,6 +3,7 @@ from yaocptool.util.util import remove_variables_from_vector
 from contextlib import suppress
 from itertools import islice
 import collections
+from yaocptool.modelling.utils import Derivative, EqualityEquation
 
 
 class StateMixin:
@@ -56,7 +57,8 @@ class StateMixin:
             if x_i in self._ode:
                 raise ValueError(f'State "{x_i}" already in this model')
             self._ode[x_i] = None
-        self.include_ode_equation(ode=ode, x=var)
+        if ode is not None:
+            self.include_equations(ode=ode, x=var)
         return x_0
 
     def remove_state(self, var, eq=None):
@@ -84,7 +86,15 @@ class StateMixin:
             for x_i, x_i_eq in self._ode.items():
                 self._ode[x_i] = substitute(x_i_eq, original, replacement)
 
-    def include_ode_equation(self, ode, x=None):
+    def include_equations(self, *args, **kwargs):
+        if callable(getattr(super(), 'include_equations', None)):
+            super().include_equations(*args, **kwargs)
+
+        ode = kwargs.pop('ode', None)
+        x = kwargs.pop('x', None)
+        if ode is None and x is not None:
+            raise ValueError("`ode` is None but `x` is not None")
+
         # if is in the list form
         if isinstance(ode, collections.abc.Sequence):
             ode = vertcat(*ode)
@@ -105,6 +115,18 @@ class StateMixin:
             x = vertcat(*list(self._ode.keys())[first_none:first_none +
                                                 ode.numel()])
 
+        if len(args) > 0 and ode is None:
+            x = SX([])
+            ode = SX([])
+
+        # get ode and x from equality equations
+        for eq in args:
+            if isinstance(eq, EqualityEquation):
+                if isinstance(eq.lhs, Derivative):
+                    ode = vertcat(ode, eq.rhs)
+                    x = vertcat(x, eq.lhs.inner)
+
+        # actually include the equations
         if ode is not None and ode.numel() > 0:
             for x_i in vertcat(x).nz:
                 if self._ode[x_i] is not None:

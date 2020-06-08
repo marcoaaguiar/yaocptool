@@ -280,41 +280,15 @@ class SystemModel(StateMixin, AlgebraicMixin, ControlMixin):
         self.include_theta(vec(new_theta))
         return new_theta
 
-    def include_system_equations(self, ode=None, alg=None):
-        """
-            Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)
-
-        Same as 'include_equations' method.
-
-        :param list|casadi.SX ode: (ordinary) differential equation
-        :param list|casadi.SX alg: algebraic equation
-        """
-        raise DeprecationWarning
-        return self.include_equations(ode=ode, alg=alg)
-
-    def include_equations(self, *args, ode=None, alg=None, x=None):
+    def include_equations(self, *args, **kwargs):
         """
             Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)
 
         :param list|casadi.SX ode: (ordinary) differential equation
         :param list|casadi.SX alg: algebraic equation
         """
-        if (ode is not None or alg is not None) and not args == tuple():
-            raise ValueError(
-                "Either pass list of functions or `ode` and `alg`.")
 
-        if x is None and ode is None:
-            x = DM()
-            ode = DM()
-
-        for eq in args:
-            if isinstance(eq, EqualityEquation):
-                if isinstance(eq.lhs, Derivative):
-                    ode = vertcat(ode, eq.rhs)
-                    x = vertcat(x, eq.lhs.inner)
-
-        self.include_ode_equation(ode, x)
-        self.include_alg_equation(alg)
+        super().include_equations(*args, **kwargs)
 
     def include_variables(self, x=None, y=None, u=None, p=None, theta=None):
         """

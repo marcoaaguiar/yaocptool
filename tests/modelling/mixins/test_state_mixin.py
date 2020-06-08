@@ -22,8 +22,8 @@ def test_create_state(model: StateMixin):
 
 def test_remove_state(model: StateMixin):
     x = model.create_state('x', 5)
-    model.include_ode_equation(ode=vertcat(
-        *[i * x_i for i, x_i in enumerate(x.nz)]))
+    model.include_equations(
+        ode=vertcat(*[i * x_i for i, x_i in enumerate(x.nz)]), x=x)
 
     ind_to_remove = 3
     to_remove = model.x[ind_to_remove]
@@ -69,7 +69,7 @@ def test_include_state(model):
 
 def test_replace_variable_state(model: StateMixin):
     x = model.create_state('x', 3)
-    model.include_ode_equation(ode=[-x], x=x)
+    model.include_equations(ode=[-x], x=x)
 
     # replace x
     original = model.x[1]

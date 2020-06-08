@@ -36,7 +36,7 @@ def test_create_algebraic_variable(model):
 
 def test_remove_algebraic(model):
     y = model.create_algebraic_variable('y', 4)
-    model.include_alg_equation(alg=[i * y_i for i, y_i in enumerate(y.nz)])
+    model.include_equations(alg=[i * y_i for i, y_i in enumerate(y.nz)])
 
     ind_to_remove = 3
     to_remove = model.y[ind_to_remove]
@@ -68,7 +68,7 @@ def test_include_equations_alg(empty_model):
 
 def test_replace_variable_state(model: AlgebraicMixin):
     y = model.create_algebraic_variable('y', 3)
-    model.include_alg_equation(alg=[-y])
+    model.include_equations(alg=[-y])
 
     # replace y
     original = model.y[1]

@@ -65,7 +65,7 @@ class AlgebraicMixin:
 
     def include_algebraic(self, var, alg=None):
         self.y = vertcat(self.y, var)
-        self.include_alg_equation(alg=alg)
+        self.include_equations(alg=alg)
 
     def remove_algebraic(self, var, eq=None):
         self.y = remove_variables_from_vector(var, self.y)
@@ -89,7 +89,12 @@ class AlgebraicMixin:
 
         self.alg = substitute(self.alg, original, replacement)
 
-    def include_alg_equation(self, alg):
+    def include_equations(self, *args, **kwargs):
+        if callable(getattr(super(), 'include_equations', None)):
+            super().include_equations(*args, **kwargs)
+
+        alg = kwargs.pop('alg', None)
+
         if isinstance(alg, collections.abc.Sequence):
             alg = vertcat(*alg)
 
