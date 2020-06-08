@@ -6,17 +6,24 @@ Created on Thu Jun 09 10:50:48 2016
 """
 import collections
 import copy
-
-from casadi import SX, vertcat, substitute, Function, jacobian, mtimes, rootfinder, vec, horzcat, is_equal, DM
-from yaocptool import remove_variables_from_vector, config, find_variables_indices_in_vector, remove_variables_from_vector_by_indices, find_variables_in_vector_by_name
-from yaocptool.modelling import DAESystem, SimulationResult
-from yaocptool.modelling.utils import EqualityEquation, Derivative
-from yaocptool.modelling.mixins import StateMixin, AlgebraicMixin, ControlMixin, ParameterMixin
-from itertools import islice
 from contextlib import suppress
+from itertools import islice
+
+from casadi import (DM, SX, Function, horzcat, is_equal, jacobian, mtimes,
+                    rootfinder, substitute, vec, vertcat)
+
+from yaocptool import (config, find_variables_in_vector_by_name,
+                       find_variables_indices_in_vector,
+                       remove_variables_from_vector,
+                       remove_variables_from_vector_by_indices)
+from yaocptool.modelling import DAESystem, SimulationResult
+from yaocptool.modelling.mixins import (AlgebraicMixin, ContinuousStateMixin,
+                                        ControlMixin, ParameterMixin)
+from yaocptool.modelling.utils import Derivative, EqualityEquation
 
 
-class SystemModel(StateMixin, AlgebraicMixin, ControlMixin, ParameterMixin):
+class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
+                  ParameterMixin):
     t = SX.sym("t")
     tau = SX.sym("tau")
 

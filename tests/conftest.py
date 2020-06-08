@@ -1,4 +1,5 @@
 import pytest
+
 from yaocptool.modelling.system_model import SystemModel
 
 

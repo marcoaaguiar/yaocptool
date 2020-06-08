@@ -1,18 +1,19 @@
 import pytest
-from yaocptool.modelling.mixins.state_mixin import StateMixin
-from casadi.casadi import depends_on, is_equal, SX, vertcat
+from casadi.casadi import SX, depends_on, is_equal, vertcat
+
+from yaocptool.modelling.mixins import ContinuousStateMixin
 
 
 @pytest.fixture
 def model():
-    return StateMixin()
+    return ContinuousStateMixin()
 
 
-def test_n_x(model: StateMixin):
+def test_n_x(model: ContinuousStateMixin):
     assert model.n_x == model.x.numel()
 
 
-def test_create_state(model: StateMixin):
+def test_create_state(model: ContinuousStateMixin):
     n_x_initial = model.n_x
     n_new_x = 4
     x = model.create_state("x", n_new_x)
@@ -20,7 +21,7 @@ def test_create_state(model: StateMixin):
     assert is_equal(model.x[-n_new_x:], x)
 
 
-def test_remove_state(model: StateMixin):
+def test_remove_state(model: ContinuousStateMixin):
     x = model.create_state('x', 5)
     model.include_equations(
         ode=vertcat(*[i * x_i for i, x_i in enumerate(x.nz)]), x=x)
@@ -67,7 +68,7 @@ def test_include_state(model):
     assert is_equal(model.x[-2:], new_x_2)
 
 
-def test_replace_variable_state(model: StateMixin):
+def test_replace_variable_state(model: ContinuousStateMixin):
     x = model.create_state('x', 3)
     model.include_equations(ode=[-x], x=x)
 

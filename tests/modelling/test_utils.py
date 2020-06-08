@@ -1,6 +1,7 @@
 import pytest
-from yaocptool.modelling.utils import der, Derivative, EqualityEquation
-from casadi.casadi import is_equal, SX
+from casadi.casadi import SX, is_equal
+
+from yaocptool.modelling.utils import Derivative, EqualityEquation, NextK, der
 
 
 def test_equality_equation_init():
@@ -23,6 +24,29 @@ def test_derivative_eq():
     assert isinstance(eq, EqualityEquation)
     assert eq.lhs is derivative
     assert is_equal(eq.rhs, -x, 10)
+
+
+def test_next_k_init():
+    x = SX.sym('x')
+    next_k_x = NextK(x)
+    assert next_k_x.inner is x
+
+
+def test_next_k_eq():
+    x = SX.sym('x')
+    next_k_x = NextK(x)
+
+    eq = next_k_x == -x
+    assert isinstance(eq, EqualityEquation)
+    assert eq.lhs is next_k_x
+    assert is_equal(eq.rhs, -x, 10)
+
+
+def test_der():
+    x = SX.sym('x')
+    derivative = der(x)
+    assert isinstance(derivative, Derivative)
+    assert derivative.inner is x
 
 
 def test_der():
