@@ -12,7 +12,7 @@ class QuadraticOptimizationProblem(AbstractOptimizationProblem):
         .. math::
             \\min_x &f(x, p)
 
-            \\textrm{s.t.:} &g_{lb} \leq g(x,p) \leq g_{ub}
+            \\textrm{s.t.:} &g_{lb} \\leq g(x,p) \\leq g_{ub}
 
         Object attributes:
         x -> optimization variables

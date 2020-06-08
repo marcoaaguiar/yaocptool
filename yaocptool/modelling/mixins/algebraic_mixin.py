@@ -1,6 +1,6 @@
 from casadi.casadi import Function, rootfinder, substitute, SX, vec, vertcat
 from distutils.command.config import config
-from yaocptool.util.util import remove_variables_from_vector
+from yaocptool.util.util import is_equality, remove_variables_from_vector
 import collections
 
 
@@ -98,6 +98,14 @@ class AlgebraicMixin:
             super().include_equations(*args, **kwargs)
 
         alg = kwargs.pop('alg', None)
+
+        if len(args) > 0 and alg is None:
+            alg = SX([])
+
+        # in case a list of equations `y == x + u` has been passed
+        for eq in args:
+            if is_equality(eq):
+                alg = vertcat(alg, eq.dep(0) - eq.dep(1))
 
         if isinstance(alg, collections.abc.Sequence):
             alg = vertcat(*alg)

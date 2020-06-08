@@ -65,15 +65,23 @@ def test_remove_algebraic(model):
         assert not is_equal(model.alg[ind], to_remove_eq)
 
 
-def test_include_equations_alg(empty_model):
-    y = empty_model.create_algebraic_variable('y')
+def test_include_equations_alg(model):
+    y = model.create_algebraic_variable('y')
     alg = -y
 
-    empty_model.include_equations(alg=alg)
-    assert is_equal(empty_model.alg, -y, 20)
+    model.include_equations(alg=alg)
+    assert is_equal(model.alg, -y, 20)
 
 
-def test_replace_variable_state(model: AlgebraicMixin):
+def test_include_equations_w_equality(model):
+    y = model.create_algebraic_variable('y')
+
+    model.include_equations(y == 2)
+
+    assert is_equal(model.alg, y - 2, 10)
+
+
+def test_replace_variable_alg(model: AlgebraicMixin):
     y = model.create_algebraic_variable('y', 3)
     model.include_equations(alg=[-y])
 
