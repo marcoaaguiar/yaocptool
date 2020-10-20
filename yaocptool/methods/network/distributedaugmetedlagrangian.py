@@ -176,8 +176,9 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
     def _get_node_theta(self, node):
         data = defaultdict(list)
         for p in self.network.graph.pred[node]:
-            y = self.network.graph.edges[p, node]["y"]
-            u = self.network.graph.edges[p, node]["u"]
+            connections = self.network.graph.edges[p, node]
+            y = connections["y"]
+            u = connections["u"]
 
             indices = find_variables_indices_in_vector(y, p.model.y)
             for ind in indices:
@@ -186,8 +187,9 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     data[i] = vertcat(data[i], *y_data[i])
 
         for s in self.network.graph.succ[node]:
-            y = self.network.graph.edges[node, s]["y"]
-            u = self.network.graph.edges[node, s]["u"]
+            connections = self.network.graph.edges[node, s]
+            y = connections["y"]
+            u = connections["u"]
 
             indices = find_variables_indices_in_vector(u, s.model.u)
             for ind in indices:
@@ -202,6 +204,105 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         self.prepare()
 
         # Create Augmented Lagrangian
+        self._create_solution_methods()
+
+        # initialize dicts
+        start_time = time.time()
+        node_theta = {}
+        result_dict = {}
+        node_error = {}
+        node_error_last = {}
+        max_error = inf
+        max_name_len = max(len(n.name) for n in self.network.nodes)
+
+        for outer_it in range(self.options.max_iter_outer):
+            print("Starting outer iteration: {}".format(outer_it).center(40, "="))
+            for inner_it in range(
+                self.options.max_iter_inner_first
+                if outer_it == 0 and self.options.max_iter_inner_first is not None
+                else self.options.max_iter_inner
+            ):
+                print("==> Solving inner iteration: {}".format(inner_it))
+
+                for node in sorted(self.network.nodes, key=lambda x: x.node_id):
+                    # get node theta
+                    node_theta[node] = self._get_node_theta(node)
+
+                    # warm start
+                    initial_guess = (
+                        self._last_result[node].raw_solution_dict["x"]
+                        if node in self._last_result
+                        else None
+                    )
+
+                    # solve node problem
+                    result = node.solution_method.solve(
+                        theta=node_theta[node], initial_guess=initial_guess
+                    )
+
+                    # save result
+                    result_dict[node] = result
+                    self._last_result[node] = result
+
+            # update nu
+            for node in sorted(self.network.nodes, key=lambda x: x.node_id):
+                node_theta[node] = self._get_node_theta(node)
+                theta_k = join_thetas(node_theta[node], node.solution_method.nu)
+                p_k = node.solution_method.mu
+                raw_solution_dict = self._last_result[node].raw_solution_dict
+                node_error[node] = node.solution_method._compute_new_nu_and_error(
+                    theta=theta_k, p=p_k, raw_solution_dict=raw_solution_dict
+                )
+
+                error_ = float(node_error[node])
+                diff_ = (
+                    float(node_error[node] - node_error_last[node])
+                    if node in node_error_last
+                    else "-"
+                )
+                diff_color_ = "\033[92m" if diff_ != "-" and diff_ < 0 else "\033[91m"
+
+                print(
+                    "Violation node: \033[93m{:>{}}\033[0m | error: \033[94m{: .2e}\033[0m | diff: {}{:{}} \033[0m".format(
+                        node.name,
+                        max_name_len,
+                        error_,
+                        diff_color_,
+                        diff_,
+                        " .2e" if isinstance(diff_, float) else "",
+                    )
+                )
+                node_error_last[node] = node_error[node]
+
+            # update mu
+            if not self._debug_skip_update_mu:
+                for node in self.network.nodes:
+                    node.solution_method._update_mu()
+
+            print("Ending outer iteration: {}".format(outer_it).center(40, "="))
+
+            # error
+            max_error = max(node_error.values())
+            if max_error < self.options.abs_tol:
+                print(
+                    "=== Exiting: {} | Viol. Error: {} | Total time: {} ===".format(
+                        "Tolerance met", max_error, time.time() - start_time
+                    )
+                )
+                break
+        else:
+            print(
+                "=== Exiting: {} | Iterations: {} | Viol. Error: {:e} | Total time: {} ===".format(
+                    "Max iteration reached",
+                    outer_it,
+                    float(max_error),
+                    time.time() - start_time,
+                )
+            )
+
+        return result_dict
+
+    def _create_solution_methods(self):
         for node in self.network.nodes:
             node.solution_method = AugmentedLagrangian(
                 node.problem,
@@ -226,100 +327,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     "verbose": 0,
                 },
             )
-
-        # initialize dicts
-        node_theta = {}
-        result_dict = {}
-        node_error = {}
-        node_error_last = {node: 0.0 for node in self.network.nodes}
-        t_0 = time.time()
-        max_error = inf
-
-        for outer_it in range(self.options.max_iter_outer):
-            print("Starting outer iteration: {}".format(outer_it).center(40, "="))
-            for inner_it in range(
-                self.options.max_iter_inner_first
-                if outer_it == 0 and self.options.max_iter_inner_first is not None
-                else self.options.max_iter_inner
-            ):
-                print("Starting inner iteration: {}".format(inner_it).center(30, "="))
-
-                # for node in self.network.nodes:  # sorted(self.network.nodes, key=lambda x: x.node_id):
-                for node in sorted(self.network.nodes, key=lambda x: x.node_id):
-                    # print("Solving: {}".format(node))
-
-                    # get node theta
-                    node_theta[node] = self._get_node_theta(node)
-
-                    # warm start
-                    if self._last_result.get(node) is not None:
-                        initial_guess_dict = self._last_result.get(
-                            node
-                        ).raw_solution_dict
-                        initial_guess = initial_guess_dict["x"]
-                    else:
-                        initial_guess_dict = None
-                        initial_guess = None
-
-                    # solve node problem
-                    result = node.solution_method.solve(
-                        theta=node_theta[node], initial_guess=initial_guess
-                    )
-
-                    # save result
-                    result_dict[node] = result
-                    self._last_result[node] = result
-                    # print("Finished: {}".format(node))
-
-            # update nu
-            for node in sorted(self.network.nodes, key=lambda x: x.node_id):
-                node_theta[node] = self._get_node_theta(node)
-                theta_k = join_thetas(node_theta[node], node.solution_method.nu)
-                p_k = node.solution_method.mu
-                raw_solution_dict = self._last_result[node].raw_solution_dict
-                node_error[node] = node.solution_method._compute_new_nu_and_error(
-                    theta=theta_k, p=p_k, raw_solution_dict=raw_solution_dict
-                )
-                print(
-                    "Violation node: \033[93m{:>{}}\033[0m | error: \033[94m{: .2e}\033[0m | diff: {}{: .2e} \033[0m".format(
-                        node.name,
-                        max(len(node.name) for n in self.network.nodes),
-                        float(node_error[node]),
-                        "\033[92m"
-                        if float(node_error[node] - node_error_last[node]) < 0
-                        else "\033[91m",
-                        float(node_error[node] - node_error_last[node]),
-                    )
-                )
-                node_error_last[node] = node_error[node]
-
-            # update mu
-            if not self._debug_skip_update_mu:
-                for node in self.network.nodes:
-                    node.solution_method._update_mu()
-
-            print("Ending outer iteration: {}".format(outer_it).center(40, "="))
-
-            # error
-            max_error = max(node_error.values())
-            if max_error < self.options.abs_tol:
-                print(
-                    "=== Exiting: {} | Viol. Error: {} | Total time: {} ===".format(
-                        "Tolerance met", max_error, time.time() - t_0
-                    )
-                )
-                break
-        else:
-            print(
-                "=== Exiting: {} | Iterations: {} | Viol. Error: {:e} | Total time: {} ===".format(
-                    "Max iteration reached",
-                    outer_it,
-                    float(max_error),
-                    time.time() - t_0,
-                )
-            )
-
-        return result_dict
+        return node
 
     def prepare(self):
         for node in self.network.nodes:
