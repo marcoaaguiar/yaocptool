@@ -1,7 +1,7 @@
 class EstimatorAbstract:
     def __init__(self, **kwargs):
-        self.t_s = 1.
-        self.t = 0.
+        self.t_s = 1.0
+        self.t = 0.0
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)

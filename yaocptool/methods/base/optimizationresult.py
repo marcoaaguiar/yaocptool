@@ -1,4 +1,5 @@
 from collections import defaultdict
+from contextlib import suppress
 from functools import partial
 
 from casadi import horzcat, DM
@@ -8,8 +9,7 @@ from yaocptool.modelling import DataSet
 try:
     import matplotlib.pyplot as plt
 except ImportError:
-    print(
-        'Failed to import matplotlib. Make sure that it is properly installed')
+    print("Failed to import matplotlib. Make sure that it is properly installed")
     plt = None
 
 
@@ -20,14 +20,14 @@ class OptimizationResult:
         self.raw_decision_variables = None  # type: list|None
 
         # Data from the method
-        self.method_name = ''  # type: str
-        self.discretization_scheme = ''  # type: str
+        self.method_name = ""  # type: str
+        self.discretization_scheme = ""  # type: str
         self.finite_elements = -1  # type: int
         self.degree = -1
         self.degree_control = -1
 
         # From problem
-        self.problem_name = ''
+        self.problem_name = ""
         self.t_0 = -1
         self.t_f = -1
 
@@ -44,12 +44,11 @@ class OptimizationResult:
         self.u_names = []
         self.theta_opt_names = []
 
-        self.x_data = {'values': [], 'time': []}
-        self.y_data = {'values': [], 'time': []}
-        self.u_data = {'values': [], 'time': []}
+        self.x_data = {"values": [], "time": []}
+        self.y_data = {"values": [], "time": []}
+        self.u_data = {"values": [], "time": []}
 
-        self.other_data = defaultdict(
-            partial(dict, [('values', []), ('time', [])]))
+        self.other_data = defaultdict(partial(dict, [("values", []), ("time", [])]))
 
         self.x_0 = DM([])
         self.theta = {}
@@ -64,32 +63,37 @@ class OptimizationResult:
             setattr(self, k, v)
 
     @property
-    def dataset(self):
+    def dataset(self) -> DataSet:
         if self._dataset is None:
             self._dataset = self.to_dataset()
         return self._dataset
 
     @property
     def is_collocation(self):
-        if self.discretization_scheme == '':
-            raise Exception('discretization_scheme not defined yet')
-        return self.discretization_scheme == 'collocation'
+        if self.discretization_scheme == "":
+            raise Exception("discretization_scheme not defined yet")
+        return self.discretization_scheme == "collocation"
 
     @property
     def is_valid(self):
-        for attr in [
-                'finite_elements', 'degree', 'degree_control', 't_0', 't_f'
-        ]:
+        for attr in ["finite_elements", "degree", "degree_control", "t_0", "t_f"]:
             if getattr(self, attr) < 0:
-                raise Exception('{} attribute {} is lower than 0'.format(
-                    self.__class__.__name__, attr))
+                raise Exception(
+                    "{} attribute {} is lower than 0".format(
+                        self.__class__.__name__, attr
+                    )
+                )
         if len(self.time_breakpoints) < 1:
-            raise Exception('{} attribute {} (list) is empty'.format(
-                self.__class__.__name__, 'time_breakpoints'))
-        for attr in ['objective']:
+            raise Exception(
+                "{} attribute {} (list) is empty".format(
+                    self.__class__.__name__, "time_breakpoints"
+                )
+            )
+        for attr in ["objective"]:
             if getattr(self, attr) is None:
-                raise Exception('{} attribute {} is None'.format(
-                    self.__class__.__name__, attr))
+                raise Exception(
+                    "{} attribute {} is None".format(self.__class__.__name__, attr)
+                )
         return True
 
     def first_control(self):
@@ -97,8 +101,7 @@ class OptimizationResult:
 
         :rtype: DM
         """
-        u_0 = self.u_data['values'][0][0]
-        return u_0
+        return self.u_data["values"][0][0]
 
     def get_variable(self, var_type, indices):
         """Get all the data for a variable (var_type
@@ -107,16 +110,30 @@ class OptimizationResult:
         :param int|list of int indices: variable indices
         """
 
-        if var_type == 'x':
-            data = self.x_data['values']
-        elif var_type == 'y':
-            data = self.y_data['values']
-        elif var_type == 'u':
-            data = self.u_data['values']
+        if var_type == "x":
+            data = self.x_data["values"]
+        elif var_type == "y":
+            data = self.y_data["values"]
+        elif var_type == "u":
+            data = self.u_data["values"]
         else:
             raise NotImplementedError
 
         return [[vec[indices] for vec in list_vec] for list_vec in data]
+
+    def get_variable_by_name(self, name: str):
+        """
+        Get all the data for a variable (var_type
+
+        """
+        with suppress(ValueError):
+            return self.get_variable("x", self.x_names.index(name))
+        with suppress(ValueError):
+            return self.get_variable("y", self.y_names.index(name))
+        with suppress(ValueError):
+            return self.get_variable("u", self.u_names.index(name))
+
+        raise ValueError(f'Varialble with name "{name}" not found.')
 
     def to_dataset(self):
         """
@@ -124,56 +141,57 @@ class OptimizationResult:
 
         :rtype: DataSet
         """
-        dataset = DataSet(name=self.problem_name + '_dataset')
+        dataset = DataSet(name=self.problem_name + "_dataset")
 
         dataset.max_delta_t = (self.t_f - self.t_0) / self.finite_elements
-        dataset.plot_style = 'plot'
+        dataset.plot_style = "plot"
 
-        dataset.create_entry('x', size=len(self.x_names), names=self.x_names)
-        dataset.create_entry('y', size=len(self.y_names), names=self.y_names)
-        dataset.create_entry('u', size=len(self.u_names), names=self.u_names)
-        dataset.create_entry('theta_opt',
-                             size=len(self.theta_opt_names),
-                             names=self.theta_opt_names,
-                             plot_style='step')
+        dataset.create_entry("x", size=len(self.x_names), names=self.x_names)
+        dataset.create_entry("y", size=len(self.y_names), names=self.y_names)
+        dataset.create_entry("u", size=len(self.u_names), names=self.u_names)
+        dataset.create_entry(
+            "theta_opt",
+            size=len(self.theta_opt_names),
+            names=self.theta_opt_names,
+            plot_style="step",
+        )
 
         for entry in self.other_data:
-            size = self.other_data[entry]['values'][0][0].shape[0]
+            size = self.other_data[entry]["values"][0][0].shape[0]
             dataset.create_entry(
-                entry,
-                size=size,
-                names=[entry + '_' + str(i) for i in range(size)])
+                entry, size=size, names=[entry + "_" + str(i) for i in range(size)]
+            )
 
-        if self.degree_control > 1:
-            dataset.data['u']['plot_style'] = 'plot'
-        else:
-            dataset.data['u']['plot_style'] = 'step'
+        dataset.data["u"]["plot_style"] = "plot" if self.degree_control > 1 else "step"
 
-        x_times = self.x_data['time'] + [[self.t_f]]
+        x_times = self.x_data["time"] + [[self.t_f]]
         for el in range(self.finite_elements + 1):
             time = horzcat(*x_times[el])
-            values = horzcat(*self.x_data['values'][el])
-            dataset.insert_data('x', time, values)
+            values = horzcat(*self.x_data["values"][el])
+            dataset.insert_data("x", time, values)
 
         for el in range(self.finite_elements):
-            time_y = horzcat(*self.y_data['time'][el])
-            values_y = horzcat(*self.y_data['values'][el])
-            dataset.insert_data('y', time_y, values_y)
+            time_y = horzcat(*self.y_data["time"][el])
+            values_y = horzcat(*self.y_data["values"][el])
+            dataset.insert_data("y", time_y, values_y)
 
-            time_u = horzcat(*self.u_data['time'][el])
-            values_u = horzcat(*self.u_data['values'][el])
-            dataset.insert_data('u', time_u, values_u)
+            time_u = horzcat(*self.u_data["time"][el])
+            values_u = horzcat(*self.u_data["values"][el])
+            dataset.insert_data("u", time_u, values_u)
 
-        dataset.insert_data('theta_opt',
-                            time=horzcat(*self.time_breakpoints[:-1]),
-                            value=horzcat(*self.theta_opt))
+        dataset.insert_data(
+            "theta_opt",
+            time=horzcat(*self.time_breakpoints[:-1]),
+            value=horzcat(*self.theta_opt),
+        )
 
         for entry in self.other_data:
             for el in range(self.finite_elements):
                 dataset.insert_data(
                     entry,
-                    time=horzcat(*self.other_data[entry]['time'][el]),
-                    value=horzcat(*self.other_data[entry]['values'][el]))
+                    time=horzcat(*self.other_data[entry]["time"][el]),
+                    value=horzcat(*self.other_data[entry]["values"][el]),
+                )
 
         return dataset
 

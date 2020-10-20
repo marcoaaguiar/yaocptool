@@ -32,7 +32,7 @@ class ParameterMixin:
         :param size: int
         :return:
         """
-        if callable(getattr(self, 'name_variable', None)):
+        if callable(getattr(self, "name_variable", None)):
             name = self.name_variable(name)
 
         new_p = SX.sym(name, size)
@@ -47,7 +47,7 @@ class ParameterMixin:
         :param size: int
         :return:
         """
-        if callable(getattr(self, 'name_variable', None)):
+        if callable(getattr(self, "name_variable", None)):
             name = self.name_variable(name)
 
         new_theta = SX.sym(name, size)

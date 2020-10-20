@@ -41,7 +41,7 @@ class MPC:
         self.last_solutions = None
         self.solution_method_initial_guess = None
 
-        self.statistics = {'iteration_time': []}
+        self.statistics = {"iteration_time": []}
         self.n_x = None
 
         self.iteration = 0
@@ -82,7 +82,7 @@ class MPC:
         :return: DM
         """
         if self.estimator is None:
-            x_k = y_k[:self.solution_method.model.n_x]
+            x_k = y_k[: self.solution_method.model.n_x]
             cov_x_k = DM.zeros(x_k.shape)
         else:
             x_k, cov_x_k = self.estimator.estimate(t_k, y_k, u_k)
@@ -109,14 +109,15 @@ class MPC:
                 initial_guess_dict = initial_guess_dict[0]
 
         solutions = self.solution_method.solve(
-            x_0=x_k, initial_guess_dict=initial_guess_dict, p=p, last_u=u_k)
+            x_0=x_k, initial_guess_dict=initial_guess_dict, p=p, last_u=u_k
+        )
 
         if not isinstance(solutions, list):
             solutions = [solutions]
         self.last_solutions = solutions
 
         control = [solution.first_control() for solution in solutions]
-        self.statistics['iteration_time'].append(time.time() - start_time)
+        self.statistics["iteration_time"].append(time.time() - start_time)
         return vertcat(*control)
 
     def send_control(self, u):
@@ -147,8 +148,7 @@ class MPC:
         for k in itertools.count(0):
             self.iteration += 1
             if self.verbosity >= 1:
-                print(' Iteration {} ({}) '.format(k, self.iteration).center(
-                    30, '='))
+                print(" Iteration {} ({}) ".format(k, self.iteration).center(30, "="))
 
             # get new measurement from the plant
             t_k, meas_k, u_k = self.get_measurement()
@@ -156,7 +156,7 @@ class MPC:
             t_k, meas_k, u_k = self.post_process_measurement(t_k, meas_k, u_k)
 
             if self.verbosity >= 1:
-                print('Time: {}'.format(t_k))
+                print("Time: {}".format(t_k))
 
             # estimate the states out of the measurement
             x_k, p_k = self.get_states(t_k, meas_k, u_k)
@@ -164,7 +164,7 @@ class MPC:
             x_k, p_k = self.post_process_states(x_k, p_k)
 
             if self.verbosity >= 1:
-                print('Estimated state: {}'.format(x_k))
+                print("Estimated state: {}".format(x_k))
 
             x_k_ocp = x_k
             if self.state_rearrangement_function is not None:
@@ -176,14 +176,17 @@ class MPC:
             new_u = self.get_new_control(x_k=x_k_ocp, u_k=u_k, p=p)
             new_u = self.post_process_get_new_control(new_u)
             if self.verbosity >= 1:
-                print('Control calculated: {}'.format(new_u))
-                print('Time taken to obtain control: {}'.format(
-                    time.time() - time_start_new_control))
+                print("Control calculated: {}".format(new_u))
+                print(
+                    "Time taken to obtain control: {}".format(
+                        time.time() - time_start_new_control
+                    )
+                )
             self.send_control(new_u)
             new_u = self.send_control(new_u)
 
             if k >= iterations - 1:
-                print('End of MPC.un'.center(30, '='))
+                print("End of MPC.un".center(30, "="))
                 break
 
     def _get_parameter(self, x_k, p_k):
@@ -214,14 +217,13 @@ class MPC:
             self.iteration += 1
 
             if self.verbosity >= 1:
-                print(' Iteration {} ({}) '.format(k, self.iteration).center(
-                    30, '='))
+                print(" Iteration {} ({}) ".format(k, self.iteration).center(30, "="))
 
             # get new measurement from the plant
             t_k, y_k, u_k = self.get_measurement()
 
             if self.verbosity:
-                print('Measurement: {}'.format(y_k))
+                print("Measurement: {}".format(y_k))
 
     def run_fixed_control_with_estimator(self, u, iterations):
         """
@@ -239,8 +241,7 @@ class MPC:
             self.iteration += 1
 
             if self.verbosity:
-                print(' Iteration {} ({}) '.format(k, self.iteration).center(
-                    30, '='))
+                print(" Iteration {} ({}) ".format(k, self.iteration).center(30, "="))
 
             # get new measurement from the plant
             t_k, y_k, u_k = self.get_measurement()
@@ -248,5 +249,5 @@ class MPC:
             # estimate the states out of the measurement
             x_k, p_k = self.get_states(t_k, y_k, u_k)
             if self.verbosity:
-                print('Measurement: {}'.format(y_k))
-                print('Estimated state: {}'.format(x_k))
+                print("Measurement: {}".format(y_k))
+                print("Estimated state: {}".format(x_k))

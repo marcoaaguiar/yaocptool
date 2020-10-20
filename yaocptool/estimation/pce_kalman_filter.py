@@ -30,13 +30,13 @@ class PCEKalmanFilter(EstimatorAbstract):
         self.c_matrix = None
         self.d_matrix = None
 
-        self.implementation = 'standard'
+        self.implementation = "standard"
 
         self.x_mean = None
         self.p_k = None
 
-        self.r_v = DM(0.)
-        self.r_n = DM(0.)
+        self.r_v = DM(0.0)
+        self.r_n = DM(0.0)
 
         self.p = None
         self.theta = None
@@ -56,33 +56,39 @@ class PCEKalmanFilter(EstimatorAbstract):
 
         if self.n_samples is None:
             self.n_samples = factorial(self.n_uncertain + self.pc_order) // (
-                factorial(self.n_uncertain) * factorial(self.pc_order))
+                factorial(self.n_uncertain) * factorial(self.pc_order)
+            )
 
         if self.n_samples < self.n_pol_parameters:
             raise ValueError(
-                'Number of samples has to greater or equal to the number of polynomial parameters'
+                "Number of samples has to greater or equal to the number of polynomial parameters"
                 '"n_samples"={}, n_pol_parameter={}'.format(
-                    self.n_samples, self.n_pol_parameters))
+                    self.n_samples, self.n_pol_parameters
+                )
+            )
 
-        self._ls_factor, _, _ = get_ls_factor(self.n_uncertain, self.n_samples,
-                                              self.pc_order)
+        self._ls_factor, _, _ = get_ls_factor(
+            self.n_uncertain, self.n_samples, self.pc_order
+        )
 
         self.dataset = DataSet(name=self.model.name)
-        self.dataset.data['x']['size'] = self.model.n_x
-        self.dataset.data['x']['names'] = [
-            'est_' + self.model.x_sym[i].name() for i in range(self.model.n_x)
+        self.dataset.data["x"]["size"] = self.model.n_x
+        self.dataset.data["x"]["names"] = [
+            "est_" + self.model.x_sym[i].name() for i in range(self.model.n_x)
         ]
 
-        self.dataset.data['P']['size'] = self.model.n_x**2
-        self.dataset.data['P']['names'] = [
-            'P_' + str(i) + str(j) for i in range(self.model.n_x)
+        self.dataset.data["P"]["size"] = self.model.n_x ** 2
+        self.dataset.data["P"]["names"] = [
+            "P_" + str(i) + str(j)
+            for i in range(self.model.n_x)
             for j in range(self.model.n_x)
         ]
 
     @property
     def n_pol_parameters(self):
         n_pol_parameters = factorial(self.n_uncertain + self.pc_order) / (
-            factorial(self.n_uncertain) * factorial(self.pc_order))
+            factorial(self.n_uncertain) * factorial(self.pc_order)
+        )
         return n_pol_parameters
 
     def _fix_types(self):
@@ -97,12 +103,10 @@ class PCEKalmanFilter(EstimatorAbstract):
 
     def _check(self):
         if self.x_mean is None:
-            raise ValueError(
-                'A initial condition for the "x_mean" must be provided')
+            raise ValueError('A initial condition for the "x_mean" must be provided')
 
         if self.p_k is None:
-            raise ValueError(
-                'A initial condition for the "p_k" must be provided')
+            raise ValueError('A initial condition for the "p_k" must be provided')
 
         if self.h_function is None and self.c_matrix is None:
             raise ValueError(
@@ -122,12 +126,13 @@ class PCEKalmanFilter(EstimatorAbstract):
         x_mean = self.x_mean
         x_cov = self.p_k
 
-        (x_hat_k_minus, p_k_minus, y_hat_k_minus, p_yk_yk,
-         k_gain) = self._priori_update(x_mean,
-                                       x_cov,
-                                       u=u_k,
-                                       p=self.p,
-                                       theta=self.theta)
+        (
+            x_hat_k_minus,
+            p_k_minus,
+            y_hat_k_minus,
+            p_yk_yk,
+            k_gain,
+        ) = self._priori_update(x_mean, x_cov, u=u_k, p=self.p, theta=self.theta)
 
         x_hat_k = x_hat_k_minus + mtimes(k_gain, (y_k - y_hat_k_minus))
         p_k = p_k_minus - mtimes(k_gain, mtimes(p_yk_yk, k_gain.T))
@@ -135,8 +140,8 @@ class PCEKalmanFilter(EstimatorAbstract):
         self.x_mean = x_hat_k
         self.p_k = p_k
 
-        self.dataset.insert_data('x', t_k, self.x_mean)
-        self.dataset.insert_data('P', t_k, vec(self.p_k))
+        self.dataset.insert_data("x", t_k, self.x_mean)
+        self.dataset.insert_data("P", t_k, vec(self.p_k))
 
         return x_hat_k, p_k
 
@@ -147,7 +152,8 @@ class PCEKalmanFilter(EstimatorAbstract):
             measurement_prediction = mtimes(self.c_matrix, vertcat(x, y))
             if self.d_matrix is not None:
                 measurement_prediction = measurement_prediction + mtimes(
-                    self.d_matrix, u)
+                    self.d_matrix, u
+                )
         else:
             raise ValueError(
                 'Neither a measurement function "h_function" or a measurement matrix "c_matrix" was given'
@@ -163,18 +169,20 @@ class PCEKalmanFilter(EstimatorAbstract):
         y_alg_cal_x_k_at_k_minus_1 = []
         for s in range(self.n_samples):
             x_0_i = DM(x_samples[s])
-            simulation_results_i = self.model.simulate(x_0=x_0_i,
-                                                       t_0=self.t,
-                                                       t_f=self.t + self.t_s,
-                                                       u=u,
-                                                       p=p,
-                                                       theta=theta,
-                                                       y_0=self.y_guess)
+            simulation_results_i = self.model.simulate(
+                x_0=x_0_i,
+                t_0=self.t,
+                t_f=self.t + self.t_s,
+                u=u,
+                p=p,
+                theta=theta,
+                y_0=self.y_guess,
+            )
             simulation_results.append(simulation_results_i)
-            x_cal_x_k_at_k_minus_1.append(
-                simulation_results_i.final_condition()[0])
+            x_cal_x_k_at_k_minus_1.append(simulation_results_i.final_condition()[0])
             y_alg_cal_x_k_at_k_minus_1.append(
-                simulation_results[s].final_condition()[1])
+                simulation_results[s].final_condition()[1]
+            )
 
         # fit the polynomial for x
 
@@ -182,7 +190,8 @@ class PCEKalmanFilter(EstimatorAbstract):
         x_hat_k_minus = []
         for i in range(self.model.n_x):
             x_i_vector = vertcat(
-                *[x_cal_x_k_at_k_minus_1[s][i] for s in range(self.n_samples)])
+                *[x_cal_x_k_at_k_minus_1[s][i] for s in range(self.n_samples)]
+            )
             a_x.append(mtimes(self._ls_factor, x_i_vector))
 
         # get the mean for x
@@ -194,17 +203,19 @@ class PCEKalmanFilter(EstimatorAbstract):
         p_k_minus = DM.zeros(self.model.n_x, self.model.n_x)
         for i in range(self.model.n_x):
             for j in range(self.model.n_x):
-                p_k_minus[i, j] = sum(
-                    [a_x[i][k] * a_x[j][k]
-                     for k in range(1, self.n_samples)]) + self.r_v[i, j]
+                p_k_minus[i, j] = (
+                    sum([a_x[i][k] * a_x[j][k] for k in range(1, self.n_samples)])
+                    + self.r_v[i, j]
+                )
 
         # calculate the measurement for each sample
         y_cal_k_at_k_minus_1 = []
         for s in range(self.n_samples):
             y_cal_k_at_k_minus_1.append(
                 self._get_measurement_from_prediction(
-                    x_cal_x_k_at_k_minus_1[s], y_alg_cal_x_k_at_k_minus_1[s],
-                    u))
+                    x_cal_x_k_at_k_minus_1[s], y_alg_cal_x_k_at_k_minus_1[s], u
+                )
+            )
         n_meas = y_cal_k_at_k_minus_1[0].numel()
 
         # find the measurements estimate
@@ -212,7 +223,8 @@ class PCEKalmanFilter(EstimatorAbstract):
         y_meas_hat_k_minus = []
         for i in range(n_meas):
             y_meas_i_vector = vertcat(
-                *[y_cal_k_at_k_minus_1[s][i] for s in range(self.n_samples)])
+                *[y_cal_k_at_k_minus_1[s][i] for s in range(self.n_samples)]
+            )
             a_meas.append(mtimes(self._ls_factor, y_meas_i_vector))
 
         # get the mean for the measurement
@@ -224,19 +236,18 @@ class PCEKalmanFilter(EstimatorAbstract):
         p_yk_yk = DM.zeros(n_meas, n_meas)
         for i in range(n_meas):
             for j in range(n_meas):
-                p_yk_yk[i, j] = sum([
-                    a_meas[i][k] * a_meas[j][k]
-                    for k in range(1, self.n_samples)
-                ])
+                p_yk_yk[i, j] = sum(
+                    [a_meas[i][k] * a_meas[j][k] for k in range(1, self.n_samples)]
+                )
         p_yk_yk = p_yk_yk + self.r_n
 
         # get cross-covariance
         p_xk_yk = DM.zeros(self.model.n_x, n_meas)
         for i in range(self.model.n_x):
             for j in range(n_meas):
-                p_xk_yk[i, j] = sum([
-                    a_x[i][k] * a_meas[j][k] for k in range(1, self.n_samples)
-                ])
+                p_xk_yk[i, j] = sum(
+                    [a_x[i][k] * a_meas[j][k] for k in range(1, self.n_samples)]
+                )
 
         # k_gain = mtimes(p_xk_yk, inv(p_yk_yk))
         k_gain = solve(p_yk_yk.T, p_xk_yk.T).T
@@ -245,5 +256,6 @@ class PCEKalmanFilter(EstimatorAbstract):
 
     def _get_sampled_states(self, x_mean, x_cov):
         x_samples = sample_parameter_normal_distribution_with_sobol(
-            x_mean, x_cov, self.n_samples)
+            x_mean, x_cov, self.n_samples
+        )
         return [x_samples[:, i] for i in range(self.n_samples)]

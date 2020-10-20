@@ -1,5 +1,9 @@
 from casadi.casadi import is_equal, substitute, SX, vec, vertcat
-from yaocptool.util.util import find_variables_indices_in_vector, remove_variables_from_vector, remove_variables_from_vector_by_indices
+from yaocptool.util.util import (
+    find_variables_indices_in_vector,
+    remove_variables_from_vector,
+    remove_variables_from_vector_by_indices,
+)
 
 
 class ControlMixin:
@@ -33,7 +37,7 @@ class ControlMixin:
         :param size: int
         :return:
         """
-        if callable(getattr(self, 'name_variable', None)):
+        if callable(getattr(self, "name_variable", None)):
             name = self.name_variable(name)
 
         new_u = SX.sym(name, size)
@@ -47,7 +51,8 @@ class ControlMixin:
 
     def remove_control(self, var):
         self.u_expr = remove_variables_from_vector_by_indices(
-            find_variables_indices_in_vector(var, self.u), self.u_expr)
+            find_variables_indices_in_vector(var, self.u), self.u_expr
+        )
         self.u = remove_variables_from_vector(var, self.u)
         self.u_par = remove_variables_from_vector(var, self.u_par)
 
@@ -61,9 +66,11 @@ class ControlMixin:
             raise ValueError(
                 "Original and replacement must have the same number of elements!"
                 "original.numel()={}, replacement.numel()={}".format(
-                    original.numel(), replacement.numel()))
+                    original.numel(), replacement.numel()
+                )
+            )
 
-        if callable(getattr(super(), 'replace_variable', None)):
+        if callable(getattr(super(), "replace_variable", None)):
             super().replace_variable(original, replacement)
 
         #  self.u_par = substitute(self.u_par, original, replacement)
@@ -88,13 +95,13 @@ class ControlMixin:
         if not u.numel() == expr.numel():
             raise ValueError(
                 "Passed control and parametrization expression does not have same size. "
-                "u ({}) and expr ({})".format(u.numel(), expr.numel()))
+                "u ({}) and expr ({})".format(u.numel(), expr.numel())
+            )
 
         # Check and register the control parametrization.
         for u_i in u.nz:
             if self.control_is_parametrized(u_i):
-                raise ValueError(
-                    f'The control "{u_i}" is already parametrized.')
+                raise ValueError(f'The control "{u_i}" is already parametrized.')
             # to get have a new memory address
             self._parametrized_controls = self._parametrized_controls + [u_i]
 
@@ -129,11 +136,15 @@ class ControlMixin:
         u = vertcat(u)
         if not u.numel() == 1:
             raise ValueError(
-                'The parameter "u" is expected to be of size 1x1, given: {}x{}'
-                .format(*u.shape))
-        if any([
+                'The parameter "u" is expected to be of size 1x1, given: {}x{}'.format(
+                    *u.shape
+                )
+            )
+        if any(
+            [
                 is_equal(u, parametrized_u)
                 for parametrized_u in self._parametrized_controls
-        ]):
+            ]
+        ):
             return True
         return False

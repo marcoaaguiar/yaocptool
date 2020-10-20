@@ -1,13 +1,10 @@
-import sys
-
-print(sys.path)
-
 from casadi import sqrt, pi, sum1, fmax
 
 from yaocptool import find_variables_indices_in_vector
 from yaocptool.methods import DirectMethod, AugmentedLagrangian
 from yaocptool.methods.network.distributedaugmetedlagrangian import (
-    DistributedAugmentedLagrangian, )
+    DistributedAugmentedLagrangian,
+)
 from yaocptool.modelling import SystemModel, OptimalControlProblem, Network
 
 t_f = 200
@@ -17,9 +14,9 @@ dal_options = {
     "mu_0": 1e2,
     "mu_max": 1e20,
     "abs_tol": 1e-6,
-    "max_iter_inner": 5,
+    "max_iter_inner": 3,
     "max_iter_inner_first": None,
-    "max_iter_outer": 10,
+    "max_iter_outer": 1,
 }
 
 
@@ -34,8 +31,8 @@ class Tank(SystemModel):
         w_in = self.create_input("w_in", n_in)
 
         g = 9.8
-        big_a = pi * 0.1**2
-        a = pi * 0.01**2
+        big_a = pi * 0.1 ** 2
+        a = pi * 0.01 ** 2
         self.include_equations(
             ode=[sum1(w_in) - w_out],
             alg=[w_out - a * sqrt(fmax(1e-12, 2 * g * vol / big_a))],
@@ -56,7 +53,8 @@ class Pump(SystemModel):
         flow = k * u
         if n_out == 2:
             self.include_equations(
-                alg=[w_out[0] - gamma * flow, w_out[1] - (1 - gamma) * flow])
+                alg=[w_out[0] - gamma * flow, w_out[1] - (1 - gamma) * flow]
+            )
         else:
             self.include_equations(alg=[w_out[0] - flow])
 
@@ -76,7 +74,8 @@ class Pump2(SystemModel):
         self.include_equations(ode=[du])
         if n_out == 2:
             self.include_equations(
-                alg=[w_out[0] - gamma * flow, w_out[1] - (1 - gamma) * flow])
+                alg=[w_out[0] - gamma * flow, w_out[1] - (1 - gamma) * flow]
+            )
         else:
             self.include_equations(alg=[w_out[0] - flow])
 
@@ -91,20 +90,17 @@ def create_four_tanks():
     for i in range(4):
         ind = i + 1
         tank_model = Tank(tank_id=ind, name="Tank_" + str(ind))
-        tank_problem = OptimalControlProblem(name="OCP_tank_" + str(ind),
-                                             model=tank_model,
-                                             x_0=[0.2],
-                                             t_f=t_f)
-        tank_problem.L = (tank_model.x - (0.4 + i * 0.2))**2 if ind <= 2 else 0
-        tank_problem.u_guess = [
-            0.0025 * (i + 1) for i in range(tank_model.n_u)
-        ]
+        tank_problem = OptimalControlProblem(
+            name="OCP_tank_" + str(ind), model=tank_model, x_0=[0.2], t_f=t_f
+        )
+        tank_problem.L = (tank_model.x - (0.4 + i * 0.2)) ** 2 if ind <= 2 else 0
+        tank_problem.u_guess = [0.0025 * (i + 1) for i in range(tank_model.n_u)]
         tank_problem.y_guess = [0.005] * tank_model.n_y
         tank_problem.x_min = 0.01
         tank_problem.y_min = [0] * tank_model.n_y
-        node = n.create_node(name="tank_" + str(ind),
-                             model=tank_model,
-                             problem=tank_problem)
+        node = n.create_node(
+            name="tank_" + str(ind), model=tank_model, problem=tank_problem
+        )
         nodes_tank.append(node)
 
     # Create pump nodes
@@ -117,7 +113,7 @@ def create_four_tanks():
             x_0=[4] * pump_model.n_x,
             t_f=t_f,
         )
-        pump_problem.L = 1e-2 * pump_model.u**2
+        pump_problem.L = 1e-2 * pump_model.u ** 2
         pump_problem.y_guess = [0.0025 for i in range(pump_model.n_y)]
         pump_problem.u_guess = [0.25 for i in range(pump_model.n_u)]
         pump_problem.y_min = [0 for i in range(pump_model.n_y)]
@@ -125,9 +121,9 @@ def create_four_tanks():
         # pump_problem.u_max = 5
         # pump_problem.u_min = -5
 
-        node = n.create_node(name="pump_" + str(ind),
-                             model=pump_model,
-                             problem=pump_problem)
+        node = n.create_node(
+            name="pump_" + str(ind), model=pump_model, problem=pump_problem
+        )
         nodes_pumps.append(node)
 
     # Pump Connections
@@ -157,10 +153,12 @@ def create_four_tanks():
     )
 
     # Tank connections
-    n.connect(nodes_tank[2].model.y, nodes_tank[0].model.u[1], nodes_tank[2],
-              nodes_tank[0])
-    n.connect(nodes_tank[3].model.y, nodes_tank[1].model.u[1], nodes_tank[3],
-              nodes_tank[1])
+    n.connect(
+        nodes_tank[2].model.y, nodes_tank[0].model.u[1], nodes_tank[2], nodes_tank[0]
+    )
+    n.connect(
+        nodes_tank[3].model.y, nodes_tank[1].model.u[1], nodes_tank[3], nodes_tank[1]
+    )
 
     return n
 
@@ -171,33 +169,31 @@ def create_pump_tank():
     # create pump
     ind = 1
     pump_model = Pump2(pump_id=ind, name="Pump_" + str(ind), n_out=1)
-    pump_problem = OptimalControlProblem(name="OCP_pump_" + str(ind),
-                                         model=pump_model,
-                                         x_0=[1] * pump_model.n_x,
-                                         t_f=t_f)
-    pump_problem.L = 1e-0 * (pump_model.u)**2
+    pump_problem = OptimalControlProblem(
+        name="OCP_pump_" + str(ind), model=pump_model, x_0=[1] * pump_model.n_x, t_f=t_f
+    )
+    pump_problem.L = 1e-0 * (pump_model.u) ** 2
     pump_problem.u_max = 5
     pump_problem.u_min = -5
 
-    pump_node = n.create_node(name="pump_" + str(ind),
-                              model=pump_model,
-                              problem=pump_problem)
+    pump_node = n.create_node(
+        name="pump_" + str(ind), model=pump_model, problem=pump_problem
+    )
 
     # create tank
     tank_model = Tank(tank_id=ind, name="Tank_" + str(ind), n_in=1)
-    tank_problem = OptimalControlProblem(name="OCP_tank_" + str(ind),
-                                         model=tank_model,
-                                         x_0=[0.2],
-                                         t_f=t_f)
-    tank_problem.L = (tank_model.x - 0.15)**2
+    tank_problem = OptimalControlProblem(
+        name="OCP_tank_" + str(ind), model=tank_model, x_0=[0.2], t_f=t_f
+    )
+    tank_problem.L = (tank_model.x - 0.15) ** 2
     tank_problem.x_min = 0.05
     tank_problem.u_guess = [0.3 * (i + 1) for i in range(tank_model.n_u)]
     tank_problem.y_guess = [0.2] * tank_model.n_y
     # tank_problem.x_min = 0.01
     tank_problem.y_min = [0] * tank_model.n_y
-    tank_node = n.create_node(name="tank_" + str(ind),
-                              model=tank_model,
-                              problem=tank_problem)
+    tank_node = n.create_node(
+        name="tank_" + str(ind), model=tank_model, problem=tank_problem
+    )
 
     n.connect(pump_model.y[0], tank_model.u[0], pump_node, tank_node)
     # n.connect(pump_model.y[1], tank_model.u[1], pump_node, tank_node)
@@ -215,20 +211,17 @@ def create_two_pumps_two_tanks():
     for i in range(2):
         ind = i + 1
         tank_model = Tank(tank_id=ind, name="Tank_" + str(ind))
-        tank_problem = OptimalControlProblem(name="OCP_tank_" + str(ind),
-                                             model=tank_model,
-                                             x_0=[0.2],
-                                             t_f=t_f)
-        tank_problem.L = (tank_model.x - (0.4 + i * 0.2))**2 if ind <= 2 else 0
-        tank_problem.u_guess = [
-            0.0025 * (i + 1) for i in range(tank_model.n_u)
-        ]
+        tank_problem = OptimalControlProblem(
+            name="OCP_tank_" + str(ind), model=tank_model, x_0=[0.2], t_f=t_f
+        )
+        tank_problem.L = (tank_model.x - (0.4 + i * 0.2)) ** 2 if ind <= 2 else 0
+        tank_problem.u_guess = [0.0025 * (i + 1) for i in range(tank_model.n_u)]
         tank_problem.y_guess = [0.005] * tank_model.n_y
         tank_problem.x_min = 0.01
         tank_problem.y_min = [0] * tank_model.n_y
-        node = n.create_node(name="tank_" + str(ind),
-                             model=tank_model,
-                             problem=tank_problem)
+        node = n.create_node(
+            name="tank_" + str(ind), model=tank_model, problem=tank_problem
+        )
         nodes_tank.append(node)
 
     # Create pump nodes
@@ -241,7 +234,7 @@ def create_two_pumps_two_tanks():
             x_0=[4] * pump_model.n_x,
             t_f=t_f,
         )
-        pump_problem.L = 1e-2 * pump_model.u**2
+        pump_problem.L = 1e-2 * pump_model.u ** 2
         pump_problem.y_guess = [0.0025 for i in range(pump_model.n_y)]
         pump_problem.u_guess = [0.25 for i in range(pump_model.n_u)]
         pump_problem.y_min = [0 for i in range(pump_model.n_y)]
@@ -249,9 +242,9 @@ def create_two_pumps_two_tanks():
         # pump_problem.u_max = 5
         # pump_problem.u_min = -5
 
-        node = n.create_node(name="pump_" + str(ind),
-                             model=pump_model,
-                             problem=pump_problem)
+        node = n.create_node(
+            name="pump_" + str(ind), model=pump_model, problem=pump_problem
+        )
         nodes_pumps.append(node)
 
     # Pump Connections
@@ -291,11 +284,11 @@ n = create_four_tanks()
 # n = create_pump_tank()
 # n = create_two_pumps_two_tanks()
 # Draw the networkTrue
-n.plot()
+#  n.plot()
 n.insert_intermediary_nodes()
 CLASSIC = False
-CENTRALIZED_AUG_LAG = True
-DISTRIBUTED = False
+CENTRALIZED_AUG_LAG = False
+DISTRIBUTED = True
 
 if CLASSIC:
     centralized_problem = n.get_problem()
@@ -308,7 +301,7 @@ if CLASSIC:
         degree_control=3,
     )
     rc = c_solution_method.solve()
-    rc.plot([{"x": ["Tank_._"]}, {"x": ["Pump_"]}, {"u": "all"}])
+    rc.plot({"x": ["Tank_._"]}, {"x": ["Pump_"]}, {"u": "all"})
 
 if CENTRALIZED_AUG_LAG:
     centralized_problem = n.get_problem()
@@ -320,11 +313,13 @@ if CENTRALIZED_AUG_LAG:
                 n.connections[c]["u"] - n.connections[c]["y"],
                 centralized_problem.model.alg,
                 depth=10,
-            ))
+            )
+        )
         relax_algebraic_var_index.extend(
-            find_variables_indices_in_vector(n.connections[c]["u"],
-                                             centralized_problem.model.y,
-                                             depth=10))
+            find_variables_indices_in_vector(
+                n.connections[c]["u"], centralized_problem.model.y, depth=10
+            )
+        )
 
     c_solution_method = AugmentedLagrangian(
         centralized_problem,
@@ -338,13 +333,9 @@ if CENTRALIZED_AUG_LAG:
         relax_algebraic_var_index=relax_algebraic_var_index,
     )
     ral = c_solution_method.solve()
-    ral.plot([{
-        "x": ["Tank_._"]
-    }, {
-        "x": ["Pump_"]
-    }, {
-        "u": ["Tank_._w_in", "Pump_._w_out"]
-    }])
+    ral.plot(
+        {"x": ["Tank_._"]}, {"x": ["Pump_"]}, {"u": ["Tank_._w_in", "Pump_._w_out"]}
+    )
 
 if DISTRIBUTED:
     solution_method = DistributedAugmentedLagrangian(
@@ -354,12 +345,13 @@ if DISTRIBUTED:
             "discretization_scheme": "collocation",
             # 'initial_guess_heuristic': 'problem_info'
         },
-        **dal_options)
+        **dal_options
+    )
 
     r = solution_method.solve()
     #
     # for node in r:
-    #     r[node].plot([{'x': ['Tank_._']}, {'x': ['Pump_']}, {'u': 'all'}])
+    #     r[node].plot({'x': ['Tank_._']}, {'x': ['Pump_']}, {'u': 'all'})
     #
     solution_method.plot_all_relaxations(r)
 

@@ -27,8 +27,7 @@ class DiscreteStateMixin:
     @property
     def diff(self):
         try:
-            return vertcat(
-                *[val for val in self._diff.values() if val is not None])
+            return vertcat(*[val for val in self._diff.values() if val is not None])
         except NotImplementedError:
             return SX.zeros(0, 1)
 
@@ -42,7 +41,7 @@ class DiscreteStateMixin:
         :param size: int|tuple
         :return:
         """
-        if callable(getattr(self, 'name_variable', None)):
+        if callable(getattr(self, "name_variable", None)):
             name = self.name_variable(name)
 
         new_x = SX.sym(name, size)
@@ -83,9 +82,11 @@ class DiscreteStateMixin:
             raise ValueError(
                 "Original and replacement must have the same number of elements!"
                 "original.numel()={}, replacement.numel()={}".format(
-                    original.numel(), replacement.numel()))
+                    original.numel(), replacement.numel()
+                )
+            )
 
-        if callable(getattr(super(), 'replace_variable', None)):
+        if callable(getattr(super(), "replace_variable", None)):
             super().replace_variable(original, replacement)
 
         if original.numel() > 0:
@@ -93,11 +94,11 @@ class DiscreteStateMixin:
                 self._diff[x_i] = substitute(x_i_eq, original, replacement)
 
     def include_equations(self, *args, **kwargs):
-        if callable(getattr(super(), 'include_equations', None)):
+        if callable(getattr(super(), "include_equations", None)):
             super().include_equations(*args, **kwargs)
 
-        diff = kwargs.pop('diff', None)
-        x = kwargs.pop('x', None)
+        diff = kwargs.pop("diff", None)
+        x = kwargs.pop("x", None)
         if diff is None and x is not None:
             raise ValueError("`diff` is None but `x` is not None")
 
@@ -112,14 +113,14 @@ class DiscreteStateMixin:
         if x is None and diff is not None:
             # Check if None are all sequential, ortherwise we don't know who it belongs
             first_none = list(self._diff.values()).index(None)
-            if not all(eq is None
-                       for eq in islice(self._diff.values(), 0, first_none)):
+            if not all(eq is None for eq in islice(self._diff.values(), 0, first_none)):
                 raise ValueError(
                     "diff should be inserted on the equation form or in the list form."
                     "You can't mix both without explicit passing the states associated with the equation."
                 )
-            x = vertcat(*list(self._diff.keys())[first_none:first_none +
-                                                 diff.numel()])
+            x = vertcat(
+                *list(self._diff.keys())[first_none : first_none + diff.numel()]
+            )
 
         if len(args) > 0 and diff is None:
             x = SX([])

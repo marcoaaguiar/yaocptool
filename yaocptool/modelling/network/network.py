@@ -4,6 +4,7 @@ Created on Fri Jul 07 16:05:50 2017
 
 @author: marco
 """
+from typing import MutableMapping, Union
 
 import matplotlib.pyplot as plt
 import networkx
@@ -15,22 +16,37 @@ from yaocptool.modelling.network.node import Node
 
 
 class Network:
-    def __init__(self, nodes=None, name='network'):
+    def __init__(self, nodes=None, name="network"):
         """
 
         :param list of Node nodes:
         """
 
-        self.name = name
+        self.name: str = name
 
-        self.graph = networkx.DiGraph()  # type: networkx.DiGraph
+        self.graph: networkx.DiGraph = networkx.DiGraph()  # type: networkx.DiGraph
         self._nodes_id_counter = 0
 
         if nodes is not None:
             self.include_nodes(nodes)
 
+    def __getitem__(self, key: Union[str, int]) -> Node:
+        if isinstance(key, int):
+            node = self.get_node_by_id(key)
+            if node is None:
+                raise IndexError(f"Network node index out of range: {key}")
+            return node
+        elif isinstance(key, str):
+            node = self.get_node_by_name(key)
+            if node is None:
+                raise KeyError(f"{key}")
+            return node
+        raise NotImplementedError("Not implemeted for key with type: %s", type(key))
+
     @property
-    def nodes(self):
+    def nodes(
+        self,
+    ) -> MutableMapping[Node, dict]:
         """
             All nodes (from the self.graph)
 
@@ -39,7 +55,7 @@ class Network:
         return self.graph.nodes
 
     @property
-    def connections(self):
+    def connections(self) -> networkx.reportviews.OutEdgeView:
         """
             All connections (edges) from the self.graph
 
@@ -55,10 +71,7 @@ class Network:
         :rtype: list of SystemModel
         :return: list of all models
         """
-        models = []
-        for node in sorted(self.nodes, key=lambda x: x.node_id):
-            models.append(node.model)
-        return models
+        return [node.model for node in sorted(self.nodes, key=lambda x: x.node_id)]
 
     @property
     def problems(self):
@@ -68,10 +81,7 @@ class Network:
         :rtype: list of OptimalControlProblem
         :return: list of all problems
         """
-        problems = []
-        for node in sorted(self.nodes, key=lambda x: x.node_id):
-            problems.append(node.problem)
-        return problems
+        return [node.problem for node in sorted(self.nodes, key=lambda x: x.node_id)]
 
     def create_node(self, name=None, model=None, problem=None, **kwargs):
         """
@@ -116,19 +126,21 @@ class Network:
         """
         if not node1.model.has_variable(y):
             raise ValueError(
-                '"node1" ({}) does not have the passed "y" ({})'.format(
-                    node1.name, y))
+                '"node1" ({}) does not have the passed "y" ({})'.format(node1.name, y)
+            )
         if not node2.model.has_variable(u):
             raise ValueError(
-                '"node2" ({}) does not have the passed "u" ({})'.format(
-                    node2.name, y))
-        if not (node1, node2) in self.graph.edges:
+                '"node2" ({}) does not have the passed "u" ({})'.format(node2.name, y)
+            )
+        if (node1, node2) not in self.graph.edges:
             self.graph.add_edge(node1, node2, y=DM([]), u=DM([]))
 
-        self.graph.edges[node1, node2]['y'] = vertcat(
-            self.graph.edges[node1, node2]['y'], y)
-        self.graph.edges[node1, node2]['u'] = vertcat(
-            self.graph.edges[node1, node2]['u'], u)
+        self.graph.edges[node1, node2]["y"] = vertcat(
+            self.graph.edges[node1, node2]["y"], y
+        )
+        self.graph.edges[node1, node2]["u"] = vertcat(
+            self.graph.edges[node1, node2]["u"], u
+        )
 
     def remove_connection(self, node1, node2):
         """
@@ -146,11 +158,10 @@ class Network:
         :return: model
         :rtype: SystemModel
         """
-        model = SystemModel(name=self.name + '_model')
+        model = SystemModel(name=self.name + "_model")
         model.include_models(self.models)
         for edge in self.graph.edges:
-            model.connect(u=self.graph.edges[edge]['u'],
-                          y=self.graph.edges[edge]['y'])
+            model.connect(u=self.graph.edges[edge]["u"], y=self.graph.edges[edge]["y"])
 
         return model
 
@@ -161,25 +172,25 @@ class Network:
         :return: problem
         :rtype: OptimalControlProblem
         """
-        model = SystemModel(name=self.name + '_model')
-        problem = OptimalControlProblem(model=model,
-                                        name=self.name + '_problem')
+        model = SystemModel(name=self.name + "_model")
+        problem = OptimalControlProblem(model=model, name=self.name + "_problem")
         problem.t_0 = self.problems[0].t_0
         problem.t_f = self.problems[0].t_f
         problem.merge(self.problems)
         for edge in self.graph.edges:
-            problem.connect(u=self.graph.edges[edge]['u'],
-                            y=self.graph.edges[edge]['y'])
+            problem.connect(
+                u=self.graph.edges[edge]["u"], y=self.graph.edges[edge]["y"]
+            )
 
         return problem
 
-    def get_node_by_id(self, id):
-        for node in self.nodes:
+    def get_node_by_id(self, id: int):
+        for node in self.graph:
             if node.node_id == id:
                 return node
 
-    def get_node_by_name(self, name):
-        for node in self.nodes:
+    def get_node_by_name(self, name: str):
+        for node in self.graph:
             if node.name == name:
                 return node
 
@@ -198,19 +209,21 @@ class Network:
 
     def plot(self):
         """
-            Plot the network
+        Plot the network
         """
         labels = dict([(node, node.name) for node in self.nodes])
 
         colors = [node.color for node in self.nodes]
 
-        networkx.draw_spring(self.graph,
-                             node_size=2000,
-                             node_color=colors,
-                             with_labels=True,
-                             labels=labels,
-                             font_weight='bold',
-                             font_color='white')
+        networkx.draw_circular(
+            self.graph,
+            node_size=2000,
+            node_color=colors,
+            with_labels=True,
+            labels=labels,
+            font_weight="bold",
+            font_color="white",
+        )
         plt.show()
 
     def get_map_coloring_groups(self):
@@ -218,7 +231,7 @@ class Network:
         grouping_dict = {}
 
         for node in coloring_dict:
-            if not coloring_dict[node] in grouping_dict:
+            if coloring_dict[node] not in grouping_dict:
                 grouping_dict[coloring_dict[node]] = []
             grouping_dict[coloring_dict[node]].append(node)
 
@@ -228,45 +241,53 @@ class Network:
         old_connections = list(self.connections)
 
         for (node1, node2) in old_connections:
-            y = self.graph.edges[node1, node2]['y']
-            u = self.graph.edges[node1, node2]['u']
+            y = self.graph.edges[node1, node2]["y"]
+            u = self.graph.edges[node1, node2]["u"]
 
-            y_guess = vertcat(
-                *node1.problem.y_guess)[find_variables_indices_in_vector(
-                    y, node1.problem.model.y)]
-            u_guess = vertcat(
-                *node2.problem.u_guess)[find_variables_indices_in_vector(
-                    u, node2.problem.model.u)]
+            y_guess = (
+                node1.problem.y_guess[
+                    find_variables_indices_in_vector(y, node1.problem.model.y)
+                ]
+                if node1.problem.y_guess is not None
+                else None
+            )
+            u_guess = (
+                node2.problem.u_guess[
+                    find_variables_indices_in_vector(u, node2.problem.model.u)
+                ]
+                if node1.problem.u_guess is not None
+                else None
+            )
 
             copy_y = vertcat(
-                *
-                [SX.sym('Dummy_' + y[ind].name()) for ind in range(y.numel())])
+                *[SX.sym("Dummy_" + y[ind].name()) for ind in range(y.numel())]
+            )
             copy_u = vertcat(
-                *
-                [SX.sym('Dummy_' + u[ind].name()) for ind in range(u.numel())])
+                *[SX.sym("Dummy_" + u[ind].name()) for ind in range(u.numel())]
+            )
 
             new_model = SystemModel(
-                name='Dummy_Model_{}_to_{}'.format(node1.name, node2.name))
+                name="Dummy_Model_{}_to_{}".format(node1.name, node2.name)
+            )
             new_model.include_variables(u=copy_y, y=copy_u)
             new_model.include_equations(alg=copy_u - copy_y)
             new_problem = OptimalControlProblem(
-                name='OCP_Dummy_{}_to_{}'.format(node1.name, node2.name),
+                name="OCP_Dummy_{}_to_{}".format(node1.name, node2.name),
                 model=new_model,
                 t_f=node1.problem.t_f,
                 y_guess=u_guess,
-                u_guess=y_guess)
+                u_guess=y_guess,
+            )
 
-            new_node = Node(name='Dummy_node_{}_to_{}'.format(
-                node1.name, node2.name),
-                            model=new_model,
-                            problem=new_problem,
-                            color=0.75)
+            new_node = Node(
+                name="Dummy_node_{}_to_{}".format(node1.name, node2.name),
+                model=new_model,
+                problem=new_problem,
+                color=0.75,
+            )
 
             self.include_nodes(new_node)
 
             self.remove_connection(node1, node2)
             self.connect(y, copy_y, node1, new_node)
             self.connect(copy_u, u, new_node, node2)
-
-        for node in self.nodes:
-            print(node.node_id, node.name)

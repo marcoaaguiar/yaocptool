@@ -5,7 +5,7 @@ from yaocptool.modelling import SystemModel, DataSet
 
 class Plant:
     def __init__(self):
-        self.name = 'Plant'
+        self.name = "Plant"
 
     def get_measurement(self):
         pass
@@ -16,9 +16,10 @@ class Plant:
 
 class PlantSimulation(Plant):
     """
-        Simulates a plant using a model.
+    Simulates a plant using a model.
 
     """
+
     def __init__(self, model, x_0, **kwargs):
         """
             Plant which uses a SystemModel.simulate to obtain the measurements.
@@ -45,8 +46,8 @@ class PlantSimulation(Plant):
 
         self.y_guess = None
 
-        self.t = 0.
-        self.t_s = 1.
+        self.t = 0.0
+        self.t_s = 1.0
 
         self.c_matrix = None
         self.d_matrix = None
@@ -56,18 +57,18 @@ class PlantSimulation(Plant):
 
         # Noise
         self.has_noise = False
-        self.r_n = DM(0.)
-        self.r_v = DM(0.)
+        self.r_n = DM(0.0)
+        self.r_v = DM(0.0)
         self.noise_seed = None
 
         # Options
         self.integrator_options = None
         self.verbosity = 1
 
-        self.dataset = DataSet(name='Plant')
+        self.dataset = DataSet(name="Plant")
 
-        if 't_0' in kwargs:
-            self.t = kwargs['t_0']
+        if "t_0" in kwargs:
+            self.t = kwargs["t_0"]
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -75,7 +76,7 @@ class PlantSimulation(Plant):
         if self.c_matrix is None:
             self.c_matrix = DM.eye(self.model.n_x + self.model.n_y)
         if self.d_matrix is None:
-            self.d_matrix = DM(0.)
+            self.d_matrix = DM(0.0)
 
         self._initialize_dataset()
 
@@ -84,24 +85,24 @@ class PlantSimulation(Plant):
                 numpy.random.seed(self.noise_seed)
 
     def _initialize_dataset(self):
-        self.dataset.data['x']['size'] = self.model.n_x
-        self.dataset.data['x']['names'] = [
+        self.dataset.data["x"]["size"] = self.model.n_x
+        self.dataset.data["x"]["names"] = [
             self.model.x_sym[i].name() for i in range(self.model.n_x)
         ]
 
-        self.dataset.data['y']['size'] = self.model.n_y
-        self.dataset.data['y']['names'] = [
+        self.dataset.data["y"]["size"] = self.model.n_y
+        self.dataset.data["y"]["names"] = [
             self.model.y_sym[i].name() for i in range(self.model.n_y)
         ]
 
-        self.dataset.data['u']['size'] = self.model.n_u
-        self.dataset.data['u']['names'] = [
+        self.dataset.data["u"]["size"] = self.model.n_u
+        self.dataset.data["u"]["names"] = [
             self.model.u_sym[i].name() for i in range(self.model.n_u)
         ]
 
-        self.dataset.data['meas']['size'] = self.c_matrix.size1()
-        self.dataset.data['meas']['names'] = [
-            'meas_' + str(i) for i in range(self.model.n_x)
+        self.dataset.data["meas"]["size"] = self.c_matrix.size1()
+        self.dataset.data["meas"]["names"] = [
+            "meas_" + str(i) for i in range(self.model.n_x)
         ]
 
     def get_measurement(self):
@@ -114,8 +115,8 @@ class PlantSimulation(Plant):
         # perform the simulation
         if self.has_noise:
             v_rand = DM(
-                numpy.random.multivariate_normal([0] * self.r_v.shape[0],
-                                                 self.r_v))
+                numpy.random.multivariate_normal([0] * self.r_v.shape[0], self.r_v)
+            )
         else:
             v_rand = 0
 
@@ -128,7 +129,8 @@ class PlantSimulation(Plant):
             u=self.u,
             p=self.p,
             theta=self.theta,
-            integrator_options=self.integrator_options)
+            integrator_options=self.integrator_options,
+        )
 
         x, y, u = sim_result.final_condition()
         if self.has_noise:
@@ -140,20 +142,20 @@ class PlantSimulation(Plant):
         measurement_wo_noise = mtimes(self.c_matrix, vertcat(x, y))
         if self.has_noise:
             n_rand = DM(
-                numpy.random.multivariate_normal([0] * self.r_n.shape[0],
-                                                 self.r_n))
+                numpy.random.multivariate_normal([0] * self.r_n.shape[0], self.r_n)
+            )
             measurement = measurement_wo_noise + n_rand
         else:
             measurement = measurement_wo_noise
 
-        self.dataset.insert_data('x', self.t, x)
-        self.dataset.insert_data('y', self.t, y)
-        self.dataset.insert_data('u', self.t, u)
-        self.dataset.insert_data('meas', self.t, measurement)
-        self.dataset.insert_data('meas_wo_noise', self.t, measurement_wo_noise)
+        self.dataset.insert_data("x", self.t, x)
+        self.dataset.insert_data("y", self.t, y)
+        self.dataset.insert_data("u", self.t, u)
+        self.dataset.insert_data("meas", self.t, measurement)
+        self.dataset.insert_data("meas_wo_noise", self.t, measurement_wo_noise)
 
         if self.verbosity >= 1:
-            print('Real state: {}'.format(x))
+            print("Real state: {}".format(x))
 
         return self.t, measurement, self.u
 
@@ -169,5 +171,7 @@ class PlantSimulation(Plant):
             raise ValueError(
                 "Given control does not have the same size of the plant."
                 "Plant control size: {}, given control size: {}".format(
-                    self.model.n_u, u.shape[0]))
+                    self.model.n_u, u.shape[0]
+                )
+            )
         self.u = u

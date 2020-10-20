@@ -1,6 +1,8 @@
 from casadi import qpsol
 
-from yaocptool.optimization.abstract_optimization_problem import AbstractOptimizationProblem
+from yaocptool.optimization.abstract_optimization_problem import (
+    AbstractOptimizationProblem,
+)
 
 
 class QuadraticOptimizationProblem(AbstractOptimizationProblem):
@@ -22,5 +24,6 @@ class QuadraticOptimizationProblem(AbstractOptimizationProblem):
 
     def _create_solver(self):
         problem_dict = self.get_problem_dict()
-        return qpsol(self.name + '_solver', 'qpoases', problem_dict,
-                     self.solver_options)
+        return qpsol(
+            self.name + "_solver", "qpoases", problem_dict, self.solver_options
+        )

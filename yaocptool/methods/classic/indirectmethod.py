@@ -26,8 +26,8 @@ class IndirectMethod(SolutionMethodsBase):
 
         super(IndirectMethod, self).__init__(problem, **kwargs)
 
-        self.solution_class = 'indirect'
-        self.initial_guess_heuristic = 'problem_info'
+        self.solution_class = "indirect"
+        self.initial_guess_heuristic = "problem_info"
 
         self._check_bounds()
 
@@ -52,23 +52,27 @@ class IndirectMethod(SolutionMethodsBase):
         for i in range(self.model.n_x):
             if not self.problem.x_min[i] == -inf:
                 warnings.warn(
-                    'Problem contains state constraints, they will be ignored')
+                    "Problem contains state constraints, they will be ignored"
+                )
                 self.problem.x_min[i] = -inf
 
             if not self.problem.x_max[i] == inf:
                 warnings.warn(
-                    'Problem contains state constraints, they will be ignored')
+                    "Problem contains state constraints, they will be ignored"
+                )
                 self.problem.x_max[i] = inf
 
         for i in range(self.model.n_y):
             if not self.problem.y_min[i] == -inf:
                 warnings.warn(
-                    'Problem contains state constraints, they will be ignored')
+                    "Problem contains state constraints, they will be ignored"
+                )
                 self.problem.y_min[i] = -inf
 
             if not self.problem.y_max[i] == inf:
                 warnings.warn(
-                    'Problem contains state constraints, they will be ignored')
+                    "Problem contains state constraints, they will be ignored"
+                )
                 self.problem.y_max[i] = inf
 
     def calculate_optimal_control(self):
@@ -77,7 +81,8 @@ class IndirectMethod(SolutionMethodsBase):
             # TODO: Implement the case where the controls are linear on the Hamiltonian ("Bang-Bang" control)
             raise Exception(
                 'The Hamiltonian "H" is not strictly convex with respect to the control "u". '
-                + 'The obtained hessian d^2 H/du^2 = 0')
+                + "The obtained hessian d^2 H/du^2 = 0"
+            )
         # if not ddH_dudu.is_constant():
         #     raise NotImplementedError('The Hessian of the Hamiltonian with respect to "u" is not constant,
         #                                this case has not been implemented')

@@ -21,7 +21,7 @@ class DirectMethod(SolutionMethodsBase):
         self.cost_as_a_sum = False
         super(DirectMethod, self).__init__(problem, **kwargs)
 
-        self.solution_class = 'direct'
+        self.solution_class = "direct"
 
         self.has_cost_state = False
 
@@ -30,12 +30,12 @@ class DirectMethod(SolutionMethodsBase):
 
         self.problem.replace_variable(self.model.u, u_pol)
 
-        if hasattr(self.problem, 'H'):
+        if hasattr(self.problem, "H"):
             self.problem.H = substitute(self.problem.H, self.model.u, u_pol)
-        if hasattr(self, 's'):
+        if hasattr(self, "s"):
             self.s = substitute(self.s, self.model.u, u_pol)
 
-        if 'g' in self.__dict__:
+        if "g" in self.__dict__:
             g = self.g
             g = substitute(g, self.model.u, u_pol)
             self.g = g

@@ -9,21 +9,38 @@ import copy
 from contextlib import suppress
 from itertools import islice
 
-from casadi import (DM, SX, Function, horzcat, is_equal, jacobian, mtimes,
-                    rootfinder, substitute, vec, vertcat)
+from casadi import (
+    DM,
+    SX,
+    Function,
+    horzcat,
+    is_equal,
+    jacobian,
+    mtimes,
+    rootfinder,
+    substitute,
+    vec,
+    vertcat,
+)
 
-from yaocptool import (config, find_variables_in_vector_by_name,
-                       find_variables_indices_in_vector,
-                       remove_variables_from_vector,
-                       remove_variables_from_vector_by_indices)
+from yaocptool import (
+    config,
+    find_variables_in_vector_by_name,
+    find_variables_indices_in_vector,
+    remove_variables_from_vector,
+    remove_variables_from_vector_by_indices,
+)
 from yaocptool.modelling import DAESystem, SimulationResult
-from yaocptool.modelling.mixins import (AlgebraicMixin, ContinuousStateMixin,
-                                        ControlMixin, ParameterMixin)
+from yaocptool.modelling.mixins import (
+    AlgebraicMixin,
+    ContinuousStateMixin,
+    ControlMixin,
+    ParameterMixin,
+)
 from yaocptool.modelling.utils import Derivative, EqualityEquation
 
 
-class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
-                  ParameterMixin):
+class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterMixin):
     t = SX.sym("t")
     tau = SX.sym("tau")
 
@@ -74,14 +91,14 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
     @property
     def x_sys_sym(self):
         if self.has_adjoint_variables:
-            return self.x[:int(self.n_x // 2)]
+            return self.x[: int(self.n_x // 2)]
         else:
             return self.x
 
     @property
     def lamb_sym(self):
         if self.has_adjoint_variables:
-            return self.x[self.n_x // 2:]
+            return self.x[self.n_x // 2 :]
         else:
             return SX()
 
@@ -115,6 +132,11 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
     def __str__(self):
         return f'{self.__class__.__name__}("{self.name}")'
 
+    def name_variable(self, name):
+        if self.model_name_as_prefix:
+            return f"{self.name}_{name}"
+        return name
+
     def print_summary(self):
         """
         Print model summary when using print(model)
@@ -124,28 +146,30 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         s = ""
         s += "=" * 20 + "\n"
         s += "Model Name: {:>23}".format(self.name)
-        s += "| System type:                            {:>3}".format(
-            self.system_type)
+        s += "| System type:                            {:>3}".format(self.system_type)
         s += "\n"
         s += "-" * 20 + "\n"
         s += "Number of states (x):         {:4} | Number of algebraic (y):               {:4}".format(
-            self.n_x, self.n_y)
+            self.n_x, self.n_y
+        )
         s += "\n"
         s += "Number of controls (u):       {:4} |".format(self.n_u)
         s += "\n"
         s += "Number of parameters (p):     {:4} | Number of finite elem. param. (theta): {:4}".format(
-            self.n_p, self.n_theta)
+            self.n_p, self.n_theta
+        )
         s += "\n"
         s += "-" * 20 + "\n"
         s += "Number of ODE:                {:4} | Number of algebraic eq.:               {:4}".format(
-            self.ode.numel(), self.alg.numel())
+            self.ode.numel(), self.alg.numel()
+        )
         s += "\n"
         s += "=" * 20 + "\n"
         return s
 
     def print_variables(self):
         """
-            Print list of variable in the model (x, y, u, p, theta)
+        Print list of variable in the model (x, y, u, p, theta)
         """
         var_name_space = 20
         column_size = var_name_space + 4
@@ -163,8 +187,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         header += " algebraic (y) ".center(column_size, "=") + header_separator
         header += " input (u) ".center(column_size, "=") + header_separator
         header += " parameter (p) ".center(column_size, "=") + header_separator
-        header += " theta param (theta) ".center(column_size,
-                                                 "=") + header_separator
+        header += " theta param (theta) ".center(column_size, "=") + header_separator
         print(header)
 
         for i in range(n_lines):
@@ -249,12 +272,12 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
 
     def replace_variable(self, original, replacement):
         """
-            Replace a variable or parameter by an variable or expression.
+        Replace a variable or parameter by an variable or expression.
 
-            :param SX|list replacement:
-            :param SX|list original: and replacement, and also variable type which
-                describes which type of variable is being remove to it from the
-                counters. Types: 'x', 'y', 'u', 'p', 'ignore'
+        :param SX|list replacement:
+        :param SX|list original: and replacement, and also variable type which
+            describes which type of variable is being remove to it from the
+            counters. Types: 'x', 'y', 'u', 'p', 'ignore'
         """
         super().replace_variable(original, replacement)
 
@@ -277,8 +300,10 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         # if multiple where found raise exception
         if len(result) > 1:
             raise ValueError(
-                "Multiple variables where found with the name: {}. Found: {}".
-                format(name, result))
+                "Multiple variables where found with the name: {}. Found: {}".format(
+                    name, result
+                )
+            )
         # if none was found raise exception
         raise ValueError("No variable was found with name: {}".format(name))
 
@@ -322,10 +347,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
                 self.u_par,
             ),
         )
-        if len(ind) > 0:
-            return True
-
-        return False
+        return len(ind) > 0
 
     def is_parametrized(self):
         """
@@ -386,21 +408,20 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
             y = vertcat(*y)
 
         # check if same size
-        if not u.numel() == y.numel():
-            raise ValueError(f'Size of "u" and "y" are not the same, '
-                             f'u={u.numel()} and y={y.numel()}')
+        if u.numel() != y.numel():
+            raise ValueError(
+                f'Size of "u" and "y" are not the same, '
+                f"u={u.numel()} and y={y.numel()}"
+            )
 
         self.include_equations(alg=[u - y])
         self.remove_control(u)
         self.include_algebraic(u)
 
     @staticmethod
-    def put_values_in_all_sym_format(t=None,
-                                     x=None,
-                                     y=None,
-                                     p=None,
-                                     theta=None,
-                                     u_par=None):
+    def put_values_in_all_sym_format(
+        t=None, x=None, y=None, p=None, theta=None, u_par=None
+    ):
         if t is None:
             t = []
         if x is None:
@@ -431,7 +452,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         h = t_kp1 - t_k
         return substitute(expr, tau, (t - t_k) / h)
 
-    def get_copy(self):
+    def get_copy(self) -> "SystemModel":
         """
             Get a copy of this model.
 
@@ -439,11 +460,14 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
 
         :rtype: SystemModel
         """
-        return copy.copy(self)
+        copy_model = copy.copy(self)
+        copy_model._ode = dict(copy_model._ode)
+        return copy_model
 
     def get_deepcopy(self):
         """
-            Get a deep copy of this model, differently from "get_copy", the variables of the original copy and the
+            Get a deep copy of this model, differently from "get_copy",
+            the variables of the original copy and the
             hard copy will not be the same, i.e. model.x != copy.x
 
         :rtype: SystemModel
@@ -458,35 +482,40 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         u_par_copy = DM([])
 
         if self.n_x > 0:
-            x_copy = vertcat(*[
-                model_copy.create_state(self.x[i].name())
-                for i in range(self.n_x)
-            ])
+            x_copy = vertcat(
+                *[model_copy.create_state(self.x[i].name()) for i in range(self.n_x)]
+            )
         if self.n_y > 0:
-            y_copy = vertcat(*[
-                model_copy.create_algebraic_variable(self.y[i].name())
-                for i in range(self.n_y)
-            ])
+            y_copy = vertcat(
+                *[
+                    model_copy.create_algebraic_variable(self.y[i].name())
+                    for i in range(self.n_y)
+                ]
+            )
         if self.n_u > 0:
-            u_copy = vertcat(*[
-                model_copy.create_control(self.u[i].name())
-                for i in range(self.n_u)
-            ])
+            u_copy = vertcat(
+                *[model_copy.create_control(self.u[i].name()) for i in range(self.n_u)]
+            )
 
         if self.n_p > 0:
-            p_copy = vertcat(*[
-                model_copy.create_parameter(self.p[i].name())
-                for i in range(self.n_p)
-            ])
+            p_copy = vertcat(
+                *[
+                    model_copy.create_parameter(self.p[i].name())
+                    for i in range(self.n_p)
+                ]
+            )
         if self.n_theta > 0:
-            theta_copy = vertcat(*[
-                model_copy.create_theta(self.theta[i].name())
-                for i in range(self.n_theta)
-            ])
+            theta_copy = vertcat(
+                *[
+                    model_copy.create_theta(self.theta[i].name())
+                    for i in range(self.n_theta)
+                ]
+            )
 
         if self.n_u_par > 0:
             u_par_copy = vertcat(
-                *[SX.sym(self.u_par[i].name()) for i in range(self.n_u_par)])
+                *[SX.sym(self.u_par[i].name()) for i in range(self.n_u_par)]
+            )
 
         model_copy.include_equations(ode=self.ode, alg=self.alg)
         model_copy.u_par = self.u_par
@@ -504,7 +533,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         return model_copy
 
     def get_dae_system(self):
-        """ Return a DAESystem object with the model equations.
+        """Return a DAESystem object with the model equations.
 
         :return: DAESystem
         """
@@ -541,7 +570,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         integrator_type="implicit",
         integrator_options=None,
     ):
-        """ Simulate model.
+        """Simulate model.
             If t_f is a float, then only one simulation will be done. If t_f is a list of times, then a sequence of
             simulations will be done, that each t_f is the end of a finite element.
 
@@ -577,14 +606,15 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         if u is None:  # if control is not given
             u = [[]] * len(t_f)
         elif not isinstance(
-                u,
-            (list, tuple)):  # if control is given as number or a casadi object
+            u, (list, tuple)
+        ):  # if control is given as number or a casadi object
             u = [u] * len(t_f)
 
-        if len(t_f) > 1 and not len(u) == len(t_f):
+        if len(t_f) > 1 and len(u) != len(t_f):
             raise ValueError(
                 'If "t_f" is a list, the parameter "u" should be a list with same length of "t_f".'
-                "len(t_f) = {}".format(len(t_f)))
+                "len(t_f) = {}".format(len(t_f))
+            )
 
         dae_sys = self.get_dae_system()
 
@@ -614,8 +644,11 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
             t_k = t_kpp
             x_k = result["xf"]
             y_k = result["zf"]
-            u_k = f_u(*self.put_values_in_all_sym_format(
-                t=t_kpp, x=x_k, y=y_k, p=p, theta=theta[k], u_par=u[k]))
+            u_k = f_u(
+                *self.put_values_in_all_sym_format(
+                    t=t_kpp, x=x_k, y=y_k, p=p, theta=theta[k], u_par=u[k]
+                )
+            )
 
             x_list.append(result["xf"])
             y_list.append(result["zf"])
@@ -637,15 +670,9 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
             finite_elements=len(t_f),
         )
 
-        simulation_result.insert_data("x",
-                                      time=t_x_list,
-                                      value=horzcat(*x_list))
-        simulation_result.insert_data("y",
-                                      time=t_yu_list,
-                                      value=horzcat(*y_list))
-        simulation_result.insert_data("u",
-                                      time=t_yu_list,
-                                      value=horzcat(*u_list))
+        simulation_result.insert_data("x", time=t_x_list, value=horzcat(*x_list))
+        simulation_result.insert_data("y", time=t_yu_list, value=horzcat(*y_list))
+        simulation_result.insert_data("u", time=t_yu_list, value=horzcat(*u_list))
 
         return simulation_result
 
@@ -653,15 +680,17 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         """
         Returns a linearized model at a given points (X_BAR, U_BAR)
         """
-        a_matrix = Function("a_matrix", [self.x, self.u],
-                            [jacobian(self.ode, self.x)])(x_bar, u_bar)
-        b_matrix = Function("b_matrix", [self.x, self.u],
-                            [jacobian(self.ode, self.u)])(x_bar, u_bar)
+        a_matrix = Function("a_matrix", [self.x, self.u], [jacobian(self.ode, self.x)])(
+            x_bar, u_bar
+        )
+        b_matrix = Function("b_matrix", [self.x, self.u], [jacobian(self.ode, self.u)])(
+            x_bar, u_bar
+        )
 
         linear_model = SystemModel(n_x=self.n_x, n_u=self.n_u)
-        linear_model.include_equations(ode=[
-            mtimes(a_matrix, linear_model.x) + mtimes(b_matrix, linear_model.u)
-        ])
+        linear_model.include_equations(
+            ode=[mtimes(a_matrix, linear_model.x) + mtimes(b_matrix, linear_model.u)]
+        )
         linear_model.name = "linearized_" + self.name
 
         linear_model.a_matrix = a_matrix
@@ -669,11 +698,9 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
 
         return linear_model
 
-    def find_equilibrium(self,
-                         additional_eqs,
-                         guess=None,
-                         t_0=0.0,
-                         rootfinder_options=None):
+    def find_equilibrium(
+        self, additional_eqs, guess=None, t_0=0.0, rootfinder_options=None
+    ):
         """Find a equilibrium point for the model.
         This method solves the root finding problem:
 
@@ -696,8 +723,8 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         """
         if rootfinder_options is None:
             rootfinder_options = dict(
-                nlpsol="ipopt",
-                nlpsol_options=config.SOLVER_OPTIONS["nlpsol_options"])
+                nlpsol="ipopt", nlpsol_options=config.SOLVER_OPTIONS["nlpsol_options"]
+            )
         if guess is None:
             guess = [1] * (self.n_x + self.n_y + self.n_u)
         if isinstance(additional_eqs, list):
@@ -706,13 +733,12 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin,
         eqs = vertcat(self.ode, self.alg, additional_eqs)
         eqs = substitute(eqs, self.t, t_0)
         eqs = substitute(eqs, self.tau, 0)
-        f_eqs = Function("f_equilibrium", [vertcat(*self.all_sym[1:-1])],
-                         [eqs])
+        f_eqs = Function("f_equilibrium", [vertcat(*self.all_sym[1:-1])], [eqs])
 
         rf = rootfinder("rf_equilibrium", "nlpsol", f_eqs, rootfinder_options)
         res = rf(guess)
         return (
-            res[:self.n_x],
-            res[self.n_x:self.n_x + self.n_y],
-            res[self.n_x + self.n_y:],
+            res[: self.n_x],
+            res[self.n_x : self.n_x + self.n_y],
+            res[self.n_x + self.n_y :],
         )

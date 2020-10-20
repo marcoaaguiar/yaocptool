@@ -9,13 +9,13 @@ Created on
 class SolutionMethodInterface(object):
     def solve(self):
         """
-            Method that will solve the yaoctool.modelling.OptimalControlProblem and return a
-            yaocptool.modelling.OptimizationResult,
+        Method that will solve the yaoctool.modelling.OptimalControlProblem and return a
+        yaocptool.modelling.OptimizationResult,
         """
         raise NotImplementedError
 
     def prepare(self):
         """
-            Perform pre solve check, check for sizes and types. If it fails raise an Exception
+        Perform pre solve check, check for sizes and types. If it fails raise an Exception
         """
         raise NotImplementedError

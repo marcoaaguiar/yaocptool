@@ -4,3 +4,4 @@ scipy
 sobol_seq
 matplotlib
 networkx
+seaborn

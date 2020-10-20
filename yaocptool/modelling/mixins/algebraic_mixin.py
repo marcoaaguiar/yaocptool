@@ -28,27 +28,22 @@ class AlgebraicMixin:
         :param int||tuple size:
         :return:
         """
-        if callable(getattr(self, 'name_variable', None)):
+        if callable(getattr(self, "name_variable", None)):
             name = self.name_variable(name)
 
         new_y = SX.sym(name, size)
         self.include_algebraic(vec(new_y))
         return new_y
 
-    def find_algebraic_variable(self,
-                                x,
-                                u,
-                                guess=None,
-                                t=0.0,
-                                p=None,
-                                theta_value=None,
-                                rootfinder_options=None):
+    def find_algebraic_variable(
+        self, x, u, guess=None, t=0.0, p=None, theta_value=None, rootfinder_options=None
+    ):
         if guess is None:
             guess = [1] * self.n_y
         if rootfinder_options is None:
             rootfinder_options = dict(
-                nlpsol="ipopt",
-                nlpsol_options=config.SOLVER_OPTIONS["nlpsol_options"])
+                nlpsol="ipopt", nlpsol_options=config.SOLVER_OPTIONS["nlpsol_options"]
+            )
         if p is None:
             p = []
         if theta_value is None:
@@ -62,8 +57,7 @@ class AlgebraicMixin:
 
         f_alg = Function("f_alg", [self.y], [alg])
 
-        rf = rootfinder("rf_algebraic_variable", "nlpsol", f_alg,
-                        rootfinder_options)
+        rf = rootfinder("rf_algebraic_variable", "nlpsol", f_alg, rootfinder_options)
         res = rf(guess)
         return res
 
@@ -86,18 +80,20 @@ class AlgebraicMixin:
             raise ValueError(
                 "Original and replacement must have the same number of elements!"
                 "original.numel()={}, replacement.numel()={}".format(
-                    original.numel(), replacement.numel()))
+                    original.numel(), replacement.numel()
+                )
+            )
 
-        if callable(getattr(super(), 'replace_variable', None)):
+        if callable(getattr(super(), "replace_variable", None)):
             super().replace_variable(original, replacement)
 
         self.alg = substitute(self.alg, original, replacement)
 
     def include_equations(self, *args, **kwargs):
-        if callable(getattr(super(), 'include_equations', None)):
+        if callable(getattr(super(), "include_equations", None)):
             super().include_equations(*args, **kwargs)
 
-        alg = kwargs.pop('alg', None)
+        alg = kwargs.pop("alg", None)
 
         if len(args) > 0 and alg is None:
             alg = SX([])

@@ -9,7 +9,9 @@ from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
 from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 from yaocptool.modelling import OptimalControlProblem
-from yaocptool.optimization.abstract_optimization_problem import AbstractOptimizationProblem
+from yaocptool.optimization.abstract_optimization_problem import (
+    AbstractOptimizationProblem,
+)
 
 
 class SolutionMethodsBase(SolutionMethodInterface):
@@ -28,7 +30,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
         """
         self.opt_problem = None  # type: AbstractOptimizationProblem
         self.problem = problem
-        self.solution_class = ''
+        self.solution_class = ""
         self.prepared = False
         self.discretizer = None  # type: DiscretizationSchemeBase
 
@@ -36,12 +38,15 @@ class SolutionMethodsBase(SolutionMethodInterface):
         self.degree = 3
         self.degree_control = 1
         self.finite_elements = 10
-        self.integrator_type = 'implicit'
-        self.discretization_scheme = 'collocation'
+        self.integrator_type = "implicit"
+        self.discretization_scheme = "collocation"
         self.initial_condition_as_parameter = True
         self.nlpsol_opts = {}
-        self.initial_guess_heuristic = 'simulation'  # 'problem_info'
+        self.initial_guess_heuristic = "simulation"  # 'problem_info'
         self.last_control_as_parameter = False
+        self.initial_guess_model = None
+        self.initial_guess_in_transform = None
+        self.initial_guess_out_transform = None
 
         # Internal variables
         self.parametrized_control = False
@@ -49,22 +54,22 @@ class SolutionMethodsBase(SolutionMethodInterface):
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-        for k in config.SOLVER_OPTIONS['nlpsol_options']:
+        for k in config.SOLVER_OPTIONS["nlpsol_options"]:
             if k not in self.nlpsol_opts:
-                self.nlpsol_opts[k] = config.SOLVER_OPTIONS['nlpsol_options'][
-                    k]
+                self.nlpsol_opts[k] = config.SOLVER_OPTIONS["nlpsol_options"][k]
 
         if self.problem.last_u is not None:
             self.last_control_as_parameter = True
 
-        if self.discretization_scheme == 'multiple-shooting':
+        if self.discretization_scheme == "multiple-shooting":
             self.discretizer = MultipleShootingScheme(self)
-        elif self.discretization_scheme == 'collocation':
+        elif self.discretization_scheme == "collocation":
             self.discretizer = CollocationScheme(self)
         else:
             raise Exception(
                 "Discretization scheme not recognized: '{}'. Available options: 'multiple-shooting'"
-                " and 'collocation'".format(self.discretization_scheme))
+                " and 'collocation'".format(self.discretization_scheme)
+            )
 
     @property
     def model(self):
@@ -72,31 +77,26 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
     @property
     def delta_t(self):
-        return float(self.problem.t_f -
-                     self.problem.t_0) / self.finite_elements
+        return float(self.problem.t_f - self.problem.t_0) / self.finite_elements
 
     @property
     def time_breakpoints(self):
         return [self.delta_t * k for k in range(self.finite_elements + 1)]
 
     @staticmethod
-    def collocation_points(degree, cp='radau', with_zero=False):
+    def collocation_points(degree, cp="radau", with_zero=False):
         if with_zero:
-            return [0] + collocation_points(degree,
-                                            cp)  # All collocation time points
+            return [0] + collocation_points(degree, cp)  # All collocation time points
         else:
-            return collocation_points(degree,
-                                      cp)  # All collocation time points
+            return collocation_points(degree, cp)  # All collocation time points
 
-    def _create_lagrangian_polynomial_basis(self,
-                                            degree,
-                                            starting_index=0,
-                                            tau=None):
+    def _create_lagrangian_polynomial_basis(self, degree, starting_index=0, tau=None):
         if tau is None:
             tau = self.model.tau  # symbolic variable
 
         tau_root = self.collocation_points(
-            degree, with_zero=True)  # All collocation time points
+            degree, with_zero=True
+        )  # All collocation time points
 
         # For all collocation points: eq 10.4 or 10.17 in Biegler's book
         # Construct Lagrange polynomials to get the polynomial basis at the collocation point
@@ -110,47 +110,43 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
         return tau, l_list
 
-    def create_variable_polynomial_approximation(self,
-                                                 size,
-                                                 degree,
-                                                 name='var_appr',
-                                                 tau=None,
-                                                 point_at_t0=False):
+    def create_variable_polynomial_approximation(
+        self, size, degree, name="var_appr", tau=None, point_at_t0=False
+    ):
         if not isinstance(name, list):
-            name = [name + '_' + str(i) for i in range(size)]
+            name = [name + "_" + str(i) for i in range(size)]
 
         if tau is None:
             tau = self.model.tau  # Collocation point
 
         if degree == 1:
             if size > 0:
-                points = vertcat(
-                    *[SX.sym(name[s], 1, degree) for s in range(size)])
+                points = vertcat(*[SX.sym(name[s], 1, degree) for s in range(size)])
             else:
-                points = SX.sym('empty_sx', size, degree)
+                points = SX.sym("empty_sx", size, degree)
             par = vec(points)
             u_pol = points
         else:
             if point_at_t0:
                 if size > 0:
                     points = vertcat(
-                        *[SX.sym(name[s], 1, degree + 1) for s in range(size)])
+                        *[SX.sym(name[s], 1, degree + 1) for s in range(size)]
+                    )
                 else:
-                    points = SX.sym('empty_sx', size, degree)
+                    points = SX.sym("empty_sx", size, degree)
                 tau, ell_list = self._create_lagrangian_polynomial_basis(
-                    degree, starting_index=0, tau=tau)
-                u_pol = sum(
-                    [ell_list[j] * points[:, j] for j in range(0, degree + 1)])
+                    degree, starting_index=0, tau=tau
+                )
+                u_pol = sum(ell_list[j] * points[:, j] for j in range(degree + 1))
             else:
                 if size > 0:
-                    points = vertcat(
-                        *[SX.sym(name[s], 1, degree) for s in range(size)])
+                    points = vertcat(*[SX.sym(name[s], 1, degree) for s in range(size)])
                 else:
-                    points = SX.sym('empty_sx', size, degree)
+                    points = SX.sym("empty_sx", size, degree)
                 tau, ell_list = self._create_lagrangian_polynomial_basis(
-                    degree, starting_index=1, tau=tau)
-                u_pol = sum(
-                    [ell_list[j] * points[:, j] for j in range(0, degree)])
+                    degree, starting_index=1, tau=tau
+                )
+                u_pol = sum(ell_list[j] * points[:, j] for j in range(degree))
             par = vec(points)
 
         return u_pol, par
@@ -165,10 +161,11 @@ class SolutionMethodsBase(SolutionMethodInterface):
         degree = self.degree_control
         if not self.parametrized_control:
             if type(degree) == dict:
-                raise Exception('Not implemented')
+                raise Exception("Not implemented")
             else:
                 u_pol, self.model.u_par = self.create_variable_polynomial_approximation(
-                    self.model.n_u, degree, name=self.model.u_names)
+                    self.model.n_u, degree, name=self.model.u_names
+                )
             self.model.u_expr = u_pol
         else:
             u_pol = self.model.u_expr
@@ -198,31 +195,31 @@ class SolutionMethodsBase(SolutionMethodInterface):
             self.prepare()
             self.prepared = True
 
-        has_parameters = (self.model.n_p + self.model.n_theta > 0
-                          or self.initial_condition_as_parameter
-                          or self.problem.last_u is not None)
+        has_parameters = (
+            self.model.n_p + self.model.n_theta > 0
+            or self.initial_condition_as_parameter
+            or self.problem.last_u is not None
+        )
 
         # parameters MX
-        p_mx = MX.sym('mx_p', self.model.n_p)
+        p_mx = MX.sym("mx_p", self.model.n_p)
 
         # theta MX
-        theta_mx = MX.sym('mx_theta_', self.model.n_theta,
-                          self.finite_elements)
-        theta = dict([(i, vec(theta_mx[:, i]))
-                      for i in range(self.finite_elements)])
+        theta_mx = MX.sym("mx_theta_", self.model.n_theta, self.finite_elements)
+        theta = dict([(i, vec(theta_mx[:, i])) for i in range(self.finite_elements)])
 
         # initial cond MX
-        p_mx_x_0 = MX.sym('mx_x_0_p', self.model.n_x)
+        p_mx_x_0 = MX.sym("mx_x_0_p", self.model.n_x)
 
         # last control MX
         if self.last_control_as_parameter:
-            p_last_u = MX.sym('mx_last_u', self.model.n_u)
+            p_last_u = MX.sym("mx_last_u", self.model.n_u)
         else:
             p_last_u = []
 
         all_mx = vertcat(p_mx, vec(theta_mx), p_mx_x_0, p_last_u)
 
-        args = {'p': p_mx, 'x_0': p_mx_x_0, 'theta': theta, 'last_u': p_last_u}
+        args = {"p": p_mx, "x_0": p_mx_x_0, "theta": theta, "last_u": p_last_u}
 
         # Discretize the problem
         opt_problem = self.discretizer.discretize(**args)
@@ -234,13 +231,15 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
         self.opt_problem = opt_problem
 
-    def call_solver(self,
-                    initial_guess=None,
-                    p=None,
-                    theta=None,
-                    x_0=None,
-                    last_u=None,
-                    initial_guess_dict=None):
+    def call_solver(
+        self,
+        initial_guess=None,
+        p=None,
+        theta=None,
+        x_0=None,
+        last_u=None,
+        initial_guess_dict=None,
+    ):
         if self.opt_problem is None:
             self.create_optimization_problem()
 
@@ -250,11 +249,13 @@ class SolutionMethodsBase(SolutionMethodInterface):
         if isinstance(x_0, list):
             x_0 = vertcat(x_0)
 
-        if not vertcat(x_0).numel() == self.model.n_x:
+        if vertcat(x_0).numel() != self.model.n_x:
             raise Exception(
-                'Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, '
-                'x_0.numel() = {}, model.n_x = {}'.format(
-                    vertcat(x_0).numel(), self.model.n_x))
+                "Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, "
+                "x_0.numel() = {}, model.n_x = {}".format(
+                    vertcat(x_0).numel(), self.model.n_x
+                )
+            )
 
         # parameters
         if p is None:
@@ -263,7 +264,9 @@ class SolutionMethodsBase(SolutionMethodInterface):
             elif self.problem.model.n_p > 0:
                 raise Exception(
                     "A parameter 'p' of size {} should be given".format(
-                        self.problem.model.n_p))
+                        self.problem.model.n_p
+                    )
+                )
 
         if isinstance(p, list):
             p = DM(p)
@@ -271,18 +274,20 @@ class SolutionMethodsBase(SolutionMethodInterface):
         # theta
         if theta is None:
             if self.problem.n_theta_opt == self.model.n_theta:
-                theta = create_constant_theta(0, self.problem.n_theta_opt,
-                                              self.finite_elements)
+                theta = create_constant_theta(
+                    0, self.problem.n_theta_opt, self.finite_elements
+                )
             elif self.problem.model.n_theta > 0:
                 raise Exception(
                     "A parameter 'theta' of size {} should be given".format(
-                        self.problem.model.n_theta))
+                        self.problem.model.n_theta
+                    )
+                )
 
         # Prepare NLP parameter vector
         theta_vector, par_x_0, par_last_u = [], [], []
         if theta is not None:
-            theta_vector = vertcat(
-                *[theta[i] for i in range(self.finite_elements)])
+            theta_vector = vertcat(*[theta[i] for i in range(self.finite_elements)])
 
         if self.initial_condition_as_parameter:
             par_x_0 = x_0
@@ -290,18 +295,20 @@ class SolutionMethodsBase(SolutionMethodInterface):
         # last control
         if not self.last_control_as_parameter and last_u is not None:
             raise warnings.warn(
-                'solution_method.last_control_as_parameter is False, but last_u was passed. last_u will'
-                ' be ignored.')
-        else:
-            if last_u is not None:
-                if isinstance(last_u, list):
-                    last_u = vertcat(*last_u)
-            elif self.problem.last_u is not None:
-                last_u = self.problem.last_u
-            elif self.last_control_as_parameter and last_u is None:
-                raise Exception(
-                    'last_control_as_parameter is True, but no "last_u" was passed and the "ocp.last_u" is '
-                    'None.')
+                "solution_method.last_control_as_parameter is False, but last_u was passed."
+                "last_u will be ignored."
+            )
+
+        if last_u is not None:
+            if isinstance(last_u, list):
+                last_u = vertcat(*last_u)
+        elif self.problem.last_u is not None:
+            last_u = self.problem.last_u
+        elif self.last_control_as_parameter:
+            raise Exception(
+                'last_control_as_parameter is True, but no "last_u" was passed'
+                'and the "ocp.last_u" is None.'
+            )
 
         if self.last_control_as_parameter:
             par_last_u = last_u
@@ -310,34 +317,52 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
         if initial_guess_dict is None:
             if initial_guess is None:
-                if self.initial_guess_heuristic == 'simulation':
-                    initial_guess = self.discretizer.create_initial_guess_with_simulation(
-                        p=p, theta=theta)
-                elif self.initial_guess_heuristic == 'problem_info':
-                    initial_guess = self.discretizer.create_initial_guess(
-                        p, theta)
+                if self.initial_guess_heuristic == "simulation":
+                    initial_guess = (
+                        self.discretizer.create_initial_guess_with_simulation(
+                            p=p,
+                            theta=theta,
+                            model=self.initial_guess_model,
+                            in_transform=self.initial_guess_in_transform,
+                            out_transform=self.initial_guess_out_transform,
+                        )
+                    )
+                elif self.initial_guess_heuristic == "problem_info":
+                    initial_guess = self.discretizer.create_initial_guess(p, theta)
                 else:
                     raise ValueError(
-                        'initial_guess_heuristic did not recognized, available options: "simulation" and '
-                        '"problem_info". Given: {}'.format(
-                            self.initial_guess_heuristic))
+                        "initial_guess_heuristic did not recognized, available options:"
+                        '"simulation" and "problem_info". Given: {}'.format(
+                            self.initial_guess_heuristic
+                        )
+                    )
+            args = dict(initial_guess=initial_guess, p=par)
+        elif isinstance(initial_guess, dict):
+            initial_guess = vertcat(
+                vec(initial_guess[key])
+                for key in ["x", "y", "u", "eta", "p_opt", "theta_opt"]
+            )
             args = dict(initial_guess=initial_guess, p=par)
         else:
-            args = dict(initial_guess=initial_guess_dict['x'],
-                        p=par,
-                        lam_x=initial_guess_dict['lam_x'],
-                        lam_g=initial_guess_dict['lam_g'])
+            args = dict(
+                initial_guess=initial_guess_dict["x"],
+                p=par,
+                lam_x=initial_guess_dict["lam_x"],
+                lam_g=initial_guess_dict["lam_g"],
+            )
 
         sol = self.opt_problem.solve(**args)
         return sol, p, theta, x_0, last_u
 
-    def solve(self,
-              initial_guess=None,
-              p=None,
-              theta=None,
-              x_0=None,
-              last_u=None,
-              initial_guess_dict=None):
+    def solve(
+        self,
+        initial_guess=None,
+        p=None,
+        theta=None,
+        x_0=None,
+        last_u=None,
+        initial_guess_dict=None,
+    ) -> OptimizationResult:
         """
 
         :param initial_guess: Initial guess
@@ -348,25 +373,30 @@ class SolutionMethodsBase(SolutionMethodInterface):
         :param initial_guess_dict: Initial guess as dict
         :rtype: OptimizationResult
         """
+        if isinstance(p, (int, float)):
+            p = DM(p)
+
         raw_solution_dict, p, theta, x_0, last_u = self.call_solver(
             initial_guess=initial_guess,
             p=p,
             theta=theta,
             x_0=x_0,
             last_u=last_u,
-            initial_guess_dict=initial_guess_dict)
+            initial_guess_dict=initial_guess_dict,
+        )
 
-        optimization_result = self.create_optimization_result(
-            raw_solution_dict, p, theta, x_0)
-        return optimization_result
+        return self.create_optimization_result(raw_solution_dict, p, theta, x_0)
 
     def create_optimization_result(self, raw_solution_dict, p, theta, x_0):
         optimization_result = OptimizationResult()
 
         # From the solution_method
         for attr in [
-                'finite_elements', 'degree', 'degree_control',
-                'time_breakpoints', 'discretization_scheme'
+            "finite_elements",
+            "degree",
+            "degree_control",
+            "time_breakpoints",
+            "discretization_scheme",
         ]:
             attr_value = getattr(self, attr)
             setattr(optimization_result, attr, attr_value)
@@ -378,7 +408,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
         optimization_result.p = p
 
         # From the problem
-        for attr in ['t_0', 't_f']:
+        for attr in ["t_0", "t_f"]:
             attr_value = getattr(self.problem, attr)
             setattr(optimization_result, attr, attr_value)
         optimization_result.problem_name = self.problem.name
@@ -394,17 +424,19 @@ class SolutionMethodsBase(SolutionMethodInterface):
             self.model.u[i].name() for i in range(self.model.n_u)
         ]
         optimization_result.theta_opt_names = [
-            self.problem.theta_opt[i].name()
-            for i in range(self.problem.n_theta_opt)
+            self.problem.theta_opt[i].name() for i in range(self.problem.n_theta_opt)
         ]
 
         self.discretizer.set_data_to_optimization_result_from_raw_data(
-            optimization_result, raw_solution_dict)
+            optimization_result, raw_solution_dict
+        )
 
         if self.problem.x_cost is not None:
             x_c_index = find_variables_indices_in_vector(
-                self.problem.x_cost, self.model.x)
-            optimization_result.x_c_final = optimization_result.x_data[
-                'values'][-1][-1][x_c_index]
+                self.problem.x_cost, self.model.x
+            )
+            optimization_result.x_c_final = optimization_result.x_data["values"][-1][
+                -1
+            ][x_c_index]
 
         return optimization_result

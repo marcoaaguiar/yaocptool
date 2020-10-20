@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import copy
 import os
 import pickle
@@ -8,19 +6,20 @@ from collections import defaultdict
 from functools import partial
 
 from casadi import horzcat, DM, sum2
+import numpy
+import seaborn
 
 from yaocptool.config import PLOT_INTERACTIVE
 
 try:
     import matplotlib.pyplot as plt
 except ImportError:
-    print(
-        'Failed to import matplotlib. Make sure that it is properly installed')
+    print("Failed to import matplotlib. Make sure that it is properly installed")
     plt = None
 
 
 class DataSet:
-    def __init__(self, name='dataset', **kwargs):
+    def __init__(self, name="dataset", **kwargs):
         """
             Generic time dependent data storage.
             The data is stored in the self.data dictionary.
@@ -39,10 +38,13 @@ class DataSet:
         """
         self.name = name
         self.data = defaultdict(
-            partial(dict, [('time', DM([])), ('names', None),
-                           ('values', DM([])), ('size', None)]))
+            partial(
+                dict,
+                [("time", DM()), ("names", None), ("values", DM()), ("size", None)],
+            )
+        )
 
-        self.plot_style = 'step'
+        self.plot_style = "step"
         self.max_delta_t = None
         self.find_discontinuity = True
 
@@ -61,11 +63,11 @@ class DataSet:
             interpolation (plot).
         """
         if names is None:
-            names = [entry + '_' + str(i) for i in range(size)]
-        self.data[entry]['size'] = size
-        self.data[entry]['names'] = names
+            names = [entry + "_" + str(i) for i in range(size)]
+        self.data[entry]["size"] = size
+        self.data[entry]["names"] = names
         if plot_style is not None:
-            self.data[entry]['plot_style'] = plot_style
+            self.data[entry]["plot_style"] = plot_style
 
     def get_entry(self, entry):
         """
@@ -75,7 +77,7 @@ class DataSet:
         :return: entry time, entry value
         :rtype: tuple
         """
-        return self.data[entry]['time'], self.data[entry]['values']
+        return self.data[entry]["time"], self.data[entry]["values"]
 
     def get_entry_names(self, entry):
         """
@@ -84,7 +86,7 @@ class DataSet:
         :param entry:
         :rtype: list
         """
-        return self.data[entry]['names']
+        return self.data[entry]["names"]
 
     def get_entry_size(self, entry):
         """
@@ -93,7 +95,7 @@ class DataSet:
         :param entry:
         :return:
         """
-        return self.data[entry]['size']
+        return self.data[entry]["size"]
 
     def insert_data(self, entry, time, value):
         """Insert data on the dataset
@@ -107,17 +109,17 @@ class DataSet:
         if isinstance(time, (float, int)):
             time = DM(time)
 
-        if not time.shape[1] == value.shape[1]:
+        if time.shape[1] != value.shape[1]:
             raise ValueError(
                 'Number of columns of "time" and "value" should be the same, '
-                'time.shape={} and value.shape={}'.format(
-                    time.shape[1], value.shape))
+                "time.shape={} and value.shape={}".format(time.shape[1], value.shape)
+            )
 
-        self.data[entry]['values'] = horzcat(self.data[entry]['values'], value)
-        self.data[entry]['time'] = horzcat(self.data[entry]['time'], time)
+        self.data[entry]["values"] = horzcat(self.data[entry]["values"], value)
+        self.data[entry]["time"] = horzcat(self.data[entry]["time"], time)
 
-        if self.data[entry]['size'] is None:
-            self.data['entry']['size'] = value.size1()
+        if self.data[entry]["size"] is None:
+            self.data["entry"]["size"] = value.size1()
 
     def get_copy(self):
         """
@@ -140,19 +142,24 @@ class DataSet:
         """
 
         for entry in other_dataset.data:
-            if not self.get_entry_size(entry) == other_dataset.get_entry_size(
-                    entry):
+            if self.get_entry_size(entry) != other_dataset.get_entry_size(entry):
                 raise ValueError(
-                    'The size of the same entry is different in the two datasets, '
-                    '{}!={}'.format(self.get_entry_size(entry),
-                                    other_dataset.get_entry_size(entry)))
+                    "The size of the same entry is different in the two datasets, "
+                    "{}!={}".format(
+                        self.get_entry_size(entry), other_dataset.get_entry_size(entry)
+                    )
+                )
             if entry not in self.data:
-                self.create_entry(entry,
-                                  size=other_dataset.get_entry_size(entry),
-                                  names=other_dataset.get_entry_names(entry))
-            self.insert_data(entry,
-                             time=other_dataset.data[entry]['time'],
-                             value=other_dataset.data[entry]['values'])
+                self.create_entry(
+                    entry,
+                    size=other_dataset.get_entry_size(entry),
+                    names=other_dataset.get_entry_names(entry),
+                )
+            self.insert_data(
+                entry,
+                time=other_dataset.data[entry]["time"],
+                value=other_dataset.data[entry]["values"],
+            )
 
         self.sort()
 
@@ -167,16 +174,18 @@ class DataSet:
             entries = self.data.keys()
 
         for entry in entries:
-            entry_length = self.data[entry]['time'].shape[1]
-            time = [self.data[entry]['time'][i] for i in range(entry_length)]
+            entry_length = self.data[entry]["time"].shape[1]
+            time = [self.data[entry]["time"][i] for i in range(entry_length)]
             values = [
-                self.data[entry]['values'][:, i]
-                for i in range(self.data[entry]['values'].shape[1])
+                self.data[entry]["values"][:, i]
+                for i in range(self.data[entry]["values"].shape[1])
             ]
-            time, values = (list(t) for t in zip(
-                *sorted(zip(time, values), key=lambda point: point[0])))
-            self.data[entry]['time'] = horzcat(*time)
-            self.data[entry]['values'] = horzcat(*values)
+            time, values = (
+                list(t)
+                for t in zip(*sorted(zip(time, values), key=lambda point: point[0]))
+            )
+            self.data[entry]["time"] = horzcat(*time)
+            self.data[entry]["values"] = horzcat(*values)
 
     def save(self, file_path):
         """
@@ -189,35 +198,39 @@ class DataSet:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        with open(file_path, 'wb+') as f:
+        with open(file_path, "wb+") as f:
             pickle.dump(self, f)
 
-    def _plot_entry(self,
-                    t_vector,
-                    data_vector,
-                    row,
-                    label='',
-                    plot_style='plot'):
+    def _plot_entry(self, t_vector, data_vector, row, label="", plot_style="plot"):
         if self.find_discontinuity:
             t_vector, data_vector = self._find_discontinuity_for_plotting(
-                t_vector, data_vector)
+                t_vector, data_vector
+            )
 
-        if plot_style not in ['plot', 'step']:
+        if plot_style not in ["plot", "step"]:
             raise ValueError(
-                'Plot style not recognized: "{}". Allowed : "plot" and "step"'.
-                format(plot_style))
+                'Plot style not recognized: "{}". Allowed : "plot" and "step"'.format(
+                    plot_style
+                )
+            )
 
-        if plot_style == 'plot':
-            return plt.plot(t_vector.T, data_vector[row, :].T, label=label)
-        if plot_style == 'step':
-            return plt.step(t_vector.T,
-                            data_vector[row, :].T,
-                            label=label,
-                            where='post')
+        if plot_style == "plot":
+            return seaborn.lineplot(
+                x=t_vector.full().flatten(),
+                y=data_vector[row, :].full().flatten(),
+                label=label,
+            )
+            #  return plt.plot(t_vector.T, data_vector[row, :].T, label=label)
+        if plot_style == "step":
+            return plt.step(
+                t_vector.T, data_vector[row, :].T, label=label, where="post"
+            )
 
         raise ValueError(
-            '"plot_style" not recognized. Given {}, available: "step" or "plot"'
-            .format(plot_style))
+            '"plot_style" not recognized. Given {}, available: "step" or "plot"'.format(
+                plot_style
+            )
+        )
 
     def _find_discontinuity_for_plotting(self, time, values):
         tolerance = 1.2
@@ -242,7 +255,7 @@ class DataSet:
                 delta_t = delta_t_comparison
         return out_time, out_values
 
-    def plot(self, plot_list, figures=None, show=True, exact=False):
+    def plot(self, *plot_list, figures=None, show=True, exact=False, use_tex=False):
         """Plot DataSet information.
         It takes as input a list of dictionaries, each dictionary represents a plot. In the dictionary use keyword 'x',
         'u', 'y', etc., to specify which entry you want to print, the value of the dictionary should be a list of
@@ -260,23 +273,30 @@ class DataSet:
         :param bool exact: If true only precise match of entry elements will be plotted, otherwise a regex match will
             be used
         """
-
-        if plot_list is None:
-            plot_list == 'all'
-        if plot_list == 'all':
-            plot_list = [{'x': 'all'}, {'y': 'all'}, {'u': 'all'}]
+        if len(plot_list) == 0:
+            plot_list = "all"
+        if (
+            all(isinstance(item, str) for item in plot_list)
+            and "".join(plot_list) == "all"
+        ):
+            plot_list = [{"x": "all"}, {"y": "all"}, {"u": "all"}]
 
         if isinstance(plot_list, dict):
             plot_list = [plot_list]
+
+        if use_tex:
+            seaborn.set(font_scale=1, rc={"text.usetex": True})
+            seaborn.set_style("whitegrid")
 
         used_figures = []
 
         # for each plot asked
         for k, entry_dict in enumerate(plot_list):
-            if figures is not None:
-                fig = plt.figure(figures[k].number)
-            else:
-                fig = plt.figure(k)
+            fig = (
+                figures[k]
+                if figures is not None and len(figures) < k
+                else plt.figure(k)
+            )
             used_figures.append(fig)
 
             lines = []
@@ -288,40 +308,46 @@ class DataSet:
                     )
 
                 # if a custom plot style was asked, otherwise use default
-                if 'plot_style' in self.data[entry]:
-                    plot_style = self.data[entry]['plot_style']
+                if "plot_style" in self.data[entry]:
+                    plot_style = self.data[entry]["plot_style"]
                 else:
                     plot_style = self.plot_style
 
                 indexes_or_names = entry_dict[entry]
                 # if it is 'all'
-                if indexes_or_names == 'all':
-                    indexes_or_names = range(self.data[entry]['size'])
+                if indexes_or_names == "all":
+                    indexes_or_names = range(self.data[entry]["size"])
 
                 var_names = self.get_entry_names(entry)
                 # identify variables with regex
                 if not exact:
                     for regex in indexes_or_names[:]:
                         regex_ind = indexes_or_names.index(regex)
-                        if isinstance(regex, ("".__class__, u"".__class__)):
-                            indexes_or_names[regex_ind:regex_ind + 1] = [
-                                v_name for v_name in var_names
+                        if isinstance(regex, ("".__class__, "".__class__)):
+                            indexes_or_names[regex_ind : regex_ind + 1] = [
+                                v_name
+                                for v_name in var_names
                                 if re.match(regex, v_name)
                             ]
 
                 # if it is a variable name
                 for i, item in enumerate(indexes_or_names):
-                    if isinstance(item, ("".__class__, u"".__class__)):
+                    if isinstance(item, ("".__class__, "".__class__)):
                         indexes_or_names[i] = var_names.index(item)
 
                 # plot entry/indexes
                 for ind in indexes_or_names:
+                    label = self.data[entry]["names"][ind]
+                    if use_tex:
+                        label = f"${label}$"
+
                     line = self._plot_entry(
-                        self.data[entry]['time'],
-                        self.data[entry]['values'],
+                        self.data[entry]["time"],
+                        self.data[entry]["values"],
                         ind,
-                        label=self.data[entry]['names'][ind],
-                        plot_style=plot_style)
+                        label=label,
+                        plot_style=plot_style,
+                    )
                     lines.append(line)
 
             plt.grid()

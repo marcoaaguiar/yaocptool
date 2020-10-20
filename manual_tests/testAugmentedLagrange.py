@@ -44,15 +44,10 @@ if AUG_LAGRANGIAN:
 
     result = solution_method.solve(p=[1], x_0=[2, 3, 0])
     figs = result.plot(
-        [  # {'x': [0]},
-            {
-                'x': [0, 1]
-            }, {
-                'u': [0]
-            }, {
-                'nu': [0, 1]
-            }
-        ],
+        # {'x': [0]},
+        {'x': [0, 1]},
+        {'u': [0]},
+        {'nu': [0, 1]},
         show=False)
 
 if INDIRECT:
@@ -65,13 +60,7 @@ if INDIRECT:
         finite_elements=finite_elements,
         discretization_scheme=discretization_scheme)
     result2 = solution_method2.solve(p=[1], x_0=[2, 3, 0, 0])
-    figs = result2.plot([{
-        'x': [0, 1]
-    }, {
-        'u': 'all'
-    }, {
-        'y': [2, 3]
-    }],
+    figs = result2.plot({'x': [0, 1]}, {'u': 'all'}, {'y': [2, 3]},
                         figures=figs,
                         show=True)
 
@@ -86,11 +75,7 @@ if DIRECT:
         discretization_scheme=discretization_scheme)
     result2 = solution_method2.solve(p=[1], x_0=[2, 3, 0])
     figs = result2.plot(
-        [  # {'x': [0]},
-            {
-                'x': [0, 1]
-            }, {
-                'u': [0]
-            }
-        ],
+        # {'x': [0]},
+        {'x': [0, 1]},
+        {'u': [0]},
         figures=figs)

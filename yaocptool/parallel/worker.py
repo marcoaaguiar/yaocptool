@@ -9,6 +9,7 @@ class Worker(multiprocessing.Process):
     It will put the return of the 'function_name' call in all Queues in queue_out
 
     """
+
     def __init__(self, obj_class, obj_arg, function_name, queue_in, queue_out):
         multiprocessing.Process.__init__(self)
 
@@ -25,7 +26,7 @@ class Worker(multiprocessing.Process):
         self.obj = None
 
     def run(self):
-        print('Starting to run: %s' % self.name)
+        print("Starting to run: %s" % self.name)
         if self.obj_arg is not None:
             self.obj = self.obj_class(self.obj_arg)
         else:
@@ -33,7 +34,7 @@ class Worker(multiprocessing.Process):
 
         while True:
             # Check if object is trying to stop
-            if hasattr(self.obj, 'stop'):
+            if hasattr(self.obj, "stop"):
                 if self.obj.stop:
                     break
 

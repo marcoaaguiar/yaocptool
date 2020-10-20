@@ -48,14 +48,15 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         EstimatorAbstract.__init__(self, **kwargs)
 
         self._p_k_aug = DM.eye(self.model.n_x + self.model.n_y)
-        self._p_k_aug[:self.model.n_x, :self.model.n_x] = self.p_k
+        self._p_k_aug[: self.model.n_x, : self.model.n_x] = self.p_k
         if self.model.n_y > 0:
             if self.y_guess is not None:
                 self._x_aug = vertcat(self.x_mean, self.y_guess)
             else:
                 raise ValueError(
                     "If the model has algebraic it is necessary to provide a initial guess for it "
-                    "('y_guess').")
+                    "('y_guess')."
+                )
         else:
             self._x_aug = self.x_mean
 
@@ -78,15 +79,17 @@ class ExtendedKalmanFilter(EstimatorAbstract):
             "ekf_" + self.model.y_sym[i].name() for i in range(self.model.n_y)
         ]
 
-        self.dataset.data["P"]["size"] = self.model.n_x**2
+        self.dataset.data["P"]["size"] = self.model.n_x ** 2
         self.dataset.data["P"]["names"] = [
-            "ekf_P_" + str(i) + str(j) for i in range(self.model.n_x)
+            "ekf_P_" + str(i) + str(j)
+            for i in range(self.model.n_x)
             for j in range(self.model.n_x)
         ]
 
-        self.dataset.data["P_y"]["size"] = self.model.n_y**2
+        self.dataset.data["P_y"]["size"] = self.model.n_y ** 2
         self.dataset.data["P_y"]["names"] = [
-            "ekf_P_y_" + str(i) + str(j) for i in range(self.model.n_y)
+            "ekf_P_y_" + str(i) + str(j)
+            for i in range(self.model.n_y)
             for j in range(self.model.n_y)
         ]
 
@@ -97,7 +100,7 @@ class ExtendedKalmanFilter(EstimatorAbstract):
 
     @property
     def n_meas(self):
-        """ Number of measurements
+        """Number of measurements
 
         :rtype: int
         :return: Number of measurements
@@ -109,7 +112,8 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         else:
             raise Exception(
                 "The estimator has no measurements information, neither 'h_function' or 'c_matrix' "
-                "were given.")
+                "were given."
+            )
 
     def _fix_types(self):
         self.x_mean = vertcat(self.x_mean)
@@ -123,12 +127,10 @@ class ExtendedKalmanFilter(EstimatorAbstract):
 
     def _check(self):
         if self.x_mean is None:
-            raise ValueError(
-                'A initial condition for the "x_mean" must be provided')
+            raise ValueError('A initial condition for the "x_mean" must be provided')
 
         if self.p_k is None:
-            raise ValueError(
-                'A initial condition for the "p_k" must be provided')
+            raise ValueError('A initial condition for the "p_k" must be provided')
 
         if self.h_function is None and self.c_matrix is None:
             raise ValueError(
@@ -161,21 +163,25 @@ class ExtendedKalmanFilter(EstimatorAbstract):
 
         # Covariance
         all_sym_values = self.model.put_values_in_all_sym_format(
-            t=self.t, x=x_pred, y=y_pred, p=self.p, theta=self.theta)
+            t=self.t, x=x_pred, y=y_pred, p=self.p, theta=self.theta
+        )
         all_sym_values = all_sym_values
 
         a_aug_matrix = self.a_aug_matrix_func(*all_sym_values)
         transition_matrix = expm(a_aug_matrix * self.t_s)
 
         gamma_matrix = self.gamma_func(*all_sym_values)
-        p_pred = self.p_update_func(transition_matrix, self._p_k_aug,
-                                    gamma_matrix, self.r_v)
+        p_pred = self.p_update_func(
+            transition_matrix, self._p_k_aug, gamma_matrix, self.r_v
+        )
 
         # Obtain the matrix G (linearized measurement model)
         measurement_sym = self._get_measurement_from_prediction(
-            self.model.x_sym, self.model.y_sym, self.model.u_sym)
-        dh_dx_aug_sym = jacobian(measurement_sym,
-                                 vertcat(self.model.x_sym, self.model.y_sym))
+            self.model.x_sym, self.model.y_sym, self.model.u_sym
+        )
+        dh_dx_aug_sym = jacobian(
+            measurement_sym, vertcat(self.model.x_sym, self.model.y_sym)
+        )
         f_dh_dx_aug = Function(
             "dh_dx_aug",
             [self.model.x_sym, self.model.y_sym, self.model.u_sym],
@@ -196,7 +202,8 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         # Correct prediction of the state estimation
         x_mean = x_aug_f + mtimes(k_gain, (y_k - meas_pred))
         meas_corr = self._get_measurement_from_prediction(
-            x_mean[:self.model.n_x], x_mean[self.model.n_x:], u_f)
+            x_mean[: self.model.n_x], x_mean[self.model.n_x :], u_f
+        )
         if self.verbosity > 1:
             print("Predicted state: {}".format(x_pred))
             print("Prediction error: {}".format(y_k - meas_pred))
@@ -207,22 +214,21 @@ class ExtendedKalmanFilter(EstimatorAbstract):
 
         # Correct covariance prediction
         p_k = mtimes(
-            DM.eye(self.augmented_model.n_x) - mtimes(k_gain, g_matrix),
-            p_pred)
+            DM.eye(self.augmented_model.n_x) - mtimes(k_gain, g_matrix), p_pred
+        )
 
         # Save variables in local object
         self._x_aug = x_mean
-        self.x_mean = x_mean[:self.model.n_x]
+        self.x_mean = x_mean[: self.model.n_x]
         self._p_k_aug = p_k
-        self.p_k = p_k[:self.model.n_x, :self.model.n_x]
+        self.p_k = p_k[: self.model.n_x, : self.model.n_x]
 
         # Save in the data set
         self.dataset.insert_data("x", t_k, self.x_mean)
-        self.dataset.insert_data("y", t_k, x_mean[self.model.n_x:])
+        self.dataset.insert_data("y", t_k, x_mean[self.model.n_x :])
         self.dataset.insert_data("meas", t_k, meas_corr)
         self.dataset.insert_data("P", t_k, vec(self.p_k))
-        self.dataset.insert_data("P_y", t_k, p_k[self.model.n_x:,
-                                                 self.model.n_x:])
+        self.dataset.insert_data("P_y", t_k, p_k[self.model.n_x :, self.model.n_x :])
 
         return self.x_mean, self.p_k
 
@@ -242,14 +248,18 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         all_sym = list(self.model.all_sym)
 
         # Mean
-        a_func = Function("A_matrix", all_sym,
-                          [jacobian(self.model.ode, self.model.x_sym)])
-        b_func = Function("B_matrix", all_sym,
-                          [jacobian(self.model.ode, self.model.y_sym)])
-        c_func = Function("C_matrix", all_sym,
-                          [jacobian(self.model.alg, self.model.x_sym)])
-        d_func = Function("D_matrix", all_sym,
-                          [jacobian(self.model.alg, self.model.y_sym)])
+        a_func = Function(
+            "A_matrix", all_sym, [jacobian(self.model.ode, self.model.x_sym)]
+        )
+        b_func = Function(
+            "B_matrix", all_sym, [jacobian(self.model.ode, self.model.y_sym)]
+        )
+        c_func = Function(
+            "C_matrix", all_sym, [jacobian(self.model.alg, self.model.x_sym)]
+        )
+        d_func = Function(
+            "D_matrix", all_sym, [jacobian(self.model.alg, self.model.y_sym)]
+        )
 
         x_lin = aug_model.create_parameter("x_lin", self.model.n_x)
         y_lin = aug_model.create_parameter("y_lin", self.model.n_y)
@@ -277,15 +287,15 @@ class ExtendedKalmanFilter(EstimatorAbstract):
         gamma = vertcat(DM.eye(self.model.n_x), -solve(d_matrix, c_matrix))
 
         trans_matrix_sym = SX.sym("trans_matrix", a_aug_matrix.shape)
-        p_matrix_sym = SX.sym("p_matrix",
-                              (model.n_x + model.n_y, model.n_x + model.n_y))
+        p_matrix_sym = SX.sym(
+            "p_matrix", (model.n_x + model.n_y, model.n_x + model.n_y)
+        )
         gamma_matrix_sym = SX.sym("gamma_matrix", gamma.shape)
         q_matrix_sym = SX.sym("q_matrix", (self.model.n_x, self.model.n_x))
 
-        p_kpp = mtimes(trans_matrix_sym,
-                       mtimes(p_matrix_sym, trans_matrix_sym.T)) + mtimes(
-                           gamma_matrix_sym,
-                           mtimes(q_matrix_sym, gamma_matrix_sym.T))
+        p_kpp = mtimes(
+            trans_matrix_sym, mtimes(p_matrix_sym, trans_matrix_sym.T)
+        ) + mtimes(gamma_matrix_sym, mtimes(q_matrix_sym, gamma_matrix_sym.T))
 
         a_aug_matrix_func = Function("trans_matrix", all_sym, [a_aug_matrix])
         gamma_func = Function("gamma", all_sym, [gamma])
@@ -304,7 +314,8 @@ class ExtendedKalmanFilter(EstimatorAbstract):
             measurement_prediction = mtimes(self.c_matrix, vertcat(x, y))
             if self.d_matrix is not None:
                 measurement_prediction = measurement_prediction + mtimes(
-                    self.d_matrix, u)
+                    self.d_matrix, u
+                )
         else:
             raise ValueError(
                 'Neither a measurement function "h_function" or a measurement matrix "c_matrix" was given'

@@ -16,5 +16,8 @@ yaocptoool/config.py
 .vimspector.json
 .exrc
 Session.vim
-tags
+tags*
 tutorial/
+env/
+env-win/
+.fzfignore

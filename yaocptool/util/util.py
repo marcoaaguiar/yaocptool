@@ -1,20 +1,36 @@
 import re
 
-from casadi import is_equal, DM, vec, vertcat, substitute, mtimes, integrator, MX, repmat, OP_LT, OP_LE, OP_EQ, SX, \
-    collocation_points
+from casadi import (
+    is_equal,
+    DM,
+    vec,
+    vertcat,
+    substitute,
+    mtimes,
+    integrator,
+    MX,
+    repmat,
+    OP_LT,
+    OP_LE,
+    OP_EQ,
+    SX,
+    collocation_points,
+)
 
 
 def find_variables_indices_in_vector(var, vector, depth=0):
     """
         Given symbolic variables return the indices of the variables in a vector
 
-    :param casadi.SX|casadi.MX var:
+    :param list|casadi.SX|casadi.MX var:
     :param casadi.SX|casadi.MX vector:
     :param int depth: depth for which is_equal will check for equality
     :return: list of indices
     :rtype: list
     """
     indices = []
+    if isinstance(var, list):
+        var = vertcat(*var)
     for ind_vector in range(vector.numel()):
         for ind_var in range(var.numel()):
             if is_equal(vector[ind_vector], var[ind_var], depth):
@@ -43,10 +59,13 @@ def find_variables_in_vector_by_name(names, vector, exact=False):
                     result.append(vector[i])
     else:
         for regex in names[:]:
-            result.extend([
-                vector[i] for i in range(vector.numel())
-                if re.match(regex, vector[i].name())
-            ])
+            result.extend(
+                [
+                    vector[i]
+                    for i in range(vector.numel())
+                    if re.match(regex, vector[i].name())
+                ]
+            )
 
     return result
 
@@ -62,8 +81,8 @@ def remove_variables_from_vector(var, vector):
     to_remove = find_variables_indices_in_vector(var, vector)
     if len(to_remove) == 0:
         raise ValueError(
-            '"var" not found in "vector", var={}, vector={}'.format(
-                var, vector))
+            '"var" not found in "vector", var={}, vector={}'.format(var, vector)
+        )
     vector = remove_variables_from_vector_by_indices(to_remove, vector)
     return vector
 
@@ -81,16 +100,18 @@ def remove_variables_from_vector_by_indices(indices, vector):
         numel = vector.numel()
         if max(indices) > numel:
             raise ValueError(
-                'Found indices out of bounds. Index violating: {}, indices: {}'
-                .format(max(indices), indices))
+                "Found indices out of bounds. Index violating: {}, indices: {}".format(
+                    max(indices), indices
+                )
+            )
         if min(indices) < -numel:
             raise ValueError(
-                'Found indices out of bounds. Index violating: {}, indices: {}'
-                .format(min(indices), indices))
+                "Found indices out of bounds. Index violating: {}, indices: {}".format(
+                    min(indices), indices
+                )
+            )
 
-    remaining_ind = [
-        ind for ind in range(vector.numel()) if ind not in indices
-    ]
+    remaining_ind = [ind for ind in range(vector.numel()) if ind not in indices]
     vector = vector[remaining_ind]
 
     if vector.shape == (1, 0):
@@ -137,8 +158,10 @@ def join_thetas(*args):
             n_keys = len(theta_keys) if n_keys == 0 else n_keys
             if len(theta_keys) > 0 and not len(theta_keys) == n_keys:
                 raise ValueError(
-                    'Only thetas with size zero or same size are accepted, given: {}'
-                    .format([len(th.keys()) for th in args]))
+                    "Only thetas with size zero or same size are accepted, given: {}".format(
+                        [len(th.keys()) for th in args]
+                    )
+                )
             all_keys.extend(theta.keys())
 
     all_keys = list(set(all_keys))
@@ -182,7 +205,8 @@ def blockdiag(*matrices_list):
 
     if SX in matrix_types and MX in matrix_types:
         raise ValueError(
-            "Can not mix MX and SX types. Types give: {}".format(matrix_types))
+            "Can not mix MX and SX types. Types give: {}".format(matrix_types)
+        )
 
     if SX in matrix_types:
         matrix = SX.zeros(size_1, size_2)
@@ -195,7 +219,7 @@ def blockdiag(*matrices_list):
     index_2 = 0
 
     for m in matrices_list:
-        matrix[index_1:index_1 + m.size1(), index_2:index_2 + m.size2()] = m
+        matrix[index_1 : index_1 + m.size1(), index_2 : index_2 + m.size2()] = m
         index_1 += m.size1()
         index_2 += m.size2()
 
@@ -213,17 +237,17 @@ def expm(a_matrix):
     dim = a_matrix.shape[1]
 
     # Create the integrator
-    x_mx = MX.sym('x', a_matrix.shape[1])
-    a_mx = MX.sym('x', a_matrix.shape)
+    x_mx = MX.sym("x", a_matrix.shape[1])
+    a_mx = MX.sym("x", a_matrix.shape)
     ode = mtimes(a_mx, x_mx)
-    dae_system_dict = {'x': x_mx, 'ode': ode, 'p': vec(a_mx)}
+    dae_system_dict = {"x": x_mx, "ode": ode, "p": vec(a_mx)}
 
-    integrator_ = integrator("integrator", "cvodes", dae_system_dict,
-                             {'tf': 1})
-    integrator_map = integrator_.map(a_matrix.shape[1], 'thread')
+    integrator_ = integrator("integrator", "cvodes", dae_system_dict, {"tf": 1})
+    integrator_map = integrator_.map(a_matrix.shape[1], "thread")
 
-    res = integrator_map(x0=DM.eye(dim),
-                         p=repmat(vec(a_matrix), (1, a_matrix.shape[1])))['xf']
+    res = integrator_map(
+        x0=DM.eye(dim), p=repmat(vec(a_matrix), (1, a_matrix.shape[1]))
+    )["xf"]
 
     return res
 
@@ -245,7 +269,7 @@ def is_inequality(expr):
 
 
 def is_equality(expr):
-    """ Return true if an expression is an equality (e.g.: x == 2)
+    """Return true if an expression is an equality (e.g.: x == 2)
 
     Only supports MX expr.
 
@@ -261,7 +285,8 @@ def is_equality(expr):
 
 def _create_lagrangian_polynomial_basis(tau, degree, point_at_zero=False):
     tau_root = collocation_points(
-        degree, 'radau')  # type: list # All collocation time points
+        degree, "radau"
+    )  # type: list # All collocation time points
 
     if point_at_zero:
         tau_root.insert(0, 0.0)
@@ -279,11 +304,9 @@ def _create_lagrangian_polynomial_basis(tau, degree, point_at_zero=False):
     return l_list
 
 
-def create_polynomial_approximation(tau,
-                                    size,
-                                    degree,
-                                    name='var_appr',
-                                    point_at_zero=False):
+def create_polynomial_approximation(
+    tau, size, degree, name="var_appr", point_at_zero=False
+):
     """
         Create a polynomial function.
 
@@ -296,27 +319,24 @@ def create_polynomial_approximation(tau,
     :rtype: tuple
     """
     if not isinstance(name, list):
-        name = [name + '_' + str(i) for i in range(size)]
+        name = [name + "_" + str(i) for i in range(size)]
 
     # define the number of parameters
-    if point_at_zero and degree > 1:
-        n_par = degree + 1
-    else:
-        n_par = degree
-
+    n_par = degree + 1 if point_at_zero and degree > 1 else degree
     # if size = an empty symbolic variable (shape (0, n_par) is created
     if size > 0:
         points = vertcat(*[SX.sym(name[s], 1, n_par) for s in range(size)])
     else:
-        points = SX.sym('empty_sx', size, n_par)
+        points = SX.sym("empty_sx", size, n_par)
 
     # if the degree=1 the points are already the approximation, otherwise create a lagrangian polynomial basis
     if degree == 1:
         pol = points
     else:
         ell_list = _create_lagrangian_polynomial_basis(
-            tau=tau, degree=degree, point_at_zero=point_at_zero)
-        pol = sum([ell_list[j] * points[:, j] for j in range(n_par)])
+            tau=tau, degree=degree, point_at_zero=point_at_zero
+        )
+        pol = sum(ell_list[j] * points[:, j] for j in range(n_par))
     par = vec(points)
 
     return pol, par
