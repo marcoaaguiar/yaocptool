@@ -19,6 +19,7 @@ from yaocptool import (
 from yaocptool.methods import AugmentedLagrangian, SolutionMethodInterface
 from yaocptool.methods.augmented_lagrangian import AugmentedLagrangianOptions
 from yaocptool.modelling import Network, Node
+import itertools
 
 
 @dataclass
@@ -214,21 +215,20 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         node_error = {}
         node_error_last = {}
         max_error = inf
-        max_name_len = max(len(n.name) for n in self.network.nodes)
 
         for outer_it in range(self.options.max_iter_outer):
             print("Starting outer iteration: {}".format(outer_it).center(40, "="))
-            for inner_it in range(
+            n_inner_iterations = (
                 self.options.max_iter_inner_first
                 if outer_it == 0 and self.options.max_iter_inner_first is not None
                 else self.options.max_iter_inner
-            ):
+            )
+            for inner_it in range(n_inner_iterations):
                 print("==> Solving inner iteration: {}".format(inner_it))
 
                 for node in sorted(self.network.nodes, key=lambda x: x.node_id):
                     # get node theta
                     node_theta[node] = self._get_node_theta(node)
-
                     # warm start
                     initial_guess = (
                         self._last_result[node].raw_solution_dict["x"]
@@ -242,52 +242,34 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     )
 
                     # save result
-                    result_dict[node] = result
-                    self._last_result[node] = result
+                    result_dict[node] = self._last_result[node] = result
 
             # update nu
             for node in sorted(self.network.nodes, key=lambda x: x.node_id):
                 node_theta[node] = self._get_node_theta(node)
                 theta_k = join_thetas(node_theta[node], node.solution_method.nu)
                 p_k = node.solution_method.mu
-                raw_solution_dict = self._last_result[node].raw_solution_dict
+                raw_solution_dict = result_dict[node].raw_solution_dict
+
                 node_error[node] = node.solution_method._compute_new_nu_and_error(
                     theta=theta_k, p=p_k, raw_solution_dict=raw_solution_dict
                 )
-
-                error_ = float(node_error[node])
-                diff_ = (
-                    float(node_error[node] - node_error_last[node])
-                    if node in node_error_last
-                    else "-"
-                )
-                diff_color_ = "\033[92m" if diff_ != "-" and diff_ < 0 else "\033[91m"
-
-                print(
-                    "Violation node: \033[93m{:>{}}\033[0m | error: \033[94m{: .2e}\033[0m | diff: {}{:{}} \033[0m".format(
-                        node.name,
-                        max_name_len,
-                        error_,
-                        diff_color_,
-                        diff_,
-                        " .2e" if isinstance(diff_, float) else "",
-                    )
-                )
-                node_error_last[node] = node_error[node]
-
-            print(
-                f"Obective: {sum(result_dict[node].objective_opt_problem for node in self.network)}"
-            )
 
             # update mu
             if not self._debug_skip_update_mu:
                 for node in self.network.nodes:
                     node.solution_method._update_mu()
 
+            # Print outer loop status
+            self._print_nodes_errors(node_error, node_error_last)
+            print(
+                f"Obective: {sum(result_dict[node].objective_opt_problem for node in self.network)}"
+            )
             print("Ending outer iteration: {}".format(outer_it).center(40, "="))
 
             # error
-            max_error = max(node_error.values())
+            node_error_last = node_error.copy()
+            max_error = max(*itertools.chain(*(val.nz for val in node_error.values())))
             if max_error < self.options.abs_tol:
                 print(
                     "=== Exiting: {} | Viol. Error: {} | Total time: {} ===".format(
@@ -333,6 +315,30 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 },
             )
         return node
+
+    def _print_nodes_errors(self, node_error, node_error_last):
+        max_name_len = max(len(n.name) for n in self.network.nodes)
+        for node in sorted(self.network.nodes, key=lambda x: x.node_id):
+            error_ = ", ".join(
+                f"\033[94m{float(numb): .2e}\033[0m" for numb in node_error[node].nz
+            )
+            diff_color_ = lambda x: "\033[92m" if x < 0 else "\033[91m"
+            if node in node_error_last:
+                diff_ = ", ".join(
+                    f"{diff_color_(numb)}{float(numb): .2e}"
+                    for numb in (node_error[node] - node_error_last[node]).nz
+                )
+            else:
+                diff_ = "-"
+
+            print(
+                "Violation node: \033[93m{:>{}}\033[0m | error: {} \033[0m| diff: {} \033[0m".format(
+                    node.name,
+                    max_name_len,
+                    error_,
+                    diff_,
+                )
+            )
 
     def prepare(self):
         for node in self.network.nodes:

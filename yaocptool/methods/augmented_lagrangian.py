@@ -11,29 +11,31 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from casadi import (
-    SX,
-    inf,
-    vertcat,
-    dot,
-    vec,
-    Function,
+    DM,
     MX,
+    SX,
+    Function,
+    dot,
+    fabs,
     horzcat,
+    inf,
+    is_equal,
+    mmax,
     mtimes,
     repmat,
-    mmax,
-    fabs,
     substitute,
-    DM,
+    vec,
+    vertcat,
+    vertsplit,
 )
-from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 
 from yaocptool import (
+    create_constant_theta,
     find_variables_indices_in_vector,
     join_thetas,
-    create_constant_theta,
     remove_variables_from_vector_by_indices,
 )
+from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
@@ -114,10 +116,10 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
         self.nu_par = DM([])
         self.nu_pol = DM([])
 
-        for key, val in kwargs.items():
+        for key, val in [*kwargs.items()]:
             if hasattr(AugmentedLagrangianOptions, key):
-                print(key, kwargs[val])
-                options[key] = kwargs.pop(val)
+                print(key, val)
+                options[key] = kwargs.pop(key)
                 warnings.warn(
                     "Pass optins as a dict in options keyword argument",
                     Warning,
@@ -434,14 +436,17 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
                 new_nu_k = horzcat(new_nu_k, nu_kj + mu_mx * rel_kj)
                 rel_alg_k = horzcat(rel_alg_k, rel_alg_kj)
                 rel_eq_k = horzcat(rel_eq_k, rel_eq_kj)
-            new_nu.append(vec(new_nu_k))
-            rel_alg.append(vec(rel_alg_k))
-            rel_eq.append(vec(rel_eq_k))
+            new_nu.append(new_nu_k)
+            rel_alg.append(rel_alg_k)
+            rel_eq.append(rel_eq_k)
 
-        output = new_nu + rel_alg + rel_eq
+        output = [horzcat(*new_nu), horzcat(*rel_alg), horzcat(*rel_eq)]
+
         self.new_nu_func = Function("nu_update_function", [v, par, theta_var], output)
 
-    def _compute_new_nu_and_error(self, p=None, theta=None, raw_solution_dict=None):
+    def _compute_new_nu_and_error(
+        self, p=None, theta=None, raw_solution_dict=None
+    ) -> DM:
         if raw_solution_dict is None:
             raw_solution_dict = {}
         if theta is None:
@@ -455,25 +460,48 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
         if not self.options._debug_skip_compute_nu_and_error:
             raw_decision_variables = raw_solution_dict["x"]
             theta_vector = vertcat(*[theta[i] for i in range(self.finite_elements)])
-            output = self.new_nu_func(raw_decision_variables, p, theta_vector)
+            (new_nu, rel_alg, rel_eq) = self.new_nu_func(
+                raw_decision_variables, p, theta_vector
+            )
 
             # get from update
-            new_nu = output[: self.finite_elements]
-            rel_alg = output[self.finite_elements : self.finite_elements * 2]
-            rel_eq = output[self.finite_elements * 2 : self.finite_elements * 3]
+            #  new_nu = output[: self.finite_elements]
+            #  rel_alg = output[self.finite_elements : self.finite_elements * 2]
+            #  rel_eq = output[self.finite_elements * 2 : self.finite_elements * 3]
 
             if not self.options._debug_skip_update_nu:
-                self.nu_tilde = {i: new_nu[i] for i in range(self.finite_elements)}
+                #  self.nu_tilde = {i: new_nu[i] for i in range(self.finite_elements)}
+                self.nu_tilde = {
+                    el: vec(new_nu[:, el * self.degree : (el + 1) * self.degree])
+                    for el in range(self.finite_elements)
+                }
 
-            self.alg_violation = {i: rel_alg[i] for i in range(self.finite_elements)}
-            self.eq_violation = {i: rel_eq[i] for i in range(self.finite_elements)}
-
-            error = max(
-                mmax(fabs(vertcat(rel_alg[i], rel_eq[i])))
-                for i in range(self.finite_elements)
+            self.alg_violation = (
+                {
+                    el: rel_alg[:, el * self.degree : (el + 1) * self.degree]
+                    for el in range(self.finite_elements)
+                }
+                if rel_alg.numel() > 0
+                else create_constant_theta(0, (0, self.degree), self.finite_elements)
             )
+            self.eq_violation = (
+                {
+                    el: rel_eq[:, el * self.degree : (el + 1) * self.degree]
+                    for el in range(self.finite_elements)
+                }
+                if rel_eq.numel() > 0
+                else create_constant_theta(0, (0, self.degree), self.finite_elements)
+            )
+
+            error = DM(
+                [mmax(fabs(row)) for row in vertsplit(vertcat(rel_alg, rel_eq), 1)]
+            )
+            #  error = [
+            #      mmax(fabs(vertcat(rel_alg[i], rel_eq[i])))
+            #      for i in range(self.finite_elements)
+            #  ]
         else:
-            error = 0
+            error = DM(0)
         return error
 
     @staticmethod
@@ -635,6 +663,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
                 error = self._compute_new_nu_and_error(
                     p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict
                 )
+                error = mmax(error)
                 self._update_mu()
                 self.last_violation_error = error
             else:

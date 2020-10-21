@@ -1,4 +1,5 @@
 import re
+from typing import Union, Tuple, Dict
 
 from casadi import (
     is_equal,
@@ -119,22 +120,29 @@ def remove_variables_from_vector_by_indices(indices, vector):
     return vector
 
 
-def create_constant_theta(constant, dimension, finite_elements):
+def create_constant_theta(
+    constant: Union[float, int, DM],
+    dimension: Union[int, Tuple[int, int]],
+    finite_elements: int,
+) -> Dict[int, DM]:
     """
         Create constant theta
 
     The created theta will be a dictionary with keys = range(finite_element) and each value will be a vector with value
     'constant' and number of rows 'dimension'
 
-    :param float|int|DM constant: value of each theta entry .
-    :param int dimension: number of rows of the vector of each theta entry.
-    :param int finite_elements: number of theta entries.
+    :param constant: value of each theta entry .
+    :param dimension: number of rows of the vector of each theta entry.
+    :param finite_elements: number of theta entries.
     :return: constant theta
     :rtype: dict
     """
+    if isinstance(dimension, int):
+        dimension = (dimension, 1)
+
     theta = {}
     for i in range(finite_elements):
-        theta[i] = vec(constant * DM.ones(dimension, 1))
+        theta[i] = vec(constant * DM.ones(*dimension))
     return theta
 
 
