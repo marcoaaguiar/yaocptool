@@ -15,6 +15,10 @@ from yaocptool.optimization.abstract_optimization_problem import (
 
 
 class SolutionMethodsBase(SolutionMethodInterface):
+    degree = 3
+    degree_control = 1
+    finite_elements = 10
+
     def __init__(self, problem, **kwargs):
         """
         :param OptimalControlProblem problem:
@@ -35,9 +39,6 @@ class SolutionMethodsBase(SolutionMethodInterface):
         self.discretizer = None  # type: DiscretizationSchemeBase
 
         # Options
-        self.degree = 3
-        self.degree_control = 1
-        self.finite_elements = 10
         self.integrator_type = "implicit"
         self.discretization_scheme = "collocation"
         self.initial_condition_as_parameter = True

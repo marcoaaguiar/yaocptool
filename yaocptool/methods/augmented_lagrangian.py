@@ -62,18 +62,32 @@ class AugmentedLagrangianOptions:
         self.beta = DM(self.beta)
 
 
-class AugmentedLagrangian(SolutionMethodsBase):
-    r"""
-    For a minimization problem in the form
-        min f(x,u) = \int L(x,u) dt
-        s.t.: \dot{x} = f(x,u),
-        g_ineq (x,u) \leq 0
-
-    Transforms the problem in a sequence of solution of the problem
-        min f(x,u) = \int L(x,u) -\mu \sum \log(-g_ineq(x,u)) dt
-        s.t.: \dot{x} = f(x,u),
+class OptionsOverride(type):
+    """
+    Reroute SolutionMethod options to its self.options
     """
 
+    def __new__(cls, clsname, bases, attrs):
+        def generate_getter_setter(attr):
+            def _getter(self):
+                #  print(f"getting {attr} = {getattr(self.options, attr)}")
+                return getattr(self.options, attr)
+
+            def _setter(self, val):
+                print(f"setting {attr} = {val}")
+                return getattr(self.options, attr)
+
+            return _getter, _setter
+
+        for attr in dir(AugmentedLagrangianOptions):
+            if attr.startswith("__"):
+                continue
+            attrs[attr] = property(*generate_getter_setter(attr))
+
+        return super().__new__(cls, clsname, bases, attrs)
+
+
+class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
     def __init__(
         self, problem, ocp_solver_class, solver_options=None, options={}, **kwargs
     ):
@@ -100,20 +114,20 @@ class AugmentedLagrangian(SolutionMethodsBase):
         self.nu_par = DM([])
         self.nu_pol = DM([])
 
-        passed_options = {}
         for key, val in kwargs.items():
             if hasattr(AugmentedLagrangianOptions, key):
-                passed_options[key] = val
-                print(key)
+                print(key, kwargs[val])
+                options[key] = kwargs.pop(val)
                 warnings.warn(
                     "Pass optins as a dict in options keyword argument",
                     Warning,
                 )
-        self.options = AugmentedLagrangianOptions(**passed_options)
+
+        self.options = AugmentedLagrangianOptions(**options)
 
         self.nu = None
         self.nu_tilde = None
-        self.last_violation_error = -1
+        self.last_violation_error = -inf
         self.alg_violation = None
         self.eq_violation = None
         self.new_nu_func = None

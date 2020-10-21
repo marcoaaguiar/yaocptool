@@ -40,7 +40,8 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         network: Network,
         solution_method_class,
         solution_method_options: dict = None,
-        **kwargs
+        options={},
+        **kwargs,
     ):
         if solution_method_options is None:
             solution_method_options = {}
@@ -49,9 +50,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         self.solution_method_class = solution_method_class
         self.solution_method_options = solution_method_options
 
-        self.options = DistributedAugmentedLagrangianOptions(
-            **kwargs.pop("options", {})
-        )
+        self.options = DistributedAugmentedLagrangianOptions(**options)
 
         self.relax_dict = {}
         self._last_result = {}  # dict
@@ -64,15 +63,17 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             setattr(self, k, v)
 
     def _include_exogenous_variables(self):
-        for node in self.network:
-            if node not in self.relax_dict:
-                self.relax_dict[node] = {
-                    "u": [],
-                    "y_relax": [],
-                    "alg_relax_ind": [],
-                    "eq_relax_ind": [],
-                }
+        self.relax_dict = {
+            node: {
+                "u": [],
+                "y_relax": [],
+                "alg_relax_ind": [],
+                "eq_relax_ind": [],
+            }
+            for node in self.network
+        }
 
+        for node in self.network:
             for p in self.network.graph.pred[node]:
                 # bind `node` inputs (u)
                 connection = self.network.graph.edges[p, node]
@@ -274,6 +275,10 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 )
                 node_error_last[node] = node_error[node]
 
+            print(
+                f"Obective: {sum(result_dict[node].objective_opt_problem for node in self.network)}"
+            )
+
             # update mu
             if not self._debug_skip_update_mu:
                 for node in self.network.nodes:
@@ -314,7 +319,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 no_update_after_solving=True,
                 #  _debug_skip_update_mu=False,
                 #  _debug_skip_update_nu=False,
-                **{
+                options={
                     "degree": self.options.degree,
                     "degree_control": self.options.degree,
                     "finite_elements": self.options.finite_elements,
