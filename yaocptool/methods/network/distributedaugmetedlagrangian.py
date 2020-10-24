@@ -30,6 +30,7 @@ class DistributedAugmentedLagrangianOptions:
     max_iter_inner_first: int = 4
     max_iter_outer: int = 30
     abs_tol: float = 1e-6
+    inner_loop_tol: float = 1e-4
     mu_0: float = AugmentedLagrangianOptions.mu_0
     mu_max: float = AugmentedLagrangianOptions.mu_max
     beta: float = AugmentedLagrangianOptions.beta
@@ -223,6 +224,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 if outer_it == 0 and self.options.max_iter_inner_first is not None
                 else self.options.max_iter_inner
             )
+            last_objective = inf
             for inner_it in range(n_inner_iterations):
                 print("==> Solving inner iteration: {}".format(inner_it))
 
@@ -244,21 +246,24 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     # save result
                     result_dict[node] = self._last_result[node] = result
 
+                objective = sum(
+                    result_dict[node].objective_opt_problem for node in self.network
+                )
+                print(f"Objective: {objective}")
+                if objective > (1 - self.options.inner_loop_tol) * last_objective:
+                    break
+                last_objective = objective
+
             # update nu
             for node in sorted(self.network.nodes, key=lambda x: x.node_id):
                 node_theta[node] = self._get_node_theta(node)
                 theta_k = join_thetas(node_theta[node], node.solution_method.nu)
-                p_k = node.solution_method.mu
+                p_k = node.solution_method.mu  # TODO: allow for models with parameters!
                 raw_solution_dict = result_dict[node].raw_solution_dict
 
-                node_error[node] = node.solution_method._compute_new_nu_and_error(
-                    theta=theta_k, p=p_k, raw_solution_dict=raw_solution_dict
+                node_error[node] = node.solution_method.update_parameters(
+                    p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict
                 )
-
-            # update mu
-            if not self._debug_skip_update_mu:
-                for node in self.network.nodes:
-                    node.solution_method._update_mu()
 
             # Print outer loop status
             self._print_nodes_errors(node_error, node_error_last)
