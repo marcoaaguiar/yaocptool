@@ -6,7 +6,7 @@ Created on
 """
 import time
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 import matplotlib.pyplot as plt
 from casadi import DM, SX, inf, vertcat
@@ -31,9 +31,13 @@ class DistributedAugmentedLagrangianOptions:
     max_iter_outer: int = 30
     abs_tol: float = 1e-6
     inner_loop_tol: float = 1e-4
-    mu_0: float = AugmentedLagrangianOptions.mu_0
-    mu_max: float = AugmentedLagrangianOptions.mu_max
-    beta: float = AugmentedLagrangianOptions.beta
+
+    debug_skip_replace_by_approximation: bool = False
+
+    al_options: AugmentedLagrangianOptions = AugmentedLagrangianOptions()
+
+    def __post_init__(self):
+        self.al_options = AugmentedLagrangianOptions(**self.al_options)
 
 
 class DistributedAugmentedLagrangian(SolutionMethodInterface):
@@ -56,10 +60,6 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
 
         self.relax_dict = {}
         self._last_result = {}  # dict
-
-        self._debug_skip_replace_by_approximation = False
-        self._debug_skip_update_nu = False
-        self._debug_skip_update_mu = False
 
         for (k, v) in kwargs.items():
             setattr(self, k, v)
@@ -95,7 +95,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                         node.problem.model.alg.numel() + u.numel(),
                     )
                 )
-                if not self._debug_skip_replace_by_approximation:
+                if not self.options.debug_skip_replace_by_approximation:
                     node.problem.connect(u, y_appr)  # u - y
                 else:
                     node.problem.connect(u, y)
@@ -123,7 +123,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 )
                 eq = (
                     u_appr - y
-                    if not self._debug_skip_replace_by_approximation
+                    if not self.options.debug_skip_replace_by_approximation
                     else u - y
                 )
 
@@ -304,22 +304,19 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
                 relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
                 no_update_after_solving=True,
-                #  _debug_skip_update_mu=False,
-                #  _debug_skip_update_nu=False,
+                #  debug_skip_update_mu=False,
+                #  debug_skip_update_nu=False,
                 options={
-                    "degree": self.options.degree,
-                    "degree_control": self.options.degree,
-                    "finite_elements": self.options.finite_elements,
-                    "max_iter": 1,
-                    "mu_0": self.options.mu_0,
-                    "mu_max": self.options.mu_max,
-                    "beta": self.options.beta,
-                    # _debug_skip_update_nu=True,
-                    # _debug_skip_update_mu=True,
-                    "verbose": 0,
+                    **asdict(self.options.al_options),
+                    **{
+                        "degree": self.options.degree,
+                        "degree_control": self.options.degree,
+                        "finite_elements": self.options.finite_elements,
+                        "max_iter": 1,
+                        "verbose": 0,
+                    },
                 },
             )
-        return node
 
     def _print_nodes_errors(self, node_error, node_error_last):
         max_name_len = max(len(n.name) for n in self.network.nodes)

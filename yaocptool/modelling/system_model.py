@@ -165,7 +165,8 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         )
         s += "\n"
         s += "=" * 20 + "\n"
-        return s
+
+        print(s)
 
     def print_variables(self):
         """

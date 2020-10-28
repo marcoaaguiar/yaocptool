@@ -57,11 +57,11 @@ class AugmentedLagrangianOptions:
     mu_min_error_decrease: float = 0.5
 
     verbose: int = 2
-    _debug_skip_parametrize: bool = False
-    _debug_skip_initialize: bool = False
-    _debug_skip_compute_nu_and_error: bool = False
-    _debug_skip_update_nu: bool = False
-    _debug_skip_update_mu: bool = False
+    debug_skip_parametrize: bool = False
+    debug_skip_initialize: bool = False
+    debug_skip_compute_nu_and_error: bool = False
+    debug_skip_update_nu: bool = False
+    debug_skip_update_mu: bool = False
 
     def __post_init__(self):
         self.mu_0 = DM(self.mu_0)
@@ -126,7 +126,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
                 print(key, val)
                 options[key] = kwargs.pop(key)
                 warnings.warn(
-                    "Pass optins as a dict in options keyword argument",
+                    "Pass options as a dict in options keyword argument",
                     Warning,
                 )
 
@@ -180,8 +180,8 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
         if self.relax_state_bounds:
             self._relax_states_constraints()
 
-        if not self.options._debug_skip_initialize:
-            if not self.options._debug_skip_parametrize:
+        if not self.options.debug_skip_initialize:
+            if not self.options.debug_skip_parametrize:
                 self._parametrize_nu()
 
             if self.nu is None:
@@ -569,7 +569,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
         return error
 
     def _update_mu(self, error, last_error):
-        if not self.options._debug_skip_update_mu:
+        if not self.options.debug_skip_update_mu:
             if (
                 self.options.mu_update_rule == "error_dependent"
                 and last_error is not None
@@ -610,7 +610,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
 
         errors = DM(0)
 
-        if not self.options._debug_skip_compute_nu_and_error:
+        if not self.options.debug_skip_compute_nu_and_error:
             raw_decision_variables = raw_solution_dict["x"]
             theta_vector = vertcat(
                 *[theta[i] for i in range(self.options.finite_elements)]
@@ -655,7 +655,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
                 for el in range(self.options.finite_elements)
             }
 
-            if not self.options._debug_skip_update_nu:
+            if not self.options.debug_skip_update_nu:
                 if (
                     self.options.only_update_if_improve
                     and any((errors > 0).nz)

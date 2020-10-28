@@ -270,7 +270,7 @@ class Network:
                 name="Dummy_Model_{}_to_{}".format(node1.name, node2.name)
             )
             new_model.include_variables(u=copy_y, y=copy_u)
-            new_model.include_equations(alg=copy_u - copy_y)
+            new_model.include_equations(alg=copy_y - copy_u)
             new_problem = OptimalControlProblem(
                 name="OCP_Dummy_{}_to_{}".format(node1.name, node2.name),
                 model=new_model,

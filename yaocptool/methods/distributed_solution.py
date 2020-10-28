@@ -92,10 +92,9 @@ class DistributedSolution:
         for s in range(self.n_subsystems):
             self.external_queue[s].put([x_0, initial_guess_dict[s]])
 
-        solution = []
-        for s in range(self.n_subsystems):
-            solution.append(self.queue_listener[s].get(block=True))
-        return solution
+        return [
+            self.queue_listener[s].get(block=True) for s in range(self.n_subsystems)
+        ]
 
     def kill(self):
         for worker in self.workers:

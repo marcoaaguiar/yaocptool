@@ -47,29 +47,27 @@ class CollocationScheme(DiscretizationSchemeBase):
         x, y, u, eta, p_opt = [], [], [], [], []
 
         for k in range(self.finite_elements):
-            x_k = []
-            for n in range(self.degree + 1):
-                x_k.append(
-                    nlp.create_variable(
-                        "x_" + repr(k) + "_" + repr(n),
-                        self.model.n_x,
-                        lb=self.problem.x_min,
-                        ub=self.problem.x_max,
-                    )
+            x_k = [
+                nlp.create_variable(
+                    "x_" + repr(k) + "_" + repr(n),
+                    self.model.n_x,
+                    lb=self.problem.x_min,
+                    ub=self.problem.x_max,
                 )
+                for n in range(self.degree + 1)
+            ]
             x.append(x_k)
 
         for k in range(self.finite_elements):
-            y_k = []
-            for n in range(self.degree):
-                y_k.append(
-                    nlp.create_variable(
-                        "y_" + repr(k) + "_" + repr(n),
-                        self.model.n_y,
-                        lb=self.problem.y_min,
-                        ub=self.problem.y_max,
-                    )
+            y_k = [
+                nlp.create_variable(
+                    "y_" + repr(k) + "_" + repr(n),
+                    self.model.n_y,
+                    lb=self.problem.y_min,
+                    ub=self.problem.y_max,
                 )
+                for n in range(self.degree)
+            ]
             y.append(y_k)
 
         for k in range(self.finite_elements):
@@ -94,17 +92,15 @@ class CollocationScheme(DiscretizationSchemeBase):
             ub=self.problem.p_opt_max,
         )
 
-        theta_opt = []
-        for el in range(self.finite_elements):
-            theta_opt.append(
-                nlp.create_variable(
-                    "theta_opt_" + str(el),
-                    self.problem.n_theta_opt,
-                    lb=self.problem.theta_opt_min,
-                    ub=self.problem.theta_opt_max,
-                )
+        theta_opt = [
+            nlp.create_variable(
+                "theta_opt_" + str(el),
+                self.problem.n_theta_opt,
+                lb=self.problem.theta_opt_min,
+                ub=self.problem.theta_opt_max,
             )
-
+            for el in range(self.finite_elements)
+        ]
         v_x = self.vectorize(x)
         v_y = self.vectorize(y)
         v_u = self.vectorize(u)
@@ -128,9 +124,9 @@ class CollocationScheme(DiscretizationSchemeBase):
         v_offset = 0
 
         x_k = []
-        for k in range(self.finite_elements):
+        for _ in range(self.finite_elements):
             x_k = []
-            for i in range(self.degree + 1):
+            for _ in range(self.degree + 1):
                 x_k.append(decision_variables[v_offset : v_offset + self.model.n_x])
                 v_offset += self.model.n_x
             if all_subinterval:
@@ -139,9 +135,9 @@ class CollocationScheme(DiscretizationSchemeBase):
                 x.append(x_k[0])
         x.append([x_k[-1]])
 
-        for k in range(self.finite_elements):
+        for _ in range(self.finite_elements):
             y_k = []
-            for i in range(self.degree):
+            for _ in range(self.degree):
                 y_k.append(decision_variables[v_offset : v_offset + self.model.n_y])
                 v_offset += self.model.n_y
             if all_subinterval:
@@ -149,10 +145,10 @@ class CollocationScheme(DiscretizationSchemeBase):
             else:
                 y.append(y_k[0])
 
-        for k in range(self.finite_elements):
+        for _ in range(self.finite_elements):
             u_k = []
             if self.model.n_u_par > 0:
-                for i in range(self.degree_control):
+                for _ in range(self.degree_control):
                     u_k.append(decision_variables[v_offset : v_offset + self.model.n_u])
                     v_offset += self.model.n_u
             u.append(u_k)
@@ -164,7 +160,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         v_offset += self.problem.n_p_opt
 
         theta_opt = []
-        for k in range(self.finite_elements):
+        for _ in range(self.finite_elements):
             theta_opt.append(
                 decision_variables[v_offset : v_offset + self.problem.n_theta_opt]
             )
