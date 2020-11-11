@@ -46,7 +46,7 @@ class DataSet:
 
         self.plot_style = "step"
         self.max_delta_t = None
-        self.find_discontinuity = True
+        self.find_discontinuity = False
 
         for (k, val) in kwargs.items():
             setattr(self, k, val)

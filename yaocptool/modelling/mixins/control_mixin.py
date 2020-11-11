@@ -62,7 +62,7 @@ class ControlMixin:
         if isinstance(replacement, list):
             replacement = vertcat(*replacement)
 
-        if not original.numel() == replacement.numel():
+        if original.numel() != replacement.numel():
             raise ValueError(
                 "Original and replacement must have the same number of elements!"
                 "original.numel()={}, replacement.numel()={}".format(

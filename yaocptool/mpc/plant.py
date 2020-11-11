@@ -80,24 +80,23 @@ class PlantSimulation(Plant):
 
         self._initialize_dataset()
 
-        if self.has_noise:
-            if self.noise_seed is not None:
-                numpy.random.seed(self.noise_seed)
+        if self.has_noise and self.noise_seed is not None:
+            numpy.random.seed(self.noise_seed)
 
     def _initialize_dataset(self):
         self.dataset.data["x"]["size"] = self.model.n_x
         self.dataset.data["x"]["names"] = [
-            self.model.x_sym[i].name() for i in range(self.model.n_x)
+            self.model.x[i].name() for i in range(self.model.n_x)
         ]
 
         self.dataset.data["y"]["size"] = self.model.n_y
         self.dataset.data["y"]["names"] = [
-            self.model.y_sym[i].name() for i in range(self.model.n_y)
+            self.model.y[i].name() for i in range(self.model.n_y)
         ]
 
         self.dataset.data["u"]["size"] = self.model.n_u
         self.dataset.data["u"]["names"] = [
-            self.model.u_sym[i].name() for i in range(self.model.n_u)
+            self.model.u[i].name() for i in range(self.model.n_u)
         ]
 
         self.dataset.data["meas"]["size"] = self.c_matrix.size1()
@@ -132,7 +131,7 @@ class PlantSimulation(Plant):
             integrator_options=self.integrator_options,
         )
 
-        x, y, u = sim_result.final_condition()
+        x, y, u = sim_result.final_condition().values()
         if self.has_noise:
             x = x + v_rand
 
@@ -167,7 +166,7 @@ class PlantSimulation(Plant):
         if isinstance(u, (list, int, float)):
             u = vertcat(u)
 
-        if not u.shape[0] == self.model.n_u:
+        if u.shape[0] != self.model.n_u:
             raise ValueError(
                 "Given control does not have the same size of the plant."
                 "Plant control size: {}, given control size: {}".format(

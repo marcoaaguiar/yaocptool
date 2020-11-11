@@ -5,6 +5,7 @@ Created on Mon Apr 03 11:15:03 2017
 @author: marco
 """
 
+from typing import Dict, Iterable, List, Optional, Union
 from casadi import (
     DM,
     repmat,
@@ -23,7 +24,7 @@ from yaocptool import (
     find_variables_indices_in_vector,
     remove_variables_from_vector_by_indices,
 )
-from yaocptool.modelling import SystemModel
+from yaocptool.modelling import SystemModel, SimulationResult
 
 
 class OptimalControlProblem(object):
@@ -60,29 +61,30 @@ class OptimalControlProblem(object):
 
     """
 
-    def __init__(self, model=None, name="OCP", x_0=None, t_0=0.0, t_f=1.0, **kwargs):
-        """
-
-        :param yaocptool.modelling.SystemModel model:
-        :param str name:
-        :param casadi.DM|list x_0: initial conditions
-        :param float t_0:
-        :param float t_f:
-        :param kwargs:
-        """
+    def __init__(
+        self,
+        model: SystemModel,
+        name: str = "OCP",
+        x_0: Optional[Union[DM, List[float]]] = None,
+        t_0: float = 0.0,
+        t_f: float = 1.0,
+        **kwargs
+    ):
         if x_0 is None:
             x_0 = DM([])
+        elif isinstance(x_0, list):
+            x_0 = DM(x_0)
 
         self.t_0 = t_0
         self.t_f = t_f
         self.x_0 = x_0
 
         self.name = name
-        self._model = model  # type: SystemModel
-        self.model = model.get_copy()  # type: SystemModel
+        self._model = model
+        self.model = model.get_copy()
 
         self.x_cost = None
-        self.eta = SX()
+        self.eta = SX([])
         self.p_opt = DM([])
         self.theta_opt = DM([])
 
@@ -133,8 +135,6 @@ class OptimalControlProblem(object):
         for (k, v) in kwargs.items():
             setattr(self, k, v)
 
-        self.x_0 = DM(self.x_0)
-
     @property
     def n_h_final(self):
         return self.h_final.shape[0]
@@ -180,7 +180,14 @@ class OptimalControlProblem(object):
         return has_element_diff_from_inf
 
     def create_state(
-        self, name, size=1, ode=None, x_0=None, x_max=None, x_min=None, h_initial=None
+        self,
+        name: str,
+        size: int = 1,
+        ode: Optional[SX] = None,
+        x_0: Optional[Union[DM, List[float]]] = None,
+        x_max: Optional[Union[DM, List[float]]] = None,
+        x_min: Optional[Union[DM, List[float]]] = None,
+        h_initial=None,
     ):
         var = SX.sym(name, size)
         self.include_state(
@@ -275,17 +282,17 @@ class OptimalControlProblem(object):
 
     def include_state(
         self,
-        var,
-        ode=None,
-        x_0=None,
-        x_min=None,
-        x_max=None,
+        var: SX,
+        ode: Optional[SX] = None,
+        x_0: Optional[Union[DM, List[float]]] = None,
+        x_min: Optional[Union[DM, List[float]]] = None,
+        x_max: Optional[Union[DM, List[float]]] = None,
         h_initial=None,
         x_0_sym=None,
-        suppress=False,
+        suppress: bool = False,
     ):
-        if x_0 is not None:
-            x_0 = vertcat(x_0)
+        if isinstance(x_0, list):
+            x_0: DM = vertcat(*x_0)
         if x_min is None:
             x_min = -DM.inf(var.numel())
         if x_max is None:
@@ -294,8 +301,10 @@ class OptimalControlProblem(object):
             raise Exception("No initial condition given")
 
         var = vertcat(var)
-        x_min = vertcat(x_min)
-        x_max = vertcat(x_max)
+        if isinstance(x_min, list):
+            x_min = DM(*x_min)
+        if isinstance(x_max, list):
+            x_max = DM(*x_max)
 
         if var.numel() != x_max.numel():
             raise ValueError(
@@ -316,10 +325,10 @@ class OptimalControlProblem(object):
         x_0_sym = self.model.include_state(var, ode, x_0_sym)
 
         if x_0 is not None:
-            self.x_0 = vertcat(self.x_0, x_0)
+            self.x_0: DM = vertcat(self.x_0, x_0)
             h_initial = x_0_sym - var
         else:
-            x_0 = DM.zeros(var.shape)
+            x_0: DM = DM.zeros(var.shape)
             self.x_0 = vertcat(self.x_0, x_0)
 
         if h_initial is not None:
@@ -676,18 +685,14 @@ class OptimalControlProblem(object):
     def pre_solve_check(self):
         self._fix_types()
 
-        # Check if Objective Function was provided
-        # if self.L.is_zero() and self.V.is_zero() and self.S.is_zero() and not self.NULL_OBJ:
-        #     raise Exception('No objective, if this is intentional use problem.NULL_OBJ = True')
-
         # Check if the objective function has the proper size
-        if not self.L.numel() == 1:
+        if self.L.numel() != 1:
             raise Exception(
                 "Size of dynamic cost (ocp.L) is different from 1, provided size is: {}".format(
                     self.L.numel()
                 )
             )
-        if not self.V.numel() == 1:
+        if self.V.numel() != 1:
             raise Exception(
                 "Size of final cost (ocp.V) is different from 1, provided size is: {}".format(
                     self.L.numel()
@@ -718,9 +723,7 @@ class OptimalControlProblem(object):
             "n_u",
         ]
         for i, attr in enumerate(attributes):
-            if not getattr(self, attr).numel() == getattr(
-                self.model, attr_to_compare[i]
-            ):
+            if getattr(self, attr).numel() != getattr(self.model, attr_to_compare[i]):
                 raise Exception(
                     'The size of "self.{}" is not equal to the size of "model.{}", '
                     "{} != {}".format(
@@ -735,9 +738,7 @@ class OptimalControlProblem(object):
         attributes_ocp = ["p_opt_max", "p_opt_min", "theta_opt_min", "theta_opt_max"]
         attr_to_compare_in_ocp = ["n_p_opt", "n_p_opt", "n_theta_opt", "n_theta_opt"]
         for i, attr in enumerate(attributes_ocp):
-            if not getattr(self, attr).numel() == getattr(
-                self, attr_to_compare_in_ocp[i]
-            ):
+            if getattr(self, attr).numel() != getattr(self, attr_to_compare_in_ocp[i]):
                 raise Exception(
                     'The size of "self.{}" is not equal to the size of "model.{}", '
                     "{} != {}".format(
@@ -795,7 +796,7 @@ class OptimalControlProblem(object):
         if "Rv" in par_dict:
             self.V += mtimes(mtimes(self.model.x.T, par_dict["Rv"]), self.model.x)
 
-    def merge(self, problems):
+    def merge(self, problems: Iterable["OptimalControlProblem"]):
         """
 
         :param list of OptimalControlProblem problems:
@@ -847,17 +848,35 @@ class OptimalControlProblem(object):
             self.V = self.V + problem.V
             self.S = self.S + problem.S
 
-            if self.last_u is not None and problem.last_u is not None:
+            if (
+                self.last_u is None
+                and self.model.n_u == 0
+                and problem.last_u is not None
+            ):
+                self.last_u = problem.last_u
+            elif self.last_u is not None and problem.last_u is not None:
                 self.last_u = vertcat(self.last_u, problem.last_u)
             else:
                 self.last_u = None
 
-            if self.y_guess is not None and problem.y_guess is not None:
+            if (
+                self.y_guess is None
+                and self.model.n_y == 0
+                and problem.y_guess is not None
+            ):
+                self.y_guess = problem.y_guess
+            elif self.y_guess is not None and problem.y_guess is not None:
                 self.y_guess = vertcat(self.y_guess, problem.y_guess)
             else:
                 self.y_guess = None
 
-            if self.u_guess is not None and problem.u_guess is not None:
+            if (
+                self.u_guess is None
+                and self.model.n_u == 0
+                and problem.u_guess is not None
+            ):
+                self.u_guess = problem.u_guess
+            elif self.u_guess is not None and problem.u_guess is not None:
                 self.u_guess = vertcat(self.u_guess, problem.u_guess)
             else:
                 self.u_guess = None
@@ -935,7 +954,7 @@ class OptimalControlProblem(object):
     def get_theta_opt_indices(self):
         return find_variables_indices_in_vector(self.theta_opt, self.model.theta)
 
-    def connect(self, u, y):
+    def connect(self, u, y, replace=False):
         """
         Connect an input 'u' to a algebraic variable 'y', u = y.
         The function will perform the following actions:
@@ -963,16 +982,18 @@ class OptimalControlProblem(object):
 
         ind_u = find_variables_indices_in_vector(u, self.model.u)
 
-        self.model.connect(u, y)
+        self.model.connect(u, y, replace=replace)
 
-        self.y_max = vertcat(self.y_max, self.u_max[ind_u])
-        self.y_min = vertcat(self.y_min, self.u_min[ind_u])
+        if not replace:
+            if self.u_guess is not None and self.y_guess is not None:
+                self.y_guess = vertcat(self.y_guess, self.u_guess[ind_u])
 
-        if self.u_guess is not None and self.y_guess is not None:
-            self.y_guess = vertcat(self.y_guess, self.u_guess[ind_u])
+            self.y_max = vertcat(self.y_max, self.u_max[ind_u])
+            self.y_min = vertcat(self.y_min, self.u_min[ind_u])
 
         self.u_max = remove_variables_from_vector_by_indices(ind_u, self.u_max)
         self.u_min = remove_variables_from_vector_by_indices(ind_u, self.u_min)
+
         if self.u_guess is not None:
             self.u_guess = remove_variables_from_vector_by_indices(ind_u, self.u_guess)
 
@@ -981,4 +1002,43 @@ class OptimalControlProblem(object):
         )
         self.delta_u_min = remove_variables_from_vector_by_indices(
             ind_u, self.delta_u_min
+        )
+
+    def simulate(
+        self,
+        x_0: Optional[Union[DM, List[float]]] = None,
+        t_f: Optional[Union[float, List[float]]] = None,
+        t_0: Optional[float] = None,
+        finite_elements: Optional[int] = None,
+        u: Union[DM, List[float]] = None,
+        p: Union[DM, List[float]] = None,
+        theta: Dict[int, DM] = None,
+        y_0: Union[DM, List[float]] = None,
+        integrator_type: str = None,
+        integrator_options=None,
+    ) -> SimulationResult:
+        self.pre_solve_check()
+
+        if t_0 is None:
+            t_0 = self.t_0
+
+        if t_f is None:
+            t_f = self.t_f
+
+        if finite_elements is not None and isinstance(t_f, (DM, float, int)):
+            delta_t = (t_f - t_0) / finite_elements
+            t_f = [delta_t * t for t in range(1, finite_elements)]
+
+        x_0 = x_0 if x_0 is not None else self.x_0
+
+        return self.model.simulate(
+            x_0=x_0,
+            t_f=t_f,
+            t_0=self.t_0,
+            u=u if u is not None else self.u_guess,
+            p=p,
+            theta=theta,
+            y_0=y_0 if y_0 is not None else self.y_guess,
+            integrator_type=integrator_type,
+            integrator_options=integrator_options,
         )

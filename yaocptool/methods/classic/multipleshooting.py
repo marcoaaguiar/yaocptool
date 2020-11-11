@@ -8,6 +8,7 @@ from collections import defaultdict
 
 from casadi import DM, vertcat, Function, repmat, is_equal, inf, vec, horzcat
 
+from yaocptool.modelling import SystemModel
 from yaocptool.methods import OptimizationResult
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.optimization import NonlinearOptimizationProblem
@@ -67,17 +68,15 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             ub=self.problem.p_opt_max,
         )
 
-        theta_opt = []
-        for el in range(self.finite_elements):
-            theta_opt.append(
-                nlp.create_variable(
-                    "mx_theta_opt_" + str(el),
-                    self.problem.n_theta_opt,
-                    lb=self.problem.theta_opt_min,
-                    ub=self.problem.theta_opt_max,
-                )
+        theta_opt = [
+            nlp.create_variable(
+                "mx_theta_opt_" + str(el),
+                self.problem.n_theta_opt,
+                lb=self.problem.theta_opt_min,
+                ub=self.problem.theta_opt_max,
             )
-
+            for el in range(self.finite_elements)
+        ]
         v_x = self.vectorize(x)
         v_y = self.vectorize(y)
         v_u = self.vectorize(u)
@@ -99,18 +98,18 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         x, y, u, eta, p_opt = [], [], [], [], []
         offset = 0
 
-        for el in range(self.finite_elements + 1):
+        for _ in range(self.finite_elements + 1):
             x.append([decision_variables[offset : offset + self.model.n_x]])
-            offset = offset + self.model.n_x
+            offset += self.model.n_x
 
-        for el in range(self.finite_elements):
+        for _ in range(self.finite_elements):
             y.append([decision_variables[offset : offset + self.model.n_y]])
-            offset = offset + self.model.n_y
+            offset += self.model.n_y
 
-        for el in range(self.finite_elements):
+        for _ in range(self.finite_elements):
             u_k = []
             if self.model.n_u_par > 0:
-                for i in range(self.degree_control):
+                for _ in range(self.degree_control):
                     u_k.append(decision_variables[offset : offset + self.model.n_u])
                     offset += self.model.n_u
             u.append(u_k)
@@ -122,7 +121,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         offset += self.problem.n_p_opt
 
         theta_opt = []
-        for el in range(self.finite_elements):
+        for _ in range(self.finite_elements):
             theta_opt.append(
                 decision_variables[offset : offset + self.problem.n_theta_opt]
             )
@@ -358,11 +357,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             if "u" in time_dict[el] and t_0 in time_dict[el]["u"]:
                 if self.solution_method.solution_class == "direct":
                     results[el]["u"].append(f_u(t_0, self.vectorize(u_var[el])))
-                elif self.solution_method.solution_class == "indirect":
-                    raise NotImplementedError
                 else:
                     raise NotImplementedError
-
             for f_name in functions:
                 if t_0 in time_dict[el][f_name]:
                     raise NotImplementedError
@@ -508,7 +504,13 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         return vertcat(x_init, y_init, u_init, eta_init, p_opt_init, theta_opt_init)
 
     def create_initial_guess_with_simulation(
-        self, u=None, p=None, theta=None, model=None
+        self,
+        u=None,
+        p=None,
+        theta: dict = None,
+        model: SystemModel = None,
+        in_transform=None,
+        out_transform=None,
     ):
         """Create an initial guess for the optimal control problem using by simulating
         with a given control u, and a given p and theta (for p_opt and theta_opt) if
@@ -521,6 +523,11 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         :param p: Optimization parameters
         :param theta: Optimization theta
         :param model: Model used for simulating, if None is given use problem.model
+        :param in_transform: a function that receives (x_0, t_0, t_f, p, y_0) in the form of the
+            problem and returns them in the form of the simulation model.
+            Does not apply transforms if None
+        :param out_transform: a function that receives a CasADi integration result and returns
+            an equivalent dict
         :return:
         """
         if model is None:
@@ -531,7 +538,6 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         u_init = []
 
         # Simulation
-
         if u is None:
             if self.problem.u_guess is not None:
                 u = self.problem.u_guess
@@ -561,7 +567,14 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             t_init = self.time_breakpoints[el]
             p_el = vertcat(p, theta[el], u)
             for t in [self.time_breakpoints[el + 1]]:
-                res = dae_sys.simulate(x_0=x_0, t_0=t_init, t_f=t, p=p_el, y_0=y_guess)
+                args = dict(x_0=x_0, t_0=t_init, t_f=t, p=p_el, y_0=y_guess)
+
+                if in_transform is not None:
+                    args = in_transform(**args)
+
+                res = dae_sys.simulate(**args)
+                if out_transform is not None:
+                    res = out_transform(res)
 
                 el_x.append(res["xf"])
                 el_y.append(res["zf"])
@@ -604,6 +617,8 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
         """
         optimization_result.raw_solution_dict = raw_solution_dict
         optimization_result.raw_decision_variables = raw_solution_dict["x"]
+        optimization_result.stats = raw_solution_dict["stats"]
+        optimization_result.success = raw_solution_dict["stats"]["success"]
 
         optimization_result.objective_opt_problem = raw_solution_dict["f"]
         optimization_result.constraint_values = raw_solution_dict["g"]

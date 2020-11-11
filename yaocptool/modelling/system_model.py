@@ -7,19 +7,17 @@ Created on Thu Jun 09 10:50:48 2016
 import collections
 import copy
 from contextlib import suppress
-from itertools import islice
+from typing import List, Union
 
 from casadi import (
     DM,
     SX,
     Function,
     horzcat,
-    is_equal,
     jacobian,
     mtimes,
     rootfinder,
     substitute,
-    vec,
     vertcat,
 )
 
@@ -27,8 +25,6 @@ from yaocptool import (
     config,
     find_variables_in_vector_by_name,
     find_variables_indices_in_vector,
-    remove_variables_from_vector,
-    remove_variables_from_vector_by_indices,
 )
 from yaocptool.modelling import DAESystem, SimulationResult
 from yaocptool.modelling.mixins import (
@@ -37,7 +33,6 @@ from yaocptool.modelling.mixins import (
     ControlMixin,
     ParameterMixin,
 )
-from yaocptool.modelling.utils import Derivative, EqualityEquation
 
 
 class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterMixin):
@@ -100,7 +95,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         if self.has_adjoint_variables:
             return self.x[self.n_x // 2 :]
         else:
-            return SX()
+            return SX([])
 
     @property
     def all_sym(self):
@@ -114,30 +109,30 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         )
 
     @property
-    def t_sym(self):
+    def t_sym(self) -> SX:
         return self.t
 
     @t_sym.setter
-    def t_sym(self, value):
+    def t_sym(self, value: SX):
         self.t = value
 
     @property
-    def tau_sym(self):
+    def tau_sym(self) -> SX:
         return self.tau
 
     @tau_sym.setter
-    def tau_sym(self, value):
+    def tau_sym(self, value: SX):
         self.tau = value
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.__class__.__name__}("{self.name}")'
 
-    def name_variable(self, name):
+    def name_variable(self, name: str) -> str:
         if self.model_name_as_prefix:
             return f"{self.name}_{name}"
         return name
 
-    def print_summary(self):
+    def print_summary(self) -> str:
         """
         Print model summary when using print(model)
 
@@ -226,14 +221,13 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             print(line)
         print(("=" * column_size + header_separator) * 5)
 
-    def include_equations(self, *args, **kwargs):
+    def include_equations(self, *args: SX, **kwargs: SX):
         """
             Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)
 
         :param list|casadi.SX ode: (ordinary) differential equation
         :param list|casadi.SX alg: algebraic equation
         """
-
         super().include_equations(*args, **kwargs)
 
     def include_variables(self, x=None, y=None, u=None, p=None, theta=None):
@@ -391,7 +385,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
 
         self.include_equations(alg=connecting_equations)
 
-    def connect(self, u, y):
+    def connect(self, u, y, replace=False):
         """
         Connect an input 'u' to a algebraic variable 'y', u = y.
         The function will perform the following actions:
@@ -415,9 +409,13 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
                 f"u={u.numel()} and y={y.numel()}"
             )
 
-        self.include_equations(alg=[u - y])
+        if replace:
+            self.replace_variable(u, y)
+        else:
+            self.include_equations(alg=[u - y])
+            self.include_algebraic(u)
+
         self.remove_control(u)
-        self.include_algebraic(u)
 
     @staticmethod
     def put_values_in_all_sym_format(
@@ -561,14 +559,14 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
 
     def simulate(
         self,
-        x_0,
-        t_f,
-        t_0=0.0,
+        x_0: Union[DM, List[float]],
+        t_f: Union[float, List[float]],
+        t_0: float = 0.0,
         u=None,
         p=None,
         theta=None,
         y_0=None,
-        integrator_type="implicit",
+        integrator_type=None,
         integrator_options=None,
     ):
         """Simulate model.
@@ -588,6 +586,10 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
 
         :rtype: SimulationResult
         """
+        if integrator_type is None:
+            integrator_type = "implicit"
+        if integrator_options is None:
+            integrator_options = {}
 
         if isinstance(x_0, collections.Iterable):
             x_0 = vertcat(x_0)
@@ -596,8 +598,6 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
 
         if theta is None:
             theta = dict([(k, []) for k in range(len(t_f))])
-        if integrator_options is None:
-            integrator_options = {}
         if p is None:
             p = []
         if isinstance(p, list):
@@ -693,9 +693,6 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             ode=[mtimes(a_matrix, linear_model.x) + mtimes(b_matrix, linear_model.u)]
         )
         linear_model.name = "linearized_" + self.name
-
-        linear_model.a_matrix = a_matrix
-        linear_model.b_matrix = b_matrix
 
         return linear_model
 

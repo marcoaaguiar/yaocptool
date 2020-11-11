@@ -93,7 +93,7 @@ class ContinuousStateMixin:
             for x_i, x_i_eq in self._ode.items():
                 self._ode[x_i] = substitute(x_i_eq, original, replacement)
 
-    def include_equations(self, *args, **kwargs):
+    def include_equations(self, *args: SX, **kwargs: SX):
         if callable(getattr(super(), "include_equations", None)):
             super().include_equations(*args, **kwargs)
 
