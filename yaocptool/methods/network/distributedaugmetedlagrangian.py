@@ -18,6 +18,9 @@ from yaocptool import (
 )
 from yaocptool.methods import AugmentedLagrangian, SolutionMethodInterface
 from yaocptool.methods.augmented_lagrangian import AugmentedLagrangianOptions
+from yaocptool.methods.network.intermediary_node_solution_method import (
+    IntermediaryNodeSolutionMethod,
+)
 from yaocptool.modelling import Network, Node
 import itertools
 
@@ -27,7 +30,7 @@ class DistributedAugmentedLagrangianOptions:
     degree: int = 3
     finite_elements: int = 20
     max_iter_inner: int = 4
-    max_iter_inner_first: int = 4
+    max_iter_inner_first: int = None
     max_iter_outer: int = 30
     abs_tol: float = 1e-6
     inner_loop_tol: float = 1e-4
@@ -37,7 +40,8 @@ class DistributedAugmentedLagrangianOptions:
     al_options: AugmentedLagrangianOptions = AugmentedLagrangianOptions()
 
     def __post_init__(self):
-        self.al_options = AugmentedLagrangianOptions(**self.al_options)
+        if not isinstance(self.al_options, AugmentedLagrangianOptions):
+            self.al_options = AugmentedLagrangianOptions(**self.al_options)
 
 
 class DistributedAugmentedLagrangian(SolutionMethodInterface):
@@ -220,7 +224,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         for outer_it in range(self.options.max_iter_outer):
             print("Starting outer iteration: {}".format(outer_it).center(40, "="))
             n_inner_iterations = (
-                self.options.max_iter_inner_first
+                max(self.options.max_iter_inner, self.options.max_iter_inner_first)
                 if outer_it == 0 and self.options.max_iter_inner_first is not None
                 else self.options.max_iter_inner
             )
@@ -242,6 +246,14 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     result = node.solution_method.solve(
                         theta=node_theta[node], initial_guess=initial_guess
                     )
+                    if "return_status" in result.stats and result.stats[
+                        "return_status"
+                    ] not in {
+                        "Search_Direction_Becomes_Too_Small",
+                        "Solved_To_Acceptable_Level",
+                        "Solve_Succeeded",
+                    }:
+                        __import__("ipdb").set_trace()
 
                     # save result
                     result_dict[node] = self._last_result[node] = result
@@ -296,27 +308,51 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
 
     def _create_solution_methods(self):
         for node in self.network.nodes:
-            node.solution_method = AugmentedLagrangian(
-                node.problem,
-                self.solution_method_class,
-                solver_options=self.solution_method_options,
-                relax_algebraic_index=self.relax_dict[node]["alg_relax_ind"],
-                relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
-                relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
-                no_update_after_solving=True,
-                #  debug_skip_update_mu=False,
-                #  debug_skip_update_nu=False,
-                options={
-                    **asdict(self.options.al_options),
-                    **{
-                        "degree": self.options.degree,
-                        "degree_control": self.options.degree,
-                        "finite_elements": self.options.finite_elements,
-                        "max_iter": 1,
-                        "verbose": 0,
+            if node.name.startswith("Dummy") or node.name.startswith("dummy"):
+                node.solution_method = IntermediaryNodeSolutionMethod(
+                    #  node.solution_method = AugmentedLagrangian(
+                    node.problem,
+                    self.solution_method_class,
+                    solver_options=self.solution_method_options,
+                    relax_algebraic_index=self.relax_dict[node]["alg_relax_ind"],
+                    relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
+                    relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
+                    no_update_after_solving=True,
+                    #  debug_skip_update_mu=False,
+                    #  debug_skip_update_nu=False,
+                    options={
+                        **asdict(self.options.al_options),
+                        **{
+                            "degree": self.options.degree,
+                            "degree_control": self.options.degree,
+                            "finite_elements": self.options.finite_elements,
+                            "max_iter": 1,
+                            "verbose": 0,
+                        },
                     },
-                },
-            )
+                )
+            else:
+                node.solution_method = AugmentedLagrangian(
+                    node.problem,
+                    self.solution_method_class,
+                    solver_options=self.solution_method_options,
+                    relax_algebraic_index=self.relax_dict[node]["alg_relax_ind"],
+                    relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
+                    relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
+                    no_update_after_solving=True,
+                    #  debug_skip_update_mu=False,
+                    #  debug_skip_update_nu=False,
+                    options={
+                        **asdict(self.options.al_options),
+                        **{
+                            "degree": self.options.degree,
+                            "degree_control": self.options.degree,
+                            "finite_elements": self.options.finite_elements,
+                            "max_iter": 1,
+                            "verbose": 0,
+                        },
+                    },
+                )
 
     def _print_nodes_errors(self, node_error, node_error_last):
         max_name_len = max(len(n.name) for n in self.network.nodes)
@@ -334,7 +370,8 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 diff_ = "-"
 
             print(
-                "Violation node: \033[93m{:>{}}\033[0m | error: {} \033[0m| diff: {} \033[0m".format(
+                "Node {} - \033[93m{:>{}}\033[0m | error: {} \033[0m| diff: {} \033[0m".format(
+                    node.node_id,
                     node.name,
                     max_name_len,
                     error_,

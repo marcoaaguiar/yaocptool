@@ -1,4 +1,5 @@
 from numbers import Number
+from typing import Dict, Union
 
 from casadi import vertcat, MX, inf, DM, repmat, is_equal, depends_on
 
@@ -6,7 +7,7 @@ from yaocptool import is_inequality, is_equality
 
 
 class AbstractOptimizationProblem(object):
-    def __init__(self, name="optimization_problem", **kwargs):
+    def __init__(self, name: str = "optimization_problem", **kwargs):
         r"""
             Abstract Optimization Problem class
             Optimization problem
@@ -20,14 +21,13 @@ class AbstractOptimizationProblem(object):
             x -> optimization variables
             g -> constraint
 
-        :param str name: Optimization problem name
-        :param dict kwargs:
+        :param name: Optimization problem name
         """
         self.name = name
 
-        self.f = DM([])
-        self.g = DM([])
-        self.x = DM([])
+        self.f = MX([])
+        self.g = MX([])
+        self.x = MX([])
         self.p = DM([])
 
         self.g_lb = DM([])
@@ -42,7 +42,13 @@ class AbstractOptimizationProblem(object):
         for (key, val) in kwargs.items():
             setattr(self, key, val)
 
-    def create_variable(self, name, size=1, lb=-inf, ub=inf):
+    def create_variable(
+        self,
+        name: str,
+        size: int = 1,
+        lb: Union[DM, float] = -inf,
+        ub: Union[DM, float] = inf,
+    ) -> MX:
         """Create an optimization variable
 
         :param str name: Name of the optimization variable.
@@ -54,9 +60,9 @@ class AbstractOptimizationProblem(object):
         :return: Return the variable
         :rtype: MX
         """
-        if isinstance(lb, Number):
+        if isinstance(lb, (float, int)):
             lb = repmat(lb, size)
-        if isinstance(ub, Number):
+        if isinstance(ub, (float, int)):
             ub = repmat(ub, size)
 
         new_x = MX.sym(name, size)
@@ -64,7 +70,9 @@ class AbstractOptimizationProblem(object):
         self.include_variable(new_x, lb=lb, ub=ub)
         return new_x
 
-    def include_variable(self, variable, lb=-inf, ub=inf):
+    def include_variable(
+        self, variable: MX, lb: Union[float, DM] = -inf, ub: Union[float, DM] = inf
+    ):
         """Include a symbolic variable in the optimization problem
 
         :param variable: variable to be included
@@ -83,7 +91,7 @@ class AbstractOptimizationProblem(object):
         if ub.numel() == 1 and variable.numel() > 1:
             ub = repmat(ub, variable.numel())
 
-        if not variable.numel() == lb.numel() or not variable.numel() == ub.numel():
+        if variable.numel() != lb.numel() or variable.numel() != ub.numel():
             raise ValueError(
                 "Lower bound or upper bound has different size of the given variable"
             )
@@ -99,12 +107,12 @@ class AbstractOptimizationProblem(object):
                 "lb={}, ub={}".format(lb, ub)
             )
 
-        for i in range(variable.numel()):
-            if lb[i] > ub[i]:
+        for i, (lb_i, var_i, ub_i) in enumerate(zip(lb.nz, variable.nz, ub.nz)):
+            if lb_i > ub_i:
                 raise ValueError(
                     "Lower bound is greater than upper bound for index {}. "
                     "The inequality {} <= {} <= is infeasible".format(
-                        i, lb[i], variable[i], ub[i]
+                        i, lb_i, var_i, ub_i
                     )
                 )
 
@@ -180,7 +188,7 @@ class AbstractOptimizationProblem(object):
                 lb = repmat(lb, expr.numel())
 
         # check lb correct size
-        if not expr.shape == lb.shape:
+        if expr.shape != lb.shape:
             raise ValueError(
                 "Expression and lower bound does not have the same size: "
                 "expr.shape={}, lb.shape=={}".format(expr.shape, lb.shape)
@@ -194,7 +202,7 @@ class AbstractOptimizationProblem(object):
                 ub = repmat(ub, expr.numel())
 
         # check ub correct size
-        if not expr.shape == ub.shape:
+        if expr.shape != ub.shape:
             raise ValueError(
                 "Expression and lower bound does not have the same size: "
                 "expr.shape={}, lb.shape=={}".format(expr.shape, ub.shape)
@@ -208,14 +216,13 @@ class AbstractOptimizationProblem(object):
             )
 
         for i in range(expr.numel()):
-            if lb.is_constant() and ub.is_constant():
-                if lb[i] > ub[i]:
-                    raise ValueError(
-                        "Lower bound is greater than upper bound for index {}. "
-                        "The inequality {} <= {} <= is infeasible".format(
-                            i, lb[i], expr[i], ub[i]
-                        )
+            if lb.is_constant() and ub.is_constant() and lb[i] > ub[i]:
+                raise ValueError(
+                    "Lower bound is greater than upper bound for index {}. "
+                    "The inequality {} <= {} <= is infeasible".format(
+                        i, lb[i], expr[i], ub[i]
                     )
+                )
 
         self.g = vertcat(self.g, expr)
         self.g_lb = vertcat(self.g_lb, lb)
@@ -246,7 +253,7 @@ class AbstractOptimizationProblem(object):
             if rhs.numel() == 1 and expr.numel() > 1:
                 rhs = repmat(rhs, expr.numel())
 
-            if not expr.shape == rhs.shape:
+            if expr.shape != rhs.shape:
                 msg = (
                     "Expression and the right hand side does not have the same size: "
                     "expr.shape={}, rhs.shape=={}".format(expr.shape, rhs.shape)
@@ -292,14 +299,11 @@ class AbstractOptimizationProblem(object):
         if depends_on(expr.dep(0), vertcat(self.x, self.p)):
             dep_term = expr.dep(0)
             indep_term = expr.dep(1)
-            if indep_term.is_constant():
-                indep_term = indep_term.to_DM()
         else:
             dep_term = expr.dep(1)
             indep_term = expr.dep(0)
-            if indep_term.is_constant():
-                indep_term = indep_term.to_DM()
-
+        if indep_term.is_constant():
+            indep_term = indep_term.to_DM()
         # if it is and equality
         if is_equality(expr):
             self.include_equality(dep_term, indep_term)
@@ -315,7 +319,7 @@ class AbstractOptimizationProblem(object):
             else:
                 self.include_inequality(dep_term, lb=indep_term)
 
-    def get_problem_dict(self):
+    def get_problem_dict(self) -> Dict[str, Union[MX, DM]]:
         """Return the optimization problem in a Python dict form (CasADi standard).
         The dictionary keys are:
         f-> objective function
@@ -396,4 +400,7 @@ class AbstractOptimizationProblem(object):
 
         solver = self.get_solver()
 
-        return solver(**call_dict)
+        solution = solver(**call_dict)
+        solution["stats"] = solver.stats()
+
+        return solution

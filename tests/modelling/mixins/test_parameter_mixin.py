@@ -1,11 +1,24 @@
+from typing import List, Union
+
 import pytest
-from casadi.casadi import is_equal, SX
+from casadi.casadi import SX, is_equal
+
 from yaocptool.modelling.mixins.parameter_mixin import ParameterMixin
 
 
 @pytest.fixture
 def model():
-    return ParameterMixin()
+    class ParameterMixinParent(ParameterMixin):
+        def name_variable(self, name: str) -> str:
+            return name
+
+        def include_equations(self, *args: SX, **kwargs: Union[SX, List[SX]]):
+            pass
+
+        def replace_variable(self, original: SX, replacement: SX):
+            pass
+
+    return ParameterMixinParent()
 
 
 def test_n_p(model):

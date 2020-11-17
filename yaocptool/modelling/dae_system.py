@@ -1,4 +1,25 @@
-from casadi import vertcat, integrator, substitute, depends_on, Function, SX, DM
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    TypedDict,
+    Union,
+    overload,
+    TYPE_CHECKING,
+)
+from yaocptool.config import SOLVER_OPTIONS
+from casadi import (
+    MX,
+    vertcat,
+    integrator,
+    substitute,
+    depends_on,
+    Function,
+    SX,
+    DM,
+)
+from mypy_extensions import DefaultArg
 
 from yaocptool import (
     convert_expr_from_tau_to_time,
@@ -6,8 +27,26 @@ from yaocptool import (
     find_variables_indices_in_vector,
 )
 
+if TYPE_CHECKING:
+    from casadi import FunctionCallArgT, NumericMT, SymbolicMT
+else:
+    FunctionCallArgT = "FunctionCallArgT"
+    NumericMT = "NumericMT"
+    SymbolicMT = "SymbolicMT"
 
-class DAESystem(object):
+
+class ExplicitSolverOptions(TypedDict):
+    t0: float
+    tf: float
+    iterations: int
+
+
+class ExplicitSolverReturn(TypedDict):
+    xf: Union[DM, SX, MX]
+    zf: DM
+
+
+class DAESystem:
     """
         DAE System class used primarily for simulation by the SystemModel class
 
@@ -15,31 +54,36 @@ class DAESystem(object):
     the integrator.
     """
 
-    def __init__(self, x=None, y=None, p=None, ode=None, alg=None, t=None, tau=None):
+    def __init__(
+        self,
+        x: SX,
+        ode: SX,
+        t: SX,
+        y: SX = None,
+        p: SX = None,
+        alg: SX = None,
+        tau: SX = None,
+    ):
         """
             DAE System class used primarily for simulation by the SystemModel class
 
         For modelling it is recommended the use of the SystemModel class, use this class if you need more control of
         the integrator.
 
-        :param casadi.SX ode: ODE equations
-        :param casadi.SX alg: Algebraic equations
-        :param casadi.SX x: State variables
-        :param casadi.SX y: Algebraic variables
-        :param casadi.SX p: Parameters
-        :param casadi.SX t: Time variable
-        :param casadi.SX tau: Tau variable
+        :param ode: ODE equations
+        :param alg: Algebraic equations
+        :param x: State variables
+        :param y: Algebraic variables
+        :param p: Parameters
+        :param t: Time variable
+        :param tau: Tau variable
         """
-        if x is None:
-            x = DM([])
         if y is None:
-            y = DM([])
+            y = SX(0, 1)
         if p is None:
-            p = DM([])
+            p = SX(0, 1)
         if alg is None:
-            alg = DM([])
-        if ode is None:
-            ode = DM([])
+            alg = SX(0, 1)
 
         self.x = x
         self.y = y
@@ -50,45 +94,37 @@ class DAESystem(object):
         self.tau = tau
 
     @property
-    def is_dae(self):
+    def is_dae(self) -> bool:
         """
-            Return True if it is a DAE system (with non empty algebraic equations)
-
-        :rtype: bool
+        Return True if it is a DAE system (with non empty algebraic equations)
         """
         return self.type == "dae"
 
     @property
-    def is_ode(self):
+    def is_ode(self) -> bool:
         """
-            Return True if it is a ODE system (no algebraic equations)
-
-        :rtype: bool
+        Return True if it is a ODE system (no algebraic equations)
         """
         return self.type == "ode"
 
     @property
-    def type(self):
+    def type(self) -> str:
         """
-            Return 'ode' if the system has no algebraic equations, 'dae' otherwise
-
-        :rtype: str
+        Return 'ode' if the system has no algebraic equations, 'dae' otherwise
         """
         if self.alg.numel() == 0:
             return "ode"
         return "dae"
 
     @property
-    def has_parameters(self):
+    def has_parameters(self) -> bool:
         """
-            Return True if the attribute 'p' is not empty
-
-        :rtype: bool
+        Return True if the attribute 'p' is not empty
         """
         return self.p.numel() > 0
 
     @property
-    def dae_system_dict(self):
+    def dae_system_dict(self) -> Dict[str, SX]:
         """
             Return the dictionary of variables and equations needed to create the CasADi integrator.
 
@@ -109,28 +145,23 @@ class DAESystem(object):
             dae_sys_dict["p"] = self.p
         return dae_sys_dict
 
-    def has_variable(self, var):
+    def has_variable(self, var: SX) -> bool:
         """
-            Return True if the var is one of the system variables (x, y, p, t, tau)
-
-        :param casadi.SX var:
-        :rtype: bool
+        Return True if the var is one of the system variables (x, y, p, t, tau)
         """
-        ind = find_variables_indices_in_vector(
-            var, vertcat(self.x, self.y, self.p, self.t, self.tau)
-        )
+        args = [self.x, self.y, self.p, self.t]
+        if self.tau is not None:
+            args.append(self.tau)
+        ind = find_variables_indices_in_vector(var, vertcat(*args))
         return len(ind) > 0
 
-    def depends_on(self, var):
+    def depends_on(self, var: SX) -> bool:
         """
-            Return True if the system of equations ('ode' and 'alg')depends on 'var' (contains 'var' in the equations).
-
-        :param casadi.SX var:
-        :rtype: bool
+        Return True if the system of equations ('ode' and 'alg')depends on 'var' (contains 'var' in the equations).
         """
         return depends_on(vertcat(self.ode, self.alg), var)
 
-    def convert_from_tau_to_time(self, t_k, t_kp1):
+    def convert_from_tau_to_time(self, t_k: float, t_kp1: float):
         """
             Transform a dependence in tau into a dependence into t
 
@@ -153,12 +184,9 @@ class DAESystem(object):
             expr=self.ode, t_sym=self.t, tau_sym=self.tau, t_k=t_k, t_kp1=t_kp1
         )
 
-    def substitute_variable(self, old_var, new_var):
+    def substitute_variable(self, old_var: SX, new_var: SX):
         """
-            Substitute 'old_var' with 'new_var' in the system equations (alg, ode) and in the set of variables (x, y, p)
-
-        :param casadi.SX old_var:
-        :param casadi.SX new_var:
+        Substitute 'old_var' with 'new_var' in the system equations (alg, ode) and in the set of variables (x, y, p)
         """
         self.ode = substitute(self.ode, old_var, new_var)
         self.alg = substitute(self.alg, old_var, new_var)
@@ -166,11 +194,9 @@ class DAESystem(object):
         self.y = substitute(self.y, old_var, new_var)
         self.p = substitute(self.p, old_var, new_var)
 
-    def join(self, dae_sys):
+    def join(self, dae_sys: "DAESystem"):
         """
-            Include all the variables and equations from the DAESystem 'dae_sys' into this object
-
-        :param DAESystem dae_sys:
+        Include all the variables and equations from the DAESystem 'dae_sys' into this object
         """
         self.ode = vertcat(self.ode, dae_sys.ode)
         self.alg = vertcat(self.alg, dae_sys.alg)
@@ -179,18 +205,21 @@ class DAESystem(object):
         self.p = vertcat(self.p, dae_sys.p)
 
         self.substitute_variable(dae_sys.t, self.t)
-        self.substitute_variable(dae_sys.tau, self.tau)
+
+        if dae_sys.tau is not None and self.tau is not None:
+            self.substitute_variable(dae_sys.tau, self.tau)
 
     def simulate(
         self,
-        x_0,
-        t_f,
-        t_0=0.0,
-        p=None,
-        y_0=None,
-        integrator_type="implicit",
-        integrator_options=None,
-    ):
+        x_0: Union[DM, FunctionCallArgT],
+        t_f: float,
+        t_0: float = 0.0,
+        p: Optional[Union[DM, FunctionCallArgT]] = None,
+        y_0: Optional[Union[DM, FunctionCallArgT]] = None,
+        integrator_type: str = "implicit",
+        integrator_options: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, FunctionCallArgT]:
+        ...
         """
             Create an integrator and simulate a system from 't_0' to 't_f'.
 
@@ -211,7 +240,7 @@ class DAESystem(object):
                 )
             )
 
-        if self.depends_on(self.tau):
+        if self.tau is not None and self.depends_on(self.tau):
             raise AttributeError(
                 "The system of equations ('ode' and 'alg') depend on the variable 'tau'. Before being"
                 "able to simulate it is required to transform the dependence on tau into a dependence "
@@ -221,22 +250,26 @@ class DAESystem(object):
         if integrator_options is None:
             integrator_options = {}
         if p is None:
-            p = []
+            p = DM(0, 1)
 
         opts = {"tf": t_f, "t0": t_0}  # final time
 
         for k in integrator_options:
             opts[k] = integrator_options[k]
 
-        call = {"x0": x_0, "p": p}
+        call_kwargs = {"x0": x_0, "p": p}
         if self.is_dae and y_0 is not None:
-            call["z0"] = y_0
+            call_kwargs["z0"] = y_0
 
         integrator_ = self._create_integrator(opts, integrator_type)
 
-        return integrator_(**call)
+        result = integrator_.call(call_kwargs)
+        print(result)
+        return result
 
-    def _create_integrator(self, options=None, integrator_type="implicit"):
+    def _create_integrator(
+        self, options: Dict[str, Any] = None, integrator_type: str = "implicit"
+    ) -> Function:
         """
             Create casadi.integrator for the DAESystem.
 
@@ -249,10 +282,7 @@ class DAESystem(object):
             options = {}
 
         # Integrator Function name
-        if "name" in options:
-            name = options.pop("name")
-        else:
-            name = "integrator"
+        name = options.pop("name") if "name" in options else "integrator"
 
         # Load default options from the config file, if a 'options' dict was passed use that to override the default.
         for k in config.INTEGRATOR_OPTIONS:
@@ -268,13 +298,13 @@ class DAESystem(object):
             return integrator(name, "cvodes", self.dae_system_dict, options)
         if integrator_type == "implicit" and self.is_dae:
             return integrator(name, "idas", self.dae_system_dict, options)
-        if integrator_type == "rk4":
-            if self.is_ode:
-                return self._create_explicit_integrator(
-                    "explicit_integrator", "rk4", self.dae_system_dict, options
-                )
-            else:
-                raise Exception("Explicit integrator not implemented for DAE systems")
+        #  if integrator_type == "rk4":
+        #      if self.is_ode:
+        #          return self._create_explicit_integrator(
+        #              "explicit_integrator", "rk4", self.dae_system_dict, options
+        #          )
+        #      else:
+        #          raise Exception("Explicit integrator not implemented for DAE systems")
         if integrator_type in ["rk", "collocation", "cvodes", "idas"]:
             return integrator(name, integrator_type, self.dae_system_dict, options)
         raise ValueError(
@@ -284,31 +314,52 @@ class DAESystem(object):
         )
 
     @staticmethod
-    def _create_explicit_integrator(name, integrator_type, dae_sys, options=None):
-        default_options = {"t0": 0, "tf": 1, "iterations": 4}
-        if options is None:
-            options = default_options
-        for k in default_options:
-            if k not in options:
-                options[k] = default_options[k]
+    def _create_explicit_integrator(
+        name: str,
+        integrator_type: str,
+        dae_sys: Dict[str, SX],
+        options: Optional[ExplicitSolverOptions] = None,
+    ) -> Callable[
+        [
+            DefaultArg(NumericMT, "x0"),
+            DefaultArg(NumericMT, "p"),
+            DefaultArg(int, "n_iter"),
+        ],
+        ExplicitSolverReturn,
+    ]:
+        opts: ExplicitSolverOptions = {
+            "t0": 0.0,
+            "tf": 1.0,
+            "iterations": 4,
+        }
+
+        if options is not None:
+            opts = options
 
         if "alg" in dae_sys:
             raise Exception("Explicit integrator not implemented for DAE systems")
-        f_in = [dae_sys["t"], dae_sys["x"]]
+        f_in_names = ["t", "x"]
+        f_in = [dae_sys[key] for key in f_in_names]
+        f_in_names.append("p")
         if "p" in dae_sys:
             f_in.append(dae_sys["p"])
         else:
             f_in.append(SX.sym("fake_p"))
-        f = Function(name, f_in, [dae_sys["ode"]])
 
-        t_0 = options["t0"]
-        t_f = options["tf"]
-        iterations = options["iterations"]
+        f_out_names = ["ode"]
+        f = Function(name, f_in, [dae_sys["ode"]], f_in_names, f_out_names)
+
+        t_0 = opts["t0"]
+        t_f = opts["tf"]
+        iterations = opts["iterations"]
         n_states = dae_sys["x"].numel()
+
         if integrator_type == "rk4":
 
             def runge_kutta_4th_order(
-                x0=DM.zeros(n_states, 1), p=None, n_iter=iterations
+                x0: Union[DM, NumericMT],
+                p: NumericMT,
+                n_iter: int = iterations,
             ):
                 if n_iter < 1:
                     raise Exception(
@@ -317,20 +368,36 @@ class DAESystem(object):
                         )
                     )
                 if p is None:
-                    p = []
+                    p = DM(0, 1)
 
                 x_f = x0
                 h = (t_f - t_0) / n_iter
                 t = t_0
-                for it in range(n_iter):
-                    k1 = h * f(t, x0, p)
-                    k2 = h * f(t + 0.5 * h, x0 + 0.5 * k1, p)
-                    k3 = h * f(t + 0.5 * h, x0 + 0.5 * k2, p)
-                    k4 = h * f(t + h, x0 + k3, p)
 
-                    x_f = x0 + 1 / 6.0 * k1 + 1 / 3.0 * k2 + 1 / 3.0 * k3 + 1 / 6.0 * k4
+                for _ in range(n_iter):
+                    k1 = f.call({"t": t, "x": x0, "p": p})["ode"]
+                    k2 = (
+                        h
+                        * f.call({"t": t + 0.5 * h, "x": x0 + 0.5 * k1, "p": p})["ode"]
+                    )
+                    k3 = (
+                        h
+                        * f.call({"t": t + 0.5 * h, "x": x0 + 0.5 * k2, "p": p})["ode"]
+                    )
+                    k4 = h * f.call({"t": t + h, "x": x0 + k3, "p": p})["ode"]
+
+                    x_f = (
+                        x0
+                        + 1.0 / 6.0 * k1
+                        + 1.0 / 3.0 * k2
+                        + 1.0 / 3.0 * k3
+                        + 1.0 / 6.0 * k4
+                    )
                     x0 = x_f
                     t += h
-                return {"xf": x_f, "zf": DM([])}
+
+                result: ExplicitSolverReturn = {"xf": x_f, "zf": DM(0, 1)}
+                return result
 
             return runge_kutta_4th_order
+        raise NotImplementedError

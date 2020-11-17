@@ -1,4 +1,4 @@
-# noinspection PyUnresolvedReferences
+from functools import cached_property
 from casadi import DM, vertcat, Function
 
 from yaocptool import convert_expr_from_tau_to_time
@@ -25,7 +25,7 @@ class DiscretizationSchemeBase:
             )
 
     @property
-    def model(self):
+    def model(self) -> SystemModel:
         """
 
         :rtype: SystemModel
@@ -33,7 +33,7 @@ class DiscretizationSchemeBase:
         return self.solution_method.model
 
     @property
-    def problem(self):
+    def problem(self) -> OptimalControlProblem:
         """
         :rtype: OptimalControlProblem
         """
@@ -59,7 +59,7 @@ class DiscretizationSchemeBase:
     def time_breakpoints(self):
         return self.solution_method.time_breakpoints
 
-    @property
+    @cached_property
     def time_interpolation_controls(self):
         tau_list = (
             [0.0]

@@ -6,7 +6,11 @@ from yaocptool.modelling.mixins import ContinuousStateMixin
 
 @pytest.fixture
 def model():
-    return ContinuousStateMixin()
+    class ContStatesMixinParent(ContinuousStateMixin):
+        def name_variable(self, name: str) -> str:
+            return name
+
+    return ContStatesMixinParent()
 
 
 def test_n_x(model: ContinuousStateMixin):
@@ -22,9 +26,8 @@ def test_create_state(model: ContinuousStateMixin):
 
 
 def test_remove_state(model: ContinuousStateMixin):
-    x = model.create_state('x', 5)
-    model.include_equations(
-        ode=vertcat(*[i * x_i for i, x_i in enumerate(x.nz)]), x=x)
+    x = model.create_state("x", 5)
+    model.include_equations(ode=vertcat(*[i * x_i for i, x_i in enumerate(x.nz)]), x=x)
 
     ind_to_remove = 3
     to_remove = model.x[ind_to_remove]
@@ -69,7 +72,7 @@ def test_include_state(model):
 
 
 def test_replace_variable_state(model: ContinuousStateMixin):
-    x = model.create_state('x', 3)
+    x = model.create_state("x", 3)
     model.include_equations(ode=[-x], x=x)
 
     # replace x

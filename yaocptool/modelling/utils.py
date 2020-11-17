@@ -1,37 +1,27 @@
+from casadi import SX
+
+
 class EqualityEquation:
-    def __init__(self, lhs, rhs):
+    def __init__(self, lhs: "Derivative", rhs: SX):
         self.rhs = rhs
         self.lhs = lhs
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"EqualityEquation({self.lhs} == {self.rhs})"
 
 
 class Derivative:
-    def __init__(self, inner):
+    def __init__(self, inner: SX):
         self.inner = inner
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> EqualityEquation:  # type: ignore
+        if not isinstance(other, SX):
+            raise NotImplemented
         return EqualityEquation(self, other)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"der({self.inner})"
 
 
-class NextK:
-    def __init__(self, inner):
-        self.inner = inner
-
-    def __eq__(self, other):
-        return EqualityEquation(self, other)
-
-    def __str__(self):
-        return f"next_k({self.inner})"
-
-
-def der(*args, **kwargs):
-    return Derivative(*args, **kwargs)
-
-
-def next_k(*args, **kwargs):
-    return NextK(*args, **kwargs)
+def der(inner: SX) -> Derivative:
+    return Derivative(inner)

@@ -5,13 +5,17 @@ from yaocptool.modelling.mixins.algebraic_mixin import AlgebraicMixin
 
 @pytest.fixture
 def model():
-    return AlgebraicMixin()
+    class AlgebraicMixinParent(AlgebraicMixin):
+        def name_variable(self, name: str) -> str:
+            return name
+
+    return AlgebraicMixinParent()
 
 
 def test_n_y(model):
     assert model.n_y == 0
 
-    model.create_algebraic_variable('y', 3)
+    model.create_algebraic_variable("y", 3)
     assert model.n_y == 3
 
 
@@ -42,7 +46,7 @@ def test_create_algebraic_variable(model):
 
 
 def test_remove_algebraic(model):
-    y = model.create_algebraic_variable('y', 4)
+    y = model.create_algebraic_variable("y", 4)
     model.include_equations(alg=[i * y_i for i, y_i in enumerate(y.nz)])
 
     ind_to_remove = 3
@@ -66,7 +70,7 @@ def test_remove_algebraic(model):
 
 
 def test_include_equations_alg(model):
-    y = model.create_algebraic_variable('y')
+    y = model.create_algebraic_variable("y")
     alg = -y
 
     model.include_equations(alg=alg)
@@ -74,7 +78,7 @@ def test_include_equations_alg(model):
 
 
 def test_include_equations_w_equality(model):
-    y = model.create_algebraic_variable('y')
+    y = model.create_algebraic_variable("y")
 
     model.include_equations(y == 2)
 
@@ -82,7 +86,7 @@ def test_include_equations_w_equality(model):
 
 
 def test_replace_variable_alg(model: AlgebraicMixin):
-    y = model.create_algebraic_variable('y', 3)
+    y = model.create_algebraic_variable("y", 3)
     model.include_equations(alg=[-y])
 
     # replace y

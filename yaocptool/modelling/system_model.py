@@ -7,19 +7,19 @@ Created on Thu Jun 09 10:50:48 2016
 import collections
 import copy
 from contextlib import suppress
-from itertools import islice
+from typing import Any, Dict, List, Optional, Tuple, Union
+from yaocptool.util.util import create_constant_theta
 
 from casadi import (
     DM,
+    MX,
     SX,
     Function,
     horzcat,
-    is_equal,
     jacobian,
     mtimes,
     rootfinder,
     substitute,
-    vec,
     vertcat,
 )
 
@@ -27,8 +27,6 @@ from yaocptool import (
     config,
     find_variables_in_vector_by_name,
     find_variables_indices_in_vector,
-    remove_variables_from_vector,
-    remove_variables_from_vector_by_indices,
 )
 from yaocptool.modelling import DAESystem, SimulationResult
 from yaocptool.modelling.mixins import (
@@ -37,14 +35,13 @@ from yaocptool.modelling.mixins import (
     ControlMixin,
     ParameterMixin,
 )
-from yaocptool.modelling.utils import Derivative, EqualityEquation
 
 
 class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterMixin):
     t = SX.sym("t")
     tau = SX.sym("tau")
 
-    def __init__(self, name="model", model_name_as_prefix=False, **kwargs):
+    def __init__(self, name: str = "model", model_name_as_prefix: bool = False):
         r"""
             Continuous-time Dynamic System Model
 
@@ -64,19 +61,16 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         :param bool model_name_as_prefix: if true all variables create will have the model name as prefix
             e.g.: 'tank_h', where 'tank' is model name and 'h' is the state created
         """
-        super().__init__(**kwargs)
+        super().__init__()
         self.name = name
 
         self.model_name_as_prefix = model_name_as_prefix
         self.has_adjoint_variables = False
 
-        for (k, v) in kwargs.items():
-            setattr(self, k, v)
-
         self.verbosity = 0
 
     @property
-    def system_type(self):
+    def system_type(self) -> str:
         """
             Return the system type.
 
@@ -89,50 +83,50 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         return "ode"
 
     @property
-    def x_sys_sym(self):
+    def x_sys_sym(self) -> SX:
         if self.has_adjoint_variables:
             return self.x[: int(self.n_x // 2)]
         else:
             return self.x
 
     @property
-    def lamb_sym(self):
+    def lamb_sym(self) -> SX:
         if self.has_adjoint_variables:
             return self.x[self.n_x // 2 :]
         else:
-            return SX()
+            return SX([])
 
     @property
-    def all_sym(self):
-        return (
+    def all_sym(self) -> List[SX]:
+        return [
             self.t,
             self.x,
             self.y,
             self.p,
             self.theta,
             self.u_par,
-        )
+        ]
 
     @property
-    def t_sym(self):
+    def t_sym(self) -> SX:
         return self.t
 
     @t_sym.setter
-    def t_sym(self, value):
+    def t_sym(self, value: SX):
         self.t = value
 
     @property
-    def tau_sym(self):
+    def tau_sym(self) -> SX:
         return self.tau
 
     @tau_sym.setter
-    def tau_sym(self, value):
+    def tau_sym(self, value: SX):
         self.tau = value
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.__class__.__name__}("{self.name}")'
 
-    def name_variable(self, name):
+    def name_variable(self, name: str) -> str:
         if self.model_name_as_prefix:
             return f"{self.name}_{name}"
         return name
@@ -226,17 +220,23 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             print(line)
         print(("=" * column_size + header_separator) * 5)
 
-    def include_equations(self, *args, **kwargs):
+    def include_equations(self, *args: SX, **kwargs: Union[SX, List[SX]]):
         """
             Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)
 
         :param list|casadi.SX ode: (ordinary) differential equation
         :param list|casadi.SX alg: algebraic equation
         """
-
         super().include_equations(*args, **kwargs)
 
-    def include_variables(self, x=None, y=None, u=None, p=None, theta=None):
+    def include_variables(
+        self,
+        x: Optional[Union[SX, List[SX]]] = None,
+        y: Optional[Union[SX, List[SX]]] = None,
+        u: Optional[Union[SX, List[SX]]] = None,
+        p: Optional[Union[SX, List[SX]]] = None,
+        theta: Optional[Union[SX, List[SX]]] = None,
+    ):
         """
             Include variables (x, y, u, p, and theta) to the model.
 
@@ -257,7 +257,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             self.include_algebraic(y)
 
         if u is not None:
-            if isinstance(x, list):
+            if isinstance(u, list):
                 u = vertcat(*u)
             self.include_control(u)
 
@@ -271,7 +271,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
                 theta = vertcat(*theta)
             self.include_theta(theta)
 
-    def replace_variable(self, original, replacement):
+    def replace_variable(self, original: SX, replacement: SX):
         """
         Replace a variable or parameter by an variable or expression.
 
@@ -282,7 +282,9 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         """
         super().replace_variable(original, replacement)
 
-    def get_variable_by_name(self, name="", var_type=None):
+    def get_variable_by_name(
+        self, name: str = "", var_type: Optional[str] = None
+    ) -> SX:
         """
             Return a variable with a specified name (Regex accepted).
 
@@ -308,7 +310,11 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         # if none was found raise exception
         raise ValueError("No variable was found with name: {}".format(name))
 
-    def get_variables_by_names(self, names="", var_type=None):
+    def get_variables_by_names(
+        self,
+        names: Union[str, List[str]] = "",
+        var_type: Optional[Union[str, List[str]]] = None,
+    ) -> List[SX]:
         """
 
         :param str|list of str names: list of variables names
@@ -331,7 +337,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
 
         return result
 
-    def has_variable(self, var):
+    def has_variable(self, var: SX) -> bool:
         """
 
         :param casadi.SX var: variable to be checked if it is in the SystemModel
@@ -350,7 +356,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         )
         return len(ind) > 0
 
-    def is_parametrized(self):
+    def is_parametrized(self) -> bool:
         """
             Check if the model is parametrized.
 
@@ -359,11 +365,11 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         # if no u is provided (checking if the model is parametrized)
         return len(self._parametrized_controls) > 0
 
-    def include_models(self, models):
+    def include_models(self, models: Union["SystemModel", List["SystemModel"]]):
         """
             Include model or list of models into this model. All the variables and functions will be included.
 
-        :param list|SystemModel models: models to be included
+        :param models: models to be included
         """
         if not isinstance(models, list):
             models = [models]
@@ -383,15 +389,20 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             self.replace_variable(model.t, self.t)
             self.replace_variable(model.tau, self.tau)
 
-    def merge(self, models_list, connecting_equations=None):
+    def merge(
+        self,
+        models_list: Union["SystemModel", List["SystemModel"]],
+        connecting_equations: Optional[SX] = None,
+    ):
         if not isinstance(models_list, list):
             models_list = [models_list]
 
         self.include_models(models_list)
 
-        self.include_equations(alg=connecting_equations)
+        if connecting_equations is not None:
+            self.include_equations(alg=connecting_equations)
 
-    def connect(self, u, y):
+    def connect(self, u: SX, y: SX, replace: bool = False):
         """
         Connect an input 'u' to a algebraic variable 'y', u = y.
         The function will perform the following actions:
@@ -402,52 +413,53 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         :param u: input variable
         :param y: algebraic variable
         """
-        # fix types
-        if isinstance(u, list):
-            u = vertcat(*u)
-        if isinstance(y, list):
-            y = vertcat(*y)
-
         # check if same size
-        if u.numel() != y.numel():
-            raise ValueError(
-                f'Size of "u" and "y" are not the same, '
-                f"u={u.numel()} and y={y.numel()}"
-            )
+        assert (
+            u.numel() != y.numel()
+        ), f'Size of "u" and "y" "are not the same, u={u.numel()} and y={y.numel()}'
 
-        self.include_equations(alg=[u - y])
+        if replace:
+            self.replace_variable(u, y)
+        else:
+            self.include_equations(alg=[u - y])
+            self.include_algebraic(u)
+
         self.remove_control(u)
-        self.include_algebraic(u)
 
     @staticmethod
     def put_values_in_all_sym_format(
-        t=None, x=None, y=None, p=None, theta=None, u_par=None
-    ):
+        t: Any = None,
+        x: Any = None,
+        y: Any = None,
+        p: Any = None,
+        theta: Any = None,
+        u_par: Any = None,
+    ) -> Tuple[Any, Any, Any, Any, Any, Any]:
         if t is None:
-            t = []
+            t = DM(0, 1)
         if x is None:
-            x = []
+            x = DM(0, 1)
         if y is None:
-            y = []
+            y = DM(0, 1)
         if p is None:
-            p = []
+            p = DM(0, 1)
         if theta is None:
-            theta = []
+            theta = DM(0, 1)
         if u_par is None:
-            u_par = []
+            u_par = DM(0, 1)
         return t, x, y, p, theta, u_par
 
     @staticmethod
-    def all_sym_names():
+    def all_sym_names() -> Tuple[str, str, str, str, str, str]:
         return "t", "x", "y", "p", "theta", "u_par"
 
-    def convert_expr_from_time_to_tau(self, expr, t_k, t_kp1):
+    def convert_expr_from_time_to_tau(self, expr: SX, t_k: float, t_kp1: float) -> SX:
         t = self.t
         tau = self.tau
         h = t_kp1 - t_k
         return substitute(expr, t, tau * h + t_k)
 
-    def convert_expr_from_tau_to_time(self, expr, t_k, t_kp1):
+    def convert_expr_from_tau_to_time(self, expr: SX, t_k: float, t_kp1: float) -> SX:
         t = self.t
         tau = self.tau
         h = t_kp1 - t_k
@@ -465,7 +477,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         copy_model._ode = dict(copy_model._ode)
         return copy_model
 
-    def get_deepcopy(self):
+    def get_deepcopy(self) -> "SystemModel":
         """
             Get a deep copy of this model, differently from "get_copy",
             the variables of the original copy and the
@@ -473,14 +485,15 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
 
         :rtype: SystemModel
         """
-        model_copy = SystemModel(name=self.name)
-        x_copy = DM([])
-        y_copy = DM([])
-        u_copy = DM([])
-        p_copy = DM([])
-        theta_copy = DM([])
-        u_par_copy = DM([])
-        u_par_copy = DM([])
+        model_copy = SystemModel(
+            name=self.name, model_name_as_prefix=self.model_name_as_prefix
+        )
+        x_copy = SX(0, 1)
+        y_copy = SX(0, 1)
+        u_copy = SX(0, 1)
+        p_copy = SX(0, 1)
+        theta_copy = SX(0, 1)
+        u_par_copy = SX(0, 1)
 
         if self.n_x > 0:
             x_copy = vertcat(
@@ -533,10 +546,9 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
 
         return model_copy
 
-    def get_dae_system(self):
-        """Return a DAESystem object with the model equations.
-
-        :return: DAESystem
+    def get_dae_system(self) -> DAESystem:
+        """
+        Return a DAESystem object with the model equations.
         """
         if self.system_type == "ode":
             kwargs = {
@@ -561,16 +573,16 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
 
     def simulate(
         self,
-        x_0,
-        t_f,
-        t_0=0.0,
-        u=None,
-        p=None,
-        theta=None,
-        y_0=None,
-        integrator_type="implicit",
-        integrator_options=None,
-    ):
+        x_0: Union[DM, List[float]],
+        t_f: Union[float, List[float]],
+        t_0: float = 0.0,
+        u: Optional[Union[MX, DM, List[float]]] = None,
+        p: Optional[Union[MX, DM, List[float]]] = None,
+        theta: Optional[Dict[int, DM]] = None,
+        y_0: Optional[Union[MX, DM, List[float]]] = None,
+        integrator_type: Optional[str] = None,
+        integrator_options: Optional[Dict[str, Any]] = None,
+    ) -> SimulationResult:
         """Simulate model.
             If t_f is a float, then only one simulation will be done. If t_f is a list of times, then a sequence of
             simulations will be done, that each t_f is the end of a finite element.
@@ -588,30 +600,33 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
 
         :rtype: SimulationResult
         """
+        if integrator_type is None:
+            integrator_type = "implicit"
+        if integrator_options is None:
+            integrator_options = {}
 
-        if isinstance(x_0, collections.Iterable):
-            x_0 = vertcat(x_0)
-        if not isinstance(t_f, collections.Iterable):
+        if isinstance(x_0, list):
+            x_0 = vertcat(*x_0)
+        if isinstance(y_0, list):
+            y_0 = vertcat(*y_0)
+        if isinstance(u, list):
+            u = vertcat(*u)
+        if isinstance(p, list):
+            p = vertcat(*p)
+        if not isinstance(t_f, list):
             t_f = [t_f]
 
         if theta is None:
-            theta = dict([(k, []) for k in range(len(t_f))])
-        if integrator_options is None:
-            integrator_options = {}
+            theta = {k: DM(0, 1) for k in range(len(t_f))}
         if p is None:
-            p = []
-        if isinstance(p, list):
-            p = vertcat(*p)
-        p = vertcat(p)
-
+            p = DM(0, 1)
         if u is None:  # if control is not given
-            u = [[]] * len(t_f)
-        elif not isinstance(
-            u, (list, tuple)
-        ):  # if control is given as number or a casadi object
-            u = [u] * len(t_f)
+            u = DM(0, 1)
 
-        if len(t_f) > 1 and len(u) != len(t_f):
+        u_sim: Dict[int, Union[MX, DM]] = (
+            u if isinstance(u, dict) else {el: u for el in range(len(t_f))}
+        )
+        if len(t_f) > 1 and len(u_sim) != len(t_f):
             raise ValueError(
                 'If "t_f" is a list, the parameter "u" should be a list with same length of "t_f".'
                 "len(t_f) = {}".format(len(t_f))
@@ -628,8 +643,9 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         x_k = x_0
         y_k = y_0
         f_u = Function("f_u", self.all_sym, [self.u_expr])
+
         for k, t_kpp in enumerate(t_f):
-            p_k = vertcat(p, theta[k], u[k])
+            p_k = vertcat(p, theta[k], u_sim[k])
             result = dae_sys.simulate(
                 x_0=x_k,
                 t_f=t_kpp,
@@ -693,9 +709,6 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             ode=[mtimes(a_matrix, linear_model.x) + mtimes(b_matrix, linear_model.u)]
         )
         linear_model.name = "linearized_" + self.name
-
-        linear_model.a_matrix = a_matrix
-        linear_model.b_matrix = b_matrix
 
         return linear_model
 

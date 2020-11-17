@@ -1,25 +1,35 @@
-from casadi.casadi import is_equal, SX, vec
-from yaocptool.modelling.mixins.control_mixin import ControlMixin
-import pytest
+from typing import List, Union
 from unittest.mock import MagicMock
+
+import pytest
+from casadi.casadi import SX, is_equal, vec
+
+from yaocptool.modelling.mixins.control_mixin import ControlMixin
 
 
 @pytest.fixture
 def model():
-    return ControlMixin()
+    class ControlMixinParent(ControlMixin):
+        def name_variable(self, name: str) -> str:
+            return name
+
+        def include_equations(self, *args: SX, **kwargs: Union[SX, List[SX]]):
+            pass
+
+    return ControlMixinParent()
 
 
 def test_n_u(model):
     assert model.n_u == 0
 
-    model.create_control('u', 3)
+    model.create_control("u", 3)
     assert model.n_u == 3
 
 
 def test_n_u_par(model):
     assert model.n_u_par == 0
 
-    model.create_control('u', 3)
+    model.create_control("u", 3)
     assert model.n_u_par == 3
 
 
@@ -31,7 +41,7 @@ def test_include_control(model: ControlMixin):
     model.include_control(new_u_1)
 
     assert model.n_u == model_n_u + 1
-    assert (is_equal(model.u[-1], new_u_1))
+    assert is_equal(model.u[-1], new_u_1)
 
     model.include_control(new_u_2)
     assert model.n_u == model_n_u + 1 + 2
@@ -48,7 +58,7 @@ def test_create_control(model: ControlMixin):
 
 
 def test_remove_control(model: ControlMixin):
-    model.create_control('u', 4)
+    model.create_control("u", 4)
     ind_to_remove = 2
     to_remove = model.u[ind_to_remove]
     n_u_original = model.n_u
@@ -62,23 +72,23 @@ def test_remove_control(model: ControlMixin):
 
 
 def test_control_is_parametrized(model: ControlMixin):
-    model.create_control('u', 4)
+    model.create_control("u", 4)
     assert not model.control_is_parametrized(model.u[0])
 
     # error multiple controls are passed
     with pytest.raises(ValueError):
         model.control_is_parametrized(model.u)
 
-    k = SX.sym('k')
-    model.x = SX.sym('x')
+    k = SX.sym("k")
+    model.x = SX.sym("x")
     model.parametrize_control(model.u[0], -k * model.x[0], k)
 
     assert model.control_is_parametrized(model.u[0])
 
 
 def test_parametrize_control_wrong_size(model):
-    model.t = SX.sym('t')
-    model.create_control('u', 1)
+    model.t = SX.sym("t")
+    model.create_control("u", 1)
 
     # wrong size for expr
     k = SX.sym("k", 2)
@@ -87,8 +97,8 @@ def test_parametrize_control_wrong_size(model):
 
 
 def test_parametrize_control_time_dependent_polynomial(model):
-    model.tau = SX.sym('tau')
-    model.create_control('u', 3)
+    model.tau = SX.sym("tau")
+    model.create_control("u", 3)
 
     # Test parametrize by a time dependent polynomial
     u_par = SX.sym("u_par", 3, 2)
@@ -100,31 +110,12 @@ def test_parametrize_control_time_dependent_polynomial(model):
         assert is_equal(model._parametrized_controls[ind], model.u[ind])
 
 
-def test_parametrize_control_list_input(model):
-    model.tau = SX.sym('tau')
-    model.create_control('u', 3)
-
-    # Test for list inputs, parametrize by a time dependent polynomial
-    u_par = SX.sym("u_par", 3, 2)
-    u_expr = model.tau * u_par[:, 0] + (1 - model.tau) * u_par[:, 1]
-    model.parametrize_control(
-        [model.u[ind] for ind in range(model.n_u)],
-        [u_expr[ind] for ind in range(model.n_u)],
-        [vec(u_par)[ind] for ind in range(u_par.numel())],
-    )
-
-    assert is_equal(model.u_par, vec(u_par))
-    assert is_equal(model.u_expr, u_expr, 30)
-    for ind in range(model.n_u):
-        assert is_equal(model._parametrized_controls[ind], model.u[ind])
-
-
 def test_parametrize_control_already_parametrize(model):
-    model.t = SX.sym('t')
-    model.create_control('u', 3)
+    model.t = SX.sym("t")
+    model.create_control("u", 3)
 
     # test parametrize a control already parametrized
-    model.x = SX.sym('x')
+    model.x = SX.sym("x")
     k = SX.sym("k")
     model.parametrize_control(model.u[0], -k * model.x[0], k)
     with pytest.raises(ValueError):

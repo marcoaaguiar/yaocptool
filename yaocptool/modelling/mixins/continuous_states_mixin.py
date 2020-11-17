@@ -1,37 +1,41 @@
-import collections
-from contextlib import suppress
+from collections import abc
 from itertools import islice
+from typing import Dict, List, Optional, Tuple, Union, overload
+import warnings
+from yaocptool.modelling.mixins.base_mixin import BaseMixin
 
-from casadi.casadi import DM, SX, substitute, vec, vertcat
+from casadi import DM, SX, substitute, vec, vertcat
 
 from yaocptool.modelling.utils import Derivative, EqualityEquation
 from yaocptool.util.util import remove_variables_from_vector
 
 
-class ContinuousStateMixin:
+class ContinuousStateMixin(BaseMixin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.x = SX([])
-        self.x_0 = SX([])
-        self._ode = dict()
+        self.x = SX(0, 1)
+        self.x_0 = SX(0, 1)
+        self._ode: Dict[SX, Optional[SX]] = {}
 
     @property
-    def n_x(self):
+    def n_x(self) -> int:
         return self.x.numel()
 
     @property
-    def x_names(self):
+    def x_names(self) -> List[str]:
         return [self.x[i].name() for i in range(self.n_x)]
 
     @property
-    def ode(self):
+    def ode(self) -> SX:
         try:
             return vertcat(*[val for val in self._ode.values() if val is not None])
         except NotImplementedError:
             return SX.zeros(0, 1)
 
-    def create_state(self, name="x", size=1):
+    def create_state(
+        self, name: str = "x", size: Union[int, Tuple[int, int]] = 1
+    ) -> SX:
         """
         Create a new state with the name "name" and size "size".
         Size can be an int or a tuple (e.g. (2,2)). However, the new state will be vectorized (casadi.vec) to be
@@ -49,8 +53,9 @@ class ContinuousStateMixin:
         self.include_state(vec(new_x), ode=None, x_0=vec(new_x_0))
         return new_x
 
-    def include_state(self, var, ode=None, x_0=None):
-        n_x = var.numel()
+    def include_state(
+        self, var: SX, ode: Optional[SX] = None, x_0: Optional[SX] = None
+    ) -> SX:
         self.x = vertcat(self.x, var)
 
         if x_0 is None:
@@ -58,7 +63,7 @@ class ContinuousStateMixin:
         self.x_0 = vertcat(self.x_0, x_0)
 
         # crate entry for included state
-        for ind, x_i in enumerate(var.nz):
+        for x_i in var.nz:
             if x_i in self._ode:
                 raise ValueError(f'State "{x_i}" already in this model')
             self._ode[x_i] = None
@@ -66,19 +71,14 @@ class ContinuousStateMixin:
             self.include_equations(ode=ode, x=var)
         return x_0
 
-    def remove_state(self, var, eq=None):
+    def remove_state(self, var: SX):
         self.x = remove_variables_from_vector(var, self.x)
 
         for x_i in var.nz:
             del self._ode[x_i]
 
-    def replace_variable(self, original, replacement):
-        if isinstance(original, list):
-            original = vertcat(*original)
-        if isinstance(replacement, list):
-            replacement = vertcat(*replacement)
-
-        if not original.numel() == replacement.numel():
+    def replace_variable(self, original: SX, replacement: SX):
+        if original.numel() != replacement.numel():
             raise ValueError(
                 "Original and replacement must have the same number of elements!"
                 "original.numel()={}, replacement.numel()={}".format(
@@ -91,53 +91,72 @@ class ContinuousStateMixin:
 
         if original.numel() > 0:
             for x_i, x_i_eq in self._ode.items():
-                self._ode[x_i] = substitute(x_i_eq, original, replacement)
+                if x_i_eq is not None:
+                    self._ode[x_i] = substitute(x_i_eq, original, replacement)
 
-    def include_equations(self, *args, **kwargs):
+    def include_equations(self, *args: SX, **kwargs: Union[SX, List[SX]]):
+        """
+        Differential equations can passed via `ode` kw argument with a `x` positional
+        argument or via equallity in positional arguments.
+        """
         if callable(getattr(super(), "include_equations", None)):
             super().include_equations(*args, **kwargs)
 
-        ode = kwargs.pop("ode", None)
+        if "ode" not in kwargs and "x" in kwargs:
+            raise ValueError(
+                "`x` is not given, but is `ode` given, what do I do with this `x`?"
+            )
+
+        if len(args) > 0:
+            self._include_equation_from_diff_equations(*args)
+
+        if "ode" not in kwargs:
+            return
+        ode = kwargs["ode"]
         x = kwargs.pop("x", None)
-        if ode is None and x is not None:
-            raise ValueError("`ode` is None but `x` is not None")
 
         # if is in the list form
-        if isinstance(ode, collections.abc.Sequence):
+        if isinstance(ode, abc.Sequence):
             ode = vertcat(*ode)
 
-        if isinstance(x, collections.abc.Sequence):
+        if isinstance(x, abc.Sequence):
             x = vertcat(*x)
 
         # if ode was passed but not x, try to guess the x
-        if x is None and ode is not None:
+        if x is None:
             # Check if None are all sequential, ortherwise we don't know who it belongs
             first_none = list(self._ode.values()).index(None)
-            if not all(eq is None for eq in islice(self._ode.values(), 0, first_none)):
+            if any(eq is not None for eq in islice(self._ode.values(), 0, first_none)):
                 raise ValueError(
                     "ODE should be inserted on the equation form or in the list form."
                     "You can't mix both without explicit passing the states associated with the equation."
                 )
             x = vertcat(*list(self._ode.keys())[first_none : first_none + ode.numel()])
 
-        if len(args) > 0 and ode is None:
-            x = SX([])
-            ode = SX([])
+        self._include_equation_from_kwargs(x, ode)
+
+    def _include_equation_from_kwargs(self, x: SX, ode: SX):
+        #
+        assert (
+            ode.numel() == x.numel()
+        ), f"Expected `x` and `ode` of same size, {x.numel()}!={ode.numel()}"
+
+        for x_i in vertcat(x).nz:
+            if self._ode[x_i] is not None:
+                warnings.warn(
+                    f'State "{x_i}" already had an ODE associated, overriding it!'
+                )
+        self._ode = {**self._ode, **dict(zip(x.nz, ode.nz))}
+
+    def _include_equation_from_diff_equations(self, *args: Union[SX, EqualityEquation]):
+        x = SX(0, 1)
+        ode = SX(0, 1)
 
         # get ode and x from equality equations
         for eq in args:
-            if isinstance(eq, EqualityEquation):
-                if isinstance(eq.lhs, Derivative):
-                    ode = vertcat(ode, eq.rhs)
-                    x = vertcat(x, eq.lhs.inner)
+            if isinstance(eq, EqualityEquation) and isinstance(eq.lhs, Derivative):
+                ode = vertcat(ode, eq.rhs)
+                x = vertcat(x, eq.lhs.inner)
 
         # actually include the equations
-        if ode is not None and ode.numel() > 0:
-            for x_i in vertcat(x).nz:
-                if self._ode[x_i] is not None:
-                    raise Warning(
-                        f'State "{x_i}" already had an ODE associated, overriding it!'
-                    )
-            ode_dict = dict(self._ode)
-            ode_dict.update({x_i: ode[ind] for ind, x_i in enumerate(x.nz)})
-            self._ode = ode_dict
+        self._include_equation_from_kwargs(x, ode)
