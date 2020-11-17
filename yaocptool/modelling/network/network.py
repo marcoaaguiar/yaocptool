@@ -4,12 +4,11 @@ Created on Fri Jul 07 16:05:50 2017
 
 @author: marco
 """
-from typing import List, Union
+from typing import MutableMapping, Union
 
 import matplotlib.pyplot as plt
 import networkx
-from casadi import vertcat
-from networkx.classes.reportviews import NodeView, OutEdgeView
+from casadi import vertcat, SX
 
 from yaocptool import find_variables_indices_in_vector, DM
 from yaocptool.modelling import SystemModel, OptimalControlProblem
@@ -17,7 +16,7 @@ from yaocptool.modelling.network.node import Node
 
 
 class Network:
-    def __init__(self, nodes=None, name="network", intermediary_nodes=False):
+    def __init__(self, nodes=None, name="network"):
         """
 
         :param list of Node nodes:
@@ -25,10 +24,8 @@ class Network:
 
         self.name: str = name
 
-        self.graph = networkx.DiGraph()  # type: networkx.DiGraph
+        self.graph: networkx.DiGraph = networkx.DiGraph()  # type: networkx.DiGraph
         self._nodes_id_counter = 0
-
-        self.intermediary_nodes = intermediary_nodes
 
         if nodes is not None:
             self.include_nodes(nodes)
@@ -49,14 +46,16 @@ class Network:
     @property
     def nodes(
         self,
-    ) -> NodeView:
+    ) -> MutableMapping[Node, dict]:
         """
-        All nodes (from the self.graph)
+            All nodes (from the self.graph)
+
+        :rtype: networkx.reportviews.NodeView
         """
         return self.graph.nodes
 
     @property
-    def connections(self) -> OutEdgeView:
+    def connections(self) -> networkx.reportviews.OutEdgeView:
         """
             All connections (edges) from the self.graph
 
@@ -65,7 +64,7 @@ class Network:
         return self.graph.edges
 
     @property
-    def models(self) -> List[SystemModel]:
+    def models(self):
         """
             List of models of all nodes
 
@@ -75,7 +74,7 @@ class Network:
         return [node.model for node in sorted(self.nodes, key=lambda x: x.node_id)]
 
     @property
-    def problems(self) -> List[OptimalControlProblem]:
+    def problems(self):
         """
             List of problems of all nodes
 
@@ -96,7 +95,7 @@ class Network:
         :return: node
         """
         node = Node(name=name, model=model, problem=problem, **kwargs)
-        self.include_nodes(node)
+        self._set_node_an_id(node)
 
         return node
 
@@ -116,16 +115,6 @@ class Network:
 
         self.graph.add_nodes_from(nodes)
 
-    def remove_connection(self, node1, node2):
-
-        """
-            Remove a connection between node1 and node2
-
-        :param Node node1:
-        :param Node node2:
-        """
-        self.graph.remove_edge(node1, node2)
-
     def connect(self, y, u, node1, node2):
         """
             Connect the variables of two subsystems (nodes) by creating an edge
@@ -143,13 +132,6 @@ class Network:
             raise ValueError(
                 '"node2" ({}) does not have the passed "u" ({})'.format(node2.name, y)
             )
-
-        if not self.intermediary_nodes:
-            self._connect(y, u, node1, node2)
-        else:
-            self.insert_intermediary_node(y, u, node1, node2)
-
-    def _connect(self, y, u, node1, node2):
         if (node1, node2) not in self.graph.edges:
             self.graph.add_edge(node1, node2, y=DM([]), u=DM([]))
 
@@ -159,6 +141,15 @@ class Network:
         self.graph.edges[node1, node2]["u"] = vertcat(
             self.graph.edges[node1, node2]["u"], u
         )
+
+    def remove_connection(self, node1, node2):
+        """
+            Remove a connection between node1 and node2
+
+        :param Node node1:
+        :param Node node2:
+        """
+        self.graph.remove_edge(node1, node2)
 
     def get_model(self):
         """
@@ -212,7 +203,7 @@ class Network:
         :rtype: int
         """
         node.node_id = self._nodes_id_counter
-        self._nodes_id_counter += 1
+        self._nodes_id_counter = self._nodes_id_counter + 1
 
         return node.node_id
 
@@ -247,89 +238,56 @@ class Network:
         return list(grouping_dict.values())
 
     def insert_intermediary_nodes(self):
-        old_connections = {
-            (node1, node2): (
-                self.graph.edges[node1, node2]["y"],
-                self.graph.edges[node1, node2]["u"],
+        old_connections = list(self.connections)
+
+        for (node1, node2) in old_connections:
+            y = self.graph.edges[node1, node2]["y"]
+            u = self.graph.edges[node1, node2]["u"]
+
+            y_guess = (
+                node1.problem.y_guess[
+                    find_variables_indices_in_vector(y, node1.problem.model.y)
+                ]
+                if node1.problem.y_guess is not None
+                else None
             )
-            for (node1, node2) in self.graph.edges
-        }
-        self.graph = networkx.DiGraph()
+            u_guess = (
+                node2.problem.u_guess[
+                    find_variables_indices_in_vector(u, node2.problem.model.u)
+                ]
+                if node1.problem.u_guess is not None
+                else None
+            )
 
-        for (node1, node2), (y, u) in old_connections.items():
-            self.insert_intermediary_node(y, u, node1, node2)
+            copy_y = vertcat(
+                *[SX.sym("Dummy_" + y[ind].name()) for ind in range(y.numel())]
+            )
+            copy_u = vertcat(
+                *[SX.sym("Dummy_" + u[ind].name()) for ind in range(u.numel())]
+            )
 
-    def insert_intermediary_node(self, y, u, node1, node2):
-        new_model = SystemModel(
-            name="Dummy_Model_{}_to_{}".format(node1.name, node2.name)
-        )
-        dummy_u = vertcat(
-            *[new_model.create_control(f"Dummy_{var.name()}") for var in y.nz]
-        )
-        dummy_y = vertcat(
-            *[
-                new_model.create_algebraic_variable(f"Dummy_{var.name()}")
-                for var in u.nz
-            ]
-        )
+            new_model = SystemModel(
+                name="Dummy_Model_{}_to_{}".format(node1.name, node2.name)
+            )
+            new_model.include_variables(u=copy_y, y=copy_u)
+            new_model.include_equations(alg=copy_y - copy_u)
+            new_problem = OptimalControlProblem(
+                name="OCP_Dummy_{}_to_{}".format(node1.name, node2.name),
+                model=new_model,
+                t_f=node1.problem.t_f,
+                y_guess=u_guess,
+                u_guess=y_guess,
+            )
 
-        new_model.include_equations(alg=[dummy_u - dummy_y])
+            new_node = Node(
+                name="Dummy_node_{}_to_{}".format(node1.name, node2.name),
+                model=new_model,
+                problem=new_problem,
+                color=0.75,
+            )
 
-        new_problem = OptimalControlProblem(
-            name="OCP_Dummy_{}_to_{}".format(node1.name, node2.name),
-            model=new_model,
-            t_f=node1.problem.t_f,
-        )
+            self.include_nodes(new_node)
 
-        new_node = self.create_node(
-            name="Dummy_node_{}_to_{}".format(node1.name, node2.name),
-            model=new_model,
-            problem=new_problem,
-            color=0.75,
-        )
-        print(new_node.problem.name)
-
-        self._connect(y, dummy_u, node1, new_node)
-        self._connect(dummy_y, u, new_node, node2)
-
-    def get_initial_condition(self, t_f):
-        initial_condition = {}
-        problem = self.get_problem()
-        final_condition = problem.simulate(t_f=t_f).final_condition()
-
-        def find_type_and_index(var):
-            if index := find_variables_indices_in_vector(var, problem.model.x):
-                return "x", index
-            if index := find_variables_indices_in_vector(var, problem.model.y):
-                return "y", index
-            if index := find_variables_indices_in_vector(var, problem.model.u):
-                return "u", index
-            raise ValueError(f"Could not find variable, {var.name()}")
-
-        def get_variable_final_condition(final_condition, var):
-            var_type, index = find_type_and_index(var)
-            return final_condition[var_type][index]
-
-        for node in self.nodes:
-            initial_condition[node.name] = {
-                "x": DM(
-                    [
-                        get_variable_final_condition(final_condition, x)
-                        for x in node.model.x.nz
-                    ]
-                ),
-                "y": DM(
-                    [
-                        get_variable_final_condition(final_condition, y)
-                        for y in node.model.y.nz
-                    ]
-                ),
-                "u": DM(
-                    [
-                        get_variable_final_condition(final_condition, u)
-                        for u in node.model.u.nz
-                    ]
-                ),
-            }
-
-        return initial_condition
+            self.remove_connection(node1, node2)
+            self.connect(y, copy_y, node1, new_node)
+            self.connect(copy_u, u, new_node, node2)

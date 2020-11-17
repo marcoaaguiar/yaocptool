@@ -174,8 +174,8 @@ class UnscentedKalmanFilter(EstimatorAbstract):
                 y_0=self.y_guess,
             )
             simulation_results.append(simulation_results_i)
-            x_ut_list.append(simulation_results_i.final_condition()["x"])
-            y_ut_list.append(simulation_results[i].final_condition()["y"])
+            x_ut_list.append(simulation_results_i.final_condition()[0])
+            y_ut_list.append(simulation_results[i].final_condition()[1])
             x_aug_ut_list.append(vertcat(x_ut_list[-1], y_ut_list[-1]))
 
             meas_ut_list.append(
@@ -184,35 +184,46 @@ class UnscentedKalmanFilter(EstimatorAbstract):
 
         # Obtain the means
         x_aug_pred = sum(
-            weights_m[i] * x_aug_ut_list[i] for i in range(self.n_sigma_points)
+            [weights_m[i] * x_aug_ut_list[i] for i in range(self.n_sigma_points)]
         )
-
         x_pred = x_aug_pred[: self.model.n_x]
         meas_pred = sum(
-            weights_m[i] * meas_ut_list[i] for i in range(self.n_sigma_points)
+            [weights_m[i] * meas_ut_list[i] for i in range(self.n_sigma_points)]
         )
 
         # Compute the covariances
         cov_x_aug_pred = sum(
-            weights_c[i]
-            * mtimes((x_aug_ut_list[i] - x_aug_pred), (x_aug_ut_list[i] - x_aug_pred).T)
-            for i in range(self.n_sigma_points)
+            [
+                weights_c[i]
+                * mtimes(
+                    (x_aug_ut_list[i] - x_aug_pred), (x_aug_ut_list[i] - x_aug_pred).T
+                )
+                for i in range(self.n_sigma_points)
+            ]
         )
         cov_x_aug_pred[: self.model.n_x, : self.model.n_x] += self.r_v
 
         cov_meas_pred = (
             sum(
-                weights_c[i]
-                * mtimes((meas_ut_list[i] - meas_pred), (meas_ut_list[i] - meas_pred).T)
-                for i in range(self.n_sigma_points)
+                [
+                    weights_c[i]
+                    * mtimes(
+                        (meas_ut_list[i] - meas_pred), (meas_ut_list[i] - meas_pred).T
+                    )
+                    for i in range(self.n_sigma_points)
+                ]
             )
             + self.r_n
         )
 
         cov_xmeas_pred = sum(
-            weights_c[i]
-            * mtimes((x_aug_ut_list[i] - x_aug_pred), (meas_ut_list[i] - meas_pred).T)
-            for i in range(self.n_sigma_points)
+            [
+                weights_c[i]
+                * mtimes(
+                    (x_aug_ut_list[i] - x_aug_pred), (meas_ut_list[i] - meas_pred).T
+                )
+                for i in range(self.n_sigma_points)
+            ]
         )
 
         # Calculate the gain
@@ -306,7 +317,7 @@ class UnscentedKalmanFilter(EstimatorAbstract):
         # Weights
         weights_m.append(lamb / (ell + lamb))
         weights_c.append(lamb / (ell + lamb) + (1 - alpha ** 2 + beta))
-        for _ in range(self.n_sigma_points - 1):
+        for i in range(self.n_sigma_points - 1):
             weights_m.append(1 / (2 * (ell + lamb)))
             weights_c.append(1 / (2 * (ell + lamb)))
 

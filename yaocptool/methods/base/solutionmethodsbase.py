@@ -1,5 +1,4 @@
 import warnings
-from functools import cached_property
 
 from casadi import SX, MX, vertcat, collocation_points, vec, reshape, DM
 
@@ -20,7 +19,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
     degree_control = 1
     finite_elements = 10
 
-    def __init__(self, problem: OptimalControlProblem, **kwargs):
+    def __init__(self, problem, **kwargs):
         """
         :param OptimalControlProblem problem:
         :param str integrator_type: str
@@ -81,21 +80,9 @@ class SolutionMethodsBase(SolutionMethodInterface):
     def delta_t(self):
         return float(self.problem.t_f - self.problem.t_0) / self.finite_elements
 
-    @cached_property
+    @property
     def time_breakpoints(self):
         return [self.delta_t * k for k in range(self.finite_elements + 1)]
-
-    @property
-    def time_interpolation_controls(self):
-        tau_list = (
-            [0.0]
-            if self.degree_control == 1
-            else self.collocation_points(self.degree_control, with_zero=False)
-        )
-        return [
-            [t + self.delta_t * tau for tau in tau_list]
-            for t in self.time_breakpoints[:-1]
-        ]
 
     @staticmethod
     def collocation_points(degree, cp="radau", with_zero=False):

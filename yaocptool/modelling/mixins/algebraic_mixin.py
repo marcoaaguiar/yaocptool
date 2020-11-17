@@ -1,28 +1,24 @@
-import abc
-from typing import List, Union
-
-from casadi import DM, SX, Function, rootfinder, substitute, vec, vertcat
-
-from yaocptool import config
-from yaocptool.modelling.mixins.base_mixin import BaseMixin
+from casadi.casadi import Function, rootfinder, substitute, SX, vec, vertcat
+from distutils.command.config import config
 from yaocptool.util.util import is_equality, remove_variables_from_vector
+import collections
 
 
-class AlgebraicMixin(BaseMixin):
+class AlgebraicMixin:
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.alg = SX([])
         self.y = SX([])
 
     @property
-    def n_y(self) -> int:
+    def n_y(self):
         return self.y.numel()
 
     @property
-    def y_names(self) -> str:
+    def y_names(self):
         return [self.y[i].name() for i in range(self.n_y)]
 
-    def create_algebraic_variable(self, name: str = "y", size: int = 1):
+    def create_algebraic_variable(self, name="y", size=1):
         """
         Create a new algebraic variable with the name "name" and size "size".
         Size can be an int or a tuple (e.g. (2,2)). However, the new algebraic variable will be vectorized (casadi.vec)
@@ -40,17 +36,10 @@ class AlgebraicMixin(BaseMixin):
         return new_y
 
     def find_algebraic_variable(
-        self,
-        x: SX,
-        u: SX,
-        guess: Union[DM, List[float]] = None,
-        t: float = 0.0,
-        p: Union[DM, List[float]] = None,
-        theta_value: Union[DM, List[float]] = None,
-        rootfinder_options=None,
+        self, x, u, guess=None, t=0.0, p=None, theta_value=None, rootfinder_options=None
     ):
         if guess is None:
-            guess = DM([1.0] * self.n_y)
+            guess = [1] * self.n_y
         if rootfinder_options is None:
             rootfinder_options = dict(
                 nlpsol="ipopt", nlpsol_options=config.SOLVER_OPTIONS["nlpsol_options"]
@@ -69,26 +58,25 @@ class AlgebraicMixin(BaseMixin):
         f_alg = Function("f_alg", [self.y], [alg])
 
         rf = rootfinder("rf_algebraic_variable", "nlpsol", f_alg, rootfinder_options)
-        return rf(guess)
+        res = rf(guess)
+        return res
 
-    def include_algebraic(self, var: SX, alg: SX = None):
+    def include_algebraic(self, var, alg=None):
         self.y = vertcat(self.y, var)
-        if alg is not None:
-            self.include_equations(alg=alg)
+        self.include_equations(alg=alg)
 
-    def remove_algebraic(self, var: SX, eq: SX = None):
+    def remove_algebraic(self, var, eq=None):
         self.y = remove_variables_from_vector(var, self.y)
         if eq is not None:
             self.alg = remove_variables_from_vector(eq, self.alg)
 
-    def replace_variable(self, original: SX, replacement: SX):
-        # TODO: Remove or reinstate
-        #  if isinstance(original, list):
-        #      original = vertcat(*original)
-        #  if isinstance(replacement, list):
-        #      replacement = vertcat(*replacement)
+    def replace_variable(self, original, replacement):
+        if isinstance(original, list):
+            original = vertcat(*original)
+        if isinstance(replacement, list):
+            replacement = vertcat(*replacement)
 
-        if original.numel() != replacement.numel():
+        if not original.numel() == replacement.numel():
             raise ValueError(
                 "Original and replacement must have the same number of elements!"
                 "original.numel()={}, replacement.numel()={}".format(
@@ -101,7 +89,7 @@ class AlgebraicMixin(BaseMixin):
 
         self.alg = substitute(self.alg, original, replacement)
 
-    def include_equations(self, *args: SX, **kwargs: SX):
+    def include_equations(self, *args, **kwargs):
         if callable(getattr(super(), "include_equations", None)):
             super().include_equations(*args, **kwargs)
 
@@ -115,7 +103,7 @@ class AlgebraicMixin(BaseMixin):
             if is_equality(eq):
                 alg = vertcat(alg, eq.dep(0) - eq.dep(1))
 
-        if isinstance(alg, abc.Sequence):
+        if isinstance(alg, collections.abc.Sequence):
             alg = vertcat(*alg)
 
         if alg is not None:

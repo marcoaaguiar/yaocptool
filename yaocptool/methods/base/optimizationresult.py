@@ -1,34 +1,35 @@
 from collections import defaultdict
 from contextlib import suppress
 from functools import partial
-from typing import List, Optional, Union
 
 from casadi import horzcat, DM
 
 from yaocptool.modelling import DataSet
+
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    print("Failed to import matplotlib. Make sure that it is properly installed")
+    plt = None
 
 
 class OptimizationResult:
     def __init__(self, **kwargs):
         # Raw Information
         self.raw_solution_dict = {}
-        self.raw_decision_variables: Optional[List] = None  # type: list|None
+        self.raw_decision_variables = None  # type: list|None
 
         # Data from the method
-        self.method_name: str = ""
-        self.discretization_scheme: str = ""
-        self.finite_elements: Optional[float] = None
-        self.degree = None
-        self.degree_control = None
+        self.method_name = ""  # type: str
+        self.discretization_scheme = ""  # type: str
+        self.finite_elements = -1  # type: int
+        self.degree = -1
+        self.degree_control = -1
 
         # From problem
         self.problem_name = ""
-        self.t_0: Optional[float] = None
-        self.t_f: Optional[float] = None
-
-        # From solver
-        self.stats = None
-        self.success = None
+        self.t_0 = -1
+        self.t_f = -1
 
         self.time_breakpoints = []
         self.collocation_points = []
@@ -102,7 +103,7 @@ class OptimizationResult:
         """
         return self.u_data["values"][0][0]
 
-    def get_variable(self, var_type: str, indices: Union[int, List[int]]):
+    def get_variable(self, var_type, indices):
         """Get all the data for a variable (var_type
 
         :param str var_type: variable type ('x', 'y', 'u'
@@ -164,29 +165,25 @@ class OptimizationResult:
         dataset.data["u"]["plot_style"] = "plot" if self.degree_control > 1 else "step"
 
         x_times = self.x_data["time"] + [[self.t_f]]
-        if len(self.x_names) > 0:
-            for el in range(self.finite_elements + 1):
-                time = horzcat(*x_times[el])
-                values = horzcat(*self.x_data["values"][el])
-                dataset.insert_data("x", time, values)
+        for el in range(self.finite_elements + 1):
+            time = horzcat(*x_times[el])
+            values = horzcat(*self.x_data["values"][el])
+            dataset.insert_data("x", time, values)
 
         for el in range(self.finite_elements):
-            if len(self.y_names) > 0:
-                time_y = horzcat(*self.y_data["time"][el])
-                values_y = horzcat(*self.y_data["values"][el])
-                dataset.insert_data("y", time_y, values_y)
+            time_y = horzcat(*self.y_data["time"][el])
+            values_y = horzcat(*self.y_data["values"][el])
+            dataset.insert_data("y", time_y, values_y)
 
-            if len(self.u_names) > 0:
-                time_u = horzcat(*self.u_data["time"][el])
-                values_u = horzcat(*self.u_data["values"][el])
-                dataset.insert_data("u", time_u, values_u)
+            time_u = horzcat(*self.u_data["time"][el])
+            values_u = horzcat(*self.u_data["values"][el])
+            dataset.insert_data("u", time_u, values_u)
 
-        if len(self.theta_opt_names) > 0:
-            dataset.insert_data(
-                "theta_opt",
-                time=horzcat(*self.time_breakpoints[:-1]),
-                value=horzcat(*self.theta_opt),
-            )
+        dataset.insert_data(
+            "theta_opt",
+            time=horzcat(*self.time_breakpoints[:-1]),
+            value=horzcat(*self.theta_opt),
+        )
 
         for entry in self.other_data:
             for el in range(self.finite_elements):

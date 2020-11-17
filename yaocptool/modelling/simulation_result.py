@@ -1,5 +1,11 @@
 from yaocptool.modelling import DataSet
 
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    print("Failed to import matplotlib. Make sure that it is properly installed")
+    plt = None
+
 
 class SimulationResult(DataSet):
     def __init__(
@@ -72,11 +78,11 @@ class SimulationResult(DataSet):
 
         :rtype: DM, DM, DM
         """
-        return {
-            "x": self.data["x"]["values"][:, -1],
-            "y": self.data["y"]["values"][:, -1],
-            "u": self.data["u"]["values"][:, -1],
-        }
+        return (
+            self.data["x"]["values"][:, -1],
+            self.data["y"]["values"][:, -1],
+            self.data["u"]["values"][:, -1],
+        )
 
     def extend(self, other_sim_result):
         """Extend this SimulationResult with other SimulationResult.
@@ -88,7 +94,7 @@ class SimulationResult(DataSet):
         """
         list_of_attributes_to_check = ["n_x", "n_y", "n_u"]
         for attr in list_of_attributes_to_check:
-            if getattr(self, attr) != getattr(other_sim_result, attr):
+            if not getattr(self, attr) == getattr(other_sim_result, attr):
                 raise Exception(
                     "Attribute {} is no equal for both SimulationResults: {}!={}".format(
                         attr, getattr(self, attr), getattr(other_sim_result, attr)

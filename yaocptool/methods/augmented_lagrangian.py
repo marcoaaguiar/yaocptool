@@ -9,14 +9,12 @@ import time
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List
 
 from casadi import (
     DM,
     MX,
     SX,
     Function,
-    diag,
     dot,
     fabs,
     horzcat,
@@ -37,7 +35,6 @@ from yaocptool import (
     join_thetas,
     remove_variables_from_vector_by_indices,
 )
-from yaocptool.modelling import SystemModel, OptimalControlProblem
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
@@ -99,12 +96,7 @@ class OptionsOverride(type):
 
 class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
     def __init__(
-        self,
-        problem: OptimalControlProblem,
-        ocp_solver_class,
-        solver_options=None,
-        options={},
-        **kwargs,
+        self, problem, ocp_solver_class, solver_options=None, options={}, **kwargs
     ):
         """
             Augmented Lagrange Method (Aguiar 2016)
@@ -236,7 +228,11 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
 
     # region # PROPERTY
     @property
-    def model(self) -> SystemModel:
+    def model(self):
+        """
+
+        :rtype: yaocptool.modelling.SystemModel
+        """
         return self.problem.model
 
     @property
@@ -248,7 +244,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
         pass
 
     @property
-    def time_interpolation_nu(self) -> List[List[DM]]:
+    def time_interpolation_nu(self):
         col_points = self.collocation_points(self.options.degree, with_zero=False)
         return [
             [
@@ -263,31 +259,25 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
     # ==============================================================================
     # region RELAX
 
-    def _include_relax_in_objective(self, relaxed_eqs):
-        n_alg_relax = relaxed_eqs.numel()
+    def _relax_algebraic_equations(self):
+        # get the equations to relax
+        alg_relax = self.model.alg[self.relax_algebraic_index]
+        n_alg_relax = alg_relax.numel()
 
         self.n_relax += n_alg_relax
 
         # create a symbolic nu
         nu_alg = SX.sym("AL_nu_alg", n_alg_relax)
         self.nu_sym = vertcat(self.nu_sym, nu_alg)
-        mu_sym = self._create_mu_variable(n_alg_relax)
-
-        # include the penalization term in the objective
-        self.problem.L += (
-            nu_alg.T @ relaxed_eqs
-            + 1 / 2.0 * relaxed_eqs.T @ diag(mu_sym) @ relaxed_eqs
-        )
-
-    def _relax_algebraic_equations(self):
-        # get the equations to relax
-        alg_relax = self.model.alg[self.relax_algebraic_index]
+        mu_sym = self._create_mu_varilable()
 
         # save the relaxed algebraic equations for computing the update later
         self.relaxed_alg = vertcat(self.relaxed_alg, alg_relax)
 
-        # include in the objective function
-        self._include_relax_in_objective(alg_relax)
+        # include the penalization term in the objective
+        self.problem.L += mtimes(nu_alg.T, alg_relax) + mu_sym / 2.0 * mtimes(
+            alg_relax.T, alg_relax
+        )
 
         # include the relaxed y_sym as controls
         u_guess = (
@@ -309,12 +299,22 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
     def _relax_time_equalities(self):
         # get the equations to relax
         eq_relax = self.problem.g_eq[self.relax_time_equality_index]
+        n_eq_relax = eq_relax.numel()
+
+        self.n_relax += n_eq_relax
+
+        # create a symbolic nu
+        nu_alg = SX.sym("AL_nu_eq", n_eq_relax)
+        self.nu_sym = vertcat(self.nu_sym, nu_alg)
+        mu_sym = self._create_mu_varilable()
 
         # save the relaxed algebraic equations for computing the update later
         self.relaxed_eq = vertcat(self.relaxed_eq, eq_relax)
 
-        # include in the objective function
-        self._include_relax_in_objective(eq_relax)
+        # include the penalization term in the objective
+        self.problem.L = self.problem.L + (
+            mtimes(nu_alg.T, eq_relax) + mu_sym / 2.0 * mtimes(eq_relax.T, eq_relax)
+        )
 
         # Remove equality
         self.problem.g_eq = remove_variables_from_vector_by_indices(
@@ -331,7 +331,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
                 nu_y_x = SX.sym("nu_y_x_" + str(i))
 
                 self.nu_sym = vertcat(self.nu_sym, nu_y_x)
-                mu_sym = self._create_mu_variable()
+                mu_sym = self._create_mu_varilable()
 
                 new_alg = y_x - self.model.x[i]
                 self.problem.L += dot(nu_y_x.T, new_alg) + mu_sym / 2.0 * dot(
@@ -362,10 +362,10 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
 
         return nu_pol, nu_par
 
-    def _create_mu_variable(self, size=1):
-        new_mu = self.problem.create_parameter(f"mu_{self.mu_sym.numel()}", size)
+    def _create_mu_varilable(self):
+        new_mu = self.problem.create_parameter(f"mu_{self.mu_sym.numel()}")
         self.mu_sym = vertcat(self.mu_sym, new_mu)
-        self.mu = vertcat(self.mu, *([self.options.mu_0] * size))
+        self.mu = vertcat(self.mu, self.options.mu_0)
         return new_mu
 
     def create_nu_initial_guess(self):
@@ -569,27 +569,31 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
         return error
 
     def _update_mu(self, error, last_error):
-        if self.options.debug_skip_update_mu:
-            return
-
-        if self.options.mu_update_rule == "error_dependent" and last_error is not None:
-            for ind, (mu, err, last_err) in enumerate(
-                zip(self.mu.nz, error.nz, last_error.nz)
+        if not self.options.debug_skip_update_mu:
+            if (
+                self.options.mu_update_rule == "error_dependent"
+                and last_error is not None
             ):
-                if err <= self.options.mu_min_error_decrease * last_err:
-                    print(
-                        f"{self.problem.name} {ind}: same mu {mu}: {err} <= {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
-                    )
-                    self.mu[ind] = DM(mu)
-                else:
-                    print(
-                        f"{self.problem.name} {ind}: increasing mu {mu}: {err} > {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
-                    )
-                    self.mu[ind] = self.options.beta * mu
-        elif self.options.mu_update_rule == "simple":
-            self.mu = DM(
-                [min(self.options.mu_max, mu * self.options.beta) for mu in self.mu.nz]
-            )
+                for ind, (mu, err, last_err) in enumerate(
+                    zip(self.mu.nz, error.nz, last_error.nz)
+                ):
+                    if err <= self.options.mu_min_error_decrease * last_err:
+                        print(
+                            f"same mu {mu}: {err} <= {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
+                        )
+                        self.mu[ind] = DM(mu)
+                    else:
+                        print(
+                            f"increasing mu {mu}: {err} > {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
+                        )
+                        self.mu[ind] = self.options.beta * mu
+            elif self.options.mu_update_rule == "simple":
+                self.mu = DM(
+                    [
+                        min(self.options.mu_max, mu * self.options.beta)
+                        for mu in self.mu.nz
+                    ]
+                )
 
     def _compute_new_nu_and_error(
         self, p=None, theta=None, raw_solution_dict=None

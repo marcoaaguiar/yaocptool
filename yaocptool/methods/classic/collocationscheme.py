@@ -699,8 +699,6 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         optimization_result.raw_solution_dict = raw_solution_dict
         optimization_result.raw_decision_variables = raw_solution_dict["x"]
-        optimization_result.stats = raw_solution_dict["stats"]
-        optimization_result.success = raw_solution_dict["stats"]["success"]
 
         (
             x_values,

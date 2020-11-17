@@ -1,5 +1,4 @@
 from casadi import nlpsol
-from casadi.casadi import Function
 
 from yaocptool.config import SOLVER_OPTIONS
 from yaocptool.optimization.abstract_optimization_problem import (
@@ -26,6 +25,6 @@ class NonlinearOptimizationProblem(AbstractOptimizationProblem):
         if self.solver_options == {}:
             self.solver_options = SOLVER_OPTIONS["nlpsol_options"]
 
-    def _create_solver(self) -> Function:
+    def _create_solver(self):
         problem_dict = self.get_problem_dict()
         return nlpsol(self.name + "_solver", "ipopt", problem_dict, self.solver_options)

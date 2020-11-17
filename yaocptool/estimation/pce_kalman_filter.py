@@ -86,9 +86,10 @@ class PCEKalmanFilter(EstimatorAbstract):
 
     @property
     def n_pol_parameters(self):
-        return factorial(self.n_uncertain + self.pc_order) / (
+        n_pol_parameters = factorial(self.n_uncertain + self.pc_order) / (
             factorial(self.n_uncertain) * factorial(self.pc_order)
         )
+        return n_pol_parameters
 
     def _fix_types(self):
         self.x_mean = vertcat(self.x_mean)
@@ -178,9 +179,9 @@ class PCEKalmanFilter(EstimatorAbstract):
                 y_0=self.y_guess,
             )
             simulation_results.append(simulation_results_i)
-            x_cal_x_k_at_k_minus_1.append(simulation_results_i.final_condition()["x"])
+            x_cal_x_k_at_k_minus_1.append(simulation_results_i.final_condition()[0])
             y_alg_cal_x_k_at_k_minus_1.append(
-                simulation_results[s].final_condition()["y"]
+                simulation_results[s].final_condition()[1]
             )
 
         # fit the polynomial for x

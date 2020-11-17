@@ -1,5 +1,5 @@
 import re
-from typing import List, Union, Tuple, Dict
+from typing import Union, Tuple, Dict
 
 from casadi import (
     is_equal,
@@ -19,7 +19,7 @@ from casadi import (
 )
 
 
-def find_variables_indices_in_vector(var: Union[SX, List[SX]], vector: SX, depth=0):
+def find_variables_indices_in_vector(var, vector, depth=0):
     """
         Given symbolic variables return the indices of the variables in a vector
 
@@ -40,9 +40,7 @@ def find_variables_indices_in_vector(var: Union[SX, List[SX]], vector: SX, depth
     return indices
 
 
-def find_variables_in_vector_by_name(
-    names: Union[str, List[str]], vector: Union[SX, MX], exact: bool = False
-):
+def find_variables_in_vector_by_name(names, vector, exact=False):
     """
 
     :param str|list of str names: variable names
@@ -73,7 +71,7 @@ def find_variables_in_vector_by_name(
     return result
 
 
-def remove_variables_from_vector(var: Union[SX, List[SX]], vector: SX):
+def remove_variables_from_vector(var, vector):
     """
         Returns a vector with items removed
 
@@ -90,7 +88,7 @@ def remove_variables_from_vector(var: Union[SX, List[SX]], vector: SX):
     return vector
 
 
-def remove_variables_from_vector_by_indices(indices: List[int], vector: SX):
+def remove_variables_from_vector_by_indices(indices, vector):
     """
         Returns a vector with items removed
 
@@ -123,7 +121,7 @@ def remove_variables_from_vector_by_indices(indices: List[int], vector: SX):
 
 
 def create_constant_theta(
-    constant: Union[float, DM],
+    constant: Union[float, int, DM],
     dimension: Union[int, Tuple[int, int]],
     finite_elements: int,
 ) -> Dict[int, DM]:
@@ -142,10 +140,13 @@ def create_constant_theta(
     if isinstance(dimension, int):
         dimension = (dimension, 1)
 
-    return {i: vec(constant * DM.ones(*dimension)) for i in range(finite_elements)}
+    theta = {}
+    for i in range(finite_elements):
+        theta[i] = vec(constant * DM.ones(*dimension))
+    return theta
 
 
-def join_thetas(*args: Dict[int, DM]) -> Dict[int, DM]:
+def join_thetas(*args):
     """
         Join the passed 'thetas'
 
@@ -156,14 +157,14 @@ def join_thetas(*args: Dict[int, DM]) -> Dict[int, DM]:
     :return: return a single dictionary containing the information of the input dict
     :rtype: dict
     """
-    new_theta: Dict[int, DM] = {}
-    all_keys: List[int] = []
+    new_theta = {}
+    all_keys = []
     n_keys = 0
     for theta in args:
         if theta is not None:
             theta_keys = theta.keys()
             n_keys = len(theta_keys) if n_keys == 0 else n_keys
-            if len(theta_keys) > 0 and len(theta_keys) != n_keys:
+            if len(theta_keys) > 0 and not len(theta_keys) == n_keys:
                 raise ValueError(
                     "Only thetas with size zero or same size are accepted, given: {}".format(
                         [len(th.keys()) for th in args]
@@ -174,18 +175,19 @@ def join_thetas(*args: Dict[int, DM]) -> Dict[int, DM]:
     all_keys = list(set(all_keys))
 
     for i in all_keys:
-        new_theta[i] = DM([])
+        new_theta[i] = []
         for theta in args:
             if theta is not None:
-                theta1_value: Union[DM, List] = theta[i] if i in theta else []
+                if i in theta:
+                    theta1_value = theta[i]
+                else:
+                    theta1_value = []
                 new_theta[i] = vertcat(new_theta[i], theta1_value)
 
     return new_theta
 
 
-def convert_expr_from_tau_to_time(
-    expr: SX, t_sym: SX, tau_sym: SX, t_k: float, t_kp1: float
-):
+def convert_expr_from_tau_to_time(expr, t_sym, tau_sym, t_k, t_kp1):
     """
 
     :param expr:
@@ -199,14 +201,14 @@ def convert_expr_from_tau_to_time(
     return substitute(expr, tau_sym, (t_sym - t_k) / d_t)
 
 
-def blockdiag(*matrices_list: Union[DM, SX, MX]):
+def blockdiag(*matrices_list):
     """Receives a list of matrices and return a block diagonal.
 
     :param DM|MX|SX matrices_list: list of matrices
     """
 
-    size_1 = sum(m.size1() for m in matrices_list)
-    size_2 = sum(m.size2() for m in matrices_list)
+    size_1 = sum([m.size1() for m in matrices_list])
+    size_2 = sum([m.size2() for m in matrices_list])
     matrix_types = [type(m) for m in matrices_list]
 
     if SX in matrix_types and MX in matrix_types:
@@ -232,7 +234,7 @@ def blockdiag(*matrices_list: Union[DM, SX, MX]):
     return matrix
 
 
-def expm(a_matrix: Union[DM, SX, MX]):
+def expm(a_matrix):
     """Since casadi does not have native support for matrix exponential, this is a trick to computing it.
     It can be quite expensive, specially for large matrices.
     THIS ONLY SUPPORT NUMERIC MATRICES AND MX VARIABLES, DOES NOT SUPPORT SX SYMBOLIC VARIABLES.
@@ -251,13 +253,14 @@ def expm(a_matrix: Union[DM, SX, MX]):
     integrator_ = integrator("integrator", "cvodes", dae_system_dict, {"tf": 1})
     integrator_map = integrator_.map(a_matrix.shape[1], "thread")
 
-    x0 = DM.eye(dim)
-    vec_a = vec(a_matrix)
-    result = integrator_map(x0=x0, p=repmat(vec_a, (1, a_matrix.shape[1])))
-    return result["xf"]
+    res = integrator_map(
+        x0=DM.eye(dim), p=repmat(vec(a_matrix), (1, a_matrix.shape[1]))
+    )["xf"]
+
+    return res
 
 
-def is_inequality(expr: Union[SX, MX]):
+def is_inequality(expr):
     """
         Return true if an expression is an inequality (e.g.: x < 1, x <= 2)
 
@@ -267,10 +270,13 @@ def is_inequality(expr: Union[SX, MX]):
     :return: True if 'expr' is an inequality, False otherwise
     :rtype: bool
     """
-    return isinstance(expr, (MX, SX)) and (expr.op() == OP_LE or expr.op == OP_LT)
+    if isinstance(expr, (MX, SX)):
+        if expr.op() == OP_LE or expr.op == OP_LT:
+            return True
+    return False
 
 
-def is_equality(expr: Union[SX, MX]):
+def is_equality(expr):
     """Return true if an expression is an equality (e.g.: x == 2)
 
     Only supports MX expr.
@@ -279,12 +285,13 @@ def is_equality(expr: Union[SX, MX]):
     :return: True if 'expr' is an inequality, False otherwise
     :rtype: bool
     """
-    return isinstance(expr, (MX, SX)) and expr.op() == OP_EQ
+    if isinstance(expr, (MX, SX)):
+        if expr.op() == OP_EQ:
+            return True
+    return False
 
 
-def _create_lagrangian_polynomial_basis(
-    tau: SX, degree: int, point_at_zero: bool = False
-):
+def _create_lagrangian_polynomial_basis(tau, degree, point_at_zero=False):
     tau_root = collocation_points(
         degree, "radau"
     )  # type: list # All collocation time points
@@ -306,11 +313,7 @@ def _create_lagrangian_polynomial_basis(
 
 
 def create_polynomial_approximation(
-    tau: SX,
-    size: int,
-    degree: int,
-    name: Union[str, List[str]] = "var_appr",
-    point_at_zero: bool = False,
+    tau, size, degree, name="var_appr", point_at_zero=False
 ):
     """
         Create a polynomial function.

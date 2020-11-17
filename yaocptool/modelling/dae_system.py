@@ -1,4 +1,3 @@
-from typing import Dict
 from casadi import vertcat, integrator, substitute, depends_on, Function, SX, DM
 
 from yaocptool import (
@@ -8,7 +7,7 @@ from yaocptool import (
 )
 
 
-class DAESystem:
+class DAESystem(object):
     """
         DAE System class used primarily for simulation by the SystemModel class
 
@@ -16,36 +15,31 @@ class DAESystem:
     the integrator.
     """
 
-    def __init__(
-        self,
-        x: SX,
-        ode: SX,
-        t: SX,
-        y: SX = None,
-        p: SX = None,
-        alg: SX = None,
-        tau: SX = None,
-    ):
+    def __init__(self, x=None, y=None, p=None, ode=None, alg=None, t=None, tau=None):
         """
             DAE System class used primarily for simulation by the SystemModel class
 
         For modelling it is recommended the use of the SystemModel class, use this class if you need more control of
         the integrator.
 
-        :param ode: ODE equations
-        :param alg: Algebraic equations
-        :param x: State variables
-        :param y: Algebraic variables
-        :param p: Parameters
-        :param t: Time variable
-        :param tau: Tau variable
+        :param casadi.SX ode: ODE equations
+        :param casadi.SX alg: Algebraic equations
+        :param casadi.SX x: State variables
+        :param casadi.SX y: Algebraic variables
+        :param casadi.SX p: Parameters
+        :param casadi.SX t: Time variable
+        :param casadi.SX tau: Tau variable
         """
+        if x is None:
+            x = DM([])
         if y is None:
-            y = SX([])
+            y = DM([])
         if p is None:
-            p = SX([])
+            p = DM([])
         if alg is None:
-            alg = SX([])
+            alg = DM([])
+        if ode is None:
+            ode = DM([])
 
         self.x = x
         self.y = y
@@ -56,37 +50,45 @@ class DAESystem:
         self.tau = tau
 
     @property
-    def is_dae(self) -> bool:
+    def is_dae(self):
         """
-        Return True if it is a DAE system (with non empty algebraic equations)
+            Return True if it is a DAE system (with non empty algebraic equations)
+
+        :rtype: bool
         """
         return self.type == "dae"
 
     @property
-    def is_ode(self) -> bool:
+    def is_ode(self):
         """
-        Return True if it is a ODE system (no algebraic equations)
+            Return True if it is a ODE system (no algebraic equations)
+
+        :rtype: bool
         """
         return self.type == "ode"
 
     @property
-    def type(self) -> str:
+    def type(self):
         """
-        Return 'ode' if the system has no algebraic equations, 'dae' otherwise
+            Return 'ode' if the system has no algebraic equations, 'dae' otherwise
+
+        :rtype: str
         """
         if self.alg.numel() == 0:
             return "ode"
         return "dae"
 
     @property
-    def has_parameters(self) -> bool:
+    def has_parameters(self):
         """
-        Return True if the attribute 'p' is not empty
+            Return True if the attribute 'p' is not empty
+
+        :rtype: bool
         """
         return self.p.numel() > 0
 
     @property
-    def dae_system_dict(self) -> Dict[str, SX]:
+    def dae_system_dict(self):
         """
             Return the dictionary of variables and equations needed to create the CasADi integrator.
 
@@ -107,19 +109,24 @@ class DAESystem:
             dae_sys_dict["p"] = self.p
         return dae_sys_dict
 
-    def has_variable(self, var: SX) -> bool:
+    def has_variable(self, var):
         """
-        Return True if the var is one of the system variables (x, y, p, t, tau)
+            Return True if the var is one of the system variables (x, y, p, t, tau)
+
+        :param casadi.SX var:
+        :rtype: bool
         """
-        args = [self.x, self.y, self.p, self.t]
-        if self.tau is not None:
-            args.append(self.tau)
-        ind = find_variables_indices_in_vector(var, vertcat(*args))
+        ind = find_variables_indices_in_vector(
+            var, vertcat(self.x, self.y, self.p, self.t, self.tau)
+        )
         return len(ind) > 0
 
-    def depends_on(self, var: SX) -> bool:
+    def depends_on(self, var):
         """
-        Return True if the system of equations ('ode' and 'alg')depends on 'var' (contains 'var' in the equations).
+            Return True if the system of equations ('ode' and 'alg')depends on 'var' (contains 'var' in the equations).
+
+        :param casadi.SX var:
+        :rtype: bool
         """
         return depends_on(vertcat(self.ode, self.alg), var)
 
@@ -146,9 +153,12 @@ class DAESystem:
             expr=self.ode, t_sym=self.t, tau_sym=self.tau, t_k=t_k, t_kp1=t_kp1
         )
 
-    def substitute_variable(self, old_var: SX, new_var: SX):
+    def substitute_variable(self, old_var, new_var):
         """
-        Substitute 'old_var' with 'new_var' in the system equations (alg, ode) and in the set of variables (x, y, p)
+            Substitute 'old_var' with 'new_var' in the system equations (alg, ode) and in the set of variables (x, y, p)
+
+        :param casadi.SX old_var:
+        :param casadi.SX new_var:
         """
         self.ode = substitute(self.ode, old_var, new_var)
         self.alg = substitute(self.alg, old_var, new_var)
@@ -156,9 +166,11 @@ class DAESystem:
         self.y = substitute(self.y, old_var, new_var)
         self.p = substitute(self.p, old_var, new_var)
 
-    def join(self, dae_sys: "DAESystem"):
+    def join(self, dae_sys):
         """
-        Include all the variables and equations from the DAESystem 'dae_sys' into this object
+            Include all the variables and equations from the DAESystem 'dae_sys' into this object
+
+        :param DAESystem dae_sys:
         """
         self.ode = vertcat(self.ode, dae_sys.ode)
         self.alg = vertcat(self.alg, dae_sys.alg)
@@ -167,9 +179,7 @@ class DAESystem:
         self.p = vertcat(self.p, dae_sys.p)
 
         self.substitute_variable(dae_sys.t, self.t)
-
-        if dae_sys.tau is not None and self.tau is not None:
-            self.substitute_variable(dae_sys.tau, self.tau)
+        self.substitute_variable(dae_sys.tau, self.tau)
 
     def simulate(
         self,
@@ -201,7 +211,7 @@ class DAESystem:
                 )
             )
 
-        if self.tau is not None and self.depends_on(self.tau):
+        if self.depends_on(self.tau):
             raise AttributeError(
                 "The system of equations ('ode' and 'alg') depend on the variable 'tau'. Before being"
                 "able to simulate it is required to transform the dependence on tau into a dependence "
@@ -239,7 +249,10 @@ class DAESystem:
             options = {}
 
         # Integrator Function name
-        name = options.pop("name") if "name" in options else "integrator"
+        if "name" in options:
+            name = options.pop("name")
+        else:
+            name = "integrator"
 
         # Load default options from the config file, if a 'options' dict was passed use that to override the default.
         for k in config.INTEGRATOR_OPTIONS:
@@ -295,7 +308,7 @@ class DAESystem:
         if integrator_type == "rk4":
 
             def runge_kutta_4th_order(
-                x0=DM.zeros(*(n_states, 1)), p=None, n_iter=iterations
+                x0=DM.zeros(n_states, 1), p=None, n_iter=iterations
             ):
                 if n_iter < 1:
                     raise Exception(
@@ -309,7 +322,7 @@ class DAESystem:
                 x_f = x0
                 h = (t_f - t_0) / n_iter
                 t = t_0
-                for _ in range(n_iter):
+                for it in range(n_iter):
                     k1 = h * f(t, x0, p)
                     k2 = h * f(t + 0.5 * h, x0 + 0.5 * k1, p)
                     k3 = h * f(t + 0.5 * h, x0 + 0.5 * k2, p)

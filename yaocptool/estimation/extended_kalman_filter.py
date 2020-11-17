@@ -158,7 +158,7 @@ class ExtendedKalmanFilter(EstimatorAbstract):
             y_0=self.y_guess,
             integrator_type="implicit",
         )
-        x_pred, y_pred, u_f = sim_results.final_condition().values()
+        x_pred, y_pred, u_f = sim_results.final_condition()
         x_aug_f = vertcat(x_pred, y_pred)
 
         # Covariance
