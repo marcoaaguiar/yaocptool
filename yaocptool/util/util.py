@@ -227,7 +227,7 @@ def expm(a_matrix: FunctionCallArgT):
     x0 = DM.eye(dim)
     repmat_result = repmat(vec(a_matrix), (1, a_matrix.shape[1]))
 
-    result = integrator_map.call({"x0": x0, "p": repmat_result})
+    result = integrator_map(x0=x0, p=repmat_result)
     return result["xf"]
 
 

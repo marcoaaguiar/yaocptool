@@ -29,9 +29,9 @@ class ContinuousStateMixin(BaseMixin):
     @property
     def ode(self) -> SX:
         try:
-            return vertcat(*[val for val in self._ode.values() if val is not None])
+            return SX(vertcat(*[val for val in self._ode.values() if val is not None]))
         except NotImplementedError:
-            return SX.zeros(0, 1)
+            return SX()
 
     def create_state(
         self, name: str = "x", size: Union[int, Tuple[int, int]] = 1
@@ -141,7 +141,7 @@ class ContinuousStateMixin(BaseMixin):
             ode.numel() == x.numel()
         ), f"Expected `x` and `ode` of same size, {x.numel()}!={ode.numel()}"
 
-        for x_i in vertcat(x).nz:
+        for x_i in x.nz:
             if self._ode[x_i] is not None:
                 warnings.warn(
                     f'State "{x_i}" already had an ODE associated, overriding it!'

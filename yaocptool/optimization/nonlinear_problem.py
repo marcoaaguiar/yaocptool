@@ -1,5 +1,5 @@
 from casadi import nlpsol
-from casadi.casadi import Function
+from casadi import Function
 
 from yaocptool.config import SOLVER_OPTIONS
 from yaocptool.optimization.abstract_optimization_problem import (

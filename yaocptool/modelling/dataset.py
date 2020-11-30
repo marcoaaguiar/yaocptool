@@ -3,27 +3,29 @@ import itertools
 import os
 import pickle
 import re
-from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, Union
 
 import matplotlib.pyplot as plt
 import seaborn
-from attr import dataclass
+from dataclasses import dataclass
 from casadi import DM, horzcat
 
 from yaocptool.config import PLOT_INTERACTIVE
 
+T = TypeVar("T", bound="DataSet")
+
 
 @dataclass
-class EntryDictType:
+class Entry:
     names: List[str]
     size: int
-    time: DM = DM(0, 1)
-    values: DM = DM(0, 1)
-    plot_style: str = "step"
+    time: DM = DM()
+    values: DM = DM()
+    plot_style: str = "plot"
 
 
 class DataSet:
-    def __init__(self, name: str = "dataset"):
+    def __init__(self, name: str = "dataset", plot_style="plot"):
         """
             Generic time dependent data storage.
             The data is stored in the self.data dictionary.
@@ -41,9 +43,9 @@ class DataSet:
             discontinuity on the data, and plot it separately.
         """
         self.name = name
-        self.data: Dict[str, EntryDictType] = {}
+        self.plot_style = plot_style
 
-        self.plot_style = "step"
+        self.data: Dict[str, Entry] = {}
 
     def create_entry(
         self, entry: str, size: int, names: List[str] = None, plot_style: str = None
@@ -60,8 +62,7 @@ class DataSet:
         """
         if names is None:
             names = [entry + "_" + str(i) for i in range(size)]
-        self.data[entry].size = size
-        self.data[entry].names = names
+        self.data[entry] = Entry(size=size, names=names)
         if plot_style is not None:
             self.data[entry].plot_style = plot_style
 
@@ -129,7 +130,7 @@ class DataSet:
 
         return dataset_copy
 
-    def extend(self, other_dataset: "DataSet"):
+    def extend(self: T, other_dataset: T):
         """Extend this DataSet with another DataSet. They don't need to be ordered, after the merging a chronological
         sort of the data is performed.
 
@@ -176,10 +177,14 @@ class DataSet:
                 self.data[entry].values[:, i]
                 for i in range(self.data[entry].values.shape[1])
             ]
+
             time, values = (
                 list(t)
-                for t in zip(*sorted(zip(time, values), key=lambda point: point[0]))
+                for t in zip(
+                    *sorted(zip(time, values), key=lambda point: float(point[0]))
+                )
             )
+
             self.data[entry].time = horzcat(*time)
             self.data[entry].values = horzcat(*values)
 
@@ -225,12 +230,12 @@ class DataSet:
 
     def plot(
         self,
-        *plot_list: Dict[str, Union[Literal["all"], List[int], List[str]]],
+        *plot_list: Dict[str, Union[Literal["all"], List[Union[int, str]]]],
         figures: Optional[List[plt.Figure]] = None,
         show: bool = True,
         exact: bool = False,
         use_tex: bool = False,
-    ):
+    ) -> List[plt.Figure]:
         """Plot DataSet information.
         It takes as input a list of dictionaries, each dictionary represents a plot. In the dictionary use keyword 'x',
         'u', 'y', etc., to specify which entry you want to print, the value of the dictionary should be a list of
@@ -255,7 +260,7 @@ class DataSet:
             seaborn.set(font_scale=1, rc={"text.usetex": True})
             seaborn.set_style("whitegrid")
 
-        used_figures = []
+        used_figures: List[plt.Figure] = []
 
         # for each plot asked
         for k, entry_dict in enumerate(plot_list):
@@ -286,11 +291,14 @@ class DataSet:
                 if not exact:
                     for regex in indexes_or_names[:]:
                         if isinstance(regex, str):
-                            regex_matced_names.extend(
+                            matches = [
                                 v_name
                                 for v_name in var_names
                                 if re.match(regex, v_name)
-                            )
+                            ]
+                            regex_matced_names.extend(matches)
+                            if matches:
+                                indexes_or_names.remove(regex)  # type: ignore
 
                 # if it is a variable name
                 for item in itertools.chain(

@@ -12,14 +12,14 @@ class OptimizationResult:
     def __init__(self, **kwargs):
         # Raw Information
         self.raw_solution_dict = {}
-        self.raw_decision_variables: Optional[List] = None  # type: list|None
+        self.raw_decision_variables: Optional[List] = None
 
         # Data from the method
         self.method_name: str = ""
         self.discretization_scheme: str = ""
-        self.finite_elements: Optional[float] = None
-        self.degree = None
-        self.degree_control = None
+        self.finite_elements: Optional[int] = None
+        self.degree: Optional[int] = None
+        self.degree_control: Optional[int] = None
 
         # From problem
         self.problem_name = ""
@@ -49,12 +49,12 @@ class OptimizationResult:
 
         self.other_data = defaultdict(partial(dict, [("values", []), ("time", [])]))
 
-        self.x_0 = DM([])
+        self.x_0 = DM()
         self.theta = {}
-        self.p = DM([])
-        self.p_opt = DM([])
+        self.p = DM()
+        self.p_opt = DM()
         self.theta_opt = []
-        self.eta = DM([])
+        self.eta = DM()
 
         self._dataset = None
 
@@ -68,13 +68,7 @@ class OptimizationResult:
         return self._dataset
 
     @property
-    def is_collocation(self):
-        if self.discretization_scheme == "":
-            raise Exception("discretization_scheme not defined yet")
-        return self.discretization_scheme == "collocation"
-
-    @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         for attr in ["finite_elements", "degree", "degree_control", "t_0", "t_f"]:
             if getattr(self, attr) < 0:
                 raise Exception(
@@ -95,14 +89,16 @@ class OptimizationResult:
                 )
         return True
 
-    def first_control(self):
+    def first_control(self) -> DM:
         """Return the first element of the control vector
 
         :rtype: DM
         """
         return self.u_data["values"][0][0]
 
-    def get_variable(self, var_type: str, indices: Union[int, List[int]]):
+    def get_variable(
+        self, var_type: str, indices: Union[int, List[int]]
+    ) -> List[List[DM]]:
         """Get all the data for a variable (var_type
 
         :param str var_type: variable type ('x', 'y', 'u'
@@ -118,31 +114,36 @@ class OptimizationResult:
         else:
             raise NotImplementedError
 
-        return [[vec[indices] for vec in list_vec] for list_vec in data]
+        return [[vect[indices] for vect in list_vec] for list_vec in data]
 
-    def get_variable_by_name(self, name: str):
+    def get_variable_by_name(self, name: str) -> List[List[DM]]:
         """
         Get all the data for a variable (var_type
 
         """
+        variable = None
         with suppress(ValueError):
-            return self.get_variable("x", self.x_names.index(name))
+            variable = self.get_variable("x", self.x_names.index(name))
         with suppress(ValueError):
-            return self.get_variable("y", self.y_names.index(name))
+            variable = self.get_variable("y", self.y_names.index(name))
         with suppress(ValueError):
-            return self.get_variable("u", self.u_names.index(name))
+            variable = self.get_variable("u", self.u_names.index(name))
+
+        if variable is not None:
+            return variable
 
         raise ValueError(f'Varialble with name "{name}" not found.')
 
-    def to_dataset(self):
+    def to_dataset(self) -> DataSet:
         """
             Return a dataset with the data of x, y, and u
 
         :rtype: DataSet
         """
-        dataset = DataSet(name=self.problem_name + "_dataset")
+        dataset = DataSet(
+            name=self.problem_name + "_dataset",
+        )
 
-        dataset.max_delta_t = (self.t_f - self.t_0) / self.finite_elements
         dataset.plot_style = "plot"
 
         dataset.create_entry("x", size=len(self.x_names), names=self.x_names)
@@ -161,7 +162,7 @@ class OptimizationResult:
                 entry, size=size, names=[entry + "_" + str(i) for i in range(size)]
             )
 
-        dataset.data["u"]["plot_style"] = "plot" if self.degree_control > 1 else "step"
+        dataset.data["u"].plot_style = "plot" if self.degree_control > 1 else "step"
 
         x_times = self.x_data["time"] + [[self.t_f]]
         if len(self.x_names) > 0:

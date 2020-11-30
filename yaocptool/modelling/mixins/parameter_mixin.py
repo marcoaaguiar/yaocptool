@@ -7,8 +7,8 @@ from yaocptool.util.util import remove_variables_from_vector
 class ParameterMixin(BaseMixin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.p = SX([])
-        self.theta = SX([])
+        self.p = SX()
+        self.theta = SX()
 
     @property
     def n_p(self) -> int:

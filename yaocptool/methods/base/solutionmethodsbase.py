@@ -1,7 +1,9 @@
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import warnings
 from functools import cached_property
+from yaocptool.modelling.system_model import SystemModel
 
-from casadi import SX, MX, vertcat, collocation_points, vec, reshape, DM
+from casadi import SX, MX, vertcat, collocation_points, vec, DM, reshape
 
 from yaocptool import config, create_constant_theta, find_variables_indices_in_vector
 from yaocptool.methods import SolutionMethodInterface
@@ -14,11 +16,18 @@ from yaocptool.optimization.abstract_optimization_problem import (
     AbstractOptimizationProblem,
 )
 
+if TYPE_CHECKING:
+    from casadi import FunctionCallArgT, NumericMT, SymbolicMT
+else:
+    FunctionCallArgT = "FunctionCallArgT"
+    NumericMT = "NumericMT"
+    SymbolicMT = "SymbolicMT"
+
 
 class SolutionMethodsBase(SolutionMethodInterface):
-    degree = 3
-    degree_control = 1
-    finite_elements = 10
+    degree: int = 3
+    degree_control: int = 1
+    finite_elements: int = 10
 
     def __init__(self, problem: OptimalControlProblem, **kwargs):
         """
@@ -33,17 +42,17 @@ class SolutionMethodsBase(SolutionMethodInterface):
             parameter for the NLP generated from the OCP. This is useful for MPCs, where the initial condition changes
             every iteration.
         """
-        self.opt_problem = None  # type: AbstractOptimizationProblem
+        self.opt_problem: Optional[AbstractOptimizationProblem] = None
         self.problem = problem
         self.solution_class = ""
         self.prepared = False
-        self.discretizer = None  # type: DiscretizationSchemeBase
+        self.discretizer: Optional[DiscretizationSchemeBase] = None
 
         # Options
         self.integrator_type = "implicit"
         self.discretization_scheme = "collocation"
         self.initial_condition_as_parameter = True
-        self.nlpsol_opts = {}
+        self.nlpsol_opts: Dict[str, Any] = {}
         self.initial_guess_heuristic = "simulation"  # 'problem_info'
         self.last_control_as_parameter = False
         self.initial_guess_model = None
@@ -74,19 +83,19 @@ class SolutionMethodsBase(SolutionMethodInterface):
             )
 
     @property
-    def model(self):
+    def model(self) -> SystemModel:
         return self.problem.model
 
     @property
-    def delta_t(self):
+    def delta_t(self) -> float:
         return float(self.problem.t_f - self.problem.t_0) / self.finite_elements
 
     @cached_property
-    def time_breakpoints(self):
+    def time_breakpoints(self) -> List[float]:
         return [self.delta_t * k for k in range(self.finite_elements + 1)]
 
     @property
-    def time_interpolation_controls(self):
+    def time_interpolation_controls(self) -> List[List[float]]:
         tau_list = (
             [0.0]
             if self.degree_control == 1
@@ -98,13 +107,15 @@ class SolutionMethodsBase(SolutionMethodInterface):
         ]
 
     @staticmethod
-    def collocation_points(degree, cp="radau", with_zero=False):
+    def collocation_points(degree, cp="radau", with_zero=False) -> List[float]:
         if with_zero:
-            return [0] + collocation_points(degree, cp)  # All collocation time points
+            return [0.0] + collocation_points(degree, cp)  # All collocation time points
         else:
             return collocation_points(degree, cp)  # All collocation time points
 
-    def _create_lagrangian_polynomial_basis(self, degree, starting_index=0, tau=None):
+    def _create_lagrangian_polynomial_basis(
+        self, degree: int, starting_index: int = 0, tau: Optional[SX] = None
+    ) -> Tuple[SX, List[SX]]:
         if tau is None:
             tau = self.model.tau  # symbolic variable
 
@@ -114,9 +125,9 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
         # For all collocation points: eq 10.4 or 10.17 in Biegler's book
         # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-        l_list = []
+        l_list: List[SX] = []
         for j in range(starting_index, degree + 1):
-            ell = 1
+            ell = SX(1)
             for j2 in range(starting_index, degree + 1):
                 if j2 != j:
                     ell *= (tau - tau_root[j2]) / (tau_root[j] - tau_root[j2])
@@ -125,8 +136,13 @@ class SolutionMethodsBase(SolutionMethodInterface):
         return tau, l_list
 
     def create_variable_polynomial_approximation(
-        self, size, degree, name="var_appr", tau=None, point_at_t0=False
-    ):
+        self,
+        size: int,
+        degree: int,
+        name: Union[str, List[str]] = "var_appr",
+        tau: SX = None,
+        point_at_t0: bool = False,
+    ) -> Tuple[SX, SX]:
         if not isinstance(name, list):
             name = [name + "_" + str(i) for i in range(size)]
 
@@ -151,7 +167,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
                 tau, ell_list = self._create_lagrangian_polynomial_basis(
                     degree, starting_index=0, tau=tau
                 )
-                u_pol = sum(ell_list[j] * points[:, j] for j in range(degree + 1))
+                u_pol = SX(sum(ell_list[j] * points[:, j] for j in range(degree + 1)))
             else:
                 if size > 0:
                     points = vertcat(*[SX.sym(name[s], 1, degree) for s in range(size)])
@@ -160,12 +176,12 @@ class SolutionMethodsBase(SolutionMethodInterface):
                 tau, ell_list = self._create_lagrangian_polynomial_basis(
                     degree, starting_index=1, tau=tau
                 )
-                u_pol = sum(ell_list[j] * points[:, j] for j in range(degree))
+                u_pol = SX(sum(ell_list[j] * points[:, j] for j in range(degree)))
             par = vec(points)
 
         return u_pol, par
 
-    def create_control_approximation(self):
+    def create_control_approximation(self) -> SX:
         """Parametrize the control variable, accordingly to the 'degree_control' attribute.
         If degree_control == 1, then a piecewise constant control will be used (most common).
         If degree_control > 1, then a piecewise polynomial approximation will be used with order 'degree_control'.
@@ -186,7 +202,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
         return u_pol
 
-    def unvec(self, vector, degree=None):
+    def unvec(self, vector: NumericMT, degree: int = None) -> NumericMT:
         """
         Unvectorize 'vector' a vectorized matrix, assuming that it was a matrix with 'degree' number of columns
         :type vector: DM a vector (flattened matrix)
@@ -195,6 +211,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
         if degree is None:
             degree = self.degree
         n_lines = vector.numel() // degree
+
         return reshape(vector, n_lines, degree)
 
     # ==============================================================================
@@ -220,7 +237,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
         # theta MX
         theta_mx = MX.sym("mx_theta_", self.model.n_theta, self.finite_elements)
-        theta = dict([(i, vec(theta_mx[:, i])) for i in range(self.finite_elements)])
+        theta = {i: vec(theta_mx[:, i]) for i in range(self.finite_elements)}
 
         # initial cond MX
         p_mx_x_0 = MX.sym("mx_x_0_p", self.model.n_x)
@@ -229,14 +246,16 @@ class SolutionMethodsBase(SolutionMethodInterface):
         if self.last_control_as_parameter:
             p_last_u = MX.sym("mx_last_u", self.model.n_u)
         else:
-            p_last_u = []
+            p_last_u = MX()
 
         all_mx = vertcat(p_mx, vec(theta_mx), p_mx_x_0, p_last_u)
 
         args = {"p": p_mx, "x_0": p_mx_x_0, "theta": theta, "last_u": p_last_u}
 
         # Discretize the problem
-        opt_problem = self.discretizer.discretize(**args)
+        opt_problem = self.discretizer.discretize(
+            p=p_mx, x_0=p_mx_x_0, theta=theta, last_u=p_last_u
+        )
 
         if has_parameters:
             opt_problem.include_parameter(all_mx)
@@ -308,7 +327,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
         # last control
         if not self.last_control_as_parameter and last_u is not None:
-            raise warnings.warn(
+            warnings.warn(
                 "solution_method.last_control_as_parameter is False, but last_u was passed."
                 "last_u will be ignored."
             )

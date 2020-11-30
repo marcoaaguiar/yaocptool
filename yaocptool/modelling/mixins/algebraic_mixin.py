@@ -11,8 +11,8 @@ from yaocptool.util.util import is_equality, remove_variables_from_vector
 class AlgebraicMixin(BaseMixin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.alg = SX([])
-        self.y = SX([])
+        self.alg = SX()
+        self.y = SX()
 
     @property
     def n_y(self) -> int:
@@ -42,8 +42,8 @@ class AlgebraicMixin(BaseMixin):
 
     def find_algebraic_variable(
         self,
-        x: SX,
-        u: SX,
+        x: DM,
+        u: DM,
         guess: Union[DM, List[float]] = None,
         t: float = 0.0,
         p: Union[DM, List[float]] = None,

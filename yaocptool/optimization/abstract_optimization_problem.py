@@ -1,13 +1,25 @@
-from numbers import Number
-from typing import Dict, Union
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
-from casadi import vertcat, MX, inf, DM, repmat, is_equal, depends_on
+from casadi import Function, vertcat, MX, inf, DM, repmat, is_equal, depends_on
 
 from yaocptool import is_inequality, is_equality
 
 
+class OptiResultDictType(TypedDict):
+    f: DM
+    g: DM
+    lam_g: DM
+    lam_p: DM
+    lam_x: DM
+    x: DM
+
+
+class ExtendedOptiResultDictType(OptiResultDictType):
+    stats: Dict[str, Any]
+
+
 class AbstractOptimizationProblem(object):
-    def __init__(self, name: str = "optimization_problem", **kwargs):
+    def __init__(self, name: str = "optimization_problem", **kwargs: Any):
         r"""
             Abstract Optimization Problem class
             Optimization problem
@@ -25,19 +37,19 @@ class AbstractOptimizationProblem(object):
         """
         self.name = name
 
-        self.f = MX([])
-        self.g = MX([])
-        self.x = MX([])
-        self.p = DM([])
+        self.f: MX = MX()
+        self.g: MX = MX()
+        self.x: MX = MX()
+        self.p: MX = MX()
 
-        self.g_lb = DM([])
-        self.g_ub = DM([])
-        self.x_lb = DM([])
-        self.x_ub = DM([])
+        self.g_lb = DM()
+        self.g_ub = DM()
+        self.x_lb = DM()
+        self.x_ub = DM()
 
-        self.solver_options = {}
+        self.solver_options: Dict[str, Any] = {}
 
-        self._solver = None
+        self._solver: Optional[Function] = None
 
         for (key, val) in kwargs.items():
             setattr(self, key, val)
@@ -83,8 +95,10 @@ class AbstractOptimizationProblem(object):
             upper bound, a vector of ub  with size of the given variable will be used as a upper bound.
             (default = [inf]*size)
         """
-        lb = vertcat(lb)
-        ub = vertcat(ub)
+        if isinstance(lb, float):
+            lb = vertcat(lb)
+        if isinstance(ub, float):
+            ub = vertcat(ub)
 
         if lb.numel() == 1 and variable.numel() > 1:
             lb = repmat(lb, variable.numel())
@@ -111,7 +125,7 @@ class AbstractOptimizationProblem(object):
             if lb_i > ub_i:
                 raise ValueError(
                     "Lower bound is greater than upper bound for index {}. "
-                    "The inequality {} <= {} <= is infeasible".format(
+                    "The inequality {} <= {} <= {} is infeasible".format(
                         i, lb_i, var_i, ub_i
                     )
                 )
@@ -120,7 +134,7 @@ class AbstractOptimizationProblem(object):
         self.x_lb = vertcat(self.x_lb, lb)
         self.x_ub = vertcat(self.x_ub, ub)
 
-    def create_parameter(self, name, size=1):
+    def create_parameter(self, name: str, size: int = 1) -> MX:
         """
             Create parameter for in the Optimization Problem
 
@@ -133,7 +147,7 @@ class AbstractOptimizationProblem(object):
         self.include_parameter(new_p)
         return new_p
 
-    def include_parameter(self, par):
+    def include_parameter(self, par: MX):
         """
             Include parameter for in the Optimization Problem
 
@@ -141,7 +155,7 @@ class AbstractOptimizationProblem(object):
         """
         self.p = vertcat(self.p, par)
 
-    def set_objective(self, expr):
+    def set_objective(self, expr: Union[MX, List[MX], float, int]):
         """
             Set objective function
 
@@ -149,8 +163,8 @@ class AbstractOptimizationProblem(object):
         """
         if isinstance(expr, list):
             expr = vertcat(*expr)
-        if isinstance(expr, (float, int)):
-            expr = vertcat(expr)
+        if isinstance(expr, (int, float)):
+            expr = MX(expr)
 
         if expr.numel() > 1:
             raise ValueError(
@@ -159,7 +173,12 @@ class AbstractOptimizationProblem(object):
             )
         self.f = expr
 
-    def include_inequality(self, expr, lb=None, ub=None):
+    def include_inequality(
+        self,
+        expr: MX,
+        lb: Optional[Union[DM, float, List[float]]] = None,
+        ub: Optional[Union[DM, float, List[float]]] = None,
+    ):
         """Include inequality to the problem with the following form
         lb <= expr <= ub
 
@@ -169,9 +188,12 @@ class AbstractOptimizationProblem(object):
         :param ub: Upper bound of the inequality. If the  'expr' size is greater than one but a scalar is passed as
             upper bound, a vector of ub with size of  'expr' will be used as a upper bound. (default = [inf]*size)
         """
+        if isinstance(lb, (int, float)):
+            lb = DM(lb)
+        if isinstance(ub, (int, float)):
+            ub = DM(ub)
+
         # check expr
-        if isinstance(expr, list):
-            expr = vertcat(expr)
         if expr.size2() > 1:
             raise Exception(
                 "Given expression is not a vector, number of columns is {}".format(
@@ -219,7 +241,7 @@ class AbstractOptimizationProblem(object):
             if lb.is_constant() and ub.is_constant() and lb[i] > ub[i]:
                 raise ValueError(
                     "Lower bound is greater than upper bound for index {}. "
-                    "The inequality {} <= {} <= is infeasible".format(
+                    "The inequality {} <= {} <= {} is infeasible".format(
                         i, lb[i], expr[i], ub[i]
                     )
                 )
@@ -228,7 +250,7 @@ class AbstractOptimizationProblem(object):
         self.g_lb = vertcat(self.g_lb, lb)
         self.g_ub = vertcat(self.g_ub, ub)
 
-    def include_equality(self, expr, rhs=None):
+    def include_equality(self, expr: MX, rhs: Optional[Union[DM, float]] = None):
         """Include a equality with the following form
         expr = rhs
 
@@ -237,8 +259,6 @@ class AbstractOptimizationProblem(object):
             greater than one but a scalar is passed as 'rhs', a vector of 'rhs' with size of 'expr' will be used as
             right hand side. (default = [0]*size)
         """
-        if isinstance(expr, list):
-            expr = vertcat(expr)
         if expr.size2() > 1:
             raise Exception(
                 "Given expression is not a vector, number of columns is {}".format(
@@ -249,7 +269,8 @@ class AbstractOptimizationProblem(object):
         if rhs is None:
             rhs = DM.zeros(expr.shape)
         else:
-            rhs = vertcat(rhs)
+            if isinstance(rhs, (int, float)):
+                rhs = DM(rhs)
             if rhs.numel() == 1 and expr.numel() > 1:
                 rhs = repmat(rhs, expr.numel())
 
@@ -271,7 +292,7 @@ class AbstractOptimizationProblem(object):
         self.g_lb = vertcat(self.g_lb, rhs)
         self.g_ub = vertcat(self.g_ub, rhs)
 
-    def include_constraint(self, expr):
+    def include_constraint(self, expr: MX):
         """Includes an inequality or inequality to the optimization problem,
         Example:
         opt_problem.include_constraint(1 <= x**2)
@@ -302,24 +323,27 @@ class AbstractOptimizationProblem(object):
         else:
             dep_term = expr.dep(1)
             indep_term = expr.dep(0)
+
         if indep_term.is_constant():
-            indep_term = indep_term.to_DM()
-        # if it is and equality
-        if is_equality(expr):
-            self.include_equality(dep_term, indep_term)
+            indep_term_dm = indep_term.to_DM()
+            # if it is and equality
+            if is_equality(expr):
+                self.include_equality(dep_term, indep_term_dm)
 
-        # if it is an inequality
-        elif is_inequality(expr):
-            # by default all inequalities are treated as 'less than' or 'less or equal', e.g.: x<=1 or 1<=x
-            # if the term on the rhs term is the non-symbolic term, then it is a 'x<=1' inequality,
-            # where the independent term is the upper bound
-            if is_equal(indep_term, expr.dep(1)):
-                self.include_inequality(dep_term, ub=indep_term)
-            # otherwise, it is a '1<=x' inequality, where the independent term is the lower bound
-            else:
-                self.include_inequality(dep_term, lb=indep_term)
+            # if it is an inequality
+            elif is_inequality(expr):
+                # by default all inequalities are treated as 'less than' or 'less or equal', e.g.: x<=1 or 1<=x
+                # if the term on the rhs term is the non-symbolic term, then it is a 'x<=1' inequality,
+                # where the independent term is the upper bound
+                if is_equal(indep_term_dm, expr.dep(1)):
+                    self.include_inequality(dep_term, ub=indep_term_dm)
+                # otherwise, it is a '1<=x' inequality, where the independent term is the lower bound
+                else:
+                    self.include_inequality(dep_term, lb=indep_term_dm)
+        else:
+            raise NotImplementedError
 
-    def get_problem_dict(self) -> Dict[str, Union[MX, DM]]:
+    def get_problem_dict(self) -> Dict[str, Union[MX]]:
         """Return the optimization problem in a Python dict form (CasADi standard).
         The dictionary keys are:
         f-> objective function
@@ -332,7 +356,7 @@ class AbstractOptimizationProblem(object):
         """
         return {"f": self.f, "g": self.g, "x": self.x, "p": self.p}
 
-    def get_solver(self):
+    def get_solver(self) -> Function:
         """
             Get optimization solver
 
@@ -342,7 +366,7 @@ class AbstractOptimizationProblem(object):
             self._solver = self._create_solver()
         return self._solver
 
-    def _create_solver(self):
+    def _create_solver(self) -> Function:
         """
             create optimization solver
 
@@ -350,7 +374,7 @@ class AbstractOptimizationProblem(object):
         """
         raise NotImplementedError
 
-    def get_default_call_dict(self):
+    def get_default_call_dict(self) -> Dict[str, DM]:
         """
         Return a dictionary of the settings that will be used on calling the solver
         The keys are:
@@ -364,7 +388,14 @@ class AbstractOptimizationProblem(object):
         """
         return {"lbx": self.x_lb, "ubx": self.x_ub, "lbg": self.g_lb, "ubg": self.g_ub}
 
-    def solve(self, initial_guess, call_dict=None, p=None, lam_x=None, lam_g=None):
+    def solve(
+        self,
+        initial_guess: DM,
+        call_dict: Optional[Dict[str, DM]] = None,
+        p: Optional[DM] = None,
+        lam_x: Optional[DM] = None,
+        lam_g: Optional[DM] = None,
+    ) -> ExtendedOptiResultDictType:
         """
 
         :param initial_guess: Initial guess
@@ -378,7 +409,7 @@ class AbstractOptimizationProblem(object):
         if call_dict is None:
             call_dict = self.get_default_call_dict()
         if p is None:
-            p = []
+            p = DM()
 
         call_dict = dict(call_dict)
         if initial_guess is not None:
@@ -400,7 +431,7 @@ class AbstractOptimizationProblem(object):
 
         solver = self.get_solver()
 
-        solution = solver(**call_dict)
+        solution: OptiResultDictType = solver(**call_dict)
         solution["stats"] = solver.stats()
 
         return solution

@@ -9,18 +9,18 @@ from yaocptool.modelling import OptimalControlProblem
 
 class StochasticOCP(OptimalControlProblem):
     def __init__(self, model, **kwargs):
-        self.g_stochastic_ineq = DM([])
-        self.g_stochastic_rhs = DM([])
-        self.g_stochastic_prob = DM([])
+        self.g_stochastic_ineq = DM()
+        self.g_stochastic_rhs = DM()
+        self.g_stochastic_prob = DM()
 
-        self.p_unc = DM([])
-        self.p_unc_mean = DM([])
-        self.p_unc_cov = DM([])
+        self.p_unc = DM()
+        self.p_unc_mean = DM()
+        self.p_unc_cov = DM()
         self.p_unc_dist = []
 
-        self.uncertain_initial_conditions = DM([])
-        self.uncertain_initial_conditions_mean = DM([])
-        self.uncertain_initial_conditions_cov = DM([])
+        self.uncertain_initial_conditions = DM()
+        self.uncertain_initial_conditions_mean = DM()
+        self.uncertain_initial_conditions_cov = DM()
         self.uncertain_initial_conditions_distribution = []
 
         OptimalControlProblem.__init__(self, model, **kwargs)

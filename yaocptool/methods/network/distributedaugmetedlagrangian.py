@@ -5,8 +5,10 @@ Created on
 @author: Marco Aurelio Schmitz de Aguiar
 """
 import time
+import random
 from collections import defaultdict
 from dataclasses import dataclass, asdict
+from typing import Optional
 
 import matplotlib.pyplot as plt
 from casadi import DM, SX, inf, vertcat
@@ -21,7 +23,7 @@ from yaocptool.methods.augmented_lagrangian import AugmentedLagrangianOptions
 from yaocptool.methods.network.intermediary_node_solution_method import (
     IntermediaryNodeSolutionMethod,
 )
-from yaocptool.modelling import Network, Node
+from yaocptool.modelling import Network
 import itertools
 
 
@@ -30,10 +32,11 @@ class DistributedAugmentedLagrangianOptions:
     degree: int = 3
     finite_elements: int = 20
     max_iter_inner: int = 4
-    max_iter_inner_first: int = None
+    max_iter_inner_first: Optional[int] = None
     max_iter_outer: int = 30
     abs_tol: float = 1e-6
     inner_loop_tol: float = 1e-4
+    randomized_inner: bool = False
 
     debug_skip_replace_by_approximation: bool = False
 
@@ -232,7 +235,14 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             for inner_it in range(n_inner_iterations):
                 print("==> Solving inner iteration: {}".format(inner_it))
 
-                for node in sorted(self.network.nodes, key=lambda x: x.node_id):
+                if self.options.randomized_inner:
+                    nodes_iterator = random.sample(
+                        self.network.nodes, len(self.network.nodes)
+                    )
+                else:
+                    nodes_iterator = sorted(self.network.nodes, key=lambda x: x.node_id)
+
+                for node in nodes_iterator:
                     # get node theta
                     node_theta[node] = self._get_node_theta(node)
                     # warm start

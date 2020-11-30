@@ -9,7 +9,7 @@ import time
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 from casadi import (
     DM,
@@ -21,10 +21,7 @@ from casadi import (
     fabs,
     horzcat,
     inf,
-    is_equal,
     mmax,
-    mtimes,
-    repmat,
     substitute,
     vec,
     vertcat,
@@ -50,9 +47,9 @@ class AugmentedLagrangianOptions:
 
     max_iter: int = 20
     tol: float = 1e-6
-    mu_0: float = 1.0
-    mu_max: float = 1e4
-    beta: float = 4.0
+    mu_0: DM = DM(1.0)
+    mu_max: DM = DM(1e4)
+    beta: DM = DM(4.0)
 
     only_update_if_improve: bool = False
     #  mu_update_rule: str = "simple"
@@ -124,10 +121,10 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
             solver_options = {}
 
         self.n_relax = 0
-        self.mu_sym = DM([])
-        self.nu_sym = DM([])
-        self.nu_par = DM([])
-        self.nu_pol = DM([])
+        self.mu_sym = DM()
+        self.nu_sym = DM()
+        self.nu_par = DM()
+        self.nu_pol = DM()
 
         for key, val in [*kwargs.items()]:
             if hasattr(AugmentedLagrangianOptions, key):
@@ -150,7 +147,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
         self.last_solution = ()
 
         self.solver = None
-        self.ocp_solver: SolutionMethodsBase = None
+        self.ocp_solver: Optional[SolutionMethodsBase] = None
         self.solver_initialized = False
 
         self.relax_algebraic_index = None
@@ -166,7 +163,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
 
         super(AugmentedLagrangian, self).__init__(problem, **kwargs)
 
-        self.mu = DM([])
+        self.mu = DM()
 
         # RELAXATION
 
@@ -568,7 +565,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
 
         return error
 
-    def _update_mu(self, error, last_error):
+    def _update_mu(self, error: DM, last_error: Optional[DM]):
         if self.options.debug_skip_update_mu:
             return
 
@@ -585,10 +582,13 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
                     print(
                         f"{self.problem.name} {ind}: increasing mu {mu}: {err} > {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
                     )
-                    self.mu[ind] = self.options.beta * mu
+                    self.mu[ind] = min(self.options.mu_max, mu * self.options.beta)
         elif self.options.mu_update_rule == "simple":
             self.mu = DM(
-                [min(self.options.mu_max, mu * self.options.beta) for mu in self.mu.nz]
+                [
+                    min(self.options.mu_max, mu_i * self.options.beta)
+                    for mu_i in self.mu.nz
+                ]
             )
 
     def _compute_new_nu_and_error(

@@ -1,9 +1,19 @@
+from typing import List
+
+from casadi import DM
 from yaocptool.modelling import DataSet
 
 
 class SimulationResult(DataSet):
     def __init__(
-        self, n_x, n_y, n_u, x_names=None, y_names=None, u_names=None, **kwargs
+        self,
+        n_x: int,
+        n_y: int,
+        n_u: int,
+        x_names: List[str] = None,
+        y_names: List[str] = None,
+        u_names: List[str] = None,
+        **kwargs
     ):
         self.model_name = ""
         self.delta_t = 1
@@ -19,53 +29,50 @@ class SimulationResult(DataSet):
         self.create_entry("u", size=n_u, names=u_names)
 
     @property
-    def x(self):
+    def x(self) -> List[DM]:
         return [
-            self.data["x"]["values"][:, i]
-            for i in range(self.data["x"]["values"].shape[1])
+            self.data["x"].values[:, i] for i in range(self.data["x"].values.shape[1])
         ]
 
     @property
-    def y(self):
+    def y(self) -> List[DM]:
         return [
-            self.data["y"]["values"][:, i]
-            for i in range(self.data["y"]["values"].shape[1])
+            self.data["y"].values[:, i] for i in range(self.data["y"].values.shape[1])
         ]
 
     @property
-    def u(self):
+    def u(self) -> List[DM]:
         return [
-            self.data["u"]["values"][:, i]
-            for i in range(self.data["u"]["values"].shape[1])
+            self.data["u"].values[:, i] for i in range(self.data["u"].values.shape[1])
         ]
 
     @property
-    def t(self):
-        return self.data["x"]["time"]
+    def t(self) -> DM:
+        return self.data["x"].time
 
     @property
-    def n_x(self):
-        return self.data["x"]["size"]
+    def n_x(self) -> int:
+        return self.data["x"].size
 
     @property
-    def n_y(self):
-        return self.data["y"]["size"]
+    def n_y(self) -> int:
+        return self.data["y"].size
 
     @property
-    def n_u(self):
-        return self.data["u"]["size"]
+    def n_u(self) -> int:
+        return self.data["u"].size
 
     @property
-    def x_names(self):
-        return self.data["x"]["names"]
+    def x_names(self) -> List[str]:
+        return self.data["x"].names
 
     @property
-    def y_names(self):
-        return self.data["y"]["names"]
+    def y_names(self) -> List[str]:
+        return self.data["y"].names
 
     @property
-    def u_names(self):
-        return self.data["u"]["names"]
+    def u_names(self) -> List[str]:
+        return self.data["u"].names
 
     def final_condition(self):
         """Return the simulation final condition in the form of a tuple (x_f, y_f, u_f)
@@ -73,12 +80,12 @@ class SimulationResult(DataSet):
         :rtype: DM, DM, DM
         """
         return {
-            "x": self.data["x"]["values"][:, -1],
-            "y": self.data["y"]["values"][:, -1],
-            "u": self.data["u"]["values"][:, -1],
+            "x": self.data["x"].values[:, -1],
+            "y": self.data["y"].values[:, -1],
+            "u": self.data["u"].values[:, -1],
         }
 
-    def extend(self, other_sim_result):
+    def extend(self, other_sim_result: "SimulationResult"):
         """Extend this SimulationResult with other SimulationResult.
         It is only implemented for the case where the other simulation result starts at the end of this
         simulation. That is this.t_f == other_sim_result.t_0 .

@@ -71,7 +71,7 @@ class OptimalControlProblem(object):
         **kwargs
     ):
         if x_0 is None:
-            x_0 = DM(0, 1)
+            x_0 = DM()
         elif isinstance(x_0, list):
             x_0 = DM(x_0)
 
@@ -479,7 +479,7 @@ class OptimalControlProblem(object):
         if u_guess is not None:
             if self.model.n_u == 0:
                 self.u_guess = u_guess
-            else:
+            elif self.u_guess is not None:
                 self.u_guess = vertcat(self.u_guess, u_guess)
 
         self.model.include_control(var)
@@ -595,7 +595,7 @@ class OptimalControlProblem(object):
 
         self.model.remove_algebraic(var, eq)
 
-    def remove_control(self, var):
+    def remove_control(self, var: SX):
         to_remove = find_variables_indices_in_vector(var, self.model.u)
 
         self.u_max = remove_variables_from_vector_by_indices(to_remove, self.u_max)
@@ -614,7 +614,9 @@ class OptimalControlProblem(object):
 
         self.model.remove_control(var)
 
-    def replace_variable(self, original, replacement):
+    def replace_variable(
+        self, original: Union[SX, List[SX]], replacement: Union[SX, List[SX]]
+    ):
         """
             Replace 'original' by 'replacement' in the problem and model equations
 
@@ -647,7 +649,7 @@ class OptimalControlProblem(object):
         # apply to the model
         self.model.replace_variable(original, replacement)
 
-    def parametrize_control(self, u, expr, u_par=None):
+    def parametrize_control(self, u: SX, expr: SX, u_par: Optional[SX] = None):
         """
             Parametrize the control variable
 
@@ -762,12 +764,10 @@ class OptimalControlProblem(object):
                     )
                 )
 
-        return True
-
     def reset_working_model(self):
         self.model = self._model.get_copy()
 
-    def create_cost_state(self):
+    def create_cost_state(self) -> SX:
         r"""Create and state with the dynamics equal to L from \int_{t_0}^{t_f} L(...) dt:
         \dot{x}_c = L(...)
 
@@ -780,7 +780,7 @@ class OptimalControlProblem(object):
         self.x_cost = x_c
         return x_c
 
-    def create_quadratic_cost(self, par_dict):
+    def create_quadratic_cost(self, par_dict: Dict[str, DM]):
         self.L = SX(0)
         self.V = SX(0)
         if "x_ref" not in par_dict:
@@ -902,15 +902,19 @@ class OptimalControlProblem(object):
             self.model.merge([problem.model])
 
     def set_parameter_as_optimization_parameter(
-        self, new_p_opt, new_p_opt_min=None, new_p_opt_max=None
-    ):
+        self,
+        new_p_opt: SX,
+        new_p_opt_min: Optional[DM] = None,
+        new_p_opt_max: Optional[DM] = None,
+    )-> SX:
         if new_p_opt_min is None:
             new_p_opt_min = -DM.inf(new_p_opt.numel())
         if new_p_opt_max is None:
             new_p_opt_max = DM.inf(new_p_opt.numel())
-        new_p_opt = vertcat(new_p_opt)
+
         new_p_opt_min = vertcat(new_p_opt_min)
         new_p_opt_max = vertcat(new_p_opt_max)
+
         if new_p_opt.numel() != new_p_opt_max.numel():
             raise ValueError(
                 'Size of "new_p_opt" and "new_p_opt_max" differ. new_p_opt.numel()={} '
@@ -932,8 +936,8 @@ class OptimalControlProblem(object):
         return new_p_opt
 
     def set_theta_as_optimization_theta(
-        self, new_theta_opt, new_theta_opt_min=None, new_theta_opt_max=None
-    ):
+            self, new_theta_opt: SX, new_theta_opt_min:Optional[DM]=None, new_theta_opt_max:Optional[DM]=None
+    )->SX:
         if new_theta_opt_min is None:
             new_theta_opt_min = -DM.inf(new_theta_opt.numel())
         if new_theta_opt_max is None:
@@ -961,13 +965,13 @@ class OptimalControlProblem(object):
         self.theta_opt_max = vertcat(self.theta_opt_max, new_theta_opt_max)
         return new_theta_opt
 
-    def get_p_opt_indices(self):
+    def get_p_opt_indices(self)-> List[int]:
         return find_variables_indices_in_vector(self.p_opt, self.model.p)
 
-    def get_theta_opt_indices(self):
+    def get_theta_opt_indices(self)-> List[int]:
         return find_variables_indices_in_vector(self.theta_opt, self.model.theta)
 
-    def connect(self, u, y, replace=False):
+    def connect(self, u:Union[SX, List[SX]], y:Union[SX, List[SX]], replace:bool=False):
         """
         Connect an input 'u' to a algebraic variable 'y', u = y.
         The function will perform the following actions:

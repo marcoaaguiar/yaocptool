@@ -6,8 +6,23 @@ Created on Thu Jul 13 17:08:34 2017
 """
 from collections import defaultdict
 from itertools import chain
+from typing import List, Tuple
+from yaocptool.optimization.abstract_optimization_problem import (
+    AbstractOptimizationProblem,
+)
 
-from casadi import DM, repmat, vertcat, Function, jacobian, is_equal, inf, horzcat, vec
+from casadi import (
+    DM,
+    MX,
+    repmat,
+    vertcat,
+    Function,
+    jacobian,
+    is_equal,
+    inf,
+    horzcat,
+    vec,
+)
 
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
 from yaocptool.optimization import NonlinearOptimizationProblem
@@ -37,14 +52,18 @@ class CollocationScheme(DiscretizationSchemeBase):
             for t in self.time_breakpoints[:-1]
         ]
 
-    def _create_nlp_symbolic_variables(self, nlp):
+    def _create_nlp_symbolic_variables(
+        self, nlp: AbstractOptimizationProblem
+    ) -> Tuple[MX, List[List[MX]], List[List[MX]], List[List[MX]], MX, MX, List[MX]]:
         """
         Create the symbolic variables that will be used by the NLP problem
 
         :param NonlinearOptimizationProblem nlp: nonlinear optimization problem in which the variables will be created
         :rtype: tuple
         """
-        x, y, u, eta, p_opt = [], [], [], [], []
+        x: List[List[MX]] = []
+        y: List[List[MX]] = []
+        u: List[List[MX]] = []
 
         for k in range(self.finite_elements):
             x_k = [
@@ -110,7 +129,9 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         return v, x, y, u, eta, p_opt, theta_opt
 
-    def unpack_decision_variables(self, decision_variables, all_subinterval=True):
+    def unpack_decision_variables(
+        self, decision_variables: MX, all_subinterval: bool = True
+    ) -> Tuple[List[List[MX]], List[List[MX]], List[List[MX]], MX, MX, List[MX]]:
         """Return a structured data from the decision variables vector
 
         Returns:
@@ -120,7 +141,9 @@ class CollocationScheme(DiscretizationSchemeBase):
         :param all_subinterval: bool
         :return: tuple
         """
-        x, y, u, eta, p_opt = [], [], [], [], []
+        x: List[List[MX]] = []
+        y: List[List[MX]] = []
+        u: List[List[MX]] = []
         v_offset = 0
 
         x_k = []
@@ -159,7 +182,7 @@ class CollocationScheme(DiscretizationSchemeBase):
         p_opt = decision_variables[v_offset : v_offset + self.problem.n_p_opt]
         v_offset += self.problem.n_p_opt
 
-        theta_opt = []
+        theta_opt: List[MX] = []
         for _ in range(self.finite_elements):
             theta_opt.append(
                 decision_variables[v_offset : v_offset + self.problem.n_theta_opt]
@@ -167,7 +190,6 @@ class CollocationScheme(DiscretizationSchemeBase):
             v_offset += self.problem.n_theta_opt
 
         assert v_offset == decision_variables.numel()
-
         return x, y, u, eta, p_opt, theta_opt
 
     def discretize(self, x_0=None, p=None, theta=None, last_u=None):

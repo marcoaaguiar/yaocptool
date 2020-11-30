@@ -4,15 +4,12 @@ Created on Thu Jun 09 10:50:48 2016
 
 @author: marco
 """
-import collections
 import copy
 from contextlib import suppress
 from typing import Any, Dict, List, Optional, Tuple, Union
-from yaocptool.util.util import create_constant_theta
 
 from casadi import (
     DM,
-    MX,
     SX,
     Function,
     horzcat,
@@ -94,7 +91,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         if self.has_adjoint_variables:
             return self.x[self.n_x // 2 :]
         else:
-            return SX([])
+            return SX()
 
     @property
     def all_sym(self) -> List[SX]:
@@ -415,7 +412,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         """
         # check if same size
         assert (
-            u.numel() != y.numel()
+            u.numel() == y.numel()
         ), f'Size of "u" and "y" "are not the same, u={u.numel()} and y={y.numel()}'
 
         if replace:
@@ -436,17 +433,17 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         u_par: Any = None,
     ) -> Tuple[Any, Any, Any, Any, Any, Any]:
         if t is None:
-            t = DM(0, 1)
+            t = DM()
         if x is None:
-            x = DM(0, 1)
+            x = DM()
         if y is None:
-            y = DM(0, 1)
+            y = DM()
         if p is None:
-            p = DM(0, 1)
+            p = DM()
         if theta is None:
-            theta = DM(0, 1)
+            theta = DM()
         if u_par is None:
-            u_par = DM(0, 1)
+            u_par = DM()
         return t, x, y, p, theta, u_par
 
     @staticmethod
@@ -576,10 +573,10 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         x_0: Union[DM, List[float]],
         t_f: Union[float, List[float]],
         t_0: float = 0.0,
-        u: Optional[Union[MX, DM, List[float]]] = None,
-        p: Optional[Union[MX, DM, List[float]]] = None,
+        u: Optional[Union[DM, List[float]]] = None,
+        p: Optional[Union[DM, List[float]]] = None,
         theta: Optional[Dict[int, DM]] = None,
-        y_0: Optional[Union[MX, DM, List[float]]] = None,
+        y_0: Optional[Union[DM, List[float]]] = None,
         integrator_type: Optional[str] = None,
         integrator_options: Optional[Dict[str, Any]] = None,
     ) -> SimulationResult:
@@ -617,15 +614,13 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             t_f = [t_f]
 
         if theta is None:
-            theta = {k: DM(0, 1) for k in range(len(t_f))}
+            theta = {k: DM() for k in range(len(t_f))}
         if p is None:
-            p = DM(0, 1)
+            p = DM()
         if u is None:  # if control is not given
-            u = DM(0, 1)
+            u = DM()
 
-        u_sim: Dict[int, Union[MX, DM]] = (
-            u if isinstance(u, dict) else {el: u for el in range(len(t_f))}
-        )
+        u_sim = u if isinstance(u, dict) else {el: u for el in range(len(t_f))}
         if len(t_f) > 1 and len(u_sim) != len(t_f):
             raise ValueError(
                 'If "t_f" is a list, the parameter "u" should be a list with same length of "t_f".'
@@ -671,9 +666,6 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             y_list.append(result["zf"])
             u_list.append(u_k)
 
-        t_x_list = horzcat(*t_x_list)
-        t_yu_list = horzcat(*t_yu_list)
-
         simulation_result = SimulationResult(
             model_name=self.name,
             n_x=self.n_x,
@@ -687,9 +679,15 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             finite_elements=len(t_f),
         )
 
-        simulation_result.insert_data("x", time=t_x_list, value=horzcat(*x_list))
-        simulation_result.insert_data("y", time=t_yu_list, value=horzcat(*y_list))
-        simulation_result.insert_data("u", time=t_yu_list, value=horzcat(*u_list))
+        simulation_result.insert_data(
+            "x", time=horzcat(*t_x_list), value=horzcat(*x_list)
+        )
+        simulation_result.insert_data(
+            "y", time=horzcat(*t_yu_list), value=horzcat(*y_list)
+        )
+        simulation_result.insert_data(
+            "u", time=horzcat(*t_yu_list), value=horzcat(*u_list)
+        )
 
         return simulation_result
 

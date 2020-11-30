@@ -5,6 +5,7 @@ Created on Fri Oct 21 16:39:52 2016
 @author: marco
 """
 import warnings
+from yaocptool.modelling.ocp import OptimalControlProblem
 
 from casadi import inf, substitute, hessian, inv, fmin, fmax, is_equal, mtimes, DM
 
@@ -12,10 +13,12 @@ from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 
 
 class IndirectMethod(SolutionMethodsBase):
-    def __init__(self, problem, create_cost_state=False, **kwargs):
+    def __init__(
+        self, problem: OptimalControlProblem, create_cost_state: bool = False, **kwargs
+    ):
         """
         :param problem: yaocptool.modelling.ocp.OptimalControlProblem
-        :param bool create_cost_state: If True a cost state will be created to keep track of the dynamic cost.
+        :param create_cost_state: If True a cost state will be created to keep track of the dynamic cost.
         :param integrator_type: str
         :param solution_method: str
         :param degree: int
@@ -24,7 +27,7 @@ class IndirectMethod(SolutionMethodsBase):
         self.create_cost_state = create_cost_state
         self.has_cost_state = False
 
-        super(IndirectMethod, self).__init__(problem, **kwargs)
+        super().__init__(problem, **kwargs)
 
         self.solution_class = "indirect"
         self.initial_guess_heuristic = "problem_info"
@@ -32,12 +35,14 @@ class IndirectMethod(SolutionMethodsBase):
         self._check_bounds()
 
     @property
-    def degree_control(self):
+    def degree_control(self) -> int:
         return self.degree
 
     @degree_control.setter
-    def degree_control(self, val):
-        self.degree = val
+    def degree_control(self, value: int):
+        raise ValueError(
+            "Cannot set degree_control of indirect method, use degree instead"
+        )
 
     def prepare(self):
         super(IndirectMethod, self).prepare()
@@ -50,28 +55,28 @@ class IndirectMethod(SolutionMethodsBase):
 
     def _check_bounds(self):
         for i in range(self.model.n_x):
-            if not self.problem.x_min[i] == -inf:
+            if self.problem.x_min[i] != -inf:
                 warnings.warn(
                     "Problem contains state constraints, they will be ignored"
                 )
                 self.problem.x_min[i] = -inf
 
-            if not self.problem.x_max[i] == inf:
+            if self.problem.x_max[i] != inf:
                 warnings.warn(
                     "Problem contains state constraints, they will be ignored"
                 )
                 self.problem.x_max[i] = inf
 
         for i in range(self.model.n_y):
-            if not self.problem.y_min[i] == -inf:
+            if self.problem.y_min[i] != -inf:
                 warnings.warn(
-                    "Problem contains state constraints, they will be ignored"
+                    "Problem contains algebraic constraints, they will be ignored"
                 )
                 self.problem.y_min[i] = -inf
 
-            if not self.problem.y_max[i] == inf:
+            if self.problem.y_max[i] != inf:
                 warnings.warn(
-                    "Problem contains state constraints, they will be ignored"
+                    "Problem contains algebraic constraints, they will be ignored"
                 )
                 self.problem.y_max[i] = inf
 
@@ -87,7 +92,7 @@ class IndirectMethod(SolutionMethodsBase):
         #     raise NotImplementedError('The Hessian of the Hamiltonian with respect to "u" is not constant,
         #                                this case has not been implemented')
 
-        u_opt = -mtimes(inv(dd_h_dudu), substitute(d_h_du, self.model.u, 0))
+        u_opt = -mtimes(inv(dd_h_dudu), substitute(d_h_du, self.model.u, 0.0))
 
         for i in range(self.model.n_u):
             if not self.problem.u_min[i] == -inf:

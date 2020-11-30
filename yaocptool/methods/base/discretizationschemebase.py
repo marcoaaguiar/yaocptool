@@ -1,12 +1,24 @@
 from functools import cached_property
-from casadi import DM, vertcat, Function
+from typing import Dict, List, TYPE_CHECKING, Tuple, Union, overload
+from yaocptool.methods.base.optimizationresult import OptimizationResult
+from yaocptool.optimization.abstract_optimization_problem import (
+    AbstractOptimizationProblem,
+)
+from casadi import DM, MX, SX, vertcat, Function
 
 from yaocptool import convert_expr_from_tau_to_time
 from yaocptool.modelling import OptimalControlProblem, SystemModel
 
+if TYPE_CHECKING:
+    from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
+    from casadi import NumericMT
+else:
+    SolutionMethodsBase = "SolutionMethodsBase"
+    NumericMT = "NumericMT"
+
 
 class DiscretizationSchemeBase:
-    def __init__(self, solution_method):
+    def __init__(self, solution_method: SolutionMethodsBase):
         """Base class for discretization methods. A discretization class transforms and OCP into a NLP
 
         :type solution_method: yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase
@@ -73,16 +85,24 @@ class DiscretizationSchemeBase:
             for t in self.time_breakpoints[:-1]
         ]
 
-    def vectorize(self, vector):
-        if len(vector) > 0:
-            if not isinstance(vector[0], list):
-                return vertcat(*vector)
-            else:
-                return vertcat(*[self.vectorize(sub_vector) for sub_vector in vector])
-        else:
-            return vertcat(vector)
+    @overload
+    def vectorize(self, vector: List[NumericMT]) -> NumericMT:
+        ...
 
-    def _create_function_from_expression(self, name, expr):
+    @overload
+    def vectorize(self, vector: List[List[NumericMT]]) -> NumericMT:
+        ...
+
+    def vectorize(
+        self, vector: Union[List[NumericMT], List[List[NumericMT]]]
+    ) -> NumericMT:
+        #  return vertcat(*[vertcat(*sub_vector) for sub_vector in vector])
+        if vector and isinstance(vector[0], list):
+            return vertcat(*[self.vectorize(sub_vector) for sub_vector in vector])
+        else:
+            return vertcat(*vector)
+
+    def _create_function_from_expression(self, name: str, expr: SX):
         """Create a dictionary with range(self.finite_elements) as keys and
         a function of the expression in each finite element.
         The function argument is model.all_sym
@@ -105,7 +125,13 @@ class DiscretizationSchemeBase:
             function_dict[el] = f_expr_el
         return function_dict
 
-    def discretize(self, x_0=None, p=None, theta=None, last_u=None):
+    def discretize(
+        self,
+        x_0: MX = None,
+        p: MX = None,
+        theta: Dict[int, MX] = None,
+        last_u: MX = None,
+    ) -> AbstractOptimizationProblem:
         """Discretize the OCP, returning a Optimization Problem
 
         :param x_0: initial condition
@@ -116,7 +142,9 @@ class DiscretizationSchemeBase:
         """
         raise NotImplementedError
 
-    def _create_nlp_symbolic_variables(self, nlp):
+    def _create_nlp_symbolic_variables(
+        self, nlp: AbstractOptimizationProblem
+    ) -> Tuple[MX, List[List[MX]], List[List[MX]], List[List[MX]], MX, MX, List[MX]]:
         """
         Create the symbolic variables that will be used by the NLP problem
         :rtype: (DM, List[List[DM]], List(List(DM)), List(DM), DM, DM, DM)
@@ -134,11 +162,10 @@ class DiscretizationSchemeBase:
         functions=None,
         start_at_t_0=False,
     ):
-        # TODO: calculate quadratures, for error evaluation of aug lagrange
         raise NotImplementedError
 
     def set_data_to_optimization_result_from_raw_data(
-        self, optimization_result, raw_solution_dict
+        self, optimization_result: OptimizationResult, raw_solution_dict: Dict[str, DM]
     ):
         """
         Set the raw data received from the solver and put it in the Optimization Result object
@@ -147,7 +174,9 @@ class DiscretizationSchemeBase:
         """
         raise NotImplementedError
 
-    def unpack_decision_variables(self, decision_variables):
+    def unpack_decision_variables(
+        self, decision_variables: MX, all_subinterval: bool = True
+    ) -> Tuple[List[List[MX]], List[List[MX]], List[List[MX]], MX, MX, List[MX]]:
         """Return a structured data from the decision variables vector
 
         Returns:

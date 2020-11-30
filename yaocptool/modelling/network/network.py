@@ -162,7 +162,7 @@ class Network:
 
     def _connect(self, y, u, node1, node2):
         if (node1, node2) not in self.graph.edges:
-            self.graph.add_edge(node1, node2, y=DM([]), u=DM([]))
+            self.graph.add_edge(node1, node2, y=DM(), u=DM())
 
         self.graph.edges[node1, node2]["y"] = vertcat(
             self.graph.edges[node1, node2]["y"], y

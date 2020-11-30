@@ -250,7 +250,7 @@ class DAESystem:
         if integrator_options is None:
             integrator_options = {}
         if p is None:
-            p = DM(0, 1)
+            p = DM()
 
         opts = {"tf": t_f, "t0": t_0}  # final time
 
@@ -263,9 +263,7 @@ class DAESystem:
 
         integrator_ = self._create_integrator(opts, integrator_type)
 
-        result = integrator_.call(call_kwargs)
-        print(result)
-        return result
+        return integrator_.call(call_kwargs)
 
     def _create_integrator(
         self, options: Dict[str, Any] = None, integrator_type: str = "implicit"
@@ -298,13 +296,6 @@ class DAESystem:
             return integrator(name, "cvodes", self.dae_system_dict, options)
         if integrator_type == "implicit" and self.is_dae:
             return integrator(name, "idas", self.dae_system_dict, options)
-        #  if integrator_type == "rk4":
-        #      if self.is_ode:
-        #          return self._create_explicit_integrator(
-        #              "explicit_integrator", "rk4", self.dae_system_dict, options
-        #          )
-        #      else:
-        #          raise Exception("Explicit integrator not implemented for DAE systems")
         if integrator_type in ["rk", "collocation", "cvodes", "idas"]:
             return integrator(name, integrator_type, self.dae_system_dict, options)
         raise ValueError(
@@ -312,92 +303,3 @@ class DAESystem:
             "(default, auto-select between 'idas' and 'cvodes'), 'rk',"
             " and 'collocation'.".format(integrator_type)
         )
-
-    @staticmethod
-    def _create_explicit_integrator(
-        name: str,
-        integrator_type: str,
-        dae_sys: Dict[str, SX],
-        options: Optional[ExplicitSolverOptions] = None,
-    ) -> Callable[
-        [
-            DefaultArg(NumericMT, "x0"),
-            DefaultArg(NumericMT, "p"),
-            DefaultArg(int, "n_iter"),
-        ],
-        ExplicitSolverReturn,
-    ]:
-        opts: ExplicitSolverOptions = {
-            "t0": 0.0,
-            "tf": 1.0,
-            "iterations": 4,
-        }
-
-        if options is not None:
-            opts = options
-
-        if "alg" in dae_sys:
-            raise Exception("Explicit integrator not implemented for DAE systems")
-        f_in_names = ["t", "x"]
-        f_in = [dae_sys[key] for key in f_in_names]
-        f_in_names.append("p")
-        if "p" in dae_sys:
-            f_in.append(dae_sys["p"])
-        else:
-            f_in.append(SX.sym("fake_p"))
-
-        f_out_names = ["ode"]
-        f = Function(name, f_in, [dae_sys["ode"]], f_in_names, f_out_names)
-
-        t_0 = opts["t0"]
-        t_f = opts["tf"]
-        iterations = opts["iterations"]
-        n_states = dae_sys["x"].numel()
-
-        if integrator_type == "rk4":
-
-            def runge_kutta_4th_order(
-                x0: Union[DM, NumericMT],
-                p: NumericMT,
-                n_iter: int = iterations,
-            ):
-                if n_iter < 1:
-                    raise Exception(
-                        "The given number of Runge Kutta iterations is less than one, given {}".format(
-                            n_iter
-                        )
-                    )
-                if p is None:
-                    p = DM(0, 1)
-
-                x_f = x0
-                h = (t_f - t_0) / n_iter
-                t = t_0
-
-                for _ in range(n_iter):
-                    k1 = f.call({"t": t, "x": x0, "p": p})["ode"]
-                    k2 = (
-                        h
-                        * f.call({"t": t + 0.5 * h, "x": x0 + 0.5 * k1, "p": p})["ode"]
-                    )
-                    k3 = (
-                        h
-                        * f.call({"t": t + 0.5 * h, "x": x0 + 0.5 * k2, "p": p})["ode"]
-                    )
-                    k4 = h * f.call({"t": t + h, "x": x0 + k3, "p": p})["ode"]
-
-                    x_f = (
-                        x0
-                        + 1.0 / 6.0 * k1
-                        + 1.0 / 3.0 * k2
-                        + 1.0 / 3.0 * k3
-                        + 1.0 / 6.0 * k4
-                    )
-                    x0 = x_f
-                    t += h
-
-                result: ExplicitSolverReturn = {"xf": x_f, "zf": DM(0, 1)}
-                return result
-
-            return runge_kutta_4th_order
-        raise NotImplementedError
