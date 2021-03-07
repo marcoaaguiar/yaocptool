@@ -26,6 +26,8 @@ class NumericMixin:
     @overload
     def __init__(self): ...
     @overload
+    def __init__(self, arg1: Iterable[float]): ...
+    @overload
     def __init__(
         self,
         arg1: Union[
@@ -100,6 +102,7 @@ class NumericMixin:
     def __rsub__(self: Typ, other: Union[Typ, int, float, DM]) -> Typ: ...
     def __mul__(self: Typ, other: Union[Typ, int, float, DM]) -> Typ: ...
     def __rmul__(self: Typ, other: Union[Typ, int, float, DM]) -> Typ: ...
+    def __matmul__(self: Typ, other: Union[Typ, int, float, DM]) -> Typ: ...
     def __truediv__(self: Typ, other: Union[Typ, int, float, DM, int]) -> Typ: ...
     def __pow__(self: Typ, other: Union[Typ, int, float, DM, int]) -> Typ: ...
     def __lt__(self: Typ, other: Union[Typ, int, float, DM, int]) -> Typ: ...
@@ -139,7 +142,63 @@ class DM(NumericMixin, DenseMixin):
     def __gt__(self: Typ, other: Any) -> DM: ...  # type: ignore
 
 class Sparsity(NumericMixin):
-    pass
+    @classmethod
+    def upper(cls, n: int) -> Sparsity: ...
+
+class StringSerializer:
+    def __init__(self): ...
+    def pack(
+        self,
+        e: Union[
+            int,
+            float,
+            List[Sparsity],
+            Sparsity,
+            List[float],
+            List[int],
+            List[str],
+            DM,
+            List[DM],
+            SX,
+            List[SX],
+            MX,
+            List[MX],
+            str,
+            List[Function],
+            Function,
+            List[Typ],
+            Typ,
+        ],
+    ): ...
+    def encode(self) -> str: ...
+    def reset(self): ...
+
+class StringDeserializer:
+    def __init__(self, str): ...
+    def unpack(
+        self,
+    ) -> Union[
+        int,
+        float,
+        List[Sparsity],
+        Sparsity,
+        List[float],
+        List[int],
+        List[str],
+        DM,
+        List[DM],
+        SX,
+        List[SX],
+        MX,
+        List[MX],
+        str,
+        List[Function],
+        Function,
+        List[Typ],
+        Typ,
+    ]: ...
+    def connect(self, serializer: StringSerializer): ...
+    def decode(self, s: str): ...
 
 # Create a generic variable that can be 'Parent', or any subclass.
 
@@ -261,7 +320,7 @@ def horzsplit(arg: NumericMT, n: int) -> List[NumericMT]: ...
 def vec(a: NumericMT) -> NumericMT: ...
 def diag(a: NumericMT) -> NumericMT: ...
 @overload
-def repmat(A: float, n: int, m: int = ...) -> NumericMT: ...
+def repmat(A: float, n: int, m: int = ...) -> DM: ...
 @overload
 def repmat(A: NumericMT, n: int, m: int = ...) -> NumericMT: ...
 @overload

@@ -1,21 +1,22 @@
 import re
-from typing import List, Optional, Union, Tuple, Dict, TYPE_CHECKING
+from timeit import default_timer
+from typing import Dict, List, Optional, TYPE_CHECKING, Tuple, Union
 
 from casadi import (
     DM,
-    is_equal,
-    vec,
-    vertcat,
-    substitute,
-    mtimes,
-    integrator,
     MX,
-    repmat,
-    OP_LT,
-    OP_LE,
     OP_EQ,
+    OP_LE,
+    OP_LT,
     SX,
     collocation_points,
+    integrator,
+    is_equal,
+    mtimes,
+    repmat,
+    substitute,
+    vec,
+    vertcat,
 )
 
 if TYPE_CHECKING:
@@ -319,3 +320,20 @@ def create_polynomial_approximation(
     par = vec(points)
 
     return pol, par
+
+
+class Timer(object):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+        self.timer = default_timer
+
+    def __enter__(self):
+        self.start = self.timer()
+        return self
+
+    def __exit__(self, *args):
+        end = self.timer()
+        self.elapsed_secs = end - self.start
+        self.elapsed = self.elapsed_secs * 1000  # millisecs
+        if self.verbose:
+            print(f"elapsed time: {self.elapsed} ms")

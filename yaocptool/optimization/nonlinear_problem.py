@@ -1,6 +1,7 @@
 from casadi import nlpsol
 from casadi import Function
 
+import ray
 from yaocptool.config import SOLVER_OPTIONS
 from yaocptool.optimization.abstract_optimization_problem import (
     AbstractOptimizationProblem,
@@ -29,3 +30,8 @@ class NonlinearOptimizationProblem(AbstractOptimizationProblem):
     def _create_solver(self) -> Function:
         problem_dict = self.get_problem_dict()
         return nlpsol(self.name + "_solver", "ipopt", problem_dict, self.solver_options)
+
+    @ray.remote
+    def ray_solve(self, *args, **kwargs):
+        print(self)
+        return self.solve(*args, **kwargs)

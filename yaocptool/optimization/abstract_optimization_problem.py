@@ -1,8 +1,22 @@
+from multiprocessing import Pipe, Process
+from multiprocessing.connection import Connection
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
-from casadi import Function, vertcat, MX, inf, DM, repmat, is_equal, depends_on
+import ray
+from casadi import (
+    DM,
+    Function,
+    MX,
+    StringSerializer,
+    StringDeserializer,
+    depends_on,
+    inf,
+    is_equal,
+    repmat,
+    vertcat,
+)
 
-from yaocptool import is_inequality, is_equality
+from yaocptool import is_equality, is_inequality
 
 
 class OptiResultDictType(TypedDict):
@@ -12,6 +26,21 @@ class OptiResultDictType(TypedDict):
     lam_p: DM
     lam_x: DM
     x: DM
+
+
+class NlpSolProcess(Process):
+    def __init__(self, pipe: Connection, solver: Function):
+        super().__init__()
+        self.pipe = pipe
+        self.solver = solver
+
+    def run(self) -> None:
+        while True:
+            kwarg = self.pipe.recv()
+            if kwarg == "TERM":
+                return
+            result = self.solver(**kwarg)
+            self.pipe.send(result)
 
 
 class ExtendedOptiResultDictType(OptiResultDictType):
@@ -50,9 +79,48 @@ class AbstractOptimizationProblem(object):
         self.solver_options: Dict[str, Any] = {}
 
         self._solver: Optional[Function] = None
+        self._connection: Optional[Connection] = None
+        self._process: Optional[NlpSolProcess] = None
 
         for (key, val) in kwargs.items():
             setattr(self, key, val)
+
+    def print_var(self):
+        return vars(self)
+
+    #  def __getstate__(self):
+    #      variable_serializer = StringSerializer()
+    #      bound_serializer = StringSerializer()
+    #      #  solver_serializer = StringSerializer()
+    #
+    #      variable_serializer.pack([self.f, self.g, self.x, self.p])
+    #      bound_serializer.pack([self.g_lb, self.g_ub, self.x_lb, self.x_ub])
+    #      #  solver_serializer.pack(self._solver)
+    #
+    #      return {
+    #          "name": self.name,
+    #          "solver_options": self.solver_options,
+    #          "variable_string": variable_serializer.encode(),
+    #          "bounds_string": bound_serializer.encode(),
+    #          #  "solver_string": solver_serializer.encode(),
+    #          "_solver": self._solver,
+    #      }
+    #
+    #  def __setstate__(self, state):
+    #      self.f, self.g, self.x, self.p = StringDeserializer(
+    #          state.pop("variable_string")
+    #      ).unpack()
+    #
+    #      self.g_lb, self.g_ub, self.x_lb, self.x_ub = StringDeserializer(
+    #          state.pop("bounds_string")
+    #      ).unpack()
+    #
+    #      #  self._solver = StringDeserializer(state.pop("solver_string")).unpack()
+    #      self.solver_options = state["solver_options"]
+    #      self.name = state["name"]
+    #      self._connection = None
+    #      self._process = None
+    #      self._solver = state["_solver"]
 
     def create_variable(
         self,
@@ -406,6 +474,42 @@ class AbstractOptimizationProblem(object):
         :param lam_g:
         :return: dictionary with solution
         """
+        call_dict = self._get_solver_call_args(
+            initial_guess, call_dict, p, lam_x, lam_g
+        )
+
+        solver = self.get_solver()
+
+        solution = solver(**call_dict)
+        solution["stats"] = solver.stats()
+        print("solved")
+
+        return solution
+
+    def mp_solve(
+        self,
+        initial_guess: DM,
+        call_dict: Optional[Dict[str, DM]] = None,
+        p: Optional[DM] = None,
+        lam_x: Optional[DM] = None,
+        lam_g: Optional[DM] = None,
+    ):
+        if self._process is None:
+            self._connection, conn_child = Pipe()
+            self._process = NlpSolProcess(conn_child, self.get_solver())
+            self._process.start()
+        call_dict = self._get_solver_call_args(
+            initial_guess, call_dict, p, lam_x, lam_g
+        )
+        self._connection.send(call_dict)
+
+    def mp_get_solution(self):
+        return self._connection.recv()
+
+    def mp_terminate(self):
+        self._connection.send("TERM")
+
+    def _get_solver_call_args(self, initial_guess, call_dict, p, lam_x, lam_g):
         if call_dict is None:
             call_dict = self.get_default_call_dict()
         if p is None:
@@ -428,10 +532,4 @@ class AbstractOptimizationProblem(object):
                     call_dict["p"].numel(), self.p.numel()
                 )
             )
-
-        solver = self.get_solver()
-
-        solution: OptiResultDictType = solver(**call_dict)
-        solution["stats"] = solver.stats()
-
-        return solution
+        return call_dict

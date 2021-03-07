@@ -5,12 +5,10 @@ Created on $date
 @author: Marco Aurelio Schmitz de Aguiar
 """
 import sys
+import pickle
 from unittest import TestCase
-
-if sys.version_info >= (3, 3):
-    from unittest.mock import Mock
-else:
-    from mock import Mock
+import pytest
+from unittest.mock import Mock
 
 from casadi import is_equal, DM, MX, inf, repmat
 
@@ -19,9 +17,21 @@ from yaocptool.optimization.abstract_optimization_problem import (
 )
 
 
+@pytest.fixture
+def quadratic_problem():
+    aop = AbstractOptimizationProblem()
+    x = aop.create_variable("x", 3, 5, 10)
+    p = MX.sym("p2")
+    aop.include_parameter(p)
+    aop.include_constraint(x + p <= 1)
+    f = x.T @ x
+    aop.set_objective(f)
+
+    return aop
+
+
 class TestAbstractOptimizationProblem(TestCase):
     def test_create_variable(self):
-        aop = AbstractOptimizationProblem()
         aop = AbstractOptimizationProblem()
         x = aop.create_variable("x", 3)
         self.assertTrue(is_equal(aop.x, x))
@@ -323,3 +333,12 @@ class TestAbstractOptimizationProblem(TestCase):
         x = aop.create_variable("x", 2)
 
         aop.include_constraint(x + 2 == theta)
+
+
+def test_serialization(quadratic_problem):
+    pickle.dumps(quadratic_problem)
+
+
+def test_deserialization(quadratic_problem):
+    problem_str = pickle.dumps(quadratic_problem)
+    pickle.loads(problem_str)

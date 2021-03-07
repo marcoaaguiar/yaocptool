@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "YaOCPTool"
+version = "0.3.8"
+description = ""
+authors = ["Marco Aguiar <marcoaaguiar@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+# yaocptool = {path='./yaocptool/', develop=true}
+python = "^3.8"
+casadi = "^3.5.5"
+numpy = "^1.20.0"
+scipy = "^1.6.0"
+matplotlib = "^3.3.4"
+networkx = "^2.5"
+seaborn = "^0.11.1"
+ipdb = "^0.13.5"
+ray = "^1.2.0"
+
+[tool.poetry.dev-dependencies]
+black = "latest"
+pytest = "^6.2.2"
+mypy = "latest"
+rope = "^0.18.0"
+ipdb = "^0.13.5"
+ipython = "^7.21.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]

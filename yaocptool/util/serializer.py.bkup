@@ -1,0 +1,152 @@
+import concurrent.futures
+import copy
+import copyreg
+import os
+import pickle
+from typing import Any, Callable, Tuple, TypeVar, Union
+
+from casadi import (
+    DM,
+    Function,
+    MX,
+    SX,
+    StringDeserializer,
+    StringSerializer,
+    depends_on,
+)
+from casadi.casadi import sin
+
+T = TypeVar("T")
+
+_SERIALIZER = None
+_DESERIALIZER = None
+
+
+def dumps_casadi(var: Union[SX, MX], serializer=StringSerializer()) -> str:
+    #  if serializer is None:
+    #      print("creating serializer", repr(var), os.getpid())
+    #      serializer = StringSerializer()
+    serializer.pack(var)
+    print("dumping", repr(var), id(serializer), os.getpid())
+    return serializer.encode()
+
+
+def loads_casadi(s: str, name: str, memory=[]) -> Union[SX, MX]:
+    if not memory:
+        print("creating deserializer", os.getpid())
+        deserializer = StringDeserializer(s)
+        memory.append(deserializer)
+        #  print("erro loads/desserialization", name, id(memory[0]), os.getpid(), )
+        print(
+            "loading, new deserializer",
+            name,
+            repr(deserializer),
+            id(deserializer),
+            os.getpid(),
+        )
+    else:
+        deserializer = memory[0]
+        deserializer.decode(s)
+        print(
+            "loading, old deserializer",
+            name,
+            repr(deserializer),
+            id(deserializer),
+            os.getpid(),
+        )
+    #  if _DESERIALIZER is None:
+    #      _DESERIALIZER = StringDeserializer(s)
+    #  else:
+    #      _DESERIALIZER.decode(s)
+
+    return deserializer.unpack()
+
+
+def unpickle_casadi(encode_string: str) -> Any:
+    return loads_casadi(encode_string)
+
+
+def pickle_casadi(
+    obj: T,
+) -> Tuple[Callable[[Tuple[str]], T], Tuple[str]]:
+    s = dumps_casadi(obj)
+    return loads_casadi, (s, repr(obj))
+
+
+for casadi_class in [SX, MX]:
+    copyreg.pickle(casadi_class, pickle_casadi)
+
+#  x = SX.sym("x")
+#  a = 2 * x
+#
+#
+#  x2 = pickle.loads(pickle.dumps(x))
+#  a2 = pickle.loads(pickle.dumps(a))
+#
+#  f = Function("f", [x2], [a2])
+#
+
+
+if __name__ == "__main__":
+    #  x = SX.sym("x")
+    #  s = StringSerializer()
+    #
+    #  s.pack(x)
+    #  data1 = s.encode()
+    #  s.pack(Function("f", [x], [sin(x)]))
+    #  data2 = s.encode()
+    #
+    #  s = StringDeserializer(data1)
+    #  a = s.unpack()
+    #  s.decode(data2)
+    #  b = s.unpack()
+    #
+    #  data1 = dumps_casadi(x)
+    #  data2 = dumps_casadi(b)
+    #  x2 = loads_casadi(data1, "x")
+    #  b2 = loads_casadi(data2, "b")
+
+    class Test:
+        def __init__(self):
+            self.a = SX.ones(5)
+            self.b = SX.sym("b", 5)
+
+        def shaper(self):
+            print("alo")
+            #  return self.a.shape
+
+    def remote(p, *args, **kwargs):
+        obj = pickle.loads(p)
+        return obj(*args, **kwargs)
+
+    print("parent", os.getpid())
+    #  dumps_s = [pickle.dumps(t.shaper) for t in [Test(), Test()]]
+    #  a = [pickle.loads(s) for s in dumps_s]
+    with concurrent.futures.ProcessPoolExecutor(1) as executor:
+        futs = [
+            executor.submit(remote, pickle.dumps(t.shaper)) for t in [Test(), Test()]
+        ]
+        print([fut.result() for fut in futs])
+
+    #  class Test:
+    #      def __init__(self):
+    #          self.x = SX.sym("x")
+    #          self.y = MX.ones(3)
+    #          #  self.f = Function("f", [self.x], [2 * (self.x)])
+    #          #  self.val = DM(3)
+    #
+    #      def solve(self, val2):
+    #          print(vars(self))
+    #          #  try:
+    #          #  print(self.y.shape)
+    #          #  res = self.f(self.val + val2)
+    #          #  except Exception as e:
+    #          #  print(e)
+    #          #  return res
+    #
+    #  with concurrent.futures.ProcessPoolExecutor() as executor:
+    #      t = Test()
+    #      print(vars(t))
+    #      future = executor.submit(t.solve, 4)
+    import os
+#      print(future.result())

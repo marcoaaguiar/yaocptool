@@ -277,6 +277,17 @@ class SolutionMethodsBase(SolutionMethodInterface):
             self.create_optimization_problem()
 
         # initial conditions
+        args, p, theta, x_0, last_u = self._get_solver_call_args(
+            x_0, p, theta, last_u, initial_guess_dict, initial_guess
+        )
+
+        sol = self.opt_problem.solve(**args)
+        return sol, p, theta, x_0, last_u
+
+    def _get_solver_call_args(
+        self, x_0, p, theta, last_u, initial_guess_dict, initial_guess
+    ):
+        # initial conditions
         if x_0 is None:
             x_0 = self.problem.x_0
         if isinstance(x_0, list):
@@ -383,9 +394,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
                 lam_x=initial_guess_dict["lam_x"],
                 lam_g=initial_guess_dict["lam_g"],
             )
-
-        sol = self.opt_problem.solve(**args)
-        return sol, p, theta, x_0, last_u
+        return args, p, theta, x_0, last_u
 
     def solve(
         self,
@@ -417,6 +426,28 @@ class SolutionMethodsBase(SolutionMethodInterface):
             last_u=last_u,
             initial_guess_dict=initial_guess_dict,
         )
+
+        return self.create_optimization_result(raw_solution_dict, p, theta, x_0)
+
+    def mp_solve(
+        self,
+        initial_guess=None,
+        p=None,
+        theta=None,
+        x_0=None,
+        last_u=None,
+        initial_guess_dict=None,
+    ) -> OptimizationResult:
+        if isinstance(p, (int, float)):
+            p = DM(p)
+
+        # initial conditions
+        args, p, theta, x_0, last_u = self._get_solver_call_args(
+            x_0, p, theta, last_u, initial_guess_dict, initial_guess
+        )
+
+        sol = self.opt_problem.mp_solve(**args)
+        return sol, p, theta, x_0, last_u
 
         return self.create_optimization_result(raw_solution_dict, p, theta, x_0)
 
