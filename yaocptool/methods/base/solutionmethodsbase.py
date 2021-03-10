@@ -46,7 +46,6 @@ class SolutionMethodsBase(SolutionMethodInterface):
         self.problem = problem
         self.solution_class = ""
         self.prepared = False
-        self.discretizer: Optional[DiscretizationSchemeBase] = None
 
         # Options
         self.integrator_type = "implicit"
@@ -219,6 +218,12 @@ class SolutionMethodsBase(SolutionMethodInterface):
     # ==============================================================================
 
     def prepare(self):
+        """
+        Pre solve checks and problem transformations
+        """
+        if self.prepared:
+            return
+
         self.problem.pre_solve_check()
 
     def create_optimization_problem(self):

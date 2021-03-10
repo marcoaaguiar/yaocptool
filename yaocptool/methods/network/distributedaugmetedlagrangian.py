@@ -297,7 +297,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         self.prepare()
 
         # Create Augmented Lagrangian
-        self._create_solution_methods()
+        self.initialize()
 
         # initialize dicts
         start_time = time.time()
@@ -452,6 +452,9 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
     def prepare(self):
         for node in self.network.nodes:
             node.problem.pre_solve_check()
+
+    def initialize(self):
+        self._create_solution_methods()
 
     def plot_all_relaxations(self, result_list):
         for k, edge in enumerate(self.network.graph.edges):

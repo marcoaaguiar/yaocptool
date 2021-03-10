@@ -7,6 +7,9 @@ Created on
 
 
 class SolutionMethodInterface(object):
+    def __init__(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
     def solve(self):
         """
         Method that will solve the yaoctool.modelling.OptimalControlProblem and return a

@@ -9,7 +9,9 @@ import time
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Type, Union
+from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
+from yaocptool.optimization.abstract_optimization_problem import AbstractOptimizationProblem
 
 from casadi import (
     DM,
@@ -98,16 +100,16 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
     def __init__(
         self,
         problem: OptimalControlProblem,
-        ocp_solver_class,
-        solver_options=None,
-        options={},
+        ocp_solver_class: Type[SolutionMethodInterface],
+        solver_options =None,
+        options: Union[AugmentedLagrangianOptions,Dict[str,Any]]={},
         **kwargs,
     ):
         """
             Augmented Lagrange Method (Aguiar 2016)
 
         :param yaocptool.modelling.OptimalControlProblem: Optimal Control Problem
-        :param type ocp_solver_class: Class of Solution Method (Direct/Indirect Method)
+        :param ocp_solver_class: Class of Solution Method (Direct/Indirect Method)
         :param solver_options: Options for the Solution Method class given
         :param relax_algebraic_index: Index for the algebraic equations that will be relaxed,
             if not given all the algebraic equations will be relaxed
@@ -128,14 +130,16 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
 
         for key, val in [*kwargs.items()]:
             if hasattr(AugmentedLagrangianOptions, key):
-                print(key, val)
-                options[key] = kwargs.pop(key)
+                if isinstance(options, dict):
+                    options[key] = kwargs.pop(key)
+                else:
+                    setattr(options, key, val)
                 warnings.warn(
-                    "Pass options as a dict in options keyword argument",
+                        f"Pass options as a dict in options keyword argument, {key}={val}",
                     Warning,
                 )
 
-        self.options = AugmentedLagrangianOptions(**options)
+        self.options = AugmentedLagrangianOptions(**options) if isinstance(options, dict) else options
 
         self.nu = None
         self.nu_tilde = None
