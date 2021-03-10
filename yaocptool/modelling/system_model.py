@@ -58,6 +58,8 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
         :param bool model_name_as_prefix: if true all variables create will have the model name as prefix
             e.g.: 'tank_h', where 'tank' is model name and 'h' is the state created
         """
+        self.t = SX.sym("t")
+        self.tau = SX.sym("tau")
         super().__init__()
         self.name = name
 

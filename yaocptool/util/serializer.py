@@ -2,7 +2,7 @@ import concurrent.futures
 import copy
 import copyreg
 import importlib
-from multiprocessing import Lock
+import multiprocessing as mp
 import os
 import pickle
 from typing import Union
@@ -11,60 +11,55 @@ from casadi import MX, SX, StringDeserializer, StringSerializer
 import casadi
 
 
+class NewForkingPickler(mp.reduction.ForkingPickler):
+    def __init__(self, *args, **kwargs):
+        #  print("Initing", self.__class__, id(self))
+        super().__init__(*args, **kwargs)
+
+        _casadi_serializer = CasadiPicklerDepickler()
+
+        def pickle_casadi(obj):
+            #  print("pickling", obj)
+            s = _casadi_serializer.dumps(obj)
+            return _casadi_serializer.loads, (s, repr(obj))
+
+        self.dispatch_table.update({SX: pickle_casadi, MX: pickle_casadi})
+
+
 class CasadiPicklerDepickler:
     serializer = StringSerializer()
     deserializer = StringDeserializer(serializer.encode())
 
     def __init__(self):
-        print("creating pickler/depickler")
+        #  print("creating pickler/depickler", os.getpid())
+        self.__class__.serializer = StringSerializer()
+        self.__class__.deserializer = StringDeserializer(
+            self.__class__.serializer.encode()
+        )
 
     def dumps(self, var: Union[SX, MX]) -> str:
-        self.serializer.pack(var)
-        print(
-            os.getpid(),
-            id(self.serializer),
-            "dumping",
-            repr(var),
-        )
+        #  print(os.getpid(), id(self.serializer), "starting to dump", repr(var))
+        try:
+            self.serializer.pack(var)
+        except Exception as e:
+            print("failed to deserialize", e)
+            raise e
+        #  print(os.getpid(), id(self.serializer), "dump succesful", repr(var))
         return self.serializer.encode()
 
     def loads(self, s: str, name: str = "no name") -> Union[SX, MX]:
-        self.deserializer.decode(s)
-        print(
-            os.getpid(),
-            id(self.deserializer),
-            "loading",
-            name,
-        )
-        return self.deserializer.unpack()
+        #  print(os.getpid(), id(self.deserializer), "starting to load", name)
+        try:
+            self.deserializer.decode(s)
+            var = self.deserializer.unpack()
+        except Exception as e:
+            print("failed to deserialize", name, e)
+            raise e
+        #  print(os.getpid(), id(self.deserializer), "load succesful", name)
+        return var
 
 
-_pickler_depickler_dict = {"pid": os.getpid(), "obj": CasadiPicklerDepickler()}
-
-
-def get_pickler_depickler():
-    global _pickler_depickler_dict
-    if _pickler_depickler_dict["pid"] != os.getpid():
-        importlib.reload(casadi)
-        _pickler_depickler_dict = {"pid": os.getpid(), "obj": CasadiPicklerDepickler()}
-    return _pickler_depickler_dict["obj"]
-
-
-def depickle(
-    *args,
-    **kwargs,
-):
-    return get_pickler_depickler().loads(*args, **kwargs)
-
-
-def pickle_casadi(obj):
-    _pickler_depickler = get_pickler_depickler()
-    s = _pickler_depickler.dumps(obj)
-    return depickle, (s, repr(obj))
-
-
-for casadi_class in [SX, MX]:
-    copyreg.pickle(casadi_class, pickle_casadi)
+mp.reduction.ForkingPickler = NewForkingPickler
 
 
 if __name__ == "__main__":
@@ -90,18 +85,10 @@ if __name__ == "__main__":
 
     def printer(data):
         print(data)
-        ind, data1, data2 = data
-        s = StringDeserializer(data[ind])
-        a = s.unpack()
-        #  s.decode(data2)
-        #  b = s.unpack()
-        print(a)
         return data
 
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
-        futs = [
-            executor.submit(printer, t) for t in [[1, data1, data2], [2, data1, data2]]
-        ]
+        futs = [executor.submit(printer, t) for t in [[1, x, x], [2, x, x]]]
         print([fut.result() for fut in futs])
     #  x = _pickler_depickler.loads(_pickler_depickler.dumps(SX.sym("x")))
     #  y = _pickler_depickler.loads(_pickler_depickler.dumps(MX.sym("y")))

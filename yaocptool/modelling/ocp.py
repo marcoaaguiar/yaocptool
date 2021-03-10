@@ -111,10 +111,10 @@ class OptimalControlProblem(object):
         self.time_g_eq: List[str] = []
         self.time_g_ineq: List[str] = []
 
-        self.L: SX = SX(0.0)  # Integral cost
-        self.V: SX = SX(0.0)  # Final cost
-        self.S: SX = SX(0.0)  # Finite element final cost
-        self.H: SX = SX(0.0)
+        self.L: SX = SX(0)  # Integral cost
+        self.V: SX = SX(0)  # Final cost
+        self.S: SX = SX(0)  # Finite element final cost
+        self.H: SX = SX(0)
 
         self.last_u: Optional[DM] = None
 
