@@ -296,49 +296,49 @@ class TestAbstractOptimizationProblem(TestCase):
         self.assertTrue(is_equal(aop.g_lb, theta))
         self.assertTrue(is_equal(aop.g_ub, theta))
 
-    def test_include_equality_w_external_variable_in_expr(self):
-        theta = MX.sym("theta")
 
-        aop = AbstractOptimizationProblem()
-        x = aop.create_variable("x", 2)
-        g = theta * x[0] - x[1]
-        aop.include_equality(g)
-        self.assertTrue(is_equal(aop.g, g))
-        self.assertTrue(is_equal(aop.g_lb, 0))
-        self.assertTrue(is_equal(aop.g_ub, 0))
+def test_include_equality_w_external_variable_in_expr():
+    theta = MX.sym("theta")
 
-    def test_include_constraint_inequality(self):
-        aop = AbstractOptimizationProblem()
-        x = aop.create_variable("x", 2)
+    aop = AbstractOptimizationProblem()
+    x = aop.create_variable("x", 2)
+    g = theta * x[0] - x[1]
+    aop.include_equality(g)
 
-        aop.include_constraint(x + 2 <= 1)
+    assert is_equal(aop.g, g)
+    assert is_equal(aop.g_lb, 0)
+    assert is_equal(aop.g_ub, 0)
 
-    def test_include_constraint_equality(self):
-        aop = AbstractOptimizationProblem()
-        x = aop.create_variable("x", 2)
 
-        aop.include_constraint(x + 2 == 1)
+def test_include_constraint_inequality():
+    aop = AbstractOptimizationProblem()
+    x = aop.create_variable("x", 2)
 
-    def test_include_constraint_inequality_w_external_var(self):
-        theta = MX.sym("theta")
-        aop = AbstractOptimizationProblem()
-        x = aop.create_variable("x", 2)
+    aop.include_constraint(x + 2 <= 1)
 
+
+def test_include_constraint_equality():
+    aop = AbstractOptimizationProblem()
+    x = aop.create_variable("x", 2)
+
+    aop.include_constraint(x + 2 == 1)
+
+
+def test_include_constraint_inequality_w_external_var():
+    theta = MX.sym("theta")
+    aop = AbstractOptimizationProblem()
+    x = aop.create_variable("x", 2)
+
+    with pytest.raises(NotImplementedError):
         aop.include_constraint(x + 2 <= theta)
 
-    def test_include_constraint_equality_w_external_var(self):
-        theta = MX.sym("theta")
 
-        aop = AbstractOptimizationProblem()
-        x = aop.create_variable("x", 2)
+def test_include_constraint_equality_w_external_var():
+    theta = MX.sym("theta")
+    #  theta = aop.create_variable()
 
+    aop = AbstractOptimizationProblem()
+    x = aop.create_variable("x", 2)
+
+    with pytest.raises(NotImplementedError):
         aop.include_constraint(x + 2 == theta)
-
-
-def test_serialization(quadratic_problem):
-    pickle.dumps(quadratic_problem)
-
-
-def test_deserialization(quadratic_problem):
-    problem_str = pickle.dumps(quadratic_problem)
-    pickle.loads(problem_str)

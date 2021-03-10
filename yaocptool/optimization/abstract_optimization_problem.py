@@ -409,7 +409,7 @@ class AbstractOptimizationProblem(object):
                 else:
                     self.include_inequality(dep_term, lb=indep_term_dm)
         else:
-            raise NotImplementedError
+            raise NotImplementedError("NLP")
 
     def get_problem_dict(self) -> Dict[str, Union[MX]]:
         """Return the optimization problem in a Python dict form (CasADi standard).
@@ -480,11 +480,11 @@ class AbstractOptimizationProblem(object):
 
         solver = self.get_solver()
 
-        solution = solver(**call_dict)
-        solution["stats"] = solver.stats()
+        solution: OptiResultDictType = solver(**call_dict)
+        stats_dict = {"stats": solver.stats()}
         print("solved")
 
-        return solution
+        return {**solution, **stats_dict}
 
     def mp_solve(
         self,
