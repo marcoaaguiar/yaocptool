@@ -48,6 +48,6 @@ class DirectMethod(SolutionMethodsBase):
             self.problem.V = self.problem.V + x_c
 
     def prepare(self):
-        super(DirectMethod, self).prepare()
+        super().prepare()
         self._create_cost_state()
         self._parametrize_control()

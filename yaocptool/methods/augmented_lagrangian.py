@@ -245,7 +245,7 @@ class AugmentedLagrangian(SolutionMethodsBase, metaclass=OptionsOverride):
         pass
 
     @property
-    def time_interpolation_nu(self) -> List[List[DM]]:
+    def time_interpolation_nu(self) -> List[List[float]]:
         col_points = self.collocation_points(self.options.degree, with_zero=False)
         return [
             [

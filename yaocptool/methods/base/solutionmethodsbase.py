@@ -88,7 +88,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
     @property
     def delta_t(self) -> float:
-        return float(self.problem.t_f - self.problem.t_0) / self.finite_elements
+        return (self.problem.t_f - self.problem.t_0) / self.finite_elements
 
     @cached_property
     def time_breakpoints(self) -> List[float]:

@@ -6,12 +6,15 @@ Created on
 """
 import time
 import random
+import concurrent.futures
 from collections import defaultdict
 from dataclasses import dataclass, asdict
-from typing import Optional
+from typing import Dict, List, Optional, Type
+from yaocptool.modelling.network.node import Node
 
 import matplotlib.pyplot as plt
 from casadi import DM, SX, inf, vertcat
+import networkx.algorithms.coloring
 
 from yaocptool import (
     create_polynomial_approximation,
@@ -37,6 +40,7 @@ class DistributedAugmentedLagrangianOptions:
     abs_tol: float = 1e-6
     inner_loop_tol: float = 1e-4
     randomized_inner: bool = False
+    distributed: bool = False
 
     debug_skip_replace_by_approximation: bool = False
 
@@ -51,10 +55,9 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
     def __init__(
         self,
         network: Network,
-        solution_method_class,
+        solution_method_class: Type[SolutionMethodInterface],
         solution_method_options: dict = None,
         options={},
-        **kwargs,
     ):
         if solution_method_options is None:
             solution_method_options = {}
@@ -65,11 +68,18 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
 
         self.options = DistributedAugmentedLagrangianOptions(**options)
 
-        self.relax_dict = {}
-        self._last_result = {}  # dict
+        coloring: Dict[Node, int] = networkx.algorithms.coloring.greedy_color(
+            self.network.graph
+        )
+        self.blocks = {
+            group_number: [node for node, _ in group]
+            for group_number, group in itertools.groupby(
+                coloring.items(), key=lambda item: item[1]
+            )
+        }
 
-        for (k, v) in kwargs.items():
-            setattr(self, k, v)
+        self.relax_dict = {}
+        self._last_result = {}
 
     def _include_exogenous_variables(self):
         self.relax_dict = {
@@ -183,7 +193,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         result = self._last_result[node]
         return result.get_variable(variable_type, var_indices)
 
-    def _get_node_theta(self, node):
+    def _get_node_theta(self, node: Node):
         data = defaultdict(list)
         for p in self.network.graph.pred[node]:
             connections = self.network.graph.edges[p, node]
@@ -208,6 +218,79 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     data[i] = vertcat(data[i], *u_data[i])
 
         return data
+
+    def _solve_node_problems(self, nodes):
+        if self.options.distributed:
+            return self._solve_node_problems_distributed()
+        return self._solve_node_problems_serial(nodes)
+
+    def _solve_node_problems_serial(self, nodes):
+        result_dict = {}
+        for node in itertools.chain(nodes):
+            # get node theta
+            node_theta = self._get_node_theta(node)
+            # warm start
+            initial_guess = (
+                self._last_result[node].raw_solution_dict["x"]
+                if node in self._last_result
+                else None
+            )
+
+            # solve node problem
+            result = node.solution_method.solve(
+                theta=node_theta, initial_guess=initial_guess
+            )
+            if "return_status" in result.stats and result.stats[
+                "return_status"
+            ] not in {
+                "Search_Direction_Becomes_Too_Small",
+                "Solved_To_Acceptable_Level",
+                "Solve_Succeeded",
+            }:
+                __import__("ipdb").set_trace()
+            result_dict[node] = self._last_result[node] = result
+        return result_dict
+
+    def _solve_node_problems_distributed(self):
+        result_dict = {}
+        node_theta = {}
+        initial_guess = {}
+        for block in self.blocks.values():
+            for node in block:
+                # get node theta
+                node_theta[node] = self._get_node_theta(node)
+                # warm start
+                initial_guess[node] = (
+                    self._last_result[node].raw_solution_dict["x"]
+                    if node in self._last_result
+                    else None
+                )
+            with concurrent.futures.ProcessPoolExecutor() as executor:
+                futures = {
+                    node: executor.submit(
+                        node.solution_method.solve,
+                        theta=node_theta[node],
+                        initial_guess=initial_guess[node],
+                    )
+                    for node in block
+                }
+                block_results = {
+                    node: future.result() for node, future in futures.items()
+                }
+
+            for node in block:
+                result = block_results[node]
+                if "return_status" in result.stats and result.stats[
+                    "return_status"
+                ] not in {
+                    "Search_Direction_Becomes_Too_Small",
+                    "Solved_To_Acceptable_Level",
+                    "Solve_Succeeded",
+                }:
+                    __import__("ipdb").set_trace()
+                result_dict.update(block_results)
+                self._last_result.update(block_results)
+        return result_dict
 
     def solve(self):
         self._include_exogenous_variables()
@@ -242,31 +325,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 else:
                     nodes_iterator = sorted(self.network.nodes, key=lambda x: x.node_id)
 
-                for node in nodes_iterator:
-                    # get node theta
-                    node_theta[node] = self._get_node_theta(node)
-                    # warm start
-                    initial_guess = (
-                        self._last_result[node].raw_solution_dict["x"]
-                        if node in self._last_result
-                        else None
-                    )
-
-                    # solve node problem
-                    result = node.solution_method.solve(
-                        theta=node_theta[node], initial_guess=initial_guess
-                    )
-                    if "return_status" in result.stats and result.stats[
-                        "return_status"
-                    ] not in {
-                        "Search_Direction_Becomes_Too_Small",
-                        "Solved_To_Acceptable_Level",
-                        "Solve_Succeeded",
-                    }:
-                        __import__("ipdb").set_trace()
-
-                    # save result
-                    result_dict[node] = self._last_result[node] = result
+                result_dict = self._solve_node_problems(nodes_iterator)
 
                 objective = sum(
                     result_dict[node].objective_opt_problem for node in self.network
@@ -363,6 +422,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                         },
                     },
                 )
+                node.solution_method.create_optimization_problem()
 
     def _print_nodes_errors(self, node_error, node_error_last):
         max_name_len = max(len(n.name) for n in self.network.nodes)

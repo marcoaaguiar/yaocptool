@@ -691,11 +691,11 @@ class OptimalControlProblem(object):
             self.u_guess = vertcat(self.u_guess)
 
         if isinstance(self.L, (int, float)):
-            self.L = DM(self.L)
+            self.L = SX(self.L)
         if isinstance(self.V, (int, float)):
-            self.V = DM(self.V)
+            self.V = SX(self.V)
         if isinstance(self.S, (int, float)):
-            self.S = DM(self.S)
+            self.S = SX(self.S)
 
     def pre_solve_check(self):
         self._fix_types()
