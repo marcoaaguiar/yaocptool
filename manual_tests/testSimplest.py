@@ -1,11 +1,12 @@
+from yaocptool.util.util import Timer
 from yaocptool.methods import IndirectMethod
 from yaocptool.modelling import SystemModel, OptimalControlProblem
 
 model = SystemModel()
-model.create_state('x')
-model.create_control('x')
+x = model.create_state("x")
+u = model.create_control("u")
 
-model.include_equations(ode=(-model.x[0] + model.u[0]))
+model.include_equations(ode=(-x + u))
 
 problem = OptimalControlProblem(model, obj={"Q": 1, "R": 1}, x_0=[1], t_f=5.0)
 # problem.u_min[0] = 0
@@ -15,7 +16,6 @@ problem = OptimalControlProblem(model, obj={"Q": 1, "R": 1}, x_0=[1], t_f=5.0)
 
 solution_method = IndirectMethod(
     problem,
-    degree_control=3,
     discretization_scheme="multiple-shooting",
     # discretization_scheme='collocation',
     degree=3,
@@ -23,6 +23,7 @@ solution_method = IndirectMethod(
     integrator_type="implicit",
 )
 
-solution = solution_method.solve()
+with Timer(verbose=True) as once_timer:
+    solution = solution_method.solve()
 
-solution.plot([{"x": [0, 1]}, {"u": [0]}])
+solution.plot({"x": [0, 1]}, {"u": [0]})
