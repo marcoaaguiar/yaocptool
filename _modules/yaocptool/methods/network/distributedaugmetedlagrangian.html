@@ -1,0 +1,474 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.methods.network.distributedaugmetedlagrangian &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.methods.network.distributedaugmetedlagrangian</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.methods.network.distributedaugmetedlagrangian</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on </span>
+
+<span class="sd">@author: Marco Aurelio Schmitz de Aguiar</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">inf</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="kn">import</span> <span class="n">create_polynomial_approximation</span><span class="p">,</span> <span class="n">find_variables_indices_in_vector</span><span class="p">,</span> <span class="n">DM</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">join_thetas</span>
+<span class="kn">from</span> <span class="nn">yaocptool.methods</span> <span class="kn">import</span> <span class="n">SolutionMethodInterface</span><span class="p">,</span> <span class="n">AugmentedLagrangian</span>
+
+
+<div class="viewcode-block" id="DistributedAugmentedLagrangian"><a class="viewcode-back" href="../../../../yaocptool.methods.network.html#yaocptool.methods.network.distributedaugmetedlagrangian.DistributedAugmentedLagrangian">[docs]</a><span class="k">class</span> <span class="nc">DistributedAugmentedLagrangian</span><span class="p">(</span><span class="n">SolutionMethodInterface</span><span class="p">):</span>
+<div class="viewcode-block" id="DistributedAugmentedLagrangian.__init__"><a class="viewcode-back" href="../../../../yaocptool.methods.network.html#yaocptool.methods.network.distributedaugmetedlagrangian.DistributedAugmentedLagrangian.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">network</span><span class="p">,</span>
+                 <span class="n">solution_method_class</span><span class="p">,</span>
+                 <span class="n">solution_method_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param yaocptool.modelling.Network network:</span>
+<span class="sd">        :param type solution_method_class:</span>
+<span class="sd">        :param dict solution_method_options:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">solution_method_options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">solution_method_options</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">network</span> <span class="o">=</span> <span class="n">network</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solution_method_class</span> <span class="o">=</span> <span class="n">solution_method_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solution_method_options</span> <span class="o">=</span> <span class="n">solution_method_options</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">degree</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter_inner</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter_inner_first</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter_outer</span> <span class="o">=</span> <span class="mi">30</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">abs_tol</span> <span class="o">=</span> <span class="mf">1e-6</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu_0</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu_max</span> <span class="o">=</span> <span class="mf">1e6</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relax_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_result</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># dict</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_replace_by_approximation</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_update_nu</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_update_mu</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_include_exogenous_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">relax_dict</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">relax_dict</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="s1">&#39;y_relax&#39;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="s1">&#39;alg_relax_ind&#39;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="s1">&#39;eq_relax_ind&#39;</span><span class="p">:</span> <span class="p">[]</span>
+                <span class="p">}</span>
+
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">pred</span><span class="p">[</span><span class="n">node</span><span class="p">]:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">node</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+                <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">node</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">]</span>
+
+                <span class="c1"># create an approximation</span>
+                <span class="n">y_appr_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;_appr&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">())]</span>
+                <span class="n">y_appr</span><span class="p">,</span> <span class="n">y_appr_par</span> <span class="o">=</span> <span class="n">create_polynomial_approximation</span><span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span>
+                    <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">y_appr_name</span><span class="p">)</span>
+
+                <span class="c1"># register the added connection to the list of algebraic equations to be relaxed</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">relax_dict</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s1">&#39;alg_relax_ind&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                    <span class="nb">list</span><span class="p">(</span>
+                        <span class="nb">range</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span>
+                              <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">+</span> <span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">())))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_replace_by_approximation</span><span class="p">:</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">y_appr</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+                <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="n">y_appr_par</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">relax_dict</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s1">&#39;y_relax&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                    <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">u</span><span class="p">,</span>
+                                                     <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">))</span>
+
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">succ</span><span class="p">[</span><span class="n">node</span><span class="p">]:</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="n">s</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+                <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="n">s</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">]</span>
+
+                <span class="n">u_appr_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;_appr&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">())]</span>
+                <span class="n">u_appr</span><span class="p">,</span> <span class="n">u_appr_par</span> <span class="o">=</span> <span class="n">create_polynomial_approximation</span><span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span>
+                    <span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">u_appr_name</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">relax_dict</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s1">&#39;eq_relax_ind&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                    <span class="nb">list</span><span class="p">(</span>
+                        <span class="nb">range</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">g_eq</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span>
+                              <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">g_eq</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">+</span> <span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">())))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_replace_by_approximation</span><span class="p">:</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_time_equality</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">u_appr</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_time_equality</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span>
+
+                <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="n">u_appr_par</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_variable_last_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">variable_type</span><span class="p">,</span> <span class="n">var_indices</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param yaocptool.modelling.Node node:</span>
+<span class="sd">        :param str variable_type:</span>
+<span class="sd">        :param int|list of int var_indices:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var_indices</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">var_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">var_indices</span><span class="p">]</span>
+
+        <span class="c1"># If no result is available</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">variable_type</span> <span class="o">==</span> <span class="s1">&#39;y&#39;</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">y_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[[</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">y_guess</span><span class="p">[</span><span class="n">var_indices</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">)</span>
+                <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="n">variable_type</span> <span class="o">==</span> <span class="s1">&#39;u&#39;</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[[</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">u_guess</span><span class="p">[</span><span class="n">var_indices</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">)</span>
+                <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)]</span>
+            <span class="k">return</span> <span class="p">[[</span><span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">var_indices</span><span class="p">))</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">)]</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)]</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_result</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">get_variable</span><span class="p">(</span><span class="n">variable_type</span><span class="p">,</span> <span class="n">var_indices</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_node_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">pred</span><span class="p">[</span><span class="n">node</span><span class="p">]:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">node</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">node</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">]</span>
+
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+                <span class="n">y_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_variable_last_result</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">ind</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">):</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="o">*</span><span class="n">y_data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">succ</span><span class="p">[</span><span class="n">node</span><span class="p">]:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="n">s</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node</span><span class="p">,</span> <span class="n">s</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">]</span>
+
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+                <span class="n">u_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_variable_last_result</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="n">ind</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">):</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="o">*</span><span class="n">u_data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">data</span>
+
+<div class="viewcode-block" id="DistributedAugmentedLagrangian.solve"><a class="viewcode-back" href="../../../../yaocptool.methods.network.html#yaocptool.methods.network.distributedaugmetedlagrangian.DistributedAugmentedLagrangian.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_include_exogenous_variables</span><span class="p">()</span>
+
+        <span class="c1"># Create Augmented Lagrangian</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">solution_method</span> <span class="o">=</span> <span class="n">AugmentedLagrangian</span><span class="p">(</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">solution_method_class</span><span class="p">,</span>
+                <span class="n">solver_options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solution_method_options</span><span class="p">,</span>
+                <span class="n">relax_algebraic_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_dict</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s1">&#39;alg_relax_ind&#39;</span><span class="p">],</span>
+                <span class="n">relax_algebraic_var_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_dict</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s1">&#39;y_relax&#39;</span><span class="p">],</span>
+                <span class="n">relax_time_equality_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">relax_dict</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+                <span class="p">[</span><span class="s1">&#39;eq_relax_ind&#39;</span><span class="p">],</span>
+                <span class="n">degree</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span>
+                <span class="n">degree_control</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span>
+                <span class="n">finite_elements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">,</span>
+                <span class="n">no_update_after_solving</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">max_iter</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">mu_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mu_0</span><span class="p">,</span>
+                <span class="n">mu_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mu_max</span><span class="p">,</span>
+                <span class="c1"># _debug_skip_update_nu=True,</span>
+                <span class="c1"># _debug_skip_update_mu=True,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># initialize dicts</span>
+        <span class="n">node_theta</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">result_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">node_error</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">node_error_last</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">node</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">])</span>
+        <span class="n">t_0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">max_error</span> <span class="o">=</span> <span class="n">inf</span>
+        <span class="k">for</span> <span class="n">outer_it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iter_outer</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting outer iteration: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outer_it</span><span class="p">)</span><span class="o">.</span><span class="n">center</span><span class="p">(</span>
+                <span class="mi">40</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">inner_it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">max_iter_inner_first</span> <span class="k">if</span> <span class="n">outer_it</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span>
+                    <span class="n">max_iter_inner_first</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iter_inner</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting inner iteration: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">inner_it</span><span class="p">)</span><span class="o">.</span><span class="n">center</span><span class="p">(</span>
+                    <span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">))</span>
+
+                <span class="c1"># for node in self.network.nodes:  # sorted(self.network.nodes, key=lambda x: x.node_id):</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span>
+                                   <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">node_id</span><span class="p">):</span>
+                    <span class="c1"># print(&quot;Solving: {}&quot;.format(node))</span>
+
+                    <span class="c1"># get node theta</span>
+                    <span class="n">node_theta</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_theta</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+                    <span class="c1"># warm start</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">initial_guess_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                            <span class="n">node</span><span class="p">)</span><span class="o">.</span><span class="n">raw_solution_dict</span>
+                        <span class="n">initial_guess</span> <span class="o">=</span> <span class="n">initial_guess_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">initial_guess_dict</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="n">initial_guess</span> <span class="o">=</span> <span class="kc">None</span>
+
+                    <span class="c1"># solve node problem</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
+                        <span class="n">theta</span><span class="o">=</span><span class="n">node_theta</span><span class="p">[</span><span class="n">node</span><span class="p">],</span> <span class="n">initial_guess</span><span class="o">=</span><span class="n">initial_guess</span><span class="p">)</span>
+
+                    <span class="c1"># save result</span>
+                    <span class="n">result_dict</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_last_result</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+                    <span class="c1"># print(&quot;Finished: {}&quot;.format(node))</span>
+
+            <span class="c1"># update nu</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">node_id</span><span class="p">):</span>
+                <span class="n">node_theta</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_node_theta</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                <span class="n">theta_k</span> <span class="o">=</span> <span class="n">join_thetas</span><span class="p">(</span><span class="n">node_theta</span><span class="p">[</span><span class="n">node</span><span class="p">],</span>
+                                      <span class="n">node</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">nu</span><span class="p">)</span>
+                <span class="n">p_k</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">mu</span>
+                <span class="n">raw_solution_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_result</span><span class="p">[</span><span class="n">node</span><span class="p">]</span><span class="o">.</span><span class="n">raw_solution_dict</span>
+                <span class="n">node_error</span><span class="p">[</span>
+                    <span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">_compute_new_nu_and_error</span><span class="p">(</span>
+                        <span class="n">theta</span><span class="o">=</span><span class="n">theta_k</span><span class="p">,</span>
+                        <span class="n">p</span><span class="o">=</span><span class="n">p_k</span><span class="p">,</span>
+                        <span class="n">raw_solution_dict</span><span class="o">=</span><span class="n">raw_solution_dict</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Violation node: </span><span class="si">{}</span><span class="s2"> | error: </span><span class="si">{}</span><span class="s2"> | diff: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">node_error</span><span class="p">[</span><span class="n">node</span><span class="p">],</span>
+                    <span class="n">node_error</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">-</span> <span class="n">node_error_last</span><span class="p">[</span><span class="n">node</span><span class="p">]))</span>
+                <span class="n">node_error_last</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_error</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+
+            <span class="c1"># update mu</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_debug_skip_update_mu</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+                    <span class="n">node</span><span class="o">.</span><span class="n">solution_method</span><span class="o">.</span><span class="n">_update_mu</span><span class="p">()</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ending outer iteration: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outer_it</span><span class="p">)</span><span class="o">.</span><span class="n">center</span><span class="p">(</span>
+                <span class="mi">40</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">))</span>
+
+            <span class="c1"># error</span>
+            <span class="n">max_error</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node_error</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">max_error</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">abs_tol</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;=== Exiting: </span><span class="si">{}</span><span class="s1"> | Viol. Error: </span><span class="si">{}</span><span class="s1"> | Total time: </span><span class="si">{}</span><span class="s1"> ===&#39;</span><span class="o">.</span>
+                      <span class="nb">format</span><span class="p">(</span><span class="s1">&#39;Tolerance met&#39;</span><span class="p">,</span> <span class="n">max_error</span><span class="p">,</span>
+                             <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t_0</span><span class="p">))</span>
+                <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s1">&#39;=== Exiting: </span><span class="si">{}</span><span class="s1"> | Iterations: </span><span class="si">{}</span><span class="s1"> | Viol. Error: </span><span class="si">{:e}</span><span class="s1"> | Total time: </span><span class="si">{}</span><span class="s1"> ===&#39;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;Max iteration reached&#39;</span><span class="p">,</span> <span class="n">outer_it</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_error</span><span class="p">),</span>
+                        <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t_0</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">result_dict</span></div>
+
+<div class="viewcode-block" id="DistributedAugmentedLagrangian.prepare"><a class="viewcode-back" href="../../../../yaocptool.methods.network.html#yaocptool.methods.network.distributedaugmetedlagrangian.DistributedAugmentedLagrangian.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">pre_solve_check</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DistributedAugmentedLagrangian.plot_all_relaxations"><a class="viewcode-back" href="../../../../yaocptool.methods.network.html#yaocptool.methods.network.distributedaugmetedlagrangian.DistributedAugmentedLagrangian.plot_all_relaxations">[docs]</a>    <span class="k">def</span> <span class="nf">plot_all_relaxations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result_list</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">edge</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">y_index</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">u_index</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">],</span> <span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
+            <span class="n">result_list</span><span class="p">[</span><span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">plot</span><span class="p">({</span><span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">y_index</span><span class="p">},</span>
+                                      <span class="n">figures</span><span class="o">=</span><span class="p">[</span><span class="n">fig</span><span class="p">],</span>
+                                      <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">result_list</span><span class="p">[</span><span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">plot</span><span class="p">({</span><span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="n">u_index</span><span class="p">},</span> <span class="n">figures</span><span class="o">=</span><span class="p">[</span><span class="n">fig</span><span class="p">])</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

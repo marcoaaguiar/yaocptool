@@ -1,0 +1,503 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.estimation.unscented_kalman_filter &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.estimation.unscented_kalman_filter</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.estimation.unscented_kalman_filter</h1><div class="highlight"><pre>
+<span></span><span class="c1"># coding=utf-8</span>
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">chol</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">solve</span><span class="p">,</span> <span class="n">DM</span><span class="p">,</span> <span class="n">vec</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool.estimation.estimator_abstract</span> <span class="kn">import</span> <span class="n">EstimatorAbstract</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling</span> <span class="kn">import</span> <span class="n">SystemModel</span><span class="p">,</span> <span class="n">DataSet</span>
+
+
+<div class="viewcode-block" id="UnscentedKalmanFilter"><a class="viewcode-back" href="../../../yaocptool.estimation.html#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter">[docs]</a><span class="k">class</span> <span class="nc">UnscentedKalmanFilter</span><span class="p">(</span><span class="n">EstimatorAbstract</span><span class="p">):</span>
+<div class="viewcode-block" id="UnscentedKalmanFilter.__init__"><a class="viewcode-back" href="../../../yaocptool.estimation.html#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Unscented Kalman Filter. Two versions are implemented standard and square-root.</span>
+<span class="sd">            Implemented based on [1] and [2].</span>
+
+
+
+<span class="sd">        References:</span>
+
+<span class="sd">        [1] Wan, E. A., &amp; Van Der Merwe, R. (2000). The unscented Kalman filter for nonlinear estimation.</span>
+<span class="sd">        In Proceedings of the IEEE 2000 Adaptive Systems for Signal Processing, Communications, and Control Symposium</span>
+<span class="sd">        (Cat. No.00EX373) (Vol. v, pp. 153–158). IEEE. http://doi.org/10.1109/ASSPCC.2000.882463</span>
+
+<span class="sd">        [2] Merwe, R. Van Der, &amp; Wan, E. a. (2001). The square-root unscented Kalman filter for state and</span>
+<span class="sd">        parameter-estimation. 2001 IEEE International Conference on Acoustics, Speech, and Signal Processing.</span>
+<span class="sd">        Proceedings (Cat. No.01CH37221), 6, 1–4. http://doi.org/10.1109/ICASSP.2001.940586</span>
+
+<span class="sd">        :param SystemModel model: estimator model</span>
+<span class="sd">        :param x_mean: a initial guess for the mean</span>
+<span class="sd">        :param p_k: a initial guess for the covariance of the estimator</span>
+<span class="sd">        :param h_function: a function that receives 3 parameters (x, y_algebraic, u) and returns an measurement.</span>
+<span class="sd">        :param c_matrix: if h_function is not give, c_matrix is &quot;C&quot; from the measurement equation:</span>
+<span class="sd">                         y_meas = C*[x y_alg] + D*u. note that it has to have n_x + n_y (algebraic) columns.</span>
+<span class="sd">        :param DM r_v: process noise matrix</span>
+<span class="sd">        :param DM r_n: measurement noise matrix</span>
+<span class="sd">        :param implementation: options: &#39;standard&#39; or &#39;square-root&#39;. (default: &#39;standard&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_points</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ell</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d_matrix</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">=</span> <span class="s1">&#39;standard&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_v</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_n</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_types_fixed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_checked</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">EstimatorAbstract</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Data set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="n">DataSet</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;ukf_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;ukf_&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y_sym</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;P&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="o">**</span><span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;P&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;ukf_P_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;P_y&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="o">**</span><span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;P_y&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;ukf_P_y_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;meas&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_meas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;meas&#39;</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;ukf_meas_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_meas</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Choose the UKF implementation</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">implementation</span> <span class="o">==</span> <span class="s1">&#39;standard&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_standard_ukf</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">estimate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_square_root_ukf</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_meas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Number of measurements</span>
+
+<span class="sd">        :rtype: int</span>
+<span class="sd">        :return: Number of measurements</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span><span class="o">.</span><span class="n">numel_out</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;The estimator has no measurements information, neither &#39;h_function&#39; or &#39;c_matrix&#39; &quot;</span>
+                <span class="s2">&quot;were given.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_fix_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_k</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_v</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r_v</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_n</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r_n</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;A initial condition for the &quot;x_mean&quot; must be provided&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;A initial condition for the &quot;p_k&quot; must be provided&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Neither a measurement function &quot;h_function&quot; or a measurement matrix &quot;c_matrix&quot; was given&#39;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="UnscentedKalmanFilter.estimate"><a class="viewcode-back" href="../../../yaocptool.estimation.html#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.estimate">[docs]</a>    <span class="k">def</span> <span class="nf">estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">y_k</span><span class="p">,</span> <span class="n">u_k</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;This function should have been replaced&#39;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_estimate_standard_ukf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">y_k</span><span class="p">,</span> <span class="n">u_k</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checked</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_checked</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_types_fixed</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fix_types</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_types_fixed</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">x_mean</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span>
+        <span class="n">x_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span>
+
+        <span class="c1"># obtain the weights</span>
+        <span class="n">sigma_points</span><span class="p">,</span> <span class="n">weights_m</span><span class="p">,</span> <span class="n">weights_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sigma_points_and_weights</span><span class="p">(</span>
+            <span class="n">x_mean</span><span class="p">,</span> <span class="n">x_cov</span><span class="p">)</span>
+
+        <span class="c1"># Obtain the unscented transformation points via simulation</span>
+        <span class="n">simulation_results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">x_ut_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">y_ut_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">x_aug_ut_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">meas_ut_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_points</span><span class="p">):</span>
+            <span class="n">x_0_i</span> <span class="o">=</span> <span class="n">sigma_points</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">simulation_results_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">x_0</span><span class="o">=</span><span class="n">x_0_i</span><span class="p">,</span>
+                                                       <span class="n">t_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span>
+                                                       <span class="n">t_f</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_s</span><span class="p">,</span>
+                                                       <span class="n">u</span><span class="o">=</span><span class="n">u_k</span><span class="p">,</span>
+                                                       <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span>
+                                                       <span class="n">theta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span>
+                                                       <span class="n">y_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span><span class="p">)</span>
+            <span class="n">simulation_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">simulation_results_i</span><span class="p">)</span>
+            <span class="n">x_ut_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">simulation_results_i</span><span class="o">.</span><span class="n">final_condition</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">y_ut_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">simulation_results</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">final_condition</span><span class="p">()[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">x_aug_ut_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vertcat</span><span class="p">(</span><span class="n">x_ut_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">y_ut_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+            <span class="n">meas_ut_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_measurement_from_prediction</span><span class="p">(</span><span class="n">x_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                                      <span class="n">y_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">u_k</span><span class="p">))</span>
+
+        <span class="c1"># Obtain the means</span>
+        <span class="n">x_aug_pred</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span>
+            <span class="n">weights_m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">x_aug_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_points</span><span class="p">)</span>
+        <span class="p">])</span>
+        <span class="n">x_pred</span> <span class="o">=</span> <span class="n">x_aug_pred</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">]</span>
+        <span class="n">meas_pred</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span>
+            <span class="n">weights_m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">meas_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_points</span><span class="p">)</span>
+        <span class="p">])</span>
+
+        <span class="c1"># Compute the covariances</span>
+        <span class="n">cov_x_aug_pred</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span>
+            <span class="n">weights_c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">mtimes</span><span class="p">((</span><span class="n">x_aug_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_aug_pred</span><span class="p">),</span>
+                                  <span class="p">(</span><span class="n">x_aug_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_aug_pred</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_points</span><span class="p">)</span>
+        <span class="p">])</span>
+        <span class="n">cov_x_aug_pred</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_v</span>
+
+        <span class="n">cov_meas_pred</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span>
+            <span class="n">weights_c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">mtimes</span><span class="p">((</span><span class="n">meas_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">meas_pred</span><span class="p">),</span>
+                                  <span class="p">(</span><span class="n">meas_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">meas_pred</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_points</span><span class="p">)</span>
+        <span class="p">])</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_n</span>
+
+        <span class="n">cov_xmeas_pred</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span>
+            <span class="n">weights_c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">mtimes</span><span class="p">((</span><span class="n">x_aug_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_aug_pred</span><span class="p">),</span>
+                                  <span class="p">(</span><span class="n">meas_ut_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">meas_pred</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_points</span><span class="p">)</span>
+        <span class="p">])</span>
+
+        <span class="c1"># Calculate the gain</span>
+        <span class="n">k_gain</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">cov_meas_pred</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cov_xmeas_pred</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="c1"># Correct prediction of the state estimation</span>
+        <span class="n">x_mean</span> <span class="o">=</span> <span class="n">x_aug_pred</span> <span class="o">+</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">k_gain</span><span class="p">,</span> <span class="p">(</span><span class="n">y_k</span> <span class="o">-</span> <span class="n">meas_pred</span><span class="p">))</span>
+        <span class="n">meas_corr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_measurement_from_prediction</span><span class="p">(</span>
+            <span class="n">x_mean</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">],</span> <span class="n">x_mean</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:],</span> <span class="n">u_k</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Predicted state: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x_pred</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Prediction error: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y_k</span> <span class="o">-</span> <span class="n">meas_pred</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Correction: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mtimes</span><span class="p">(</span><span class="n">k_gain</span><span class="p">,</span> <span class="p">(</span><span class="n">y_k</span> <span class="o">-</span> <span class="n">meas_pred</span><span class="p">))))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Corrected state: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x_mean</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Measurement: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y_k</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Corrected Meas.: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">meas_corr</span><span class="p">))</span>
+
+        <span class="c1"># Correct covariance prediction</span>
+        <span class="n">cov_x_aug</span> <span class="o">=</span> <span class="n">cov_x_aug_pred</span> <span class="o">-</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">k_gain</span><span class="p">,</span>
+                                            <span class="n">mtimes</span><span class="p">(</span><span class="n">cov_meas_pred</span><span class="p">,</span> <span class="n">k_gain</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="o">=</span> <span class="n">x_mean</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span> <span class="o">=</span> <span class="n">cov_x_aug</span>
+
+        <span class="c1"># Save variables in local object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_x_aug</span> <span class="o">=</span> <span class="n">x_mean</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span> <span class="o">=</span> <span class="n">x_mean</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_p_k_aug</span> <span class="o">=</span> <span class="n">cov_x_aug_pred</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_k</span> <span class="o">=</span> <span class="n">cov_x_aug</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">]</span>
+
+        <span class="c1"># Save in the data set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mean</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">x_mean</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;meas&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">meas_corr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">vec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_k</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s1">&#39;P_y&#39;</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">cov_x_aug</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:,</span>
+                                                       <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:])</span>
+
+        <span class="k">return</span> <span class="n">x_mean</span><span class="p">,</span> <span class="n">cov_x_aug</span>
+
+    <span class="k">def</span> <span class="nf">_estimate_square_root_ukf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">y_k</span><span class="p">,</span> <span class="n">u_k</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+<div class="viewcode-block" id="UnscentedKalmanFilter.cholupdate"><a class="viewcode-back" href="../../../yaocptool.estimation.html#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.cholupdate">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">cholupdate</span><span class="p">(</span><span class="n">r_matrix</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">sign</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">sign</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;sign can be &#39;-&#39; or &#39;+&#39;, value given = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sign</span><span class="p">))</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">r</span> <span class="o">/</span> <span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">/</span> <span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span>
+            <span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span>
+            <span class="k">if</span> <span class="n">sign</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
+                <span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span>
+                         <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span><span class="p">]</span> <span class="o">+</span> <span class="n">s</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span><span class="p">])</span> <span class="o">/</span> <span class="n">c</span>
+            <span class="k">elif</span> <span class="n">sign</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+                <span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span>
+                         <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span><span class="p">]</span> <span class="o">-</span> <span class="n">s</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span><span class="p">])</span> <span class="o">/</span> <span class="n">c</span>
+            <span class="n">x</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span><span class="p">]</span> <span class="o">-</span> <span class="n">s</span> <span class="o">*</span> <span class="n">r_matrix</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span><span class="n">p</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">r_matrix</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_sigma_points_and_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_mean</span><span class="p">,</span> <span class="n">x_cov</span><span class="p">):</span>
+        <span class="c1"># Initialize variables</span>
+        <span class="n">sigma_points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">weights_m</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">weights_c</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">ell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ell</span>
+
+        <span class="c1"># Tuning parameters</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1e-3</span>
+        <span class="n">kappa</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">lamb</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">ell</span> <span class="o">+</span> <span class="n">kappa</span><span class="p">)</span>
+
+        <span class="c1"># Sigma points</span>
+        <span class="n">sqr_root_matrix</span> <span class="o">=</span> <span class="n">chol</span><span class="p">((</span><span class="n">ell</span> <span class="o">+</span> <span class="n">lamb</span><span class="p">)</span> <span class="o">*</span> <span class="n">x_cov</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">sigma_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_mean</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_points</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">i</span> <span class="o">%</span> <span class="n">ell</span>
+            <span class="n">sign</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">ell</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">sigma_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_mean</span> <span class="o">+</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">sqr_root_matrix</span><span class="p">[:,</span> <span class="n">ind</span><span class="p">])</span>
+
+        <span class="c1"># Weights</span>
+        <span class="n">weights_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lamb</span> <span class="o">/</span> <span class="p">(</span><span class="n">ell</span> <span class="o">+</span> <span class="n">lamb</span><span class="p">))</span>
+        <span class="n">weights_c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lamb</span> <span class="o">/</span> <span class="p">(</span><span class="n">ell</span> <span class="o">+</span> <span class="n">lamb</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">beta</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_points</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">weights_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">ell</span> <span class="o">+</span> <span class="n">lamb</span><span class="p">)))</span>
+            <span class="n">weights_c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">ell</span> <span class="o">+</span> <span class="n">lamb</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">sigma_points</span><span class="p">,</span> <span class="n">weights_m</span><span class="p">,</span> <span class="n">weights_c</span>
+
+    <span class="k">def</span> <span class="nf">_get_measurement_from_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">measurement_prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">measurement_prediction</span> <span class="o">=</span> <span class="n">mtimes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_matrix</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">d_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">measurement_prediction</span> <span class="o">=</span> <span class="n">measurement_prediction</span> <span class="o">+</span> <span class="n">mtimes</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">d_matrix</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Neither a measurement function &quot;h_function&quot; or a measurement matrix &quot;c_matrix&quot; was given&#39;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">measurement_prediction</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

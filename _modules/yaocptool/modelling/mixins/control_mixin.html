@@ -1,0 +1,324 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.mixins.control_mixin &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.mixins.control_mixin</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.modelling.mixins.control_mixin</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">casadi.casadi</span> <span class="kn">import</span> <span class="n">is_equal</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">SX</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">vertcat</span>
+<span class="kn">from</span> <span class="nn">yaocptool.util.util</span> <span class="kn">import</span> <span class="n">find_variables_indices_in_vector</span><span class="p">,</span> <span class="n">remove_variables_from_vector</span><span class="p">,</span> <span class="n">remove_variables_from_vector_by_indices</span>
+
+
+<div class="viewcode-block" id="ControlMixin"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.control_mixin.ControlMixin">[docs]</a><span class="k">class</span> <span class="nc">ControlMixin</span><span class="p">:</span>
+<div class="viewcode-block" id="ControlMixin.__init__"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.control_mixin.ControlMixin.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">SX</span><span class="p">([])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parametrized_controls</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_u</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_u_par</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">u_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_u</span><span class="p">)]</span>
+
+<div class="viewcode-block" id="ControlMixin.create_control"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.control_mixin.ControlMixin.create_control">[docs]</a>    <span class="k">def</span> <span class="nf">create_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;u&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new control variable name &quot;name&quot; and size &quot;size&quot;.</span>
+<span class="sd">        Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)</span>
+<span class="sd">        to be included in the control vector (model.u).</span>
+
+<span class="sd">        :param name: str</span>
+<span class="sd">        :param size: int</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;name_variable&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name_variable</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">new_u</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">vec</span><span class="p">(</span><span class="n">new_u</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">new_u</span></div>
+
+<div class="viewcode-block" id="ControlMixin.include_control"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.control_mixin.ControlMixin.include_control">[docs]</a>    <span class="k">def</span> <span class="nf">include_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ControlMixin.remove_control"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.control_mixin.ControlMixin.remove_control">[docs]</a>    <span class="k">def</span> <span class="nf">remove_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ControlMixin.replace_variable"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.control_mixin.ControlMixin.replace_variable">[docs]</a>    <span class="k">def</span> <span class="nf">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">original</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">original</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">replacement</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">replacement</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">replacement</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">original</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">replacement</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Original and replacement must have the same number of elements!&quot;</span>
+                <span class="s2">&quot;original.numel()=</span><span class="si">{}</span><span class="s2">, replacement.numel()=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">original</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">replacement</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(),</span> <span class="s1">&#39;replace_variable&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+
+        <span class="c1">#  self.u_par = substitute(self.u_par, original, replacement)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ControlMixin.parametrize_control"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.control_mixin.ControlMixin.parametrize_control">[docs]</a>    <span class="k">def</span> <span class="nf">parametrize_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">u_par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Parametrize a control variables so it is a function of a set of parameters or other model variables.</span>
+
+<span class="sd">        :param list|casadi.SX u:</span>
+<span class="sd">        :param list|casadi.SX expr:</span>
+<span class="sd">        :param list|casadi.SX u_par:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># input check</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">u</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u_par</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">u_par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">u_par</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">expr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">expr</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Passed control and parametrization expression does not have same size. &quot;</span>
+                <span class="s2">&quot;u (</span><span class="si">{}</span><span class="s2">) and expr (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">expr</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="c1"># Check and register the control parametrization.</span>
+        <span class="k">for</span> <span class="n">u_i</span> <span class="ow">in</span> <span class="n">u</span><span class="o">.</span><span class="n">nz</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">control_is_parametrized</span><span class="p">(</span><span class="n">u_i</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;The control &quot;</span><span class="si">{</span><span class="n">u_i</span><span class="si">}</span><span class="s1">&quot; is already parametrized.&#39;</span><span class="p">)</span>
+            <span class="c1"># to get have a new memory address</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parametrized_controls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parametrized_controls</span> <span class="o">+</span> <span class="p">[</span><span class="n">u_i</span><span class="p">]</span>
+
+        <span class="c1"># Remove u from u_par if they are going to be parametrized</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">u_par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">,</span> <span class="n">u_par</span><span class="p">)</span>
+
+        <span class="c1"># Replace u by expr into the system</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ControlMixin.create_input"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.control_mixin.ControlMixin.create_input">[docs]</a>    <span class="k">def</span> <span class="nf">create_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;u&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Same as the &quot;model.create_control&quot; function.</span>
+<span class="sd">        Create a new control/input variable name &quot;name&quot; and size &quot;size&quot;.</span>
+<span class="sd">        Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)</span>
+<span class="sd">        to be included in the control vector (model.u).</span>
+
+<span class="sd">        :param name: str</span>
+<span class="sd">        :param size: int</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_control</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ControlMixin.control_is_parametrized"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.control_mixin.ControlMixin.control_is_parametrized">[docs]</a>    <span class="k">def</span> <span class="nf">control_is_parametrized</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Check if  the control &quot;u&quot; is parametrized</span>
+
+<span class="sd">        :param casadi.SX u:</span>
+<span class="sd">        :rtype bool:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;The parameter &quot;u&quot; is expected to be of size 1x1, given: </span><span class="si">{}</span><span class="s1">x</span><span class="si">{}</span><span class="s1">&#39;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span>
+                <span class="n">is_equal</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">parametrized_u</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">parametrized_u</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parametrized_controls</span>
+        <span class="p">]):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

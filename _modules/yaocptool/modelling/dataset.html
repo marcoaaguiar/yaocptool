@@ -1,0 +1,521 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.dataset &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.dataset</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.modelling.dataset</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">horzcat</span><span class="p">,</span> <span class="n">DM</span><span class="p">,</span> <span class="n">sum2</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool.config</span> <span class="kn">import</span> <span class="n">PLOT_INTERACTIVE</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s1">&#39;Failed to import matplotlib. Make sure that it is properly installed&#39;</span><span class="p">)</span>
+    <span class="n">plt</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="DataSet"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet">[docs]</a><span class="k">class</span> <span class="nc">DataSet</span><span class="p">:</span>
+<div class="viewcode-block" id="DataSet.__init__"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;dataset&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Generic time dependent data storage.</span>
+<span class="sd">            The data is stored in the self.data dictionary.</span>
+<span class="sd">            self.data[&#39;entry_name&#39;][&#39;time&#39;] is a row vector</span>
+<span class="sd">            self.data[&#39;entry_name&#39;][&#39;values&#39;] is a matrix with the same number of columns as the time vector, and</span>
+<span class="sd">            rows equal to self.data[&#39;entry_name&#39;][&#39;size&#39;].</span>
+<span class="sd">            The data can be more easily managed using create_entry, get_entry, insert_data.</span>
+
+<span class="sd">        :param str name: name of th dataset</span>
+<span class="sd">        :param str plot_style: default plot style. plot = linear interpolation, step = piecewise constant</span>
+<span class="sd">            (&#39;plot&#39; | &#39;step&#39;)</span>
+<span class="sd">        :param bool find_discontinuity: Default: True. If True, it will try to find discontinuity on the data, and plot</span>
+<span class="sd">            with gaps where data is missing/not available, instead of a line connecting all data points.</span>
+<span class="sd">        :param float max_sampling_time: maximum expected distance between two time data. This is used to detect</span>
+<span class="sd">            discontinuity on the data, and plot it separately.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span>
+            <span class="n">partial</span><span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">DM</span><span class="p">([])),</span> <span class="p">(</span><span class="s1">&#39;names&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                           <span class="p">(</span><span class="s1">&#39;values&#39;</span><span class="p">,</span> <span class="n">DM</span><span class="p">([])),</span> <span class="p">(</span><span class="s1">&#39;size&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_style</span> <span class="o">=</span> <span class="s1">&#39;step&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_delta_t</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">find_discontinuity</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DataSet.create_entry"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.create_entry">[docs]</a>    <span class="k">def</span> <span class="nf">create_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot_style</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Create an entry in the dataset</span>
+
+<span class="sd">        :param entry: entry name</span>
+<span class="sd">        :param size: number of rows in the vector</span>
+<span class="sd">        :param list names: name for each row, it should be a list with size &#39;size&#39;. If &#39;names&#39; is not given, then the</span>
+<span class="sd">            name list [entry_1, entry_2, ..., entry_size]</span>
+<span class="sd">        :param str plot_style: (&#39;plot&#39; | &#39;step&#39;) choose if the plot will be piecewise constant (step) or a first order</span>
+<span class="sd">            interpolation (plot).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">names</span>
+        <span class="k">if</span> <span class="n">plot_style</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;plot_style&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">plot_style</span></div>
+
+<div class="viewcode-block" id="DataSet.get_entry"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.get_entry">[docs]</a>    <span class="k">def</span> <span class="nf">get_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return the time and values for a given entry.</span>
+
+<span class="sd">        :param str entry: entry name</span>
+<span class="sd">        :return: entry time, entry value</span>
+<span class="sd">        :rtype: tuple</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="DataSet.get_entry_names"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.get_entry_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_entry_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get list of names of an entry</span>
+
+<span class="sd">        :param entry:</span>
+<span class="sd">        :rtype: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="DataSet.get_entry_size"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.get_entry_size">[docs]</a>    <span class="k">def</span> <span class="nf">get_entry_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get size of an entry</span>
+
+<span class="sd">        :param entry:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="DataSet.insert_data"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.insert_data">[docs]</a>    <span class="k">def</span> <span class="nf">insert_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Insert data on the dataset</span>
+
+<span class="sd">        :param str entry: entry name (&#39;x&#39;, &#39;y&#39;, &#39;u&#39;, ...)</span>
+<span class="sd">        :param float|list|DM time: time or time vector of the data</span>
+<span class="sd">        :param DM value: vector or matrix of values for the entry (column represent time)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">time</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Number of columns of &quot;time&quot; and &quot;value&quot; should be the same, &#39;</span>
+                <span class="s1">&#39;time.shape=</span><span class="si">{}</span><span class="s1"> and value.shape=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">],</span> <span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">],</span> <span class="n">time</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;entry&#39;</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">size1</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DataSet.get_copy"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.get_copy">[docs]</a>    <span class="k">def</span> <span class="nf">get_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return a copy of this dataset. The copy is not connected to the original data set, therefore changes in one</span>
+<span class="sd">            of the dataset will not affect the other.</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataset_copy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">dataset_copy</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dataset_copy</span></div>
+
+<div class="viewcode-block" id="DataSet.extend"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.extend">[docs]</a>    <span class="k">def</span> <span class="nf">extend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other_dataset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extend this DataSet with another DataSet. They don&#39;t need to be ordered, after the merging a chronological</span>
+<span class="sd">        sort of the data is performed.</span>
+
+<span class="sd">        :param DataSet other_dataset:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">other_dataset</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_entry_size</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="o">==</span> <span class="n">other_dataset</span><span class="o">.</span><span class="n">get_entry_size</span><span class="p">(</span>
+                    <span class="n">entry</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s1">&#39;The size of the same entry is different in the two datasets, &#39;</span>
+                    <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">!=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_entry_size</span><span class="p">(</span><span class="n">entry</span><span class="p">),</span>
+                                    <span class="n">other_dataset</span><span class="o">.</span><span class="n">get_entry_size</span><span class="p">(</span><span class="n">entry</span><span class="p">)))</span>
+            <span class="k">if</span> <span class="n">entry</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">create_entry</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span>
+                                  <span class="n">size</span><span class="o">=</span><span class="n">other_dataset</span><span class="o">.</span><span class="n">get_entry_size</span><span class="p">(</span><span class="n">entry</span><span class="p">),</span>
+                                  <span class="n">names</span><span class="o">=</span><span class="n">other_dataset</span><span class="o">.</span><span class="n">get_entry_names</span><span class="p">(</span><span class="n">entry</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span>
+                             <span class="n">time</span><span class="o">=</span><span class="n">other_dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">],</span>
+                             <span class="n">value</span><span class="o">=</span><span class="n">other_dataset</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="DataSet.sort"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.sort">[docs]</a>    <span class="k">def</span> <span class="nf">sort</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entries</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Sort the dataset for given &#39;entries&#39; in an chronological order, this can be used when data is not inserted</span>
+<span class="sd">            in an ordered fashion.</span>
+
+<span class="sd">        :param list entries: list of entries to be sorted, if this parameter is no given all the entries will be sorted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">entries</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">entries</span><span class="p">:</span>
+            <span class="n">entry_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">entry_length</span><span class="p">)]</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">][:,</span> <span class="n">i</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="p">]</span>
+            <span class="n">time</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">values</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">point</span><span class="p">:</span> <span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">time</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">values</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DataSet.save"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Save this object in the &quot;file_path&quot; using pickle (.p extension).</span>
+<span class="sd">            It can be retrieved using using pickle.load</span>
+
+<span class="sd">        :param str file_path: path with file name of the file to be saved. Example: files/result.p</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">file_path</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">&#39;wb+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_plot_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">t_vector</span><span class="p">,</span>
+                    <span class="n">data_vector</span><span class="p">,</span>
+                    <span class="n">row</span><span class="p">,</span>
+                    <span class="n">label</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                    <span class="n">plot_style</span><span class="o">=</span><span class="s1">&#39;plot&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_discontinuity</span><span class="p">:</span>
+            <span class="n">t_vector</span><span class="p">,</span> <span class="n">data_vector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_discontinuity_for_plotting</span><span class="p">(</span>
+                <span class="n">t_vector</span><span class="p">,</span> <span class="n">data_vector</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">plot_style</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;plot&#39;</span><span class="p">,</span> <span class="s1">&#39;step&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Plot style not recognized: &quot;</span><span class="si">{}</span><span class="s1">&quot;. Allowed : &quot;plot&quot; and &quot;step&quot;&#39;</span><span class="o">.</span>
+                <span class="nb">format</span><span class="p">(</span><span class="n">plot_style</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">plot_style</span> <span class="o">==</span> <span class="s1">&#39;plot&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_vector</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">data_vector</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">plot_style</span> <span class="o">==</span> <span class="s1">&#39;step&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">plt</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">t_vector</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                            <span class="n">data_vector</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                            <span class="n">where</span><span class="o">=</span><span class="s1">&#39;post&#39;</span><span class="p">)</span>
+
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s1">&#39;&quot;plot_style&quot; not recognized. Given </span><span class="si">{}</span><span class="s1">, available: &quot;step&quot; or &quot;plot&quot;&#39;</span>
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">plot_style</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_find_discontinuity_for_plotting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="n">tolerance</span> <span class="o">=</span> <span class="mf">1.2</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_delta_t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">delta_t</span> <span class="o">=</span> <span class="n">sum2</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">/</span> <span class="n">time</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">delta_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_delta_t</span>
+        <span class="n">out_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">out_values</span> <span class="o">=</span> <span class="n">values</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">delta_t_comparison</span> <span class="o">=</span> <span class="n">time</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">time</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">delta_t_comparison</span> <span class="o">&gt;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">tolerance</span><span class="p">)</span> <span class="o">*</span> <span class="n">delta_t</span><span class="p">:</span>
+                <span class="c1"># include NaN</span>
+                <span class="n">out_time</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="n">out_time</span><span class="p">,</span> <span class="n">DM</span><span class="o">.</span><span class="n">nan</span><span class="p">())</span>
+                <span class="n">out_values</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="n">out_values</span><span class="p">,</span> <span class="n">DM</span><span class="o">.</span><span class="n">nan</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
+
+            <span class="n">out_time</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="n">out_time</span><span class="p">,</span> <span class="n">time</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">out_values</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="n">out_values</span><span class="p">,</span> <span class="n">values</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_delta_t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">delta_t</span> <span class="o">=</span> <span class="n">delta_t_comparison</span>
+        <span class="k">return</span> <span class="n">out_time</span><span class="p">,</span> <span class="n">out_values</span>
+
+<div class="viewcode-block" id="DataSet.plot"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dataset.DataSet.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot_list</span><span class="p">,</span> <span class="n">figures</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exact</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot DataSet information.</span>
+<span class="sd">        It takes as input a list of dictionaries, each dictionary represents a plot. In the dictionary use keyword &#39;x&#39;,</span>
+<span class="sd">        &#39;u&#39;, &#39;y&#39;, etc., to specify which entry you want to print, the value of the dictionary should be a list of</span>
+<span class="sd">        index, names, or regex expressions of the entries to be printed. Alternatively, instead of a list a string</span>
+<span class="sd">        &#39;all&#39; can be passed so all the elements of the entry are plotted.</span>
+
+<span class="sd">        Usage:</span>
+<span class="sd">            result.plot({&#39;x&#39;:&#39;all&#39;, &#39;y&#39;:&#39;all&#39;, &#39;u&#39;:&#39;all&#39;})  # print all variables in a single plot</span>
+<span class="sd">            result.plot([{&#39;x&#39;:[0,3]}, {&#39;y&#39;:&#39;all&#39;}, {&#39;u&#39;:[&#39;v_1&#39;, &#39;q_out&#39;]}])  # create 3 plots, with the selected vars</span>
+<span class="sd">            result.plot(&#39;all&#39;)  # create 3 plots one with all &#39;x&#39;, one with all &#39;y&#39;, and one with all &#39;u&#39;</span>
+
+<span class="sd">        :param list|str plot_list: List of dictionaries to generate the plots.</span>
+<span class="sd">        :param list figures: list of figures to be plotted on top (optional)</span>
+<span class="sd">        :param bool show: if the plotted figures should be shown after plotting (optional, default=True).</span>
+<span class="sd">        :param bool exact: If true only precise match of entry elements will be plotted, otherwise a regex match will</span>
+<span class="sd">            be used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">plot_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">plot_list</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span>
+        <span class="k">if</span> <span class="n">plot_list</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+            <span class="n">plot_list</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="s1">&#39;all&#39;</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="s1">&#39;all&#39;</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;u&#39;</span><span class="p">:</span> <span class="s1">&#39;all&#39;</span><span class="p">}]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">plot_list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">plot_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">plot_list</span><span class="p">]</span>
+
+        <span class="n">used_figures</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># for each plot asked</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">entry_dict</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">plot_list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">figures</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figures</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">used_figures</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+            <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c1"># for each entry (dict key) e.g. &#39;x&#39;, &#39;y&#39;</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">entry_dict</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">entry</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Entry &#39;</span><span class="si">{</span><span class="n">entry</span><span class="si">}</span><span class="s2">&#39; not found in the dataset. Entries: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># if a custom plot style was asked, otherwise use default</span>
+                <span class="k">if</span> <span class="s1">&#39;plot_style&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">]:</span>
+                    <span class="n">plot_style</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;plot_style&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">plot_style</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_style</span>
+
+                <span class="n">indexes_or_names</span> <span class="o">=</span> <span class="n">entry_dict</span><span class="p">[</span><span class="n">entry</span><span class="p">]</span>
+                <span class="c1"># if it is &#39;all&#39;</span>
+                <span class="k">if</span> <span class="n">indexes_or_names</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
+                    <span class="n">indexes_or_names</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;size&#39;</span><span class="p">])</span>
+
+                <span class="n">var_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_entry_names</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+                <span class="c1"># identify variables with regex</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">exact</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">regex</span> <span class="ow">in</span> <span class="n">indexes_or_names</span><span class="p">[:]:</span>
+                        <span class="n">regex_ind</span> <span class="o">=</span> <span class="n">indexes_or_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">regex</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="sa">u</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)):</span>
+                            <span class="n">indexes_or_names</span><span class="p">[</span><span class="n">regex_ind</span><span class="p">:</span><span class="n">regex_ind</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                                <span class="n">v_name</span> <span class="k">for</span> <span class="n">v_name</span> <span class="ow">in</span> <span class="n">var_names</span>
+                                <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="n">v_name</span><span class="p">)</span>
+                            <span class="p">]</span>
+
+                <span class="c1"># if it is a variable name</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">indexes_or_names</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="sa">u</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)):</span>
+                        <span class="n">indexes_or_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">var_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+                <span class="c1"># plot entry/indexes</span>
+                <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">indexes_or_names</span><span class="p">:</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plot_entry</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">],</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">],</span>
+                        <span class="n">ind</span><span class="p">,</span>
+                        <span class="n">label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">entry</span><span class="p">][</span><span class="s1">&#39;names&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">],</span>
+                        <span class="n">plot_style</span><span class="o">=</span><span class="n">plot_style</span><span class="p">)</span>
+                    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">axes</span>
+            <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ticklabel_format</span><span class="p">(</span><span class="n">useOffset</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">interactive</span><span class="p">(</span><span class="n">PLOT_INTERACTIVE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">used_figures</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

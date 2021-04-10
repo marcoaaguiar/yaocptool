@@ -1,0 +1,1127 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.ocp &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.ocp</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.modelling.ocp</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Mon Apr 03 11:15:03 2017</span>
+
+<span class="sd">@author: marco</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">DM</span><span class="p">,</span> <span class="n">repmat</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">is_equal</span><span class="p">,</span> <span class="n">SX</span><span class="p">,</span> <span class="n">inf</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">dot</span><span class="p">,</span> <span class="n">jacobian</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="kn">import</span> <span class="n">find_variables_indices_in_vector</span><span class="p">,</span> <span class="n">remove_variables_from_vector_by_indices</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling</span> <span class="kn">import</span> <span class="n">SystemModel</span>
+
+
+<div class="viewcode-block" id="OptimalControlProblem"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem">[docs]</a><span class="k">class</span> <span class="nc">OptimalControlProblem</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)</span>
+<span class="sd">    It has the following form:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">       \\min J &amp;= V(x(t_f), p) + \int_{t_0} ^{t_f} L(x,y,u,t,p,\\theta) \, dt</span>
+<span class="sd">        + \sum_{k} S(x(t_k), y(t_k), u(t_k), t_k, p, \\theta_k)</span>
+
+<span class="sd">       \\textrm{s.t.:}\,&amp; \dot{x} = f(x,y,u,t,p,\\theta)</span>
+
+<span class="sd">       &amp; g(x,y,u,t,p,\\theta) = 0</span>
+
+<span class="sd">       &amp; g_{eq} (x,y,u,t,p,\\theta) = 0</span>
+
+<span class="sd">       &amp; g_{ineq}(x,y,u,t,p,\\theta) \leq 0</span>
+
+<span class="sd">       &amp; x_{min} \leq x \leq x_{max}</span>
+
+<span class="sd">       &amp; y_{min} \leq y \leq y_{max}</span>
+
+<span class="sd">       &amp; u_{min} \leq u \leq u_{max}</span>
+
+<span class="sd">       &amp; \Delta u_{min} \leq \Delta u \leq \Delta u_{max}</span>
+
+<span class="sd">       &amp; h_{initial} (x (t_0), t_0, p, \\theta) = 0</span>
+
+<span class="sd">       &amp; h_{final} (x (t_f), t_f, p, \\theta) = 0</span>
+
+<span class="sd">       &amp; h (p) = 0</span>
+
+<span class="sd">    where  :math:`t_k` is final time in each finite element.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="OptimalControlProblem.__init__"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;OCP&quot;</span><span class="p">,</span>
+                 <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">t_0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="n">t_f</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param yaocptool.modelling.SystemModel model:</span>
+<span class="sd">        :param str name:</span>
+<span class="sd">        :param casadi.DM|list x_0: initial conditions</span>
+<span class="sd">        :param float t_0:</span>
+<span class="sd">        :param float t_f:</span>
+<span class="sd">        :param kwargs:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">x_0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_0</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_0</span> <span class="o">=</span> <span class="n">t_0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_f</span> <span class="o">=</span> <span class="n">t_f</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">x_0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span>  <span class="c1"># type: SystemModel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_copy</span><span class="p">()</span>  <span class="c1"># type: SystemModel</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_cost</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eta</span> <span class="o">=</span> <span class="n">SX</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_max</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_max</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_max</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_opt_max</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_p_opt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_max</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_theta_opt</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_min</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="o">-</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_min</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="o">-</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_min</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="o">-</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="o">-</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_opt_min</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="o">-</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_p_opt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_min</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="o">-</span><span class="n">inf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_theta_opt</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_final</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_g_eq</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_g_ineq</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>  <span class="c1"># Integral cost</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>  <span class="c1"># Final cost</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>  <span class="c1"># Finite element final cost</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_u</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parametrized_control</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">positive_objective</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">NULL_OBJ</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="s1">&#39;obj&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">obj_value</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;obj&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj_value</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
+                <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">obj_value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">create_quadratic_cost</span><span class="p">(</span><span class="n">obj_value</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_0</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_h_final</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_final</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_h_initial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_g_ineq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_g_eq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_eta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">eta</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_p_opt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_theta_opt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_delta_u</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">has_element_diff_from_inf</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">):</span>
+            <span class="n">has_element_diff_from_inf</span> <span class="o">=</span> <span class="p">(</span><span class="ow">not</span> <span class="n">is_equal</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">inf</span><span class="p">))</span> <span class="ow">or</span> <span class="n">has_element_diff_from_inf</span>
+            <span class="n">has_element_diff_from_inf</span> <span class="o">=</span> <span class="p">(</span><span class="ow">not</span> <span class="n">is_equal</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="o">-</span><span class="n">inf</span><span class="p">))</span> <span class="ow">or</span> <span class="n">has_element_diff_from_inf</span>
+        <span class="k">return</span> <span class="n">has_element_diff_from_inf</span>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_state"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_state">[docs]</a>    <span class="k">def</span> <span class="nf">create_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                     <span class="n">name</span><span class="p">,</span>
+                     <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="n">ode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">x_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">x_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">h_initial</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">var</span><span class="p">,</span>
+                           <span class="n">ode</span><span class="o">=</span><span class="n">ode</span><span class="p">,</span>
+                           <span class="n">x_0</span><span class="o">=</span><span class="n">x_0</span><span class="p">,</span>
+                           <span class="n">x_min</span><span class="o">=</span><span class="n">x_min</span><span class="p">,</span>
+                           <span class="n">x_max</span><span class="o">=</span><span class="n">x_max</span><span class="p">,</span>
+                           <span class="n">h_initial</span><span class="o">=</span><span class="n">h_initial</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">var</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_algebraic"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_algebraic">[docs]</a>    <span class="k">def</span> <span class="nf">create_algebraic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                         <span class="n">name</span><span class="p">,</span>
+                         <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                         <span class="n">alg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                         <span class="n">y_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                         <span class="n">y_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                         <span class="n">y_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">var</span><span class="p">,</span>
+                               <span class="n">alg</span><span class="o">=</span><span class="n">alg</span><span class="p">,</span>
+                               <span class="n">y_min</span><span class="o">=</span><span class="n">y_min</span><span class="p">,</span>
+                               <span class="n">y_max</span><span class="o">=</span><span class="n">y_max</span><span class="p">,</span>
+                               <span class="n">y_guess</span><span class="o">=</span><span class="n">y_guess</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">var</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_control"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_control">[docs]</a>    <span class="k">def</span> <span class="nf">create_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                       <span class="n">name</span><span class="p">,</span>
+                       <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                       <span class="n">u_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">u_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">delta_u_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">delta_u_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                       <span class="n">u_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">var</span><span class="p">,</span>
+                             <span class="n">u_min</span><span class="o">=</span><span class="n">u_min</span><span class="p">,</span>
+                             <span class="n">u_max</span><span class="o">=</span><span class="n">u_max</span><span class="p">,</span>
+                             <span class="n">delta_u_min</span><span class="o">=</span><span class="n">delta_u_min</span><span class="p">,</span>
+                             <span class="n">delta_u_max</span><span class="o">=</span><span class="n">delta_u_max</span><span class="p">,</span>
+                             <span class="n">u_guess</span><span class="o">=</span><span class="n">u_guess</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">var</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">create_input</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_control</span>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">create_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">new_p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">create_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_p</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_theta"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_theta">[docs]</a>    <span class="k">def</span> <span class="nf">create_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">new_theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">create_theta</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_theta</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_optimization_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_optimization_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">create_optimization_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                      <span class="n">name</span><span class="p">,</span>
+                                      <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                      <span class="n">p_opt_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                      <span class="n">p_opt_max</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">new_p_opt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">create_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter_as_optimization_parameter</span><span class="p">(</span><span class="n">new_p_opt</span><span class="p">,</span>
+                                                     <span class="n">new_p_opt_min</span><span class="o">=</span><span class="n">p_opt_min</span><span class="p">,</span>
+                                                     <span class="n">new_p_opt_max</span><span class="o">=</span><span class="n">p_opt_max</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_p_opt</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_optimization_theta"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_optimization_theta">[docs]</a>    <span class="k">def</span> <span class="nf">create_optimization_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                  <span class="n">name</span><span class="p">,</span>
+                                  <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                  <span class="n">new_theta_opt_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                  <span class="n">new_theta_opt_max</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">new_theta_opt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">create_theta</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_theta_as_optimization_theta</span><span class="p">(</span>
+            <span class="n">new_theta_opt</span><span class="p">,</span>
+            <span class="n">new_theta_opt_min</span><span class="o">=</span><span class="n">new_theta_opt_min</span><span class="p">,</span>
+            <span class="n">new_theta_opt_max</span><span class="o">=</span><span class="n">new_theta_opt_max</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_theta_opt</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_adjoint_states"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_adjoint_states">[docs]</a>    <span class="k">def</span> <span class="nf">create_adjoint_states</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">lamb</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_lamb&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+        <span class="n">nu</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_nu&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eta</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_eta&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_h_final</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">H</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">lamb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">ode</span><span class="p">)</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
+
+        <span class="n">l_dot</span> <span class="o">=</span> <span class="o">-</span><span class="n">gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">alg_eq</span> <span class="o">=</span> <span class="n">gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">lamb</span><span class="p">,</span> <span class="n">l_dot</span><span class="p">,</span> <span class="n">suppress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">has_adjoint_variables</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="n">alg_eq</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_final</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">h_final</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">lamb_sym</span> <span class="o">-</span> <span class="n">gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sys_sym</span><span class="p">)</span> <span class="o">-</span>
+            <span class="n">mtimes</span><span class="p">(</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_final</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_sys_sym</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eta</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_system_equations"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_system_equations">[docs]</a>    <span class="k">def</span> <span class="nf">include_system_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="n">ode</span><span class="p">,</span> <span class="n">alg</span><span class="o">=</span><span class="n">alg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_state"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_state">[docs]</a>    <span class="k">def</span> <span class="nf">include_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">var</span><span class="p">,</span>
+                      <span class="n">ode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">x_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">x_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">h_initial</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">x_0_sym</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">suppress</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">x_0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_0</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x_0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">x_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_max</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">x_0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">h_initial</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">suppress</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;No initial condition given&#39;</span><span class="p">)</span>
+
+        <span class="n">var</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+        <span class="n">x_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x_min</span><span class="p">)</span>
+        <span class="n">x_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x_max</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">x_max</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Size of &quot;x&quot; and &quot;x_max&quot; differ. x.numel()=</span><span class="si">{}</span><span class="s1"> &#39;</span>
+                             <span class="s1">&#39;and x_max.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                 <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">x_max</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">x_min</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Size of &quot;x&quot; and &quot;x_min&quot; differ. x.numel()=</span><span class="si">{}</span><span class="s1"> &#39;</span>
+                             <span class="s1">&#39;and x_min.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                 <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">x_min</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">x_min</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Size of &quot;x&quot; and &quot;x_0&quot; differ. x.numel()=</span><span class="si">{}</span><span class="s1"> &#39;</span>
+                             <span class="s1">&#39;and x_0.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                 <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">x_0</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="n">x_0_sym</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">ode</span><span class="p">,</span> <span class="n">x_0_sym</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">x_0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_0</span><span class="p">)</span>
+            <span class="n">h_initial</span> <span class="o">=</span> <span class="n">x_0_sym</span> <span class="o">-</span> <span class="n">var</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x_0</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">h_initial</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span><span class="p">,</span> <span class="n">h_initial</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_min</span><span class="p">,</span> <span class="n">x_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_max</span><span class="p">,</span> <span class="n">x_max</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_algebraic"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_algebraic">[docs]</a>    <span class="k">def</span> <span class="nf">include_algebraic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                          <span class="n">var</span><span class="p">,</span>
+                          <span class="n">alg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">y_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">y_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">y_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">y_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">y_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y_max</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_min</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">y_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">y_min</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_max</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">y_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">y_max</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">y_min</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Given &#39;var&#39; and &#39;y_min&#39; does not have the same size, </span><span class="si">{}</span><span class="s2">!=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span>
+                <span class="nb">format</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">y_min</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">y_max</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Given &#39;var&#39; and &#39;y_max&#39; does not have the same size, </span><span class="si">{}</span><span class="s2">!=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span>
+                <span class="nb">format</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">y_max</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">y_guess</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span><span class="p">,</span> <span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span><span class="p">,</span> <span class="n">y_guess</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">alg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_min</span><span class="p">,</span> <span class="n">y_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_max</span><span class="p">,</span> <span class="n">y_max</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_control"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_control">[docs]</a>    <span class="k">def</span> <span class="nf">include_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                        <span class="n">var</span><span class="p">,</span>
+                        <span class="n">u_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">u_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">delta_u_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">delta_u_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">u_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">var</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">var</span><span class="p">)</span>
+
+        <span class="c1"># if not given</span>
+        <span class="k">if</span> <span class="n">u_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">u_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">u_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">u_max</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">delta_u_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">delta_u_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">delta_u_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">u_guess</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;The OptimalControlProblem already has a control guess (&quot;ocp.u_guess&quot;), but no guess was &#39;</span>
+                <span class="s1">&#39;passed for the new variable (parameter &quot;u_guess&quot; is None). Either remove all guesses &#39;</span>
+                <span class="s1">&#39;(&quot;ocp.u_guess = None&quot;) before including the new variable, or pass a guess for the control&#39;</span>
+                <span class="s1">&#39; using the parameter &quot;u_guess&quot;&#39;</span><span class="p">)</span>
+
+        <span class="c1"># if given as a list</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u_min</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">u_min</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u_max</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">u_max</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">delta_u_min</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">delta_u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">delta_u_min</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">delta_u_max</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">delta_u_max</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u_guess</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">u_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">u_guess</span><span class="p">)</span>
+
+        <span class="c1"># if not a casadi type</span>
+        <span class="n">u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">u_min</span><span class="p">)</span>
+        <span class="n">u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">u_max</span><span class="p">)</span>
+        <span class="n">delta_u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">delta_u_min</span><span class="p">)</span>
+        <span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">delta_u_max</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">u_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">u_guess</span><span class="p">)</span>
+
+        <span class="c1"># if passed a scalar but meant a vector of that scalar</span>
+        <span class="k">if</span> <span class="n">u_min</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">u_min</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">u_min</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">u_max</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">u_max</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">u_max</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">delta_u_min</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">delta_u_min</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">delta_u_min</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">delta_u_max</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">repmat</span><span class="p">(</span><span class="n">delta_u_max</span><span class="p">,</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+
+        <span class="c1"># if passed but has a wrong size</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">u_min</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Given &#39;var&#39; and &#39;u_min&#39; does not have the same size, </span><span class="si">{}</span><span class="s2">!=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span>
+                <span class="nb">format</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">u_min</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">u_max</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Given &#39;var&#39; and &#39;u_max&#39; does not have the same size, </span><span class="si">{}</span><span class="s2">!=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span>
+                <span class="nb">format</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">u_max</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">delta_u_min</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Given &#39;var&#39; and &#39;delta_u_min&#39; does not have the same size, </span><span class="si">{}</span><span class="s2">!=</span><span class="si">{}</span><span class="s2">&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">delta_u_min</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">delta_u_max</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Given &#39;var&#39; and &#39;delta_u_max&#39; does not have the same size, </span><span class="si">{}</span><span class="s2">!=</span><span class="si">{}</span><span class="s2">&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">delta_u_max</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">!=</span> <span class="n">u_guess</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Given &#39;var&#39; and &#39;u_guess&#39; does not have the same size, </span><span class="si">{}</span><span class="s2">!=</span><span class="si">{}</span><span class="s2">&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">u_guess</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_min</span><span class="p">,</span> <span class="n">u_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_max</span><span class="p">,</span> <span class="n">u_max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span><span class="p">,</span> <span class="n">delta_u_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span><span class="p">,</span> <span class="n">delta_u_max</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="o">=</span> <span class="n">u_guess</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span><span class="p">,</span> <span class="n">u_guess</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">var</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">include_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="n">p</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_theta"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_theta">[docs]</a>    <span class="k">def</span> <span class="nf">include_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_optimization_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_optimization_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">include_optimization_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                       <span class="n">var</span><span class="p">,</span>
+                                       <span class="n">p_opt_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                       <span class="n">p_opt_max</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">p_opt_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p_opt_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">p_opt_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p_opt_max</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter_as_optimization_parameter</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">p_opt_min</span><span class="p">,</span> <span class="n">p_opt_max</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_optimization_theta"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_optimization_theta">[docs]</a>    <span class="k">def</span> <span class="nf">include_optimization_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                   <span class="n">var</span><span class="p">,</span>
+                                   <span class="n">theta_opt_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                   <span class="n">theta_opt_max</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">theta_opt_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">theta_opt_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">theta_opt_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">theta_opt_max</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_theta_as_optimization_theta</span><span class="p">(</span><span class="n">var</span><span class="p">,</span>
+                                             <span class="n">new_theta_opt_min</span><span class="o">=</span><span class="n">theta_opt_min</span><span class="p">,</span>
+                                             <span class="n">new_theta_opt_max</span><span class="o">=</span><span class="n">theta_opt_max</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_initial_time_equality"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_initial_time_equality">[docs]</a>    <span class="k">def</span> <span class="nf">include_initial_time_equality</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Include initial time equality. Equality that is evaluated at t=t_0.</span>
+<span class="sd">        The equality is concatenated to &quot;h_initial&quot;</span>
+
+<span class="sd">        :param eq: initial equality constraint</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">eq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">eq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span><span class="p">,</span> <span class="n">eq</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_final_time_equality"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_final_time_equality">[docs]</a>    <span class="k">def</span> <span class="nf">include_final_time_equality</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Include final time equality. Equality that is evaluated at t=t_f.</span>
+<span class="sd">        The equality is concatenated to &quot;h_final&quot;</span>
+
+<span class="sd">        :param eq: final equality constraint</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">eq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">eq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_final</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_final</span><span class="p">,</span> <span class="n">eq</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_time_inequality"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_time_inequality">[docs]</a>    <span class="k">def</span> <span class="nf">include_time_inequality</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Include time dependent inequality.</span>
+<span class="sd">        g_ineq(..., t) &lt;= 0, for t \in [t_0, t_f]</span>
+
+<span class="sd">        The inequality is concatenated to &quot;g_ineq&quot;</span>
+
+<span class="sd">        :param str when: Can be &#39;default&#39;, &#39;end&#39;, &#39;start&#39;.</span>
+<span class="sd">            &#39;start&#39; - the constraint will be evaluated at the start of every finite element</span>
+<span class="sd">            &#39;end&#39; - the constraint will be evaluated at the end of every finite element</span>
+<span class="sd">            &#39;default&#39; - will be evaluated at each collocation point of every finite element.</span>
+<span class="sd">            For the multiple shooting, the constraint will be evaluated at the end of each</span>
+<span class="sd">            finite element</span>
+<span class="sd">        :param eq: inequality</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">eq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">eq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span><span class="p">,</span> <span class="n">eq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_g_ineq</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">when</span><span class="p">]</span> <span class="o">*</span> <span class="n">eq</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_time_equality"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_time_equality">[docs]</a>    <span class="k">def</span> <span class="nf">include_time_equality</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eq</span><span class="p">,</span> <span class="n">when</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Include time dependent equality.</span>
+<span class="sd">        g_eq(..., t) = 0, for t \in [t_0, t_f]</span>
+
+<span class="sd">        The inequality is concatenated to &quot;g_ineq&quot;</span>
+
+<span class="sd">        :param eq: equality</span>
+<span class="sd">        :param str when: Can be &#39;default&#39;, &#39;end&#39;, &#39;start&#39;.</span>
+<span class="sd">            &#39;start&#39; - the constraint will be evaluated at the start of every finite element</span>
+<span class="sd">            &#39;end&#39; - the constraint will be evaluated at the end of every finite element</span>
+<span class="sd">            &#39;default&#39; - will be evaluated at each collocation point of every finite element.</span>
+<span class="sd">            For the multiple shooting, the constraint will be evaluated at the end of each</span>
+<span class="sd">            finite element</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">eq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">eq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span><span class="p">,</span> <span class="n">eq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_g_eq</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">when</span><span class="p">]</span> <span class="o">*</span> <span class="n">eq</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.include_equality"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.include_equality">[docs]</a>    <span class="k">def</span> <span class="nf">include_equality</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eq</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Include time independent equality.</span>
+<span class="sd">        Equality is concatenated &quot;h&quot;.</span>
+
+<span class="sd">        :param eq: time independent equality</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">eq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">eq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="p">,</span> <span class="n">eq</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.remove_algebraic"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.remove_algebraic">[docs]</a>    <span class="k">def</span> <span class="nf">remove_algebraic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">eq</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">to_remove</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">to_remove</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_max</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="n">to_remove</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_min</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="n">to_remove</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_min</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+                <span class="n">to_remove</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">remove_algebraic</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">eq</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.remove_control"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.remove_control">[docs]</a>    <span class="k">def</span> <span class="nf">remove_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+        <span class="n">to_remove</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_max</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="n">to_remove</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_min</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="n">to_remove</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="n">to_remove</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="n">to_remove</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+                <span class="n">to_remove</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">remove_control</span><span class="p">(</span><span class="n">var</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.replace_variable"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.replace_variable">[docs]</a>    <span class="k">def</span> <span class="nf">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Replace &#39;original&#39; by &#39;replacement&#39; in the problem and model equations</span>
+
+<span class="sd">        :param original:</span>
+<span class="sd">        :param replacement:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">original</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">original</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">replacement</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">replacement</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">replacement</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">original</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">replacement</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Size of &quot;original&quot; and &quot;replacement&quot; are not equal, </span><span class="si">{}</span><span class="s1">!=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span>
+                <span class="nb">format</span><span class="p">(</span><span class="n">original</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">replacement</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="c1"># if original.numel():</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+
+        <span class="c1"># change its own variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_final</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_final</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+
+        <span class="c1"># apply to the model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.parametrize_control"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.parametrize_control">[docs]</a>    <span class="k">def</span> <span class="nf">parametrize_control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">u_par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Parametrize the control variable</span>
+
+<span class="sd">        :param u:</span>
+<span class="sd">        :param expr:</span>
+<span class="sd">        :param u_par:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># parametrize on the model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">parametrize_control</span><span class="p">(</span><span class="n">u</span><span class="o">=</span><span class="n">u</span><span class="p">,</span> <span class="n">expr</span><span class="o">=</span><span class="n">expr</span><span class="p">,</span> <span class="n">u_par</span><span class="o">=</span><span class="n">u_par</span><span class="p">)</span>
+
+        <span class="c1"># replace the OCP equations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_fix_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Transform attributes in casadi types.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_final</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_final</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+
+<div class="viewcode-block" id="OptimalControlProblem.pre_solve_check"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.pre_solve_check">[docs]</a>    <span class="k">def</span> <span class="nf">pre_solve_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fix_types</span><span class="p">()</span>
+
+        <span class="c1"># Check if Objective Function was provided</span>
+        <span class="c1"># if self.L.is_zero() and self.V.is_zero() and self.S.is_zero() and not self.NULL_OBJ:</span>
+        <span class="c1">#     raise Exception(&#39;No objective, if this is intentional use problem.NULL_OBJ = True&#39;)</span>
+
+        <span class="c1"># Check if the objective function has the proper size</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s1">&#39;Size of dynamic cost (ocp.L) is different from 1, provided size is: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s1">&#39;Size of final cost (ocp.V) is different from 1, provided size is: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="c1"># Check if the initial condition has the same number of elements of the model</span>
+        <span class="n">attributes</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;x_0&#39;</span><span class="p">,</span> <span class="s1">&#39;x_max&#39;</span><span class="p">,</span> <span class="s1">&#39;y_max&#39;</span><span class="p">,</span> <span class="s1">&#39;u_max&#39;</span><span class="p">,</span> <span class="s1">&#39;x_min&#39;</span><span class="p">,</span> <span class="s1">&#39;y_min&#39;</span><span class="p">,</span> <span class="s1">&#39;u_min&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;delta_u_max&#39;</span><span class="p">,</span> <span class="s1">&#39;delta_u_min&#39;</span>
+        <span class="p">]</span>
+        <span class="n">attr_to_compare</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;n_x&#39;</span><span class="p">,</span> <span class="s1">&#39;n_x&#39;</span><span class="p">,</span> <span class="s1">&#39;n_y&#39;</span><span class="p">,</span> <span class="s1">&#39;n_u&#39;</span><span class="p">,</span> <span class="s1">&#39;n_x&#39;</span><span class="p">,</span> <span class="s1">&#39;n_y&#39;</span><span class="p">,</span> <span class="s1">&#39;n_u&#39;</span><span class="p">,</span> <span class="s1">&#39;n_u&#39;</span><span class="p">,</span> <span class="s1">&#39;n_u&#39;</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">attributes</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">attr_to_compare</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s1">&#39;The size of &quot;self.</span><span class="si">{}</span><span class="s1">&quot; is not equal to the size of &quot;model.</span><span class="si">{}</span><span class="s1">&quot;, &#39;</span>
+                    <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> != </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">attr_to_compare</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                      <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span>
+                                      <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">attr_to_compare</span><span class="p">[</span><span class="n">i</span><span class="p">])))</span>
+
+        <span class="c1"># Check if the initial condition has the same number of elements of the model</span>
+        <span class="n">attributes_ocp</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;p_opt_max&#39;</span><span class="p">,</span> <span class="s1">&#39;p_opt_min&#39;</span><span class="p">,</span> <span class="s1">&#39;theta_opt_min&#39;</span><span class="p">,</span> <span class="s1">&#39;theta_opt_max&#39;</span>
+        <span class="p">]</span>
+        <span class="n">attr_to_compare_in_ocp</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;n_p_opt&#39;</span><span class="p">,</span> <span class="s1">&#39;n_p_opt&#39;</span><span class="p">,</span> <span class="s1">&#39;n_theta_opt&#39;</span><span class="p">,</span> <span class="s1">&#39;n_theta_opt&#39;</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">attributes_ocp</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span> <span class="n">attr_to_compare_in_ocp</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s1">&#39;The size of &quot;self.</span><span class="si">{}</span><span class="s1">&quot; is not equal to the size of &quot;model.</span><span class="si">{}</span><span class="s1">&quot;, &#39;</span>
+                    <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> != </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">attr_to_compare_in_ocp</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                      <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span>
+                                      <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                              <span class="n">attr_to_compare_in_ocp</span><span class="p">[</span><span class="n">i</span><span class="p">])))</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.reset_working_model"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.reset_working_model">[docs]</a>    <span class="k">def</span> <span class="nf">reset_working_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">get_copy</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_cost_state"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_cost_state">[docs]</a>    <span class="k">def</span> <span class="nf">create_cost_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Create and state with the dynamics equal to L from \int_{t_0}^{t_f} L(...) dt:</span>
+<span class="sd">        \dot{x}_c = L(...)</span>
+
+<span class="sd">        :rtype: casadi.SX</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">positive_objective</span><span class="p">:</span>
+            <span class="n">x_min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">inf</span>
+
+        <span class="n">x_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_x_c&#39;</span><span class="p">,</span>
+                                <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                <span class="n">ode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">,</span>
+                                <span class="n">x_0</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                <span class="n">x_min</span><span class="o">=</span><span class="n">x_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_cost</span> <span class="o">=</span> <span class="n">x_c</span>
+        <span class="k">return</span> <span class="n">x_c</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.create_quadratic_cost"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.create_quadratic_cost">[docs]</a>    <span class="k">def</span> <span class="nf">create_quadratic_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par_dict</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;x_ref&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">par_dict</span><span class="p">:</span>
+            <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;x_ref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;u_ref&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">par_dict</span><span class="p">:</span>
+            <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;u_ref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;Q&#39;</span> <span class="ow">in</span> <span class="n">par_dict</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">+=</span> <span class="n">mtimes</span><span class="p">(</span>
+                <span class="n">mtimes</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;x_ref&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">]),</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;x_ref&#39;</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="s1">&#39;R&#39;</span> <span class="ow">in</span> <span class="n">par_dict</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">+=</span> <span class="n">mtimes</span><span class="p">(</span>
+                <span class="n">mtimes</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u</span> <span class="o">-</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;u_ref&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;R&#39;</span><span class="p">]),</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u</span> <span class="o">-</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;u_ref&#39;</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="s1">&#39;Qv&#39;</span> <span class="ow">in</span> <span class="n">par_dict</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">+=</span> <span class="n">mtimes</span><span class="p">(</span>
+                <span class="n">mtimes</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;x_ref&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;Qv&#39;</span><span class="p">]),</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;x_ref&#39;</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="s1">&#39;Rv&#39;</span> <span class="ow">in</span> <span class="n">par_dict</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">+=</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">mtimes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;Rv&#39;</span><span class="p">]),</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.merge"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problems</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param list of OptimalControlProblem problems:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">problem</span> <span class="ow">in</span> <span class="n">problems</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_0</span> <span class="o">==</span> <span class="n">problem</span><span class="o">.</span><span class="n">t_0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s1">&#39;Problems &quot;</span><span class="si">{}</span><span class="s1">&quot; and &quot;</span><span class="si">{}</span><span class="s1">&quot; have different &quot;t_0&quot;, </span><span class="si">{}</span><span class="s1">!=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span>
+                    <span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_0</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">t_0</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_f</span> <span class="o">==</span> <span class="n">problem</span><span class="o">.</span><span class="n">t_f</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s1">&#39;Problems &quot;</span><span class="si">{}</span><span class="s1">&quot; and &quot;</span><span class="si">{}</span><span class="s1">&quot; have different &quot;t_f&quot;, </span><span class="si">{}</span><span class="s1">!=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span>
+                    <span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_f</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">t_f</span><span class="p">))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_0</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">x_0</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">eta</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">eta</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">p_opt</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">theta_opt</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_max</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">x_max</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_max</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">y_max</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_max</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">u_max</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">delta_u_max</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p_opt_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_opt_max</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">p_opt_max</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_max</span><span class="p">,</span>
+                                         <span class="n">problem</span><span class="o">.</span><span class="n">theta_opt_max</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_min</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">x_min</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_min</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">y_min</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_min</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">u_min</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">delta_u_min</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p_opt_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_opt_min</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">p_opt_min</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_min</span><span class="p">,</span>
+                                         <span class="n">problem</span><span class="o">.</span><span class="n">theta_opt_min</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">h</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_initial</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">h_initial</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">h_final</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_final</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">h_final</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_eq</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">g_eq</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_ineq</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">g_ineq</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_g_eq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_g_eq</span> <span class="o">+</span> <span class="n">problem</span><span class="o">.</span><span class="n">time_g_eq</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_g_ineq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_g_ineq</span> <span class="o">+</span> <span class="n">problem</span><span class="o">.</span><span class="n">time_g_ineq</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">+</span> <span class="n">problem</span><span class="o">.</span><span class="n">L</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">+</span> <span class="n">problem</span><span class="o">.</span><span class="n">V</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">+</span> <span class="n">problem</span><span class="o">.</span><span class="n">S</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">problem</span><span class="o">.</span><span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">last_u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">last_u</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">last_u</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">last_u</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">problem</span><span class="o">.</span><span class="n">y_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">y_guess</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">problem</span><span class="o">.</span><span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span><span class="p">,</span> <span class="n">problem</span><span class="o">.</span><span class="n">u_guess</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">positive_objective</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positive_objective</span> <span class="ow">and</span> <span class="n">problem</span><span class="o">.</span><span class="n">positive_objective</span>
+
+            <span class="c1"># Merge models</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">merge</span><span class="p">([</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.set_parameter_as_optimization_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.set_parameter_as_optimization_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">set_parameter_as_optimization_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                                <span class="n">new_p_opt</span><span class="p">,</span>
+                                                <span class="n">new_p_opt_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                                <span class="n">new_p_opt_max</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">new_p_opt_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_p_opt_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">new_p_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">new_p_opt_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_p_opt_max</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">new_p_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="n">new_p_opt</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">new_p_opt</span><span class="p">)</span>
+        <span class="n">new_p_opt_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">new_p_opt_min</span><span class="p">)</span>
+        <span class="n">new_p_opt_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">new_p_opt_max</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_p_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">new_p_opt_max</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Size of &quot;new_p_opt&quot; and &quot;new_p_opt_max&quot; differ. new_p_opt.numel()=</span><span class="si">{}</span><span class="s1"> &#39;</span>
+                <span class="s1">&#39;and new_p_opt_max.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_p_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span>
+                                                      <span class="n">new_p_opt_max</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_p_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">new_p_opt_min</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Size of &quot;new_p_opt&quot; and &quot;new_p_opt_min&quot; differ. new_p_opt.numel()=</span><span class="si">{}</span><span class="s1"> &#39;</span>
+                <span class="s1">&#39;and new_p_opt_min.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_p_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span>
+                                                      <span class="n">new_p_opt_min</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span><span class="p">,</span> <span class="n">new_p_opt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_opt_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_opt_min</span><span class="p">,</span> <span class="n">new_p_opt_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_opt_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_opt_max</span><span class="p">,</span> <span class="n">new_p_opt_max</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_p_opt</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.set_theta_as_optimization_theta"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.set_theta_as_optimization_theta">[docs]</a>    <span class="k">def</span> <span class="nf">set_theta_as_optimization_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                        <span class="n">new_theta_opt</span><span class="p">,</span>
+                                        <span class="n">new_theta_opt_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                        <span class="n">new_theta_opt_max</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">new_theta_opt_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_theta_opt_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">new_theta_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">new_theta_opt_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_theta_opt_max</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">inf</span><span class="p">(</span><span class="n">new_theta_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="n">new_theta_opt</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">new_theta_opt</span><span class="p">)</span>
+        <span class="n">new_theta_opt_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">new_theta_opt_min</span><span class="p">)</span>
+        <span class="n">new_theta_opt_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">new_theta_opt_max</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_theta_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">new_theta_opt_max</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Size of &quot;new_theta_opt&quot; and &quot;new_theta_opt_max&quot; differ. new_theta_opt.numel()=</span><span class="si">{}</span><span class="s1"> &#39;</span>
+                <span class="s1">&#39;and new_theta_opt_max.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">new_theta_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">new_theta_opt_max</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_theta_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">new_theta_opt_min</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Size of &quot;new_theta_opt&quot; and &quot;new_theta_opt_max&quot; differ. new_theta_opt.numel()=</span><span class="si">{}</span><span class="s1"> &#39;</span>
+                <span class="s1">&#39;and new_theta_opt_min.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">new_theta_opt</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">new_theta_opt_min</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span><span class="p">,</span> <span class="n">new_theta_opt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_min</span><span class="p">,</span> <span class="n">new_theta_opt_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt_max</span><span class="p">,</span> <span class="n">new_theta_opt_max</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_theta_opt</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.get_p_opt_indices"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.get_p_opt_indices">[docs]</a>    <span class="k">def</span> <span class="nf">get_p_opt_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_opt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.get_theta_opt_indices"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.get_theta_opt_indices">[docs]</a>    <span class="k">def</span> <span class="nf">get_theta_opt_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta_opt</span><span class="p">,</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OptimalControlProblem.connect"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem.connect">[docs]</a>    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Connect an input &#39;u&#39; to a algebraic variable &#39;y&#39;, u = y.</span>
+<span class="sd">        The function will perform the following actions:</span>
+<span class="sd">        - include an algebraic equation u - y = 0</span>
+<span class="sd">        - remove &#39;u&#39; from the input vector (since it is not a free variable anymore)</span>
+<span class="sd">        - include &#39;u&#39; into the algebraic vector, since it is an algebraic variable now.</span>
+<span class="sd">        - move associated bounds (u_max, u_min) to (y_max, y_min), remove delta_u_max/delta_u_min</span>
+
+<span class="sd">        :param u: input variable</span>
+<span class="sd">        :param y: algebraic variable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># fix types</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">u</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="c1"># check if same size</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Size of &quot;u&quot; and &quot;y&quot; are not the same, u=</span><span class="si">{}</span><span class="s1"> and y=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="n">ind_u</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_max</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_max</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_max</span><span class="p">[</span><span class="n">ind_u</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_min</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_min</span><span class="p">[</span><span class="n">ind_u</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_guess</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span><span class="p">[</span><span class="n">ind_u</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_max</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span><span class="n">ind_u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_min</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span><span class="n">ind_u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_min</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+                <span class="n">ind_u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_guess</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="n">ind_u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span> <span class="o">=</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="n">ind_u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_u_min</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

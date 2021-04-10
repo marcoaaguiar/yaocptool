@@ -1,0 +1,327 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.mixins.state_mixin &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.mixins.state_mixin</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.modelling.mixins.state_mixin</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">casadi.casadi</span> <span class="kn">import</span> <span class="n">DM</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">SX</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">vertcat</span>
+<span class="kn">from</span> <span class="nn">yaocptool.util.util</span> <span class="kn">import</span> <span class="n">remove_variables_from_vector</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">islice</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling.utils</span> <span class="kn">import</span> <span class="n">Derivative</span><span class="p">,</span> <span class="n">EqualityEquation</span>
+
+
+<div class="viewcode-block" id="StateMixin"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.state_mixin.StateMixin">[docs]</a><span class="k">class</span> <span class="nc">StateMixin</span><span class="p">:</span>
+<div class="viewcode-block" id="StateMixin.__init__"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.state_mixin.StateMixin.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">SX</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">SX</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">x_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">)]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">vertcat</span><span class="p">(</span>
+                <span class="o">*</span><span class="p">[</span><span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">NotImplementedError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SX</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<div class="viewcode-block" id="StateMixin.create_state"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.state_mixin.StateMixin.create_state">[docs]</a>    <span class="k">def</span> <span class="nf">create_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new state with the name &quot;name&quot; and size &quot;size&quot;.</span>
+<span class="sd">        Size can be an int or a tuple (e.g. (2,2)). However, the new state will be vectorized (casadi.vec) to be</span>
+<span class="sd">        included in the state vector (model.x).</span>
+
+<span class="sd">        :param name: str</span>
+<span class="sd">        :param size: int|tuple</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;name_variable&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name_variable</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">new_x</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="n">new_x_0</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_0_sym&quot;</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">vec</span><span class="p">(</span><span class="n">new_x</span><span class="p">),</span> <span class="n">ode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x_0</span><span class="o">=</span><span class="n">vec</span><span class="p">(</span><span class="n">new_x_0</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">new_x</span></div>
+
+<div class="viewcode-block" id="StateMixin.include_state"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.state_mixin.StateMixin.include_state">[docs]</a>    <span class="k">def</span> <span class="nf">include_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">ode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">n_x</span> <span class="o">=</span> <span class="n">var</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">x_0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_0</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">var_i</span><span class="o">.</span><span class="n">name</span><span class="p">())</span> <span class="k">for</span> <span class="n">var_i</span> <span class="ow">in</span> <span class="n">var</span><span class="o">.</span><span class="n">nz</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_0</span><span class="p">,</span> <span class="n">x_0</span><span class="p">)</span>
+
+        <span class="c1"># crate entry for included state</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">x_i</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">var</span><span class="o">.</span><span class="n">nz</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">x_i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;State &quot;</span><span class="si">{</span><span class="n">x_i</span><span class="si">}</span><span class="s1">&quot; already in this model&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="p">[</span><span class="n">x_i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">ode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="n">ode</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">var</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x_0</span></div>
+
+<div class="viewcode-block" id="StateMixin.remove_state"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.state_mixin.StateMixin.remove_state">[docs]</a>    <span class="k">def</span> <span class="nf">remove_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">eq</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">x_i</span> <span class="ow">in</span> <span class="n">var</span><span class="o">.</span><span class="n">nz</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="p">[</span><span class="n">x_i</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="StateMixin.replace_variable"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.state_mixin.StateMixin.replace_variable">[docs]</a>    <span class="k">def</span> <span class="nf">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">original</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">original</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">replacement</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">replacement</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">replacement</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">original</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">replacement</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Original and replacement must have the same number of elements!&quot;</span>
+                <span class="s2">&quot;original.numel()=</span><span class="si">{}</span><span class="s2">, replacement.numel()=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">original</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">replacement</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(),</span> <span class="s1">&#39;replace_variable&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">original</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">x_i</span><span class="p">,</span> <span class="n">x_i_eq</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="p">[</span><span class="n">x_i</span><span class="p">]</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="n">x_i_eq</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StateMixin.include_equations"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.state_mixin.StateMixin.include_equations">[docs]</a>    <span class="k">def</span> <span class="nf">include_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(),</span> <span class="s1">&#39;include_equations&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">ode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;ode&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`ode` is None but `x` is not None&quot;</span><span class="p">)</span>
+
+        <span class="c1"># if is in the list form</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span><span class="p">):</span>
+            <span class="n">ode</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">ode</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># if ode was passed but not x, try to guess the x</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Check if None are all sequential, ortherwise we don&#39;t know who it belongs</span>
+            <span class="n">first_none</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">eq</span> <span class="ow">is</span> <span class="kc">None</span>
+                       <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">islice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">first_none</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;ODE should be inserted on the equation form or in the list form.&quot;</span>
+                    <span class="s2">&quot;You can&#39;t mix both without explicit passing the states associated with the equation.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="n">first_none</span><span class="p">:</span><span class="n">first_none</span> <span class="o">+</span>
+                                                <span class="n">ode</span><span class="o">.</span><span class="n">numel</span><span class="p">()])</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">ode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">SX</span><span class="p">([])</span>
+            <span class="n">ode</span> <span class="o">=</span> <span class="n">SX</span><span class="p">([])</span>
+
+        <span class="c1"># get ode and x from equality equations</span>
+        <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="n">EqualityEquation</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eq</span><span class="o">.</span><span class="n">lhs</span><span class="p">,</span> <span class="n">Derivative</span><span class="p">):</span>
+                    <span class="n">ode</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">ode</span><span class="p">,</span> <span class="n">eq</span><span class="o">.</span><span class="n">rhs</span><span class="p">)</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">eq</span><span class="o">.</span><span class="n">lhs</span><span class="o">.</span><span class="n">inner</span><span class="p">)</span>
+
+        <span class="c1"># actually include the equations</span>
+        <span class="k">if</span> <span class="n">ode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ode</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">x_i</span> <span class="ow">in</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">nz</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="p">[</span><span class="n">x_i</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s1">&#39;State &quot;</span><span class="si">{</span><span class="n">x_i</span><span class="si">}</span><span class="s1">&quot; already had an ODE associated, overriding it!&#39;</span>
+                    <span class="p">)</span>
+            <span class="n">ode_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ode</span><span class="p">)</span>
+            <span class="n">ode_dict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">x_i</span><span class="p">:</span> <span class="n">ode</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">x_i</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">nz</span><span class="p">)})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ode</span> <span class="o">=</span> <span class="n">ode_dict</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,299 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.mixins.algebraic_mixin &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.mixins.algebraic_mixin</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.modelling.mixins.algebraic_mixin</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">casadi.casadi</span> <span class="kn">import</span> <span class="n">Function</span><span class="p">,</span> <span class="n">rootfinder</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">SX</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">vertcat</span>
+<span class="kn">from</span> <span class="nn">distutils.command.config</span> <span class="kn">import</span> <span class="n">config</span>
+<span class="kn">from</span> <span class="nn">yaocptool.util.util</span> <span class="kn">import</span> <span class="n">is_equality</span><span class="p">,</span> <span class="n">remove_variables_from_vector</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+
+
+<div class="viewcode-block" id="AlgebraicMixin"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin">[docs]</a><span class="k">class</span> <span class="nc">AlgebraicMixin</span><span class="p">:</span>
+<div class="viewcode-block" id="AlgebraicMixin.__init__"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">SX</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">SX</span><span class="p">([])</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">y_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_y</span><span class="p">)]</span>
+
+<div class="viewcode-block" id="AlgebraicMixin.create_algebraic_variable"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.create_algebraic_variable">[docs]</a>    <span class="k">def</span> <span class="nf">create_algebraic_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new algebraic variable with the name &quot;name&quot; and size &quot;size&quot;.</span>
+<span class="sd">        Size can be an int or a tuple (e.g. (2,2)). However, the new algebraic variable will be vectorized (casadi.vec)</span>
+<span class="sd">        to be included in the algebraic vector (model.y).</span>
+
+<span class="sd">        :param str name:</span>
+<span class="sd">        :param int||tuple size:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;name_variable&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name_variable</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">new_y</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">vec</span><span class="p">(</span><span class="n">new_y</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">new_y</span></div>
+
+<div class="viewcode-block" id="AlgebraicMixin.find_algebraic_variable"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.find_algebraic_variable">[docs]</a>    <span class="k">def</span> <span class="nf">find_algebraic_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                <span class="n">x</span><span class="p">,</span>
+                                <span class="n">u</span><span class="p">,</span>
+                                <span class="n">guess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">t</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                                <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">theta_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                <span class="n">rootfinder_options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">guess</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">guess</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span>
+        <span class="k">if</span> <span class="n">rootfinder_options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rootfinder_options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">nlpsol</span><span class="o">=</span><span class="s2">&quot;ipopt&quot;</span><span class="p">,</span>
+                <span class="n">nlpsol_options</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">SOLVER_OPTIONS</span><span class="p">[</span><span class="s2">&quot;nlpsol_options&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">theta_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">theta_value</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># replace known variables</span>
+        <span class="n">alg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span>
+        <span class="n">known_var</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+        <span class="n">known_var_values</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta_value</span><span class="p">)</span>
+        <span class="n">alg</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="n">alg</span><span class="p">,</span> <span class="n">known_var</span><span class="p">,</span> <span class="n">known_var_values</span><span class="p">)</span>
+
+        <span class="n">f_alg</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s2">&quot;f_alg&quot;</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">],</span> <span class="p">[</span><span class="n">alg</span><span class="p">])</span>
+
+        <span class="n">rf</span> <span class="o">=</span> <span class="n">rootfinder</span><span class="p">(</span><span class="s2">&quot;rf_algebraic_variable&quot;</span><span class="p">,</span> <span class="s2">&quot;nlpsol&quot;</span><span class="p">,</span> <span class="n">f_alg</span><span class="p">,</span>
+                        <span class="n">rootfinder_options</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">rf</span><span class="p">(</span><span class="n">guess</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="AlgebraicMixin.include_algebraic"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.include_algebraic">[docs]</a>    <span class="k">def</span> <span class="nf">include_algebraic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">alg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="n">alg</span><span class="o">=</span><span class="n">alg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AlgebraicMixin.remove_algebraic"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.remove_algebraic">[docs]</a>    <span class="k">def</span> <span class="nf">remove_algebraic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">eq</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">eq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">remove_variables_from_vector</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AlgebraicMixin.replace_variable"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.replace_variable">[docs]</a>    <span class="k">def</span> <span class="nf">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">original</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">original</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">replacement</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">replacement</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">replacement</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">original</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">replacement</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Original and replacement must have the same number of elements!&quot;</span>
+                <span class="s2">&quot;original.numel()=</span><span class="si">{}</span><span class="s2">, replacement.numel()=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">original</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">replacement</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(),</span> <span class="s1">&#39;replace_variable&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AlgebraicMixin.include_equations"><a class="viewcode-back" href="../../../../yaocptool.modelling.mixins.html#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.include_equations">[docs]</a>    <span class="k">def</span> <span class="nf">include_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">super</span><span class="p">(),</span> <span class="s1">&#39;include_equations&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">alg</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;alg&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">alg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">alg</span> <span class="o">=</span> <span class="n">SX</span><span class="p">([])</span>
+
+        <span class="c1"># in case a list of equations `y == x + u` has been passed</span>
+        <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">is_equality</span><span class="p">(</span><span class="n">eq</span><span class="p">):</span>
+                <span class="n">alg</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">alg</span><span class="p">,</span> <span class="n">eq</span><span class="o">.</span><span class="n">dep</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">eq</span><span class="o">.</span><span class="n">dep</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alg</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span><span class="p">):</span>
+            <span class="n">alg</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">alg</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">alg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span> <span class="n">alg</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

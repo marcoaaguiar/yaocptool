@@ -1,0 +1,457 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.network.network &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.network.network</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.modelling.network.network</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Fri Jul 07 16:05:50 2017</span>
+
+<span class="sd">@author: marco</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">networkx</span>
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">SX</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="kn">import</span> <span class="n">find_variables_indices_in_vector</span><span class="p">,</span> <span class="n">DM</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling</span> <span class="kn">import</span> <span class="n">SystemModel</span><span class="p">,</span> <span class="n">OptimalControlProblem</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling.network.node</span> <span class="kn">import</span> <span class="n">Node</span>
+
+
+<div class="viewcode-block" id="Network"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network">[docs]</a><span class="k">class</span> <span class="nc">Network</span><span class="p">:</span>
+<div class="viewcode-block" id="Network.__init__"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;network&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param list of Node nodes:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>  <span class="c1"># type: networkx.DiGraph</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nodes_id_counter</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_nodes</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            All nodes (from the self.graph)</span>
+
+<span class="sd">        :rtype: networkx.reportviews.NodeView</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">nodes</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">connections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            All connections (edges) from the self.graph</span>
+
+<span class="sd">        :rtype: networkx.reportviews.OutEdgeView</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">models</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            List of models of all nodes</span>
+
+<span class="sd">        :rtype: list of SystemModel</span>
+<span class="sd">        :return: list of all models</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">node_id</span><span class="p">):</span>
+            <span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">models</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">problems</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            List of problems of all nodes</span>
+
+<span class="sd">        :rtype: list of OptimalControlProblem</span>
+<span class="sd">        :return: list of all problems</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">problems</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">node_id</span><span class="p">):</span>
+            <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">problem</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">problems</span>
+
+<div class="viewcode-block" id="Network.create_node"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.create_node">[docs]</a>    <span class="k">def</span> <span class="nf">create_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">problem</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Creat a node in the network</span>
+
+<span class="sd">        :param str name:</span>
+<span class="sd">        :param SystemModel model:</span>
+<span class="sd">        :param OptimalControlProblem problem:</span>
+
+<span class="sd">        :rtype: Node</span>
+<span class="sd">        :return: node</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">problem</span><span class="o">=</span><span class="n">problem</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_node_an_id</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">node</span></div>
+
+<div class="viewcode-block" id="Network.include_nodes"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.include_nodes">[docs]</a>    <span class="k">def</span> <span class="nf">include_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Include node or list of nodes in the network</span>
+
+<span class="sd">        :param list|Node nodes: node/nodes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">nodes</span><span class="p">]</span>
+
+        <span class="c1"># if node does not have an id</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">node_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_node_an_id</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Network.connect"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.connect">[docs]</a>    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Connect the variables of two subsystems (nodes) by creating an edge</span>
+
+<span class="sd">        :param y: output variable of node1</span>
+<span class="sd">        :param u: input variable of node2</span>
+<span class="sd">        :param node1: node1 (which has &#39;y&#39;)</span>
+<span class="sd">        :param node2: node2 (which has &#39;u&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">node1</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">has_variable</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;&quot;node1&quot; (</span><span class="si">{}</span><span class="s1">) does not have the passed &quot;y&quot; (</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">node1</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">node2</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">has_variable</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;&quot;node2&quot; (</span><span class="si">{}</span><span class="s1">) does not have the passed &quot;u&quot; (</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">DM</span><span class="p">([]),</span> <span class="n">u</span><span class="o">=</span><span class="n">DM</span><span class="p">([]))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">],</span> <span class="n">u</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Network.remove_connection"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.remove_connection">[docs]</a>    <span class="k">def</span> <span class="nf">remove_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Remove a connection between node1 and node2</span>
+
+<span class="sd">        :param Node node1:</span>
+<span class="sd">        :param Node node2:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">remove_edge</span><span class="p">(</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Network.get_model"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Create a single model which is the composition of all models and the connections</span>
+
+<span class="sd">        :return: model</span>
+<span class="sd">        :rtype: SystemModel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">SystemModel</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_model&#39;</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">include_models</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">:</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">u</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">],</span>
+                          <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">model</span></div>
+
+<div class="viewcode-block" id="Network.get_problem"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.get_problem">[docs]</a>    <span class="k">def</span> <span class="nf">get_problem</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Create a single OCP which is the composition of all problems and connections.</span>
+
+<span class="sd">        :return: problem</span>
+<span class="sd">        :rtype: OptimalControlProblem</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">SystemModel</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_model&#39;</span><span class="p">)</span>
+        <span class="n">problem</span> <span class="o">=</span> <span class="n">OptimalControlProblem</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+                                        <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_problem&#39;</span><span class="p">)</span>
+        <span class="n">problem</span><span class="o">.</span><span class="n">t_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problems</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">t_0</span>
+        <span class="n">problem</span><span class="o">.</span><span class="n">t_f</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problems</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">t_f</span>
+        <span class="n">problem</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problems</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">:</span>
+            <span class="n">problem</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">u</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">],</span>
+                            <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">problem</span></div>
+
+<div class="viewcode-block" id="Network.get_node_by_id"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.get_node_by_id">[docs]</a>    <span class="k">def</span> <span class="nf">get_node_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">node_id</span> <span class="o">==</span> <span class="nb">id</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">node</span></div>
+
+<div class="viewcode-block" id="Network.get_node_by_name"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.get_node_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_node_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">node</span></div>
+
+    <span class="k">def</span> <span class="nf">_set_node_an_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Set a unique id to a node</span>
+
+<span class="sd">        :param Node node:</span>
+<span class="sd">        :return: node id</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">node_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nodes_id_counter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nodes_id_counter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nodes_id_counter</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">node_id</span>
+
+<div class="viewcode-block" id="Network.plot"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Plot the network</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">node</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">])</span>
+
+        <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">color</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">]</span>
+
+        <span class="n">networkx</span><span class="o">.</span><span class="n">draw_spring</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span>
+                             <span class="n">node_size</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+                             <span class="n">node_color</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span>
+                             <span class="n">with_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                             <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+                             <span class="n">font_weight</span><span class="o">=</span><span class="s1">&#39;bold&#39;</span><span class="p">,</span>
+                             <span class="n">font_color</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Network.get_map_coloring_groups"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.get_map_coloring_groups">[docs]</a>    <span class="k">def</span> <span class="nf">get_map_coloring_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">coloring_dict</span> <span class="o">=</span> <span class="n">networkx</span><span class="o">.</span><span class="n">greedy_color</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">to_undirected</span><span class="p">())</span>
+        <span class="n">grouping_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">coloring_dict</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">coloring_dict</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="ow">in</span> <span class="n">grouping_dict</span><span class="p">:</span>
+                <span class="n">grouping_dict</span><span class="p">[</span><span class="n">coloring_dict</span><span class="p">[</span><span class="n">node</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">grouping_dict</span><span class="p">[</span><span class="n">coloring_dict</span><span class="p">[</span><span class="n">node</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">grouping_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Network.insert_intermediary_nodes"><a class="viewcode-back" href="../../../../yaocptool.modelling.network.html#yaocptool.modelling.network.network.Network.insert_intermediary_nodes">[docs]</a>    <span class="k">def</span> <span class="nf">insert_intermediary_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">old_connections</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">)</span> <span class="ow">in</span> <span class="n">old_connections</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">][</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">][</span><span class="s1">&#39;u&#39;</span><span class="p">]</span>
+
+            <span class="n">y_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">node1</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">y_guess</span><span class="p">)[</span><span class="n">find_variables_indices_in_vector</span><span class="p">(</span>
+                    <span class="n">y</span><span class="p">,</span> <span class="n">node1</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">)]</span>
+            <span class="n">u_guess</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">node2</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">u_guess</span><span class="p">)[</span><span class="n">find_variables_indices_in_vector</span><span class="p">(</span>
+                    <span class="n">u</span><span class="p">,</span> <span class="n">node2</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u</span><span class="p">)]</span>
+
+            <span class="n">copy_y</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+                <span class="o">*</span>
+                <span class="p">[</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;Dummy_&#39;</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">())</span> <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">())])</span>
+            <span class="n">copy_u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+                <span class="o">*</span>
+                <span class="p">[</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;Dummy_&#39;</span> <span class="o">+</span> <span class="n">u</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">())</span> <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">())])</span>
+
+            <span class="n">new_model</span> <span class="o">=</span> <span class="n">SystemModel</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Dummy_Model_</span><span class="si">{}</span><span class="s1">_to_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">node1</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">new_model</span><span class="o">.</span><span class="n">include_variables</span><span class="p">(</span><span class="n">u</span><span class="o">=</span><span class="n">copy_y</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">copy_u</span><span class="p">)</span>
+            <span class="n">new_model</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="n">alg</span><span class="o">=</span><span class="n">copy_u</span> <span class="o">-</span> <span class="n">copy_y</span><span class="p">)</span>
+            <span class="n">new_problem</span> <span class="o">=</span> <span class="n">OptimalControlProblem</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s1">&#39;OCP_Dummy_</span><span class="si">{}</span><span class="s1">_to_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">node1</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                <span class="n">model</span><span class="o">=</span><span class="n">new_model</span><span class="p">,</span>
+                <span class="n">t_f</span><span class="o">=</span><span class="n">node1</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">t_f</span><span class="p">,</span>
+                <span class="n">y_guess</span><span class="o">=</span><span class="n">u_guess</span><span class="p">,</span>
+                <span class="n">u_guess</span><span class="o">=</span><span class="n">y_guess</span><span class="p">)</span>
+
+            <span class="n">new_node</span> <span class="o">=</span> <span class="n">Node</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Dummy_node_</span><span class="si">{}</span><span class="s1">_to_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">node1</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">node2</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                            <span class="n">model</span><span class="o">=</span><span class="n">new_model</span><span class="p">,</span>
+                            <span class="n">problem</span><span class="o">=</span><span class="n">new_problem</span><span class="p">,</span>
+                            <span class="n">color</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_nodes</span><span class="p">(</span><span class="n">new_node</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">remove_connection</span><span class="p">(</span><span class="n">node1</span><span class="p">,</span> <span class="n">node2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">copy_y</span><span class="p">,</span> <span class="n">node1</span><span class="p">,</span> <span class="n">new_node</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">copy_u</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">new_node</span><span class="p">,</span> <span class="n">node2</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">node_id</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

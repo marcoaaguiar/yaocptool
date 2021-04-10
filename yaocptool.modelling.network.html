@@ -1,0 +1,477 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.network package &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="yaocptool.mpc package" href="yaocptool.mpc.html" />
+    <link rel="prev" title="yaocptool.modelling.mixins package" href="yaocptool.modelling.mixins.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="yaocptool.html">yaocptool package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="yaocptool.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool.config">yaocptool.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="yaocptool.html">yaocptool package</a> &raquo;</li>
+        
+          <li><a href="yaocptool.modelling.html">yaocptool.modelling package</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.network package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/yaocptool.modelling.network.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="yaocptool-modelling-network-package">
+<h1>yaocptool.modelling.network package<a class="headerlink" href="#yaocptool-modelling-network-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-yaocptool.modelling.network.network">
+<span id="yaocptool-modelling-network-network-module"></span><h2>yaocptool.modelling.network.network module<a class="headerlink" href="#module-yaocptool.modelling.network.network" title="Permalink to this headline">¶</a></h2>
+<p>Created on Fri Jul 07 16:05:50 2017</p>
+<p>&#64;author: marco</p>
+<dl class="class">
+<dt id="yaocptool.modelling.network.network.Network">
+<em class="property">class </em><code class="descname">Network</code><span class="sig-paren">(</span><em>nodes=None</em>, <em>name='network'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>nodes=None</em>, <em>name='network'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>of Node nodes</strong> (<em>list</em>) – </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.connect">
+<code class="descname">connect</code><span class="sig-paren">(</span><em>y</em>, <em>u</em>, <em>node1</em>, <em>node2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.connect" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Connect the variables of two subsystems (nodes) by creating an edge</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>y</strong> – output variable of node1</li>
+<li><strong>u</strong> – input variable of node2</li>
+<li><strong>node1</strong> – node1 (which has ‘y’)</li>
+<li><strong>node2</strong> – node2 (which has ‘u’)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.network.network.Network.connections">
+<code class="descname">connections</code><a class="headerlink" href="#yaocptool.modelling.network.network.Network.connections" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>All connections (edges) from the self.graph</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">networkx.reportviews.OutEdgeView</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.create_node">
+<code class="descname">create_node</code><span class="sig-paren">(</span><em>name=None</em>, <em>model=None</em>, <em>problem=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.create_node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.create_node" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Creat a node in the network</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>str</em>) – </li>
+<li><strong>model</strong> (<a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel" title="yaocptool.modelling.system_model.SystemModel"><em>SystemModel</em></a>) – </li>
+<li><strong>problem</strong> (<a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem" title="yaocptool.modelling.ocp.OptimalControlProblem"><em>OptimalControlProblem</em></a>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#yaocptool.modelling.network.node.Node" title="yaocptool.modelling.network.node.Node">Node</a></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">node</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.get_map_coloring_groups">
+<code class="descname">get_map_coloring_groups</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.get_map_coloring_groups"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.get_map_coloring_groups" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.get_model">
+<code class="descname">get_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.get_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.get_model" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Create a single model which is the composition of all models and the connections</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">model</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel" title="yaocptool.modelling.system_model.SystemModel">SystemModel</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.get_node_by_id">
+<code class="descname">get_node_by_id</code><span class="sig-paren">(</span><em>id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.get_node_by_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.get_node_by_id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.get_node_by_name">
+<code class="descname">get_node_by_name</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.get_node_by_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.get_node_by_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.get_problem">
+<code class="descname">get_problem</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.get_problem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.get_problem" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Create a single OCP which is the composition of all problems and connections.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">problem</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.ocp.OptimalControlProblem" title="yaocptool.modelling.ocp.OptimalControlProblem">OptimalControlProblem</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.include_nodes">
+<code class="descname">include_nodes</code><span class="sig-paren">(</span><em>nodes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.include_nodes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.include_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Include node or list of nodes in the network</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nodes</strong> (<em>list|Node</em>) – node/nodes</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.insert_intermediary_nodes">
+<code class="descname">insert_intermediary_nodes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.insert_intermediary_nodes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.insert_intermediary_nodes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.network.network.Network.models">
+<code class="descname">models</code><a class="headerlink" href="#yaocptool.modelling.network.network.Network.models" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>List of models of all nodes</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list of SystemModel</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of all models</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.network.network.Network.nodes">
+<code class="descname">nodes</code><a class="headerlink" href="#yaocptool.modelling.network.network.Network.nodes" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>All nodes (from the self.graph)</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">networkx.reportviews.NodeView</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the network</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.network.network.Network.problems">
+<code class="descname">problems</code><a class="headerlink" href="#yaocptool.modelling.network.network.Network.problems" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>List of problems of all nodes</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list of OptimalControlProblem</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of all problems</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.network.network.Network.remove_connection">
+<code class="descname">remove_connection</code><span class="sig-paren">(</span><em>node1</em>, <em>node2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/network.html#Network.remove_connection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.network.Network.remove_connection" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Remove a connection between node1 and node2</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>node1</strong> (<a class="reference internal" href="#yaocptool.modelling.network.node.Node" title="yaocptool.modelling.network.node.Node"><em>Node</em></a>) – </li>
+<li><strong>node2</strong> (<a class="reference internal" href="#yaocptool.modelling.network.node.Node" title="yaocptool.modelling.network.node.Node"><em>Node</em></a>) – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.modelling.network.node">
+<span id="yaocptool-modelling-network-node-module"></span><h2>yaocptool.modelling.network.node module<a class="headerlink" href="#module-yaocptool.modelling.network.node" title="Permalink to this headline">¶</a></h2>
+<p>Created on Fri Jul 07 16:33:52 2017</p>
+<p>&#64;author: marco</p>
+<dl class="class">
+<dt id="yaocptool.modelling.network.node.Node">
+<em class="property">class </em><code class="descname">Node</code><span class="sig-paren">(</span><em>node_id=None</em>, <em>name=''</em>, <em>model=None</em>, <em>problem=None</em>, <em>color=0.25</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/node.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.node.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="yaocptool.modelling.network.node.Node.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>node_id=None</em>, <em>name=''</em>, <em>model=None</em>, <em>problem=None</em>, <em>color=0.25</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/network/node.html#Node.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.network.node.Node.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>node_id</strong> (<em>int</em>) – </li>
+<li><strong>name</strong> (<em>str</em>) – </li>
+<li><strong>model</strong> (<em>yaocptool.modelling.SystemModel</em>) – </li>
+<li><strong>problem</strong> (<em>yaocptool.modelling.OptimalControlProblem</em>) – </li>
+<li><strong>color</strong> (<em>float</em>) – </li>
+<li><strong>kwargs</strong> (<em>dict</em>) – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.modelling.network">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-yaocptool.modelling.network" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="yaocptool.mpc.html" class="btn btn-neutral float-right" title="yaocptool.mpc package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="yaocptool.modelling.mixins.html" class="btn btn-neutral float-left" title="yaocptool.modelling.mixins package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

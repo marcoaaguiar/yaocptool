@@ -1,0 +1,78 @@
+yaocptool.modelling package
+===========================
+
+Subpackages
+-----------
+
+.. toctree::
+
+    yaocptool.modelling.mixins
+    yaocptool.modelling.network
+
+Submodules
+----------
+
+yaocptool.modelling.dae\_system module
+--------------------------------------
+
+.. automodule:: yaocptool.modelling.dae_system
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.modelling.dataset module
+----------------------------------
+
+.. automodule:: yaocptool.modelling.dataset
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.modelling.ocp module
+------------------------------
+
+.. automodule:: yaocptool.modelling.ocp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.modelling.simulation\_result module
+---------------------------------------------
+
+.. automodule:: yaocptool.modelling.simulation_result
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.modelling.stochastic\_ocp module
+------------------------------------------
+
+.. automodule:: yaocptool.modelling.stochastic_ocp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.modelling.system\_model module
+----------------------------------------
+
+.. automodule:: yaocptool.modelling.system_model
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.modelling.utils module
+--------------------------------
+
+.. automodule:: yaocptool.modelling.utils
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: yaocptool.modelling
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,0 +1,539 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.optimization package &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="yaocptool.parallel package" href="yaocptool.parallel.html" />
+    <link rel="prev" title="yaocptool.mpc package" href="yaocptool.mpc.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="yaocptool.html">yaocptool package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="yaocptool.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool.config">yaocptool.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="yaocptool.html">yaocptool package</a> &raquo;</li>
+        
+      <li>yaocptool.optimization package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/yaocptool.optimization.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="yaocptool-optimization-package">
+<h1>yaocptool.optimization package<a class="headerlink" href="#yaocptool-optimization-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-yaocptool.optimization.abstract_optimization_problem">
+<span id="yaocptool-optimization-abstract-optimization-problem-module"></span><h2>yaocptool.optimization.abstract_optimization_problem module<a class="headerlink" href="#module-yaocptool.optimization.abstract_optimization_problem" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem">
+<em class="property">class </em><code class="descname">AbstractOptimizationProblem</code><span class="sig-paren">(</span><em>name='optimization_problem'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>name='optimization_problem'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Abstract Optimization Problem class
+Optimization problem</div></blockquote>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\begin{split}\\min_x f(x, p)\end{split}\\\begin{split}\\textrm{s.t.:} g_{lb} \leq g(x,p) \leq g_{ub}\end{split}\\Object attributes:
+x -&gt; optimization variables
+g -&gt; constraint\end{aligned}\end{align} \]</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<em>str</em>) – Optimization problem name</li>
+<li><strong>kwargs</strong> (<em>dict</em>) – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.create_parameter">
+<code class="descname">create_parameter</code><span class="sig-paren">(</span><em>name</em>, <em>size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.create_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.create_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Create parameter for in the Optimization Problem</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>str</em>) – variable name</li>
+<li><strong>size</strong> (<em>int</em>) – number of rows</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">created variable</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">MX|SX</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.create_variable">
+<code class="descname">create_variable</code><span class="sig-paren">(</span><em>name</em>, <em>size=1</em>, <em>lb=-inf</em>, <em>ub=inf</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.create_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.create_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an optimization variable</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>str</em>) – Name of the optimization variable.</li>
+<li><strong>size</strong> (<em>int</em>) – Size of the variable (default = 1)</li>
+<li><strong>lb</strong> (<em>MX|SX</em>) – Lower bound of the variable. If the given ‘size’ is greater than one but a scalar is passed as
+lower bound, a vector of lb of size ‘size’ will be used as a lower bound. (default = [-inf]*size)</li>
+<li><strong>ub</strong> (<em>MX|SX</em>) – Upper bound of the variable. If the given ‘size’ is greater than one but a scalar is passed as
+upper bound, a vector of ub of size ‘size’ will be used as a upper bound. (default = [inf]*size)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Return the variable</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">MX</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_default_call_dict">
+<code class="descname">get_default_call_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.get_default_call_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_default_call_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dictionary of the settings that will be used on calling the solver
+The keys are:
+- ‘lbx’: lower bound on the variables
+- ‘ubx’: upper bound on the variables
+- ‘lbg’: lower bound on the constraints
+- ‘ubg’: upper bound on the constraints</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">dict with default values</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_problem_dict">
+<code class="descname">get_problem_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.get_problem_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_problem_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the optimization problem in a Python dict form (CasADi standard).
+The dictionary keys are:
+f-&gt; objective function
+g-&gt; constraints
+x-&gt; variables
+p-&gt; parameters</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">optimization problem as a dict</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_solver">
+<code class="descname">get_solver</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.get_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.get_solver" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Get optimization solver</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_constraint">
+<code class="descname">include_constraint</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.include_constraint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_constraint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Includes an inequality or inequality to the optimization problem,
+Example:
+opt_problem.include_constraint(1 &lt;= x**2)
+opt_problem.include_constraint(x + y == 1)
+Due to limitations on CasADi it does not allows for double inequalities (e.g.: 0 &lt;= x &lt;= 1)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>expr</strong> (<em>casadi.MX</em>) – equality or inequality expression</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_equality">
+<code class="descname">include_equality</code><span class="sig-paren">(</span><em>expr</em>, <em>rhs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.include_equality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_equality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Include a equality with the following form
+expr = rhs</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>expr</strong> – expression, this is the only term that should contain symbolic variables</li>
+<li><strong>rhs</strong> – right hand side, by default it is a vector of zeros with same size of expr. If the  ‘expr’ size is
+greater than one but a scalar is passed as ‘rhs’, a vector of ‘rhs’ with size of ‘expr’ will be used as
+right hand side. (default = [0]*size)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_inequality">
+<code class="descname">include_inequality</code><span class="sig-paren">(</span><em>expr</em>, <em>lb=None</em>, <em>ub=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.include_inequality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_inequality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Include inequality to the problem with the following form
+lb &lt;= expr &lt;= ub</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>expr</strong> – expression for the inequality, this is the only term that should contain symbolic variables</li>
+<li><strong>lb</strong> – Lower bound of the inequality. If the ‘expr’ size is greater than one but a scalar is passed as
+lower bound, a vector of lb with size of ‘expr’ will be used as a lower bound. (default = [-inf]*size)</li>
+<li><strong>ub</strong> – Upper bound of the inequality. If the  ‘expr’ size is greater than one but a scalar is passed as
+upper bound, a vector of ub with size of  ‘expr’ will be used as a upper bound. (default = [inf]*size)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_parameter">
+<code class="descname">include_parameter</code><span class="sig-paren">(</span><em>par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.include_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Include parameter for in the Optimization Problem</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>par</strong> (<em>MX|SX</em>) – parameter to be included</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_variable">
+<code class="descname">include_variable</code><span class="sig-paren">(</span><em>variable</em>, <em>lb=-inf</em>, <em>ub=inf</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.include_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.include_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Include a symbolic variable in the optimization problem</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>variable</strong> – variable to be included</li>
+<li><strong>lb</strong> – Lower bound of the variable. If the given variable size is greater than one but a scalar is passed as
+lower bound, a vector of lb with size of the given variable will be used as a lower bound.
+(default = [-inf]*size)</li>
+<li><strong>ub</strong> – Upper bound of the variable. If the given variable size is greater than one but a scalar is passed as
+upper bound, a vector of ub  with size of the given variable will be used as a upper bound.
+(default = [inf]*size)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.set_objective">
+<code class="descname">set_objective</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.set_objective"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.set_objective" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Set objective function</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>expr</strong> (<em>MX|SX</em>) – objective function</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.solve">
+<code class="descname">solve</code><span class="sig-paren">(</span><em>initial_guess</em>, <em>call_dict=None</em>, <em>p=None</em>, <em>lam_x=None</em>, <em>lam_g=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/abstract_optimization_problem.html#AbstractOptimizationProblem.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem.solve" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>initial_guess</strong> – Initial guess</li>
+<li><strong>call_dict</strong> – a dictionary containing ‘lbx’, ‘ubx’, ‘lbg’, ‘ubg’. If not given, the one obtained with
+self.get_default_call_dict will be used.</li>
+<li><strong>p</strong> – parameters</li>
+<li><strong>lam_x</strong> – </li>
+<li><strong>lam_g</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">dictionary with solution</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.optimization.nonlinear_problem">
+<span id="yaocptool-optimization-nonlinear-problem-module"></span><h2>yaocptool.optimization.nonlinear_problem module<a class="headerlink" href="#module-yaocptool.optimization.nonlinear_problem" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.optimization.nonlinear_problem.NonlinearOptimizationProblem">
+<em class="property">class </em><code class="descname">NonlinearOptimizationProblem</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/nonlinear_problem.html#NonlinearOptimizationProblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.nonlinear_problem.NonlinearOptimizationProblem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem" title="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem</span></code></a></p>
+<dl class="method">
+<dt id="yaocptool.optimization.nonlinear_problem.NonlinearOptimizationProblem.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/nonlinear_problem.html#NonlinearOptimizationProblem.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.nonlinear_problem.NonlinearOptimizationProblem.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Nonlinear Optimization Problem class
+Optimization problem</div></blockquote>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\begin{split}\\min_x f(x, p)\end{split}\\\begin{split}\\textrm{s.t.:} g_{lb} \leq g(x,p) \leq g_{ub}\end{split}\end{aligned}\end{align} \]</div>
+<p>Object attributes:
+x -&gt; optimization variables
+g -&gt; constraint</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.optimization.quadratic_problem">
+<span id="yaocptool-optimization-quadratic-problem-module"></span><h2>yaocptool.optimization.quadratic_problem module<a class="headerlink" href="#module-yaocptool.optimization.quadratic_problem" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.optimization.quadratic_problem.QuadraticOptimizationProblem">
+<em class="property">class </em><code class="descname">QuadraticOptimizationProblem</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/quadratic_problem.html#QuadraticOptimizationProblem"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.quadratic_problem.QuadraticOptimizationProblem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem" title="yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaocptool.optimization.abstract_optimization_problem.AbstractOptimizationProblem</span></code></a></p>
+<dl class="method">
+<dt id="yaocptool.optimization.quadratic_problem.QuadraticOptimizationProblem.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/optimization/quadratic_problem.html#QuadraticOptimizationProblem.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.optimization.quadratic_problem.QuadraticOptimizationProblem.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Quadratic Optimization Problem class
+Optimization problem</div></blockquote>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\min_x &amp;f(x, p)\\\textrm{s.t.:} &amp;g_{lb} \leq g(x,p) \leq g_{ub}\end{aligned}\end{align} \]</div>
+<p>Object attributes:
+x -&gt; optimization variables
+g -&gt; constraint</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.optimization">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-yaocptool.optimization" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="yaocptool.parallel.html" class="btn btn-neutral float-right" title="yaocptool.parallel package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="yaocptool.mpc.html" class="btn btn-neutral float-left" title="yaocptool.mpc package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
