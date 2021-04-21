@@ -1,9 +1,9 @@
-from casadi import sqrt, DM
+from casadi import DM, sqrt
 
 from yaocptool.estimation.extended_kalman_filter import ExtendedKalmanFilter
 from yaocptool.methods import DirectMethod
-from yaocptool.modelling import SystemModel, OptimalControlProblem
-from yaocptool.mpc import PlantSimulation, MPC
+from yaocptool.modelling import OptimalControlProblem, SystemModel
+from yaocptool.mpc import MPC, PlantSimulation
 
 ######################
 #  Main Variables    #
@@ -73,7 +73,9 @@ problem.include_time_inequality(h[0] + h[1] - 10)
 ######################
 # Solution method will solve the OCP every iteration
 solution_method = DirectMethod(
-    problem, finite_elements=20, discretization_scheme="collocation",
+    problem,
+    finite_elements=20,
+    discretization_scheme="collocation",
 )
 
 ######################

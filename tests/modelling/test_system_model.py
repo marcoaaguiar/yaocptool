@@ -1,11 +1,11 @@
 from unittest import TestCase
 
-from casadi import SX, is_equal, vertcat, vec, DM
+from casadi import DM, SX, is_equal, vec, vertcat
+from casadi.casadi import depends_on, mtimes
+from pytest import raises
 
 from yaocptool.modelling import SystemModel
-from pytest import raises
 from yaocptool.modelling.utils import der
-from casadi.casadi import depends_on, mtimes
 
 
 class TestSystemModel(TestCase):
@@ -20,7 +20,7 @@ class TestSystemModel(TestCase):
         x = self.dae_model.create_state("x", 3)
         y = self.dae_model.create_algebraic_variable("y", 3)
         u = self.dae_model.create_input("u", 3)
-        self.dae_model.include_equations(ode=-x + u, alg=y - x + u**2)
+        self.dae_model.include_equations(ode=-x + u, alg=y - x + u ** 2)
 
     def test_system_type(self):
         assert self.ode_model.system_type == "ode"
@@ -272,7 +272,7 @@ def test_find_equilibrium():
 
 
 def test_include_equations_ode(empty_model: SystemModel):
-    x = empty_model.create_state('x')
+    x = empty_model.create_state("x")
     ode = -x
     empty_model.include_equations(ode=ode)
     assert empty_model.ode.numel() == x.numel()
@@ -280,7 +280,7 @@ def test_include_equations_ode(empty_model: SystemModel):
 
 
 def test_include_equations_ode_with_x(empty_model: SystemModel):
-    x = empty_model.create_state('x')
+    x = empty_model.create_state("x")
     ode = -x
     empty_model.include_equations(ode=ode, x=x)
     assert empty_model.ode.numel() == x.numel()
@@ -288,9 +288,9 @@ def test_include_equations_ode_with_x(empty_model: SystemModel):
 
 
 def test_include_equations_list(empty_model):
-    x = empty_model.create_state('x', 2)
-    u = empty_model.create_control('u')
-    y = empty_model.create_algebraic_variable('y', 3)
+    x = empty_model.create_state("x", 2)
+    u = empty_model.create_control("u")
+    y = empty_model.create_algebraic_variable("y", 3)
 
     # test for list input
     ode = [-x - y[:1] + u]
@@ -308,7 +308,7 @@ def test_include_equations_ode_multi_dim(empty_model):
 
     a = DM([[-1, -2], [5, -1]])
     b = DM([[1, 0], [0, 1]])
-    ode = (mtimes(a, x) + mtimes(b, u))
+    ode = mtimes(a, x) + mtimes(b, u)
     empty_model.include_equations(ode=ode)
 
     assert empty_model.ode.shape == (2, 1)
@@ -316,8 +316,8 @@ def test_include_equations_ode_multi_dim(empty_model):
 
 
 def test_include_equations_der(empty_model):
-    x = empty_model.create_state('x')
-    u = empty_model.create_control('u')
+    x = empty_model.create_state("x")
+    u = empty_model.create_control("u")
 
     empty_model.include_equations(der(x) == -x + u)
 

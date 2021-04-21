@@ -5,27 +5,28 @@ Created on Mon Apr 03 11:15:03 2017
 @author: marco
 """
 
-from typing import Callable, Dict, Iterable, List, Optional, Union
+from typing import  Dict, Iterable, List, Optional, Union
+
 from casadi import (
     DM,
-    repmat,
-    vertcat,
-    substitute,
-    mtimes,
-    is_equal,
     SX,
-    inf,
-    gradient,
     dot,
+    gradient,
+    inf,
+    is_equal,
     jacobian,
+    mtimes,
+    repmat,
+    substitute,
+    vertcat,
 )
 
 from yaocptool import (
     find_variables_indices_in_vector,
     remove_variables_from_vector_by_indices,
 )
-from yaocptool.modelling import SystemModel, SimulationResult
-
+from yaocptool.modelling.simulation_result import SimulationResult
+from yaocptool.modelling.system_model import SystemModel
 
 class OptimalControlProblem(object):
     r"""Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)
@@ -906,7 +907,7 @@ class OptimalControlProblem(object):
         new_p_opt: SX,
         new_p_opt_min: Optional[DM] = None,
         new_p_opt_max: Optional[DM] = None,
-    )-> SX:
+    ) -> SX:
         if new_p_opt_min is None:
             new_p_opt_min = -DM.inf(new_p_opt.numel())
         if new_p_opt_max is None:
@@ -936,8 +937,11 @@ class OptimalControlProblem(object):
         return new_p_opt
 
     def set_theta_as_optimization_theta(
-            self, new_theta_opt: SX, new_theta_opt_min:Optional[DM]=None, new_theta_opt_max:Optional[DM]=None
-    )->SX:
+        self,
+        new_theta_opt: SX,
+        new_theta_opt_min: Optional[DM] = None,
+        new_theta_opt_max: Optional[DM] = None,
+    ) -> SX:
         if new_theta_opt_min is None:
             new_theta_opt_min = -DM.inf(new_theta_opt.numel())
         if new_theta_opt_max is None:
@@ -965,13 +969,15 @@ class OptimalControlProblem(object):
         self.theta_opt_max = vertcat(self.theta_opt_max, new_theta_opt_max)
         return new_theta_opt
 
-    def get_p_opt_indices(self)-> List[int]:
+    def get_p_opt_indices(self) -> List[int]:
         return find_variables_indices_in_vector(self.p_opt, self.model.p)
 
-    def get_theta_opt_indices(self)-> List[int]:
+    def get_theta_opt_indices(self) -> List[int]:
         return find_variables_indices_in_vector(self.theta_opt, self.model.theta)
 
-    def connect(self, u:Union[SX, List[SX]], y:Union[SX, List[SX]], replace:bool=False):
+    def connect(
+        self, u: Union[SX, List[SX]], y: Union[SX, List[SX]], replace: bool = False
+    ):
         """
         Connect an input 'u' to a algebraic variable 'y', u = y.
         The function will perform the following actions:

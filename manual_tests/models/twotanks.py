@@ -6,15 +6,13 @@ Created on Thu Oct 20 13:54:58 2016
 """
 
 from casadi import DM, diag, sqrt
-from yaocptool.modelling import SystemModel, OptimalControlProblem
+
+from yaocptool.modelling import OptimalControlProblem, SystemModel
 
 
 class Tank1(SystemModel):
     def __init__(self, **kwargs):
-        SystemModel.__init__(self,
-                             name="tank_1",
-                             model_name_as_prefix=True,
-                             **kwargs)
+        SystemModel.__init__(self, name="tank_1", model_name_as_prefix=True, **kwargs)
 
         h = self.create_state("h")
         q_out = self.create_algebraic_variable("q_out")
@@ -30,10 +28,7 @@ class Tank1(SystemModel):
 
 class Tank2(SystemModel):
     def __init__(self, **kwargs):
-        SystemModel.__init__(self,
-                             name="tank_2",
-                             model_name_as_prefix=True,
-                             **kwargs)
+        SystemModel.__init__(self, name="tank_2", model_name_as_prefix=True, **kwargs)
 
         h = self.create_state("h")
         q_out = self.create_algebraic_variable("q_out")

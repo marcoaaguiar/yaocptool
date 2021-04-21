@@ -1,11 +1,11 @@
+import warnings
 from collections import abc
 from itertools import islice
-from typing import Dict, List, Optional, Tuple, Union, overload
-import warnings
+from typing import Dict, List, Optional, Tuple, Union
+
+from casadi import SX, substitute, vec, vertcat
+
 from yaocptool.modelling.mixins.base_mixin import BaseMixin
-
-from casadi import DM, SX, substitute, vec, vertcat
-
 from yaocptool.modelling.utils import Derivative, EqualityEquation
 from yaocptool.util.util import remove_variables_from_vector
 

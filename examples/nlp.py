@@ -2,12 +2,12 @@ from casadi import MX
 
 from yaocptool.optimization import NonlinearOptimizationProblem
 
-nlp = NonlinearOptimizationProblem(name='example')
+nlp = NonlinearOptimizationProblem(name="example")
 
 # create the nlp variables
-x = nlp.create_variable('x')
+x = nlp.create_variable("x")
 # include lower/upper bound on creation
-y = nlp.create_variable('y', ub=10, lb=-30)
+y = nlp.create_variable("y", ub=10, lb=-30)
 
 # the nlp can be parametrized
 # center = nlp.create_parameter('center_point', size=2)

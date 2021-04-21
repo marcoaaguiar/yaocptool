@@ -7,7 +7,6 @@ Created on Wed Nov 16 15:27:37 2016
 
 from typing import Any, Dict
 
-
 SOLVER_OPTIONS: Dict[str, Any] = {
     "nlpsol_options": {
         "ipopt.print_level": 0,

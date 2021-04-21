@@ -1,12 +1,12 @@
 # coding=utf-8
-from casadi import chol, mtimes, vertcat, solve, DM, vec
+from casadi import chol, mtimes, solve, vec, vertcat
 
 from yaocptool.estimation.estimator_abstract import EstimatorAbstract
-from yaocptool.modelling import SystemModel, DataSet
+from yaocptool.modelling import DataSet, SystemModel
 
 
 class UnscentedKalmanFilter(EstimatorAbstract):
-    def __init__(self, model, **kwargs):
+    def __init__(self, model: SystemModel, **kwargs):
         """
             Unscented Kalman Filter. Two versions are implemented standard and square-root.
             Implemented based on [1] and [2].

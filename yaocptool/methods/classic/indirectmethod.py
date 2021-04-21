@@ -5,11 +5,11 @@ Created on Fri Oct 21 16:39:52 2016
 @author: marco
 """
 import warnings
-from yaocptool.modelling.ocp import OptimalControlProblem
 
-from casadi import inf, substitute, hessian, inv, fmin, fmax, is_equal, mtimes, DM
+from casadi import DM, fmax, fmin, hessian, inf, inv, is_equal, mtimes, substitute
 
 from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
+from yaocptool.modelling.ocp import OptimalControlProblem
 
 
 class IndirectMethod(SolutionMethodsBase):

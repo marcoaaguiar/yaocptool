@@ -4,13 +4,13 @@ Created on $date
 
 @author: Marco Aurelio Schmitz de Aguiar
 """
-import sys
 import pickle
+import sys
 from unittest import TestCase
-import pytest
 from unittest.mock import Mock
 
-from casadi import is_equal, DM, MX, inf, repmat
+import pytest
+from casadi import DM, MX, inf, is_equal, repmat
 
 from yaocptool.optimization.abstract_optimization_problem import (
     AbstractOptimizationProblem,

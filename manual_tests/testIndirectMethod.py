@@ -20,6 +20,7 @@ indir_method = IndirectMethod(
     # integrator_type='implicit',
     # initial_guess_heuristic='problem_info',
     # discretization_scheme='multiple-shooting',
-    discretization_scheme='collocation')
+    discretization_scheme="collocation",
+)
 solution = indir_method.solve()
-solution.plot([{'x': 'all'}, {'u': 'all'}])
+solution.plot([{"x": "all"}, {"u": "all"}])

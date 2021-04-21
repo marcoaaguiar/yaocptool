@@ -1,14 +1,8 @@
 import concurrent.futures
-import copy
-import copyreg
-import importlib
 import multiprocessing as mp
-import os
-import pickle
 from typing import Union
 
 from casadi import MX, SX, StringDeserializer, StringSerializer
-import casadi
 
 
 class NewForkingPickler(mp.reduction.ForkingPickler):

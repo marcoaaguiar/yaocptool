@@ -6,11 +6,11 @@ from typing import (
     Literal,
     Mapping,
     Optional,
-    TypeVar,
+    Tuple,
     Type,
     TypedDict,
+    TypeVar,
     Union,
-    Tuple,
     overload,
 )
 
@@ -42,17 +42,9 @@ class NumericMixin:
         ],
     ): ...
     @overload
-    def __init__(
-        self,
-        arg1: Sparsity,
-        arg2: NumericMT,
-    ): ...
+    def __init__(self, arg1: Sparsity, arg2: NumericMT): ...
     @overload
-    def __init__(
-        self,
-        arg1: int,
-        arg2: int,
-    ): ...
+    def __init__(self, arg1: int, arg2: int): ...
     @classmethod
     def ones(
         cls: Type[Typ],
@@ -71,12 +63,14 @@ class NumericMixin:
         arg1: Union[int, Tuple[int, int], Sparsity],
         arg2: Optional[int] = ...,
     ) -> Typ: ...
+    @overload
     @classmethod
-    def inf(
-        cls: Type[Typ],
-        arg1: Union[int, Tuple[int, int], Sparsity],
-        arg2: Optional[int] = ...,
-    ) -> Typ: ...
+    def inf(cls: Type[Typ]) -> Typ: ...
+    @overload
+    @classmethod
+    def inf(cls: Type[Typ], arg1: Union[int, Tuple[int, int], Sparsity]) -> Typ: ...
+    @classmethod
+    def inf(cls: Type[Typ], arg1: int, arg2: int) -> Typ: ...
     def numel(self) -> int: ...
     def size1(self) -> int: ...
     def size2(self) -> int: ...
@@ -93,7 +87,7 @@ class NumericMixin:
         self,
         s: Union[int, List[int], slice, Tuple[Union[int, List[int], slice], ...]],
         value: Union[float, DM, NumericMT],
-    ) -> Typ: ...
+    ): ...
     def __float__(self) -> float: ...
     def __neg__(self: Typ) -> Typ: ...
     def __add__(self: Typ, other: Union[Typ, int, float, DM]) -> Typ: ...
@@ -247,10 +241,10 @@ class Function:
     def __call__(
         self, **kwargs: Union[DM, FunctionCallArgT]
     ) -> Dict[str, FunctionCallArgT]: ...
-    # call
-    # call
-    # call
-    # call
+    @overload
+    def __call__(
+        self, **kwargs: Union[DM, FunctionCallArgT]
+    ) -> Dict[str, FunctionCallArgT]: ...
     @overload
     def call(
         self, args: List[Union[DM, FunctionCallArgT]]
@@ -312,7 +306,22 @@ def vertcat(*args: Union[float, List[float], DM]) -> DM: ...
 def vertcat(*args: SymbolicMT) -> SymbolicMT: ...
 
 # horzcat
-def horzcat(*args: Union[float, List[float], DM, NumericMT]) -> NumericMT: ...
+@overload
+def horzcat(
+    arg1: SymbolicMT,
+    arg2: Union[float, List[float], DM, SymbolicMT],
+    arg3: Union[float, List[float], DM, SymbolicMT] = ...,
+) -> SymbolicMT: ...
+@overload
+def horzcat(
+    arg1: Union[float, List[float], DM, SymbolicMT],
+    arg2: SymbolicMT,
+    arg3: Union[float, List[float], DM, SymbolicMT] = ...,
+) -> SymbolicMT: ...
+@overload
+def horzcat(*args: Union[float, List[float], DM]) -> DM: ...
+@overload
+def horzcat(*args: SymbolicMT) -> SymbolicMT: ...
 def veccat(*args: NumericMT) -> NumericMT: ...
 def diagcat(*args: NumericMT) -> NumericMT: ...
 def vertsplit(arg: NumericMT, n: int) -> List[NumericMT]: ...
@@ -368,6 +377,8 @@ def nlpsol(
 def qpsol(
     name: str, solver: str, nlp: Dict[str, Union[MX, SX]], opts: dict
 ) -> Function: ...
+@overload
+def fmax(arg1: Union[float, DM]) -> DM: ...
 @overload
 def fmax(arg1: Union[float, DM], arg2: Union[float, DM]) -> DM: ...
 @overload

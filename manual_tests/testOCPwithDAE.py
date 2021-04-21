@@ -1,7 +1,7 @@
 from casadi import mtimes
 
 from yaocptool.methods import DirectMethod
-from yaocptool.modelling import SystemModel, OptimalControlProblem
+from yaocptool.modelling import OptimalControlProblem, SystemModel
 
 # create model
 model = SystemModel(name="dae_system")
@@ -14,14 +14,14 @@ b = model.create_theta("b")
 
 model.include_equations(
     ode=[-a * x[0] + b * y[0], -x[1] + y[1] + u[0]],
-    alg=[-y[0] - x[1]**2, -y[1] - x[0]**1],
+    alg=[-y[0] - x[1] ** 2, -y[1] - x[0] ** 1],
 )
 
 # create ocp
 problem = OptimalControlProblem(model)
 problem.t_f = 10
 # problem.L = mtimes(x.T, x) + u ** 2
-problem.S = mtimes(x.T, x) + u**2 + b**2
+problem.S = mtimes(x.T, x) + u ** 2 + b ** 2
 problem.x_0 = [0, 1]
 problem.set_theta_as_optimization_theta(b, -0.5, 0.5)
 # problem.include_equality(problem.p_opt + 0.25)
@@ -39,20 +39,13 @@ solution_method = DirectMethod(
 # solution = solution_method.solve(p=[1], theta=theta, initial_guess=initial_guess)
 solution = solution_method.solve(p=[1], x_0=[2, 3, 0])
 
-solution.plot([
-    {
-        "x": ["x_0", "x_1"]
-    },
-    {
-        "y": ["y_0", "y_1"]
-    },
-    {
-        "x": [0, 1],
-        "u": ["u"]
-    },
-    {
-        "theta_opt": ["b"]
-    },
-])
+solution.plot(
+    [
+        {"x": ["x_0", "x_1"]},
+        {"y": ["y_0", "y_1"]},
+        {"x": [0, 1], "u": ["u"]},
+        {"theta_opt": ["b"]},
+    ]
+)
 
 solution.to_dataset()

@@ -16,7 +16,7 @@ class Derivative:
 
     def __eq__(self, other: object) -> EqualityEquation:  # type: ignore
         if not isinstance(other, SX):
-            raise NotImplemented
+            raise NotImplementedError
         return EqualityEquation(self, other)
 
     def __str__(self) -> str:

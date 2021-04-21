@@ -1,5 +1,5 @@
 from itertools import product
-from math import factorial, ceil
+from math import ceil, factorial
 
 import numpy as np
 import sobol_seq
@@ -7,27 +7,27 @@ from casadi import (
     DM,
     SX,
     Function,
-    mtimes,
     chol,
-    solve,
-    vertcat,
-    substitute,
-    repmat,
     depends_on,
+    diagcat,
+    fmax,
     inf,
     is_equal,
+    mtimes,
+    repmat,
+    solve,
     sqrt,
-    fmax,
-    diagcat,
+    substitute,
+    vertcat,
 )
 from scipy.stats.distributions import norm
 
-from yaocptool.modelling import OptimalControlProblem, SystemModel, StochasticOCP
+from yaocptool.modelling import OptimalControlProblem, StochasticOCP, SystemModel
 from yaocptool.stochastic import sample_parameter_normal_distribution_with_sobol
 
 
 class PCEConverter:
-    def __init__(self, socp, pc_order=3, n_samples=None, **kwargs):
+    def __init__(self, socp: StochasticOCP, pc_order=3, n_samples=None, **kwargs):
         """
 
         :param StochasticOCP socp: Stochastic Optimal Control Problem

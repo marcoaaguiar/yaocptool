@@ -1,2 +1,2 @@
 from .mpc import MPC
-from .plant import Plant, PlantSimulation
+from .plant import PlantInterface, PlantSimulation

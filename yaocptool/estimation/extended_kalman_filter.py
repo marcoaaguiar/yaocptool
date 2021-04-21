@@ -1,7 +1,8 @@
-from casadi import DM, mtimes, jacobian, Function, vertcat, vec, inv, solve, horzcat, SX
+from casadi import DM, SX, Function, horzcat, inv, jacobian, mtimes, solve, vec, vertcat
 
 from yaocptool import expm
-from yaocptool.modelling import SystemModel, DataSet
+from yaocptool.modelling import DataSet, SystemModel
+
 from .estimator_abstract import EstimatorAbstract
 
 

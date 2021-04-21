@@ -1,11 +1,11 @@
-from casadi import sqrt, pi, sum1, fmax
+from casadi import fmax, pi, sqrt, sum1
 
 from yaocptool import find_variables_indices_in_vector
-from yaocptool.methods import DirectMethod, AugmentedLagrangian
+from yaocptool.methods import AugmentedLagrangian, DirectMethod
 from yaocptool.methods.network.distributedaugmetedlagrangian import (
     DistributedAugmentedLagrangian,
 )
-from yaocptool.modelling import SystemModel, OptimalControlProblem, Network
+from yaocptool.modelling import Network, OptimalControlProblem, SystemModel
 
 t_f = 200
 dal_options = {

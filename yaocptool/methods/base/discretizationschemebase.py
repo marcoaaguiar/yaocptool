@@ -1,17 +1,20 @@
 from functools import cached_property
-from typing import Dict, List, TYPE_CHECKING, Tuple, Union, overload
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union, overload
+
+from casadi import DM, MX, SX, Function, vertcat
+
+from yaocptool import convert_expr_from_tau_to_time
 from yaocptool.methods.base.optimizationresult import OptimizationResult
+from yaocptool.modelling.ocp import OptimalControlProblem
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.optimization.abstract_optimization_problem import (
     AbstractOptimizationProblem,
 )
-from casadi import DM, MX, SX, vertcat, Function
-
-from yaocptool import convert_expr_from_tau_to_time
-from yaocptool.modelling import OptimalControlProblem, SystemModel
 
 if TYPE_CHECKING:
-    from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
     from casadi import NumericMT
+
+    from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 else:
     SolutionMethodsBase = "SolutionMethodsBase"
     NumericMT = "NumericMT"

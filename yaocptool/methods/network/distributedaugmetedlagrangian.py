@@ -4,30 +4,38 @@ Created on
 
 @author: Marco Aurelio Schmitz de Aguiar
 """
-import time
+import itertools
+import logging
 import random
-import concurrent.futures
+import time
 from collections import defaultdict
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Optional, Type
-from yaocptool.modelling.network.node import Node
+from dataclasses import asdict, dataclass
+from typing import Dict, List, Literal, Optional, Type, Union
 
 import matplotlib.pyplot as plt
-from casadi import DM, SX, inf, vertcat
 import networkx.algorithms.coloring
+from casadi import DM, SX, inf, vertcat
+from erised import Proxy
 
 from yaocptool import (
     create_polynomial_approximation,
     find_variables_indices_in_vector,
-    join_thetas,
 )
 from yaocptool.methods import AugmentedLagrangian, SolutionMethodInterface
 from yaocptool.methods.augmented_lagrangian import AugmentedLagrangianOptions
+from yaocptool.methods.base.distributed_optimization_result import (
+    DistibutedOptimizationResult,
+)
+from yaocptool.methods.base.optimizationresult import OptimizationResult
+from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
 from yaocptool.methods.network.intermediary_node_solution_method import (
     IntermediaryNodeSolutionMethod,
 )
 from yaocptool.modelling import Network
-import itertools
+from yaocptool.modelling.network.node import Node
+from yaocptool.util.util import Timer
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -41,7 +49,9 @@ class DistributedAugmentedLagrangianOptions:
     inner_loop_tol: float = 1e-4
     randomized_inner: bool = False
     distributed: bool = False
-
+    block_choice_method: Union[
+        Literal["cyclic"], Literal["sample"], Literal["choices"]
+    ] = "cyclic"
     debug_skip_replace_by_approximation: bool = False
 
     al_options: AugmentedLagrangianOptions = AugmentedLagrangianOptions()
@@ -55,8 +65,9 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
     def __init__(
         self,
         network: Network,
-        solution_method_class: Type[SolutionMethodInterface],
+        solution_method_class: Type[SolutionMethodsBase],
         solution_method_options: dict = None,
+        blocks: Dict[int, List[Node]] = None,
         options={},
     ):
         if solution_method_options is None:
@@ -68,15 +79,19 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
 
         self.options = DistributedAugmentedLagrangianOptions(**options)
 
-        coloring: Dict[Node, int] = networkx.algorithms.coloring.greedy_color(
-            self.network.graph
-        )
-        self.blocks = {
-            group_number: [node for node, _ in group]
-            for group_number, group in itertools.groupby(
-                coloring.items(), key=lambda item: item[1]
+        if blocks is not None:
+            self.blocks = blocks
+        else:
+            coloring: Dict[Node, int] = networkx.algorithms.coloring.greedy_color(
+                self.network.graph
             )
-        }
+            self.blocks = {
+                group_number: [node for node, _ in group]
+                for group_number, group in itertools.groupby(
+                    coloring.items(), key=lambda item: item[1]
+                )
+            }
+        self.nodes_proxies: Dict[Node, Proxy] = {}
 
         self.relax_dict = {}
         self._last_result = {}
@@ -175,26 +190,26 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                         node.problem.y_guess[var_indices]
                         for _ in range(self.options.degree)
                     ]
-                    for i in range(self.options.finite_elements)
+                    for _ in range(self.options.finite_elements)
                 ]
             elif variable_type == "u" and node.problem.u_guess is not None:
                 return [
                     [
                         node.problem.u_guess[var_indices]
-                        for j in range(self.options.degree)
+                        for _ in range(self.options.degree)
                     ]
-                    for i in range(self.options.finite_elements)
+                    for _ in range(self.options.finite_elements)
                 ]
             return [
-                [DM.zeros(len(var_indices)) for j in range(self.options.degree)]
-                for i in range(self.options.finite_elements)
+                [DM.zeros(len(var_indices)) for _ in range(self.options.degree)]
+                for _ in range(self.options.finite_elements)
             ]
 
         result = self._last_result[node]
         return result.get_variable(variable_type, var_indices)
 
-    def _get_node_theta(self, node: Node):
-        data = defaultdict(list)
+    def _get_node_theta(self, node: Node) -> Dict[int, DM]:
+        data: Dict[int, DM] = defaultdict(DM)
         for p in self.network.graph.pred[node]:
             connections = self.network.graph.edges[p, node]
             y = connections["y"]
@@ -217,16 +232,22 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 for i in range(self.options.finite_elements):
                     data[i] = vertcat(data[i], *u_data[i])
 
-        return data
+        return dict(data)
 
-    def _solve_node_problems(self, nodes):
+    def _solve_node_problems(
+        self, blocks: List[List[Node]]
+    ) -> Dict[Node, OptimizationResult]:
+
         if self.options.distributed:
-            return self._solve_node_problems_distributed()
-        return self._solve_node_problems_serial(nodes)
+            return self._solve_node_problems_distributed(blocks)
+        return self._solve_node_problems_serial(blocks)
 
-    def _solve_node_problems_serial(self, nodes):
+    def _solve_node_problems_serial(
+        self, blocks: List[List[Node]]
+    ) -> Dict[Node, OptimizationResult]:
+
         result_dict = {}
-        for node in itertools.chain(nodes):
+        for node in itertools.chain(*blocks):
             # get node theta
             node_theta = self._get_node_theta(node)
             # warm start
@@ -240,22 +261,23 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             result = node.solution_method.solve(
                 theta=node_theta, initial_guess=initial_guess
             )
-            if "return_status" in result.stats and result.stats[
-                "return_status"
-            ] not in {
-                "Search_Direction_Becomes_Too_Small",
-                "Solved_To_Acceptable_Level",
-                "Solve_Succeeded",
-            }:
-                __import__("ipdb").set_trace()
+            #  if "return_status" in result.stats and result.stats[
+            #      "return_status"
+            #  ] not in {
+            #      "Search_Direction_Becomes_Too_Small",
+            #      "Solved_To_Acceptable_Level",
+            #      "Solve_Succeeded",
+            #  }:
             result_dict[node] = self._last_result[node] = result
         return result_dict
 
-    def _solve_node_problems_distributed(self):
+    def _solve_node_problems_distributed(
+        self, blocks: List[List[Node]]
+    ) -> Dict[Node, OptimizationResult]:
         result_dict = {}
         node_theta = {}
         initial_guess = {}
-        for block in self.blocks.values():
+        for block in blocks:
             for node in block:
                 # get node theta
                 node_theta[node] = self._get_node_theta(node)
@@ -265,34 +287,35 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     if node in self._last_result
                     else None
                 )
-            with concurrent.futures.ProcessPoolExecutor() as executor:
-                futures = {
-                    node: executor.submit(
-                        node.solution_method.solve,
-                        theta=node_theta[node],
-                        initial_guess=initial_guess[node],
-                    )
-                    for node in block
-                }
-                block_results = {
-                    node: future.result() for node, future in futures.items()
-                }
-
             for node in block:
-                result = block_results[node]
-                if "return_status" in result.stats and result.stats[
-                    "return_status"
-                ] not in {
-                    "Search_Direction_Becomes_Too_Small",
-                    "Solved_To_Acceptable_Level",
-                    "Solve_Succeeded",
-                }:
-                    __import__("ipdb").set_trace()
-                result_dict.update(block_results)
-                self._last_result.update(block_results)
+                if node not in self.nodes_proxies:
+                    self.nodes_proxies[node] = Proxy(node)
+
+            futures = {
+                node: self.nodes_proxies[node].solution_method.solve(
+                    theta=node_theta[node],
+                    initial_guess=initial_guess[node],
+                )
+                for node in block
+            }
+            block_results = {node: future.result() for node, future in futures.items()}
+
+            #  for node in block:
+            #      result = block_results[node]
+            #  if "return_status" in result.stats and result.stats[
+            #      "return_status"
+            #  ] not in {
+            #      "Search_Direction_Becomes_Too_Small",
+            #      "Solved_To_Acceptable_Level",
+            #      "Solve_Succeeded",
+            #  }:
+
+            result_dict.update(block_results)
+            self._last_result.update(block_results)
         return result_dict
 
-    def solve(self):
+    def solve(self) -> DistibutedOptimizationResult:
+        print("starting solving")
         self._include_exogenous_variables()
         self.prepare()
 
@@ -301,85 +324,160 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
 
         # initialize dicts
         start_time = time.time()
-        node_theta = {}
         result_dict = {}
         node_error = {}
-        node_error_last = {}
+        node_error_last: Dict[Node, DM] = {}
         max_error = inf
+        outer_it = inner_it = -1  # no out of bounds
 
-        for outer_it in range(self.options.max_iter_outer):
-            print("Starting outer iteration: {}".format(outer_it).center(40, "="))
-            n_inner_iterations = (
-                max(self.options.max_iter_inner, self.options.max_iter_inner_first)
-                if outer_it == 0 and self.options.max_iter_inner_first is not None
-                else self.options.max_iter_inner
-            )
-            last_objective = inf
-            for inner_it in range(n_inner_iterations):
-                print("==> Solving inner iteration: {}".format(inner_it))
-
-                if self.options.randomized_inner:
-                    nodes_iterator = random.sample(
-                        self.network.nodes, len(self.network.nodes)
+        total_block_iterations = 0
+        total_inner_iterations = 0
+        try:
+            with Timer() as solve_timer:
+                for outer_it in range(self.options.max_iter_outer):
+                    LOGGER.info(
+                        "Starting outer iteration: {}".format(outer_it).center(40, "=")
                     )
+                    n_inner_iterations = (
+                        max(
+                            self.options.max_iter_inner,
+                            self.options.max_iter_inner_first,
+                        )
+                        if outer_it == 0
+                        and self.options.max_iter_inner_first is not None
+                        else self.options.max_iter_inner
+                    )
+                    last_objective = DM.inf()
+                    for inner_it in range(n_inner_iterations):
+                        LOGGER.info("==> Solving inner iteration: {}".format(inner_it))
+
+                        if self.options.block_choice_method == "cyclic":
+                            blocks_iterator = [*self.blocks.values()]
+                        elif self.options.block_choice_method == "choices":
+                            blocks_iterator = random.choices(
+                                [*self.blocks.values()], k=len(self.blocks)
+                            )
+                        elif self.options.block_choice_method == "sample":
+                            blocks_iterator = random.sample(
+                                [*self.blocks.values()], k=len(self.blocks)
+                            )
+                        else:
+                            raise ValueError(
+                                "DistributedAugmentedLagrangianOptions.block_choice_method"
+                                f" is not valid: {self.options.block_choice_method}"
+                            )
+
+                        # solve all blocks
+                        result_dict.update(self._solve_node_problems(blocks_iterator))
+                        total_block_iterations += len(self.blocks)
+                        total_inner_iterations += 1
+
+                        objective: DM = sum(
+                            result.objective_opt_problem
+                            for result in result_dict.values()
+                        )  # type: ignore
+                        LOGGER.info(
+                            f"Objective: {objective} {str(len(result_dict))+'/'+ str(len(self.network.nodes)) if len(result_dict)< len(self.network.nodes) else ''}"
+                        )
+                        if (
+                            objective
+                            > (1 - self.options.inner_loop_tol) * last_objective
+                        ):
+                            break
+                        last_objective = objective
+
+                    # update nu
+                    node_error = self._update_parameters(result_dict)
+
+                    # Print outer loop status
+                    self._print_nodes_errors(node_error, node_error_last, result_dict)
+                    LOGGER.info(
+                        f"Obective: {sum(result.objective_opt_problem for result in result_dict.values())}"
+                    )
+                    LOGGER.info(
+                        "Ending outer iteration: {}".format(outer_it).center(40, "=")
+                    )
+
+                    # error
+                    node_error_last = node_error.copy()
+                    max_error = max(
+                        *itertools.chain(*(val.nz for val in node_error.values()))
+                    )
+                    if max_error < self.options.abs_tol:
+                        LOGGER.info(
+                            "=== Exiting: {} | Viol. Error: {} | Total time: {} ===".format(
+                                "Tolerance met", max_error, time.time() - start_time
+                            )
+                        )
+                        break
                 else:
-                    nodes_iterator = sorted(self.network.nodes, key=lambda x: x.node_id)
-
-                result_dict = self._solve_node_problems(nodes_iterator)
-
-                objective = sum(
-                    result_dict[node].objective_opt_problem for node in self.network
-                )
-                print(f"Objective: {objective}")
-                if objective > (1 - self.options.inner_loop_tol) * last_objective:
-                    break
-                last_objective = objective
-
-            # update nu
-            for node in sorted(self.network.nodes, key=lambda x: x.node_id):
-                node_theta[node] = self._get_node_theta(node)
-                theta_k = join_thetas(node_theta[node], node.solution_method.nu)
-                p_k = node.solution_method.mu  # TODO: allow for models with parameters!
-                raw_solution_dict = result_dict[node].raw_solution_dict
-
-                node_error[node] = node.solution_method.update_parameters(
-                    p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict
-                )
-
-            # Print outer loop status
-            self._print_nodes_errors(node_error, node_error_last)
-            print(
-                f"Obective: {sum(result_dict[node].objective_opt_problem for node in self.network)}"
-            )
-            print("Ending outer iteration: {}".format(outer_it).center(40, "="))
-
-            # error
-            node_error_last = node_error.copy()
-            max_error = max(*itertools.chain(*(val.nz for val in node_error.values())))
-            if max_error < self.options.abs_tol:
-                print(
-                    "=== Exiting: {} | Viol. Error: {} | Total time: {} ===".format(
-                        "Tolerance met", max_error, time.time() - start_time
+                    LOGGER.info(
+                        "=== Exiting: {} | Iterations: {} | Viol. Error: {:e} | Total time: {} ===".format(
+                            "Max iteration reached",
+                            outer_it,
+                            float(max_error),
+                            time.time() - start_time,
+                        )
                     )
-                )
-                break
-        else:
-            print(
-                "=== Exiting: {} | Iterations: {} | Viol. Error: {:e} | Total time: {} ===".format(
-                    "Max iteration reached",
-                    outer_it,
-                    float(max_error),
-                    time.time() - start_time,
-                )
-            )
+        finally:
+            for proxy in self.nodes_proxies.values():
+                proxy.terminate()
 
-        return result_dict
+        return DistibutedOptimizationResult(
+            results=result_dict,
+            objective=sum(
+                result.objective_opt_problem for result in result_dict.values()
+            ),
+            errors=node_error,
+            number_of_iterations={
+                "inner": inner_it,
+                "outer": outer_it,
+                "block_iterations": total_block_iterations,
+            },
+            times={"solution": solve_timer.elapsed},
+        )
+
+    def _update_parameters(self, result_dict: Dict[Node, OptimizationResult]):
+        if self.options.distributed:
+            return self._update_parameters_distributed(result_dict)
+        return self._update_parameters_serial(result_dict)
+
+    def _update_parameters_distributed(
+        self, result_dict: Dict[Node, OptimizationResult]
+    ) -> Dict[Node, DM]:
+        node_error_future = {}
+        for node, result in result_dict.items():
+            node_theta = self._get_node_theta(node)
+            raw_solution_dict = result.raw_solution_dict
+
+            node_error_future[node] = self.nodes_proxies[
+                node
+            ].solution_method.update_parameters(
+                p=None, theta=node_theta, raw_solution_dict=raw_solution_dict
+            )
+        return {node: future.result() for node, future in node_error_future.items()}
+
+    def _update_parameters_serial(
+        self, result_dict: Dict[Node, OptimizationResult]
+    ) -> Dict[Node, DM]:
+        node_error = {}
+        for node, result in sorted(
+            result_dict.items(), key=(lambda item: item[0].node_id)
+        ):
+            node_theta = self._get_node_theta(node)
+            #  theta_k = join_thetas(node_theta, node.solution_method.nu)
+            #  p_k = node.solution_method.mu  # TODO: allow for models with parameters!
+            raw_solution_dict = result.raw_solution_dict
+
+            node_error[node] = node.solution_method.update_parameters(  # type: ignore
+                p=None, theta=node_theta, raw_solution_dict=raw_solution_dict
+            )
+        return node_error
 
     def _create_solution_methods(self):
         for node in self.network.nodes:
             if node.name.startswith("Dummy") or node.name.startswith("dummy"):
                 node.solution_method = IntermediaryNodeSolutionMethod(
-                    #  node.solution_method = AugmentedLagrangian(
                     node.problem,
                     self.solution_method_class,
                     solver_options=self.solution_method_options,
@@ -387,13 +485,10 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
                     relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
                     no_update_after_solving=True,
-                    #  debug_skip_update_mu=False,
-                    #  debug_skip_update_nu=False,
                     options={
                         **asdict(self.options.al_options),
                         **{
                             "degree": self.options.degree,
-                            "degree_control": self.options.degree,
                             "finite_elements": self.options.finite_elements,
                             "max_iter": 1,
                             "verbose": 0,
@@ -409,13 +504,10 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
                     relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
                     no_update_after_solving=True,
-                    #  debug_skip_update_mu=False,
-                    #  debug_skip_update_nu=False,
                     options={
                         **asdict(self.options.al_options),
                         **{
                             "degree": self.options.degree,
-                            "degree_control": self.options.degree,
                             "finite_elements": self.options.finite_elements,
                             "max_iter": 1,
                             "verbose": 0,
@@ -424,9 +516,14 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 )
                 node.solution_method.create_optimization_problem()
 
-    def _print_nodes_errors(self, node_error, node_error_last):
+    def _print_nodes_errors(
+        self,
+        node_error: Dict[Node, DM],
+        node_error_last: Dict[Node, DM],
+        result_dict: Dict[Node, OptimizationResult],
+    ):
         max_name_len = max(len(n.name) for n in self.network.nodes)
-        for node in sorted(self.network.nodes, key=lambda x: x.node_id):
+        for node in sorted(result_dict, key=lambda x: x.node_id):
             error_ = ", ".join(
                 f"\033[94m{float(numb): .2e}\033[0m" for numb in node_error[node].nz
             )
@@ -439,7 +536,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             else:
                 diff_ = "-"
 
-            print(
+            LOGGER.info(
                 "Node {} - \033[93m{:>{}}\033[0m | error: {} \033[0m| diff: {} \033[0m".format(
                     node.node_id,
                     node.name,

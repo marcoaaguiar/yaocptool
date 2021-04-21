@@ -1,14 +1,9 @@
-from multiprocessing import Pipe, Process
-from multiprocessing.connection import Connection
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
-import ray
 from casadi import (
     DM,
-    Function,
     MX,
-    StringSerializer,
-    StringDeserializer,
+    Function,
     depends_on,
     inf,
     is_equal,
@@ -26,21 +21,6 @@ class OptiResultDictType(TypedDict):
     lam_p: DM
     lam_x: DM
     x: DM
-
-
-class NlpSolProcess(Process):
-    def __init__(self, pipe: Connection, solver: Function):
-        super().__init__()
-        self.pipe = pipe
-        self.solver = solver
-
-    def run(self) -> None:
-        while True:
-            kwarg = self.pipe.recv()
-            if kwarg == "TERM":
-                return
-            result = self.solver(**kwarg)
-            self.pipe.send(result)
 
 
 class ExtendedOptiResultDictType(OptiResultDictType):
@@ -79,8 +59,6 @@ class AbstractOptimizationProblem(object):
         self.solver_options: Dict[str, Any] = {}
 
         self._solver: Optional[Function] = None
-        self._connection: Optional[Connection] = None
-        self._process: Optional[NlpSolProcess] = None
 
         for (key, val) in kwargs.items():
             setattr(self, key, val)
@@ -482,32 +460,8 @@ class AbstractOptimizationProblem(object):
 
         solution: OptiResultDictType = solver(**call_dict)
         stats_dict = {"stats": solver.stats()}
-        print("solved")
 
         return {**solution, **stats_dict}
-
-    def mp_solve(
-        self,
-        initial_guess: DM,
-        call_dict: Optional[Dict[str, DM]] = None,
-        p: Optional[DM] = None,
-        lam_x: Optional[DM] = None,
-        lam_g: Optional[DM] = None,
-    ):
-        if self._process is None:
-            self._connection, conn_child = Pipe()
-            self._process = NlpSolProcess(conn_child, self.get_solver())
-            self._process.start()
-        call_dict = self._get_solver_call_args(
-            initial_guess, call_dict, p, lam_x, lam_g
-        )
-        self._connection.send(call_dict)
-
-    def mp_get_solution(self):
-        return self._connection.recv()
-
-    def mp_terminate(self):
-        self._connection.send("TERM")
 
     def _get_solver_call_args(self, initial_guess, call_dict, p, lam_x, lam_g):
         if call_dict is None:

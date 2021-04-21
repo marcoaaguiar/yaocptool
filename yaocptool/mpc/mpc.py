@@ -1,15 +1,22 @@
 import itertools
 import time
+from typing import Optional
+from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
 
-from casadi import vertcat, DM
+from casadi import DM, vertcat
 
 from yaocptool.estimation.estimator_abstract import EstimatorAbstract
-from yaocptool.methods.base.solutionmethodsbase import SolutionMethodsBase
-from yaocptool.mpc.plant import Plant, PlantSimulation
+from yaocptool.mpc.plant import PlantInterface
 
 
 class MPC:
-    def __init__(self, plant, solution_method, **kwargs):
+    def __init__(
+        self,
+        plant: PlantInterface,
+        solution_method: SolutionMethodInterface,
+        estimator: Optional[EstimatorAbstract],
+        **kwargs
+    ):
         """Model Predictive control class. Requires a plant and a solution_method.
 
         :param Plant|PlantSimulation plant:
@@ -36,7 +43,7 @@ class MPC:
         """
         self.plant = plant
         self.solution_method = solution_method
-        self.estimator = None
+        self.estimator = estimator
 
         self.last_solutions = None
         self.solution_method_initial_guess = None

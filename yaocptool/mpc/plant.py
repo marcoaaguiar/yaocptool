@@ -1,9 +1,10 @@
-from casadi import DM, vertcat, mtimes
 import numpy
-from yaocptool.modelling import SystemModel, DataSet
+from casadi import DM, mtimes, vertcat
+
+from yaocptool.modelling import DataSet, SystemModel
 
 
-class Plant:
+class PlantInterface:
     def __init__(self):
         self.name = "Plant"
 
@@ -14,13 +15,13 @@ class Plant:
         pass
 
 
-class PlantSimulation(Plant):
+class PlantSimulation(PlantInterface):
     """
     Simulates a plant using a model.
 
     """
 
-    def __init__(self, model, x_0, **kwargs):
+    def __init__(self, model: SystemModel, x_0: DM, **kwargs):
         """
             Plant which uses a SystemModel.simulate to obtain the measurements.
 
@@ -37,7 +38,7 @@ class PlantSimulation(Plant):
         :param noise_seed: Seed for the random number generator used to create noise. Use the same seed for the
             repeatability in the experiments.
         """
-        Plant.__init__(self)
+        PlantInterface.__init__(self)
         self.model = model
         self.name = self.model.name
 

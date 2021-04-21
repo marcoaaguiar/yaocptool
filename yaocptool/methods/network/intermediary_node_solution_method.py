@@ -1,22 +1,17 @@
-from collections import defaultdict
-
-from yaocptool.modelling.ocp import OptimalControlProblem
 from casadi.casadi import (
     DM,
-    fabs,
+    MX,
     Function,
+    fabs,
     horzcat,
     horzsplit,
     mmax,
-    MX,
-    substitute,
-    vec,
     vertcat,
     vertsplit,
 )
-from yaocptool.methods.base.optimizationresult import OptimizationResult
+
 from yaocptool.methods.augmented_lagrangian import AugmentedLagrangian
-from yaocptool.util.util import create_constant_theta, find_variables_indices_in_vector
+from yaocptool.methods.base.optimizationresult import OptimizationResult
 
 
 class IntermediaryNodeSolutionMethod(AugmentedLagrangian):

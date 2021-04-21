@@ -1,6 +1,6 @@
-from casadi import mtimes, DM
+from casadi import DM, mtimes
 
-from yaocptool.modelling import SystemModel, OptimalControlProblem
+from yaocptool.modelling import OptimalControlProblem, SystemModel
 
 
 class MIMO2x2(SystemModel):
@@ -18,10 +18,7 @@ class MIMO2x2(SystemModel):
 
 class MIMO2x2DAE(SystemModel):
     def __init__(self, name="dae_system", **kwargs):
-        SystemModel.__init__(self,
-                             name=name,
-                             model_name_as_prefix=True,
-                             **kwargs)
+        SystemModel.__init__(self, name=name, model_name_as_prefix=True, **kwargs)
 
         x = self.create_state("x", 2)
         y = self.create_algebraic_variable("y", 2)
@@ -36,26 +33,24 @@ class MIMO2x2DAE(SystemModel):
 
 class StabilizationMIMO2x2(OptimalControlProblem):
     def __init__(self, model, **kwargs):
-        OptimalControlProblem.__init__(self,
-                                       model,
-                                       name=model.name + "_stabilization",
-                                       obj={
-                                           "Q": DM.eye(2),
-                                           "R": DM.eye(2)
-                                       },
-                                       x_0=[1, 1],
-                                       **kwargs)
+        OptimalControlProblem.__init__(
+            self,
+            model,
+            name=model.name + "_stabilization",
+            obj={"Q": DM.eye(2), "R": DM.eye(2)},
+            x_0=[1, 1],
+            **kwargs
+        )
 
 
 class StabilizationMIMO2x2WithInequality(OptimalControlProblem):
     def __init__(self, model, **kwargs):
-        OptimalControlProblem.__init__(self,
-                                       model,
-                                       name=model.name + "_stabilization",
-                                       obj={
-                                           "Q": DM.eye(2),
-                                           "R": DM.eye(2)
-                                       },
-                                       x_0=[1, 1],
-                                       **kwargs)
+        OptimalControlProblem.__init__(
+            self,
+            model,
+            name=model.name + "_stabilization",
+            obj={"Q": DM.eye(2), "R": DM.eye(2)},
+            x_0=[1, 1],
+            **kwargs
+        )
         # self.include_time_inequality(+model.u + model.x[0], when='end')

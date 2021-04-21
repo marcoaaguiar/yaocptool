@@ -6,10 +6,10 @@ Created on Mon Jul 10 14:27:21 2017
 """
 from .dae_system import DAESystem
 from .dataset import DataSet
-from .simulation_result import SimulationResult
-from .system_model import SystemModel
-from .ocp import OptimalControlProblem
-from .stochastic_ocp import StochasticOCP
 from .network.network import Network
 from .network.node import Node
+from .ocp import OptimalControlProblem
+from .simulation_result import SimulationResult
+from .stochastic_ocp import StochasticOCP
+from .system_model import SystemModel
 from .utils import der

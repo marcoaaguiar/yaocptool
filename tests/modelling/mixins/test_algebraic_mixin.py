@@ -1,5 +1,6 @@
-from casadi.casadi import depends_on, is_equal, SX
 import pytest
+from casadi.casadi import SX, depends_on, is_equal
+
 from yaocptool.modelling.mixins.algebraic_mixin import AlgebraicMixin
 
 

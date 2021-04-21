@@ -1,4 +1,4 @@
-from yaocptool.modelling import SystemModel, OptimalControlProblem
+from yaocptool.modelling import OptimalControlProblem, SystemModel
 
 
 class VanDerPol(SystemModel):
@@ -9,7 +9,7 @@ class VanDerPol(SystemModel):
         x_2 = self.create_state("x_1")
         u = self.create_control("u")
 
-        ode = [(1 - x_2**2) * x_1 - x_2 + u, x_1]
+        ode = [(1 - x_2 ** 2) * x_1 - x_2 + u, x_1]
 
         self.include_equations(ode=ode)
 
@@ -24,7 +24,7 @@ class VanDerPolDAE(SystemModel):
         u = self.create_control("u")
 
         ode = [y + u, x_1]
-        alg = [(1 - x_2**2) * x_1 - x_2 - y]
+        alg = [(1 - x_2 ** 2) * x_1 - x_2 - y]
 
         self.include_equations(ode=ode, alg=alg)
 
@@ -36,10 +36,9 @@ def get_model(name="dae_system"):
 
 class VanDerPolStabilization(OptimalControlProblem):
     def __init__(self, model, **kwargs):
-        OptimalControlProblem.__init__(self,
-                                       model,
-                                       name=model.name + "_stabilization",
-                                       **kwargs)
+        OptimalControlProblem.__init__(
+            self, model, name=model.name + "_stabilization", **kwargs
+        )
         self.t_f = 10
-        self.L = model.x[0]**2 + model.x[1]**2 + model.u**2
+        self.L = model.x[0] ** 2 + model.x[1] ** 2 + model.u ** 2
         self.x_0 = [0, 1]

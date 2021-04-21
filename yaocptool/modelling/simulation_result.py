@@ -1,6 +1,7 @@
 from typing import List
 
 from casadi import DM
+
 from yaocptool.modelling import DataSet
 
 

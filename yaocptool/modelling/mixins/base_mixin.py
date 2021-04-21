@@ -1,5 +1,6 @@
 import abc
 from typing import List, Union
+
 from casadi import SX
 
 

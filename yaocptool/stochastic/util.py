@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 import sobol_seq
-from casadi import DM, mtimes, chol, vertcat, log, exp
+from casadi import DM, chol, exp, log, mtimes, vertcat
 from scipy.stats.distributions import norm
 
 

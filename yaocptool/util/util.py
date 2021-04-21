@@ -1,6 +1,6 @@
 import re
 from timeit import default_timer
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from casadi import (
     DM,
@@ -322,18 +322,32 @@ def create_polynomial_approximation(
     return pol, par
 
 
-class Timer(object):
+class Timer:
     def __init__(self, verbose=False):
         self.verbose = verbose
         self.timer = default_timer
+
+        self._elapsed = None
+
+    @property
+    def elapsed(self) -> float:
+        if self._elapsed is None:
+            raise ValueError("Timer still running")
+        return self._elapsed
+
+    @property
+    def elapsed_milisecs(self) -> float:
+        if self._elapsed is None:
+            raise ValueError("Timer still running")
+        return self._elapsed * 1000
 
     def __enter__(self):
         self.start = self.timer()
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *_):
         end = self.timer()
-        self.elapsed_secs = end - self.start
-        self.elapsed = self.elapsed_secs * 1000  # millisecs
+        self._elapsed = end - self.start
+
         if self.verbose:
-            print(f"elapsed time: {self.elapsed} ms")
+            print(f"elapsed time: {self.elapsed} s")

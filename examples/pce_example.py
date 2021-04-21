@@ -1,7 +1,7 @@
 from casadi import DM, sqrt
 
 from yaocptool.methods import DirectMethod
-from yaocptool.modelling import SystemModel, StochasticOCP
+from yaocptool.modelling import StochasticOCP, SystemModel
 from yaocptool.stochastic.pce import PCEConverter
 
 ######################

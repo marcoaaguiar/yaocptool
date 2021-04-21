@@ -1,17 +1,20 @@
 from collections import defaultdict
 from contextlib import suppress
 from functools import partial
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
-from casadi import horzcat, DM
+from casadi import DM, horzcat
 
 from yaocptool.modelling import DataSet
+from yaocptool.optimization.abstract_optimization_problem import (
+    ExtendedOptiResultDictType,
+)
 
 
 class OptimizationResult:
     def __init__(self, **kwargs):
         # Raw Information
-        self.raw_solution_dict = {}
+        self.raw_solution_dict: ExtendedOptiResultDictType = {}  # type: ignore
         self.raw_decision_variables: Optional[List] = None
 
         # Data from the method
@@ -33,7 +36,7 @@ class OptimizationResult:
         self.time_breakpoints = []
         self.collocation_points = []
 
-        self.objective_opt_problem = None  # type: DM|None
+        self.objective_opt_problem: DM = None  # type: ignore
         self.v_final = None  # type: DM|None
         self.x_c_final = None  # type: DM|None
         self.constraints_values = None  # type: DM|None
@@ -48,6 +51,7 @@ class OptimizationResult:
         self.u_data = {"values": [], "time": []}
 
         self.other_data = defaultdict(partial(dict, [("values", []), ("time", [])]))
+        self.statistics: Dict[str, Any] = {}
 
         self.x_0 = DM()
         self.theta = {}

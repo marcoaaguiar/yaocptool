@@ -11,8 +11,9 @@ import networkx
 from casadi import vertcat
 from networkx.classes.reportviews import NodeView, OutEdgeView
 
-from yaocptool import find_variables_indices_in_vector, DM
-from yaocptool.modelling import SystemModel, OptimalControlProblem
+from yaocptool import DM, find_variables_indices_in_vector
+from yaocptool.modelling.ocp import OptimalControlProblem
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.modelling.network.node import Node
 
 

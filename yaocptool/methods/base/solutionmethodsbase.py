@@ -1,27 +1,29 @@
-from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from __future__ import annotations
+
 import warnings
 from functools import cached_property
-from yaocptool.modelling.system_model import SystemModel
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Union
 
-from casadi import SX, MX, vertcat, collocation_points, vec, DM, reshape
+from casadi import DM, MX, SX, collocation_points, reshape, vec, vertcat
 
 from yaocptool import config, create_constant_theta, find_variables_indices_in_vector
-from yaocptool.methods import SolutionMethodInterface
-from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
+from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
 from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
-from yaocptool.modelling import OptimalControlProblem
+from yaocptool.modelling.ocp import OptimalControlProblem
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.optimization.abstract_optimization_problem import (
     AbstractOptimizationProblem,
+    ExtendedOptiResultDictType,
+    OptiResultDictType,
 )
 
 if TYPE_CHECKING:
-    from casadi import FunctionCallArgT, NumericMT, SymbolicMT
-else:
-    FunctionCallArgT = "FunctionCallArgT"
-    NumericMT = "NumericMT"
-    SymbolicMT = "SymbolicMT"
+    from casadi import NumericMT
+#  else:
+#      NumericMT = "NumericMT"
+#      SymbolicMT = "SymbolicMT"
 
 
 class SolutionMethodsBase(SolutionMethodInterface):
@@ -29,7 +31,21 @@ class SolutionMethodsBase(SolutionMethodInterface):
     degree_control: int = 1
     finite_elements: int = 10
 
-    def __init__(self, problem: OptimalControlProblem, **kwargs):
+    def __init__(
+        self,
+        problem: OptimalControlProblem,
+        integrator_type="implicit",
+        discretization_scheme: Union[
+            Literal["collocation", "multiple-shooting"]
+        ] = "collocation",
+        initial_condition_as_parameter: bool = True,
+        nlpsol_opts: Dict[str, Any] = {},
+        initial_guess_heuristic: Union[
+            Literal["simulation"], Literal["problem_info"]
+        ] = "simulation",
+        last_control_as_parameter: bool = False,
+        **kwargs
+    ):
         """
         :param OptimalControlProblem problem:
         :param str integrator_type: str
@@ -48,12 +64,12 @@ class SolutionMethodsBase(SolutionMethodInterface):
         self.prepared = False
 
         # Options
-        self.integrator_type = "implicit"
-        self.discretization_scheme = "collocation"
-        self.initial_condition_as_parameter = True
-        self.nlpsol_opts: Dict[str, Any] = {}
-        self.initial_guess_heuristic = "simulation"  # 'problem_info'
-        self.last_control_as_parameter = False
+        self.integrator_type = integrator_type
+        self.discretization_scheme = discretization_scheme
+        self.initial_condition_as_parameter = initial_condition_as_parameter
+        self.nlpsol_opts: Dict[str, Any] = nlpsol_opts
+        self.initial_guess_heuristic = initial_guess_heuristic
+        self.last_control_as_parameter = last_control_as_parameter
         self.initial_guess_model = None
         self.initial_guess_in_transform = None
         self.initial_guess_out_transform = None
@@ -255,8 +271,6 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
         all_mx = vertcat(p_mx, vec(theta_mx), p_mx_x_0, p_last_u)
 
-        args = {"p": p_mx, "x_0": p_mx_x_0, "theta": theta, "last_u": p_last_u}
-
         # Discretize the problem
         opt_problem = self.discretizer.discretize(
             p=p_mx, x_0=p_mx_x_0, theta=theta, last_u=p_last_u
@@ -271,10 +285,10 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
     def call_solver(
         self,
-        initial_guess=None,
-        p=None,
-        theta=None,
-        x_0=None,
+        initial_guess: DM = None,
+        p: Optional[DM] = None,
+        theta: Optional[Dict[int, DM]] = None,
+        x_0: Optional[DM] = None,
         last_u=None,
         initial_guess_dict=None,
     ):
@@ -290,8 +304,14 @@ class SolutionMethodsBase(SolutionMethodInterface):
         return sol, p, theta, x_0, last_u
 
     def _get_solver_call_args(
-        self, x_0, p, theta, last_u, initial_guess_dict, initial_guess
-    ):
+        self,
+        x_0: Optional[DM],
+        p: Optional[DM],
+        theta: Optional[Dict[int, DM]],
+        last_u: Optional[Union[List[float], DM]],
+        initial_guess_dict: Optional[Dict[str, DM]],
+        initial_guess: Optional[DM],
+    ) -> Tuple[Dict[str, DM], DM, Dict[int, DM], DM, DM]:
         # initial conditions
         if x_0 is None:
             x_0 = self.problem.x_0
@@ -311,11 +331,13 @@ class SolutionMethodsBase(SolutionMethodInterface):
             if self.problem.n_p_opt == self.model.n_p:
                 p = DM.zeros(self.problem.n_p_opt)
             elif self.problem.model.n_p > 0:
-                raise Exception(
+                raise ValueError(
                     "A parameter 'p' of size {} should be given".format(
                         self.problem.model.n_p
                     )
                 )
+            else:
+                p = DM()
 
         if isinstance(p, list):
             p = DM(p)
@@ -332,9 +354,11 @@ class SolutionMethodsBase(SolutionMethodInterface):
                         self.problem.model.n_theta
                     )
                 )
+            else:
+                theta = create_constant_theta(0, 0, self.finite_elements)
 
         # Prepare NLP parameter vector
-        theta_vector, par_x_0, par_last_u = [], [], []
+        theta_vector, par_x_0, par_last_u = DM(), DM(), DM()
         if theta is not None:
             theta_vector = vertcat(*[theta[i] for i in range(self.finite_elements)])
 
@@ -348,18 +372,17 @@ class SolutionMethodsBase(SolutionMethodInterface):
                 "last_u will be ignored."
             )
 
-        if last_u is not None:
-            if isinstance(last_u, list):
-                last_u = vertcat(*last_u)
-        elif self.problem.last_u is not None:
-            last_u = self.problem.last_u
-        elif self.last_control_as_parameter:
-            raise Exception(
-                'last_control_as_parameter is True, but no "last_u" was passed'
-                'and the "ocp.last_u" is None.'
-            )
+        if isinstance(last_u, list):
+            last_u = vertcat(*last_u)
 
-        if self.last_control_as_parameter:
+        if last_u is None and self.last_control_as_parameter:
+            if self.problem.last_u is None:
+                raise ValueError(
+                    'last_control_as_parameter is True, but no "last_u" was passed'
+                    'and the "ocp.last_u" is None.'
+                )
+
+            last_u = self.problem.last_u
             par_last_u = last_u
 
         par = vertcat(p, theta_vector, par_x_0, par_last_u)
@@ -376,6 +399,7 @@ class SolutionMethodsBase(SolutionMethodInterface):
                             out_transform=self.initial_guess_out_transform,
                         )
                     )
+
                 elif self.initial_guess_heuristic == "problem_info":
                     initial_guess = self.discretizer.create_initial_guess(p, theta)
                 else:
@@ -386,14 +410,14 @@ class SolutionMethodsBase(SolutionMethodInterface):
                         )
                     )
             args = dict(initial_guess=initial_guess, p=par)
-        elif isinstance(initial_guess, dict):
-            initial_guess = vertcat(
-                vec(initial_guess[key])
-                for key in ["x", "y", "u", "eta", "p_opt", "theta_opt"]
-            )
-            args = dict(initial_guess=initial_guess, p=par)
+        #  elif isinstance(initial_guess, dict):
+        #      initial_guess = vertcat(
+        #          vec(initial_guess[key])
+        #          for key in ["x", "y", "u", "eta", "p_opt", "theta_opt"]
+        #      )
+        #      args = dict(initial_guess=initial_guess, p=par)
         else:
-            args = dict(
+            args: Dict[str, DM] = dict(
                 initial_guess=initial_guess_dict["x"],
                 p=par,
                 lam_x=initial_guess_dict["lam_x"],
@@ -403,12 +427,12 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
     def solve(
         self,
-        initial_guess=None,
-        p=None,
-        theta=None,
-        x_0=None,
-        last_u=None,
-        initial_guess_dict=None,
+        initial_guess: Optional[DM] = None,
+        p: Optional[DM] = None,
+        theta: Optional[Dict[int, DM]] = None,
+        x_0: Optional[DM] = None,
+        last_u: Optional[DM] = None,
+        initial_guess_dict: Optional[OptiResultDictType] = None,
     ) -> OptimizationResult:
         """
 
@@ -434,29 +458,13 @@ class SolutionMethodsBase(SolutionMethodInterface):
 
         return self.create_optimization_result(raw_solution_dict, p, theta, x_0)
 
-    def mp_solve(
+    def create_optimization_result(
         self,
-        initial_guess=None,
-        p=None,
-        theta=None,
-        x_0=None,
-        last_u=None,
-        initial_guess_dict=None,
-    ) -> OptimizationResult:
-        if isinstance(p, (int, float)):
-            p = DM(p)
-
-        # initial conditions
-        args, p, theta, x_0, last_u = self._get_solver_call_args(
-            x_0, p, theta, last_u, initial_guess_dict, initial_guess
-        )
-
-        sol = self.opt_problem.mp_solve(**args)
-        return sol, p, theta, x_0, last_u
-
-        return self.create_optimization_result(raw_solution_dict, p, theta, x_0)
-
-    def create_optimization_result(self, raw_solution_dict, p, theta, x_0):
+        raw_solution_dict: ExtendedOptiResultDictType,
+        p: DM,
+        theta: Dict[int, DM],
+        x_0,
+    ):
         optimization_result = OptimizationResult()
 
         # From the solution_method

@@ -7,20 +7,20 @@ Created on
 
 import unittest
 
-from casadi import SX, vertcat, is_equal, DM, MX, exp, diag, norm_fro
+from casadi import DM, MX, SX, diag, exp, is_equal, norm_fro, vertcat
 
 from yaocptool import (
-    find_variables_indices_in_vector,
+    convert_expr_from_tau_to_time,
+    create_constant_theta,
+    create_polynomial_approximation,
+    expm,
     find_variables_in_vector_by_name,
+    find_variables_indices_in_vector,
+    is_equality,
+    is_inequality,
+    join_thetas,
     remove_variables_from_vector,
     remove_variables_from_vector_by_indices,
-    create_constant_theta,
-    is_inequality,
-    is_equality,
-    join_thetas,
-    convert_expr_from_tau_to_time,
-    expm,
-    create_polynomial_approximation,
 )
 from yaocptool.util.util import _create_lagrangian_polynomial_basis
 

@@ -1,5 +1,4 @@
-from typing import List, Sequence, Union
-from collections import abc
+from typing import List, Union
 
 from casadi import DM, SX, Function, rootfinder, substitute, vec, vertcat
 

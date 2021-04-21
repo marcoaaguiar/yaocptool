@@ -1,38 +1,24 @@
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     Optional,
     TypedDict,
     Union,
-    overload,
-    TYPE_CHECKING,
 )
-from yaocptool.config import SOLVER_OPTIONS
-from casadi import (
-    MX,
-    vertcat,
-    integrator,
-    substitute,
-    depends_on,
-    Function,
-    SX,
-    DM,
-)
-from mypy_extensions import DefaultArg
+
+from casadi import DM, MX, SX, Function, depends_on, integrator, substitute, vertcat
 
 from yaocptool import (
-    convert_expr_from_tau_to_time,
     config,
+    convert_expr_from_tau_to_time,
     find_variables_indices_in_vector,
 )
 
 if TYPE_CHECKING:
-    from casadi import FunctionCallArgT, NumericMT, SymbolicMT
+    from casadi import FunctionCallArgT
 else:
     FunctionCallArgT = "FunctionCallArgT"
-    NumericMT = "NumericMT"
-    SymbolicMT = "SymbolicMT"
 
 
 class ExplicitSolverOptions(TypedDict):

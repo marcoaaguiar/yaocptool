@@ -25,7 +25,8 @@ from yaocptool import (
     find_variables_in_vector_by_name,
     find_variables_indices_in_vector,
 )
-from yaocptool.modelling import DAESystem, SimulationResult
+from yaocptool.modelling.dae_system import DAESystem
+from yaocptool.modelling.simulation_result import SimulationResult
 from yaocptool.modelling.mixins import (
     AlgebraicMixin,
     ContinuousStateMixin,

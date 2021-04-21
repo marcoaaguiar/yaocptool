@@ -1,8 +1,8 @@
+import typing
+
 import pytest
 
 from yaocptool.modelling.system_model import SystemModel
-
-import typing
 
 typing.TYPE_CHECKING = False
 

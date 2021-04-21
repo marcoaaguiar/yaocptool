@@ -5,7 +5,7 @@ Created on Thu Oct 20 13:54:58 2016
 @author: marco
 """
 
-from casadi import vertcat, DM, cos, sin, pi, diag
+from casadi import DM, cos, diag, pi, sin, vertcat
 
 from yaocptool.modelling.ocp import OptimalControlProblem
 from yaocptool.modelling.system_model import SystemModel
@@ -15,8 +15,8 @@ class PendulumCart(SystemModel):
     def __init__(self, **kwargs):
         super().__init__(self)
 
-        x = self.create_state('x', 4)
-        u = self.create_control('u')
+        x = self.create_state("x", 4)
+        u = self.create_control("u")
 
         # model extracte from Tracking trajectories of the cart-pendulum system
         # Mazenc
@@ -40,14 +40,24 @@ class PendulumCart(SystemModel):
 
         ode = vertcat(
             theta_dot,
-            ((m * g * cos(theta) * sin(theta) -
-              m * ell * theta_dot**2 * sin(theta) - u) /
-             (big_m + m - m * cos(theta)**2) * cos(theta) + g * sin(theta)) /
-            ell,
+            (
+                (
+                    m * g * cos(theta) * sin(theta)
+                    - m * ell * theta_dot ** 2 * sin(theta)
+                    - u
+                )
+                / (big_m + m - m * cos(theta) ** 2)
+                * cos(theta)
+                + g * sin(theta)
+            )
+            / ell,
             x_dot,
-            (m * g * cos(theta) * sin(theta) -
-             m * ell * theta_dot**2 * sin(theta) - u) /
-            (big_m + m - m * cos(theta)**2),
+            (
+                m * g * cos(theta) * sin(theta)
+                - m * ell * theta_dot ** 2 * sin(theta)
+                - u
+            )
+            / (big_m + m - m * cos(theta) ** 2),
         )
         self.include_equations(ode=ode)
 

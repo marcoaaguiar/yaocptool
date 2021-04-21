@@ -5,12 +5,12 @@ Created on Thu Jul 13 17:08:34 2017
 @author: marco
 """
 from collections import defaultdict
+from typing import Dict, Optional
 
-from casadi import DM, vertcat, Function, repmat, is_equal, inf, vec, horzcat
+from casadi import DM, Function, horzcat, inf, is_equal, repmat, vec, vertcat
 
-from yaocptool.modelling import SystemModel
-from yaocptool.methods import OptimizationResult
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.optimization import NonlinearOptimizationProblem
 
 
@@ -338,7 +338,7 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
             elif self.solution_method.solution_class == "indirect":
                 f_u = Function("f_u_pol", list(self.model.all_sym), [u_func])
             else:
-                raise NotImplemented
+                raise NotImplementedError
 
             # Find the times that need to be evaluated
             element_breakpoints = set()
@@ -505,13 +505,13 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
 
     def create_initial_guess_with_simulation(
         self,
-        u=None,
-        p=None,
-        theta: dict = None,
+        u: Optional[DM] = None,
+        p: DM = None,
+        theta: Dict[int, DM] = None,
         model: SystemModel = None,
         in_transform=None,
         out_transform=None,
-    ):
+    ) -> DM:
         """Create an initial guess for the optimal control problem using by simulating
         with a given control u, and a given p and theta (for p_opt and theta_opt) if
         they are given.
@@ -545,11 +545,10 @@ class MultipleShootingScheme(DiscretizationSchemeBase):
                 u = self.problem.last_u
             else:
                 u = DM.zeros(model.n_u)
-        if model.n_u_par > 0:
-            u = vec(horzcat(*[u] * self.degree_control))
-        else:
-            u = []
+        if p is None:
+            p = DM()
 
+        u = vec(horzcat(*[u] * self.degree_control)) if model.n_u_par > 0 else DM()
         x_0 = self.problem.x_0
         y_guess = self.problem.y_guess
         x_init.append([x_0])

@@ -1,5 +1,6 @@
-from yaocptool.modelling import OptimalControlProblem, SystemModel
 from casadi import DM, mtimes
+
+from yaocptool.modelling import OptimalControlProblem, SystemModel
 
 
 def _create_linear_system(n_x, n_u, a, b, name):

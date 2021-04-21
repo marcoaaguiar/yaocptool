@@ -1,4 +1,4 @@
-from casadi import vertcat, DM, diagcat
+from casadi import DM, diagcat, vertcat
 
 from yaocptool import (
     find_variables_indices_in_vector,

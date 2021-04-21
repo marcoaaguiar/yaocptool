@@ -1,7 +1,6 @@
-from casadi import nlpsol
-from casadi import Function
-
 import ray
+from casadi import Function, nlpsol
+
 from yaocptool.config import SOLVER_OPTIONS
 from yaocptool.optimization.abstract_optimization_problem import (
     AbstractOptimizationProblem,

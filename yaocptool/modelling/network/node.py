@@ -5,7 +5,10 @@ Created on Fri Jul 07 16:33:52 2017
 @author: marco
 """
 from typing import Optional
-from yaocptool.modelling import SystemModel, OptimalControlProblem
+
+from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
+from yaocptool.modelling.ocp import OptimalControlProblem
+from yaocptool.modelling.system_model import SystemModel
 
 
 class Node:
@@ -15,11 +18,13 @@ class Node:
         name: Optional[str] = None,
         model: Optional[SystemModel] = None,
         problem: Optional[OptimalControlProblem] = None,
+        solution_method: Optional[SolutionMethodInterface] = None,
         color: float = 0.25,
     ):
         self.name = name
         self.node_id = node_id
         self.problem = problem
+        self.solution_method = solution_method
         self.color = color
 
         self.model = problem.model if model is None and problem is not None else model

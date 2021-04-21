@@ -3,11 +3,12 @@ import itertools
 import os
 import pickle
 import re
+from dataclasses import dataclass
 from typing import Dict, Iterable, List, Literal, Optional, Tuple, TypeVar, Union
 
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn
-from dataclasses import dataclass
 from casadi import DM, horzcat
 
 from yaocptool.config import PLOT_INTERACTIVE
@@ -22,6 +23,10 @@ class Entry:
     time: DM = DM()
     values: DM = DM()
     plot_style: str = "plot"
+
+    @property
+    def is_empty(self):
+        return not len(self.names)
 
 
 class DataSet:
@@ -47,6 +52,34 @@ class DataSet:
 
         self.data: Dict[str, Entry] = {}
 
+    def as_dataframe(self):
+        df = None
+        for entry_name, entry in self.data.items():
+            if entry.is_empty:
+                continue
+            time = [float(t) for t in entry.time.nz]
+            #  entry_time_value_dict = [
+            #      np.atleast_2d(col).T for col in horzsplit(entry.values, 1)
+            #  ]
+            values = entry.values.T.full()
+            names_tuples = [(entry_name, name) for name in entry.names]
+            index = pd.MultiIndex.from_tuples(names_tuples)
+            entry_df = pd.DataFrame(values, index=time, columns=index)
+
+            df = (
+                pd.merge(
+                    df,
+                    entry_df,
+                    how="outer",
+                    left_index=True,
+                    right_index=True,
+                )
+                if df is not None
+                else entry_df
+            )
+        df.index.name = "time"
+        return df
+
     def create_entry(
         self, entry: str, size: int, names: List[str] = None, plot_style: str = None
     ):
@@ -63,8 +96,6 @@ class DataSet:
         if names is None:
             names = [entry + "_" + str(i) for i in range(size)]
         self.data[entry] = Entry(size=size, names=names)
-        if plot_style is not None:
-            self.data[entry].plot_style = plot_style
 
     def get_entry(self, entry: str) -> Tuple[DM, DM]:
         """

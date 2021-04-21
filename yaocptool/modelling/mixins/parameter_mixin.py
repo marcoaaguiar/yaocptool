@@ -1,6 +1,8 @@
 from typing import List, Tuple, Union
-from yaocptool.modelling.mixins.base_mixin import BaseMixin
+
 from casadi import SX, vec, vertcat
+
+from yaocptool.modelling.mixins.base_mixin import BaseMixin
 from yaocptool.util.util import remove_variables_from_vector
 
 

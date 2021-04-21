@@ -7,26 +7,26 @@ Created on Thu Jul 13 17:08:34 2017
 from collections import defaultdict
 from itertools import chain
 from typing import List, Tuple
-from yaocptool.optimization.abstract_optimization_problem import (
-    AbstractOptimizationProblem,
-)
 
 from casadi import (
     DM,
     MX,
-    repmat,
-    vertcat,
     Function,
-    jacobian,
-    is_equal,
-    inf,
     horzcat,
+    inf,
+    is_equal,
+    jacobian,
+    repmat,
     vec,
+    vertcat,
 )
 
 from yaocptool.methods.base.discretizationschemebase import DiscretizationSchemeBase
+from yaocptool.modelling.system_model import SystemModel
 from yaocptool.optimization import NonlinearOptimizationProblem
-from yaocptool.modelling import SystemModel
+from yaocptool.optimization.abstract_optimization_problem import (
+    AbstractOptimizationProblem,
+)
 
 # TODO: implement cost_as_a_sum
 

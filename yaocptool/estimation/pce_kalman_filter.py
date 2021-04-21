@@ -1,10 +1,10 @@
 # coding=utf-8
 from math import factorial
 
-from casadi import mtimes, vertcat, solve, DM, vec
+from casadi import DM, mtimes, solve, vec, vertcat
 
 from yaocptool.estimation.estimator_abstract import EstimatorAbstract
-from yaocptool.modelling import SystemModel, DataSet
+from yaocptool.modelling import DataSet
 from yaocptool.stochastic import sample_parameter_normal_distribution_with_sobol
 from yaocptool.stochastic.pce import get_ls_factor
 

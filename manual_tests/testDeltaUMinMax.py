@@ -5,12 +5,12 @@ Created on Wed Nov 02 18:55:27 2016
 @author: marco
 """
 import sys
-from os.path import dirname, abspath
+from os.path import abspath, dirname
 
-from casadi import vertcat, DM, mtimes
+from casadi import DM, mtimes, vertcat
 
 from yaocptool.methods import DirectMethod
-from yaocptool.modelling import SystemModel, OptimalControlProblem
+from yaocptool.modelling import OptimalControlProblem, SystemModel
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 
@@ -25,10 +25,7 @@ model.include_equations(ode=vertcat(mtimes(a, x) + mtimes(b, u)))
 
 problem = OptimalControlProblem(
     model,
-    obj={
-        "Q": DM.eye(2),
-        "R": DM.eye(2)
-    },
+    obj={"Q": DM.eye(2), "R": DM.eye(2)},
     x_0=[1, 1],
 )
 

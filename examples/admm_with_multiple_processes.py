@@ -25,8 +25,8 @@ from matplotlib import pyplot
 from yaocptool.optimization import NonlinearOptimizationProblem
 from yaocptool.parallel.worker import Worker
 
-LAMBDA_0 = 1.
-MU_0 = 1.
+LAMBDA_0 = 1.0
+MU_0 = 1.0
 MAX_ITERATIONS = 10
 
 
@@ -34,10 +34,10 @@ MAX_ITERATIONS = 10
 class Problem1:
     def __init__(self):
         nlp = NonlinearOptimizationProblem()
-        x = nlp.create_variable('x')
-        z = nlp.create_parameter('z')
-        mu = nlp.create_parameter('mu')
-        lamb = nlp.create_parameter('lambda')
+        x = nlp.create_variable("x")
+        z = nlp.create_parameter("z")
+        mu = nlp.create_parameter("mu")
+        lamb = nlp.create_parameter("lambda")
         obj = x ** 2 + lamb * (x - z) + mu / 2 * (x - z) ** 2
         nlp.set_objective(obj)
         self.nlp = nlp
@@ -54,17 +54,17 @@ class Problem1:
         if self.iteration >= self.max_iterations:
             self.stop = True
 
-        return sol['x']
+        return sol["x"]
 
 
 # Create second problem
 class Problem2:
     def __init__(self):
         nlp = NonlinearOptimizationProblem()
-        z = nlp.create_variable('z')
-        x = nlp.create_parameter('x')
-        mu = nlp.create_parameter('mu')
-        lamb = nlp.create_parameter('lambda')
+        z = nlp.create_variable("z")
+        x = nlp.create_parameter("x")
+        mu = nlp.create_parameter("mu")
+        lamb = nlp.create_parameter("lambda")
         obj = exp(-z) + lamb * (x - z) + mu / 2 * (x - z) ** 2
         nlp.set_objective(obj)
         self.nlp = nlp
@@ -81,7 +81,7 @@ class Problem2:
         if self.iteration >= self.max_iterations:
             self.stop = True
 
-        return sol['x']
+        return sol["x"]
 
 
 # Create an Updater Class, which performs the third step of the ADMM
@@ -109,7 +109,7 @@ class Updater:
         return self.mu, self.lamb
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Create the Queues for communication between processes
     queue12 = Queue()
     queue13 = Queue()
@@ -126,12 +126,18 @@ if __name__ == '__main__':
 
     # Create the Worker which will spawn a new process creating an object Problem1/Problem2/Updater, and calling a
     # designated function after getting one element from each queue
-    w_nlp1 = Worker(Problem1, None, 'solve', [queue21, queue31], [queue12, queue13, queue1_listener])
-    w_nlp2 = Worker(Problem2, None, 'solve', [queue12, queue32], [queue21, queue23, queue2_listener])
-    w_update = Worker(Updater, None, 'update', [queue13, queue23], [queue31, queue32, queue3_listener])
+    w_nlp1 = Worker(
+        Problem1, None, "solve", [queue21, queue31], [queue12, queue13, queue1_listener]
+    )
+    w_nlp2 = Worker(
+        Problem2, None, "solve", [queue12, queue32], [queue21, queue23, queue2_listener]
+    )
+    w_update = Worker(
+        Updater, None, "update", [queue13, queue23], [queue31, queue32, queue3_listener]
+    )
 
     # We need to initialize some queues in order to some of the process start
-    queue21.put(0.)
+    queue21.put(0.0)
     queue31.put([MU_0, LAMBDA_0])
     queue32.put([MU_0, LAMBDA_0])
 
@@ -154,4 +160,4 @@ if __name__ == '__main__':
     print(nlp2_sol)
     print(update_res)
 
-    pyplot.plot(nlp1_sol, nlp2_sol, 'x-')
+    pyplot.plot(nlp1_sol, nlp2_sol, "x-")

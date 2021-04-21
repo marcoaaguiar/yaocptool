@@ -1,6 +1,8 @@
 from typing import List, Optional, Tuple, Union
+
+from casadi import SX, is_equal, substitute, vec, vertcat
+
 from yaocptool.modelling.mixins.base_mixin import BaseMixin
-from casadi import DM, is_equal, substitute, SX, vec, vertcat
 from yaocptool.util import (
     find_variables_indices_in_vector,
     remove_variables_from_vector,
