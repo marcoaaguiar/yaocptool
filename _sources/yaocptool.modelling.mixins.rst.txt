@@ -1,0 +1,46 @@
+yaocptool.modelling.mixins package
+==================================
+
+Submodules
+----------
+
+yaocptool.modelling.mixins.algebraic\_mixin module
+--------------------------------------------------
+
+.. automodule:: yaocptool.modelling.mixins.algebraic_mixin
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.modelling.mixins.control\_mixin module
+------------------------------------------------
+
+.. automodule:: yaocptool.modelling.mixins.control_mixin
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.modelling.mixins.parameter\_mixin module
+--------------------------------------------------
+
+.. automodule:: yaocptool.modelling.mixins.parameter_mixin
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+yaocptool.modelling.mixins.state\_mixin module
+----------------------------------------------
+
+.. automodule:: yaocptool.modelling.mixins.state_mixin
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: yaocptool.modelling.mixins
+    :members:
+    :undoc-members:
+    :show-inheritance:

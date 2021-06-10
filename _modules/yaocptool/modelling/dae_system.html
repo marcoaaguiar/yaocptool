@@ -1,0 +1,523 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.dae_system &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.dae_system</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.modelling.dae_system</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">integrator</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">depends_on</span><span class="p">,</span> <span class="n">Function</span><span class="p">,</span> <span class="n">SX</span><span class="p">,</span> <span class="n">DM</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="kn">import</span> <span class="n">convert_expr_from_tau_to_time</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">find_variables_indices_in_vector</span>
+
+
+<div class="viewcode-block" id="DAESystem"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem">[docs]</a><span class="k">class</span> <span class="nc">DAESystem</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        DAE System class used primarily for simulation by the SystemModel class</span>
+
+<span class="sd">    For modelling it is recommended the use of the SystemModel class, use this class if you need more control of</span>
+<span class="sd">    the integrator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="DAESystem.__init__"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">ode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">alg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">tau</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            DAE System class used primarily for simulation by the SystemModel class</span>
+
+<span class="sd">        For modelling it is recommended the use of the SystemModel class, use this class if you need more control of</span>
+<span class="sd">        the integrator.</span>
+
+<span class="sd">        :param casadi.SX ode: ODE equations</span>
+<span class="sd">        :param casadi.SX alg: Algebraic equations</span>
+<span class="sd">        :param casadi.SX x: State variables</span>
+<span class="sd">        :param casadi.SX y: Algebraic variables</span>
+<span class="sd">        :param casadi.SX p: Parameters</span>
+<span class="sd">        :param casadi.SX t: Time variable</span>
+<span class="sd">        :param casadi.SX tau: Tau variable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">alg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">alg</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">ode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ode</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ode</span> <span class="o">=</span> <span class="n">ode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">alg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="o">=</span> <span class="n">tau</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_dae</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return True if it is a DAE system (with non empty algebraic equations)</span>
+
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;dae&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_ode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return True if it is a ODE system (no algebraic equations)</span>
+
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;ode&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return &#39;ode&#39; if the system has no algebraic equations, &#39;dae&#39; otherwise</span>
+
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;ode&#39;</span>
+        <span class="k">return</span> <span class="s1">&#39;dae&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return True if the attribute &#39;p&#39; is not empty</span>
+
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dae_system_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return the dictionary of variables and equations needed to create the CasADi integrator.</span>
+
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ode</span><span class="p">:</span>
+            <span class="n">dae_sys_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;ode&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dae_sys_dict</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                <span class="s1">&#39;ode&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span>
+                <span class="s1">&#39;alg&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span>
+                <span class="s1">&#39;t&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+            <span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_parameters</span><span class="p">:</span>
+            <span class="n">dae_sys_dict</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span>
+        <span class="k">return</span> <span class="n">dae_sys_dict</span>
+
+<div class="viewcode-block" id="DAESystem.has_variable"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.has_variable">[docs]</a>    <span class="k">def</span> <span class="nf">has_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return True if the var is one of the system variables (x, y, p, t, tau)</span>
+
+<span class="sd">        :param casadi.SX var:</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span>
+            <span class="n">var</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="DAESystem.depends_on"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.depends_on">[docs]</a>    <span class="k">def</span> <span class="nf">depends_on</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return True if the system of equations (&#39;ode&#39; and &#39;alg&#39;)depends on &#39;var&#39; (contains &#39;var&#39; in the equations).</span>
+
+<span class="sd">        :param casadi.SX var:</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">depends_on</span><span class="p">(</span><span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">),</span> <span class="n">var</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DAESystem.convert_from_tau_to_time"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.convert_from_tau_to_time">[docs]</a>    <span class="k">def</span> <span class="nf">convert_from_tau_to_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">t_kp1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Transform a dependence in tau into a dependence into t</span>
+
+<span class="sd">        Uses the formula tau_sym = (t - t_k)/ (t_kp1 - t_k)</span>
+
+<span class="sd">        :param t_k: t(k), the time at the beginning of the simulation interval</span>
+<span class="sd">        :param t_kp1: t(k+1), the time at the end of the simulation interval</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;DAESystem.t was not set: self.t = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                <span class="s2">&quot;DAESystem.t was not set: self.tau = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">convert_expr_from_tau_to_time</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span>
+                                                 <span class="n">t_sym</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span>
+                                                 <span class="n">tau_sym</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span>
+                                                 <span class="n">t_k</span><span class="o">=</span><span class="n">t_k</span><span class="p">,</span>
+                                                 <span class="n">t_kp1</span><span class="o">=</span><span class="n">t_kp1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ode</span> <span class="o">=</span> <span class="n">convert_expr_from_tau_to_time</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span>
+                                                 <span class="n">t_sym</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span>
+                                                 <span class="n">tau_sym</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span>
+                                                 <span class="n">t_k</span><span class="o">=</span><span class="n">t_k</span><span class="p">,</span>
+                                                 <span class="n">t_kp1</span><span class="o">=</span><span class="n">t_kp1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DAESystem.substitute_variable"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.substitute_variable">[docs]</a>    <span class="k">def</span> <span class="nf">substitute_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_var</span><span class="p">,</span> <span class="n">new_var</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Substitute &#39;old_var&#39; with &#39;new_var&#39; in the system equations (alg, ode) and in the set of variables (x, y, p)</span>
+
+<span class="sd">        :param casadi.SX old_var:</span>
+<span class="sd">        :param casadi.SX new_var:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ode</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="n">old_var</span><span class="p">,</span> <span class="n">new_var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span> <span class="n">old_var</span><span class="p">,</span> <span class="n">new_var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">old_var</span><span class="p">,</span> <span class="n">new_var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">old_var</span><span class="p">,</span> <span class="n">new_var</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="n">old_var</span><span class="p">,</span> <span class="n">new_var</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DAESystem.join"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.join">[docs]</a>    <span class="k">def</span> <span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dae_sys</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Include all the variables and equations from the DAESystem &#39;dae_sys&#39; into this object</span>
+
+<span class="sd">        :param DAESystem dae_sys:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ode</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="n">dae_sys</span><span class="o">.</span><span class="n">ode</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alg</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span> <span class="n">dae_sys</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">dae_sys</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">dae_sys</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="n">dae_sys</span><span class="o">.</span><span class="n">p</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">substitute_variable</span><span class="p">(</span><span class="n">dae_sys</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">substitute_variable</span><span class="p">(</span><span class="n">dae_sys</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DAESystem.simulate"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.dae_system.DAESystem.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">x_0</span><span class="p">,</span>
+                 <span class="n">t_f</span><span class="p">,</span>
+                 <span class="n">t_0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">y_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">integrator_type</span><span class="o">=</span><span class="s1">&#39;implicit&#39;</span><span class="p">,</span>
+                 <span class="n">integrator_options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Create an integrator and simulate a system from &#39;t_0&#39; to &#39;t_f&#39;.</span>
+
+<span class="sd">        :param list|DM|MX x_0: initial condition</span>
+<span class="sd">        :param float|int|DM t_f: final time</span>
+<span class="sd">        :param float|int|DM t_0: initial time</span>
+<span class="sd">        :param list|DM|MX p: system parameters</span>
+<span class="sd">        :param list|DM|MX y_0: initial guess for the algebraic variable</span>
+<span class="sd">        :param str integrator_type: integrator type, options available are: &#39;cvodes&#39;, &#39;idas&#39;,</span>
+<span class="sd">            &#39;implicit&#39; (default, auto-select between &#39;idas&#39; and &#39;cvodes&#39;), &#39;rk&#39;, and &#39;collocation&#39;.</span>
+<span class="sd">        :param dict integrator_options: casadi.integrator options</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">t_f</span> <span class="o">==</span> <span class="n">t_0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Initial time and final time must be different, t_0!=t_f. t_0=</span><span class="si">{}</span><span class="s2">, t_f=</span><span class="si">{}</span><span class="s2">&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t_0</span><span class="p">,</span> <span class="n">t_f</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">depends_on</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                <span class="s2">&quot;The system of equations (&#39;ode&#39; and &#39;alg&#39;) depend on the variable &#39;tau&#39;. Before being&quot;</span>
+                <span class="s2">&quot;able to simulate it is required to transform the dependence on tau into a dependence &quot;</span>
+                <span class="s2">&quot;on t. Use the &#39;convert_from_tau_to_time&#39; for this.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">integrator_options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">integrator_options</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">opts</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;tf&#39;</span><span class="p">:</span> <span class="n">t_f</span><span class="p">,</span> <span class="s1">&#39;t0&#39;</span><span class="p">:</span> <span class="n">t_0</span><span class="p">}</span>  <span class="c1"># final time</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">integrator_options</span><span class="p">:</span>
+            <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrator_options</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+        <span class="n">call</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">x_0</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span> <span class="n">p</span><span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dae</span> <span class="ow">and</span> <span class="n">y_0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">call</span><span class="p">[</span><span class="s1">&#39;z0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y_0</span>
+
+        <span class="n">integrator_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_integrator</span><span class="p">(</span><span class="n">opts</span><span class="p">,</span> <span class="n">integrator_type</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">integrator_</span><span class="p">(</span><span class="o">**</span><span class="n">call</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_create_integrator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">integrator_type</span><span class="o">=</span><span class="s1">&#39;implicit&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Create casadi.integrator for the DAESystem.</span>
+
+<span class="sd">        :param dict options: casadi.integrator options</span>
+<span class="sd">        :param str integrator_type: integrator type, options available are: &#39;cvodes&#39;, &#39;idas&#39;,</span>
+<span class="sd">            &#39;implicit&#39; (default, auto-select between &#39;idas&#39; and &#39;cvodes&#39;), &#39;rk&#39;, and &#39;collocation&#39;.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Integrator Function name</span>
+        <span class="k">if</span> <span class="s1">&#39;name&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;integrator&#39;</span>
+
+        <span class="c1"># Load default options from the config file, if a &#39;options&#39; dict was passed use that to override the default.</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">INTEGRATOR_OPTIONS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">INTEGRATOR_OPTIONS</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+        <span class="c1"># For backwards compatibility, previously option &#39;explicit&#39; was a custom Runge-Kutta. CasADi now has it built-in</span>
+        <span class="k">if</span> <span class="n">integrator_type</span> <span class="o">==</span> <span class="s1">&#39;explicit&#39;</span><span class="p">:</span>
+            <span class="n">integrator_type</span> <span class="o">=</span> <span class="s1">&#39;rk&#39;</span>
+
+        <span class="c1"># Return the specified integrator</span>
+        <span class="k">if</span> <span class="n">integrator_type</span> <span class="o">==</span> <span class="s1">&#39;implicit&#39;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ode</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">integrator</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;cvodes&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dae_system_dict</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">integrator_type</span> <span class="o">==</span> <span class="s1">&#39;implicit&#39;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dae</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">integrator</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;idas&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dae_system_dict</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">integrator_type</span> <span class="o">==</span> <span class="s1">&#39;rk4&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ode</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_explicit_integrator</span><span class="p">(</span>
+                    <span class="s1">&#39;explicit_integrator&#39;</span><span class="p">,</span> <span class="s1">&#39;rk4&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dae_system_dict</span><span class="p">,</span>
+                    <span class="n">options</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s1">&#39;Explicit integrator not implemented for DAE systems&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">integrator_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;rk&#39;</span><span class="p">,</span> <span class="s1">&#39;collocation&#39;</span><span class="p">,</span> <span class="s1">&#39;cvodes&#39;</span><span class="p">,</span> <span class="s1">&#39;idas&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">integrator</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">integrator_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dae_system_dict</span><span class="p">,</span>
+                              <span class="n">options</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;&#39;integrator_type&#39;=</span><span class="si">{}</span><span class="s2"> not available. Options available are: &#39;cvodes&#39;, &#39;idas&#39;, implicit &quot;</span>
+            <span class="s2">&quot;(default, auto-select between &#39;idas&#39; and &#39;cvodes&#39;), &#39;rk&#39;,&quot;</span>
+            <span class="s2">&quot; and &#39;collocation&#39;.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">integrator_type</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_create_explicit_integrator</span><span class="p">(</span><span class="n">name</span><span class="p">,</span>
+                                    <span class="n">integrator_type</span><span class="p">,</span>
+                                    <span class="n">dae_sys</span><span class="p">,</span>
+                                    <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">default_options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;t0&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;tf&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;iterations&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="n">default_options</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">default_options</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_options</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s1">&#39;alg&#39;</span> <span class="ow">in</span> <span class="n">dae_sys</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s1">&#39;Explicit integrator not implemented for DAE systems&#39;</span><span class="p">)</span>
+        <span class="n">f_in</span> <span class="o">=</span> <span class="p">[</span><span class="n">dae_sys</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">],</span> <span class="n">dae_sys</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="s1">&#39;p&#39;</span> <span class="ow">in</span> <span class="n">dae_sys</span><span class="p">:</span>
+            <span class="n">f_in</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dae_sys</span><span class="p">[</span><span class="s1">&#39;p&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">f_in</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;fake_p&#39;</span><span class="p">))</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">f_in</span><span class="p">,</span> <span class="p">[</span><span class="n">dae_sys</span><span class="p">[</span><span class="s1">&#39;ode&#39;</span><span class="p">]])</span>
+
+        <span class="n">t_0</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;t0&#39;</span><span class="p">]</span>
+        <span class="n">t_f</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;tf&#39;</span><span class="p">]</span>
+        <span class="n">iterations</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;iterations&#39;</span><span class="p">]</span>
+        <span class="n">n_states</span> <span class="o">=</span> <span class="n">dae_sys</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">integrator_type</span> <span class="o">==</span> <span class="s1">&#39;rk4&#39;</span><span class="p">:</span>
+
+            <span class="k">def</span> <span class="nf">runge_kutta_4th_order</span><span class="p">(</span>
+                    <span class="n">x0</span><span class="o">=</span><span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_states</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="n">iterations</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">n_iter</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                        <span class="s2">&quot;The given number of Runge Kutta iterations is less than one, given </span><span class="si">{}</span><span class="s2">&quot;</span>
+                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n_iter</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="n">x_f</span> <span class="o">=</span> <span class="n">x0</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_f</span> <span class="o">-</span> <span class="n">t_0</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_iter</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">t_0</span>
+                <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_iter</span><span class="p">):</span>
+                    <span class="n">k1</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">f</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+                    <span class="n">k2</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">f</span><span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">h</span><span class="p">,</span> <span class="n">x0</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">k1</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+                    <span class="n">k3</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">f</span><span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">h</span><span class="p">,</span> <span class="n">x0</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">k2</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+                    <span class="n">k4</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">f</span><span class="p">(</span><span class="n">t</span> <span class="o">+</span> <span class="n">h</span><span class="p">,</span> <span class="n">x0</span> <span class="o">+</span> <span class="n">k3</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+                    <span class="n">x_f</span> <span class="o">=</span> <span class="n">x0</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="mf">6.</span> <span class="o">*</span> <span class="n">k1</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">k2</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">k3</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="mf">6.</span> <span class="o">*</span> <span class="n">k4</span>
+                    <span class="n">x0</span> <span class="o">=</span> <span class="n">x_f</span>
+                    <span class="n">t</span> <span class="o">+=</span> <span class="n">h</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;xf&#39;</span><span class="p">:</span> <span class="n">x_f</span><span class="p">,</span> <span class="s1">&#39;zf&#39;</span><span class="p">:</span> <span class="n">DM</span><span class="p">([])}</span>
+
+            <span class="k">return</span> <span class="n">runge_kutta_4th_order</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

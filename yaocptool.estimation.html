@@ -1,0 +1,420 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.estimation package &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="yaocptool.methods package" href="yaocptool.methods.html" />
+    <link rel="prev" title="yaocptool package" href="yaocptool.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="yaocptool.html">yaocptool package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="yaocptool.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool.config">yaocptool.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="yaocptool.html">yaocptool package</a> &raquo;</li>
+        
+      <li>yaocptool.estimation package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/yaocptool.estimation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="yaocptool-estimation-package">
+<h1>yaocptool.estimation package<a class="headerlink" href="#yaocptool-estimation-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-yaocptool.estimation.estimator_abstract">
+<span id="yaocptool-estimation-estimator-abstract-module"></span><h2>yaocptool.estimation.estimator_abstract module<a class="headerlink" href="#module-yaocptool.estimation.estimator_abstract" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.estimation.estimator_abstract.EstimatorAbstract">
+<em class="property">class </em><code class="descname">EstimatorAbstract</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/estimator_abstract.html#EstimatorAbstract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.estimator_abstract.EstimatorAbstract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="yaocptool.estimation.estimator_abstract.EstimatorAbstract.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/estimator_abstract.html#EstimatorAbstract.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.estimator_abstract.EstimatorAbstract.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.estimation.estimator_abstract.EstimatorAbstract.estimate">
+<code class="descname">estimate</code><span class="sig-paren">(</span><em>t_k</em>, <em>y_k</em>, <em>u_k</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/estimator_abstract.html#EstimatorAbstract.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.estimator_abstract.EstimatorAbstract.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate the state given the measurement y_k and the control u_k
+:param DM t_k: time of the measurements
+:param DM y_k: measurement
+:param DM u_k: control</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.estimation.extended_kalman_filter">
+<span id="yaocptool-estimation-extended-kalman-filter-module"></span><h2>yaocptool.estimation.extended_kalman_filter module<a class="headerlink" href="#module-yaocptool.estimation.extended_kalman_filter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter">
+<em class="property">class </em><code class="descname">ExtendedKalmanFilter</code><span class="sig-paren">(</span><em>model</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/extended_kalman_filter.html#ExtendedKalmanFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#yaocptool.estimation.estimator_abstract.EstimatorAbstract" title="yaocptool.estimation.estimator_abstract.EstimatorAbstract"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaocptool.estimation.estimator_abstract.EstimatorAbstract</span></code></a></p>
+<dl class="method">
+<dt id="yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>model</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/extended_kalman_filter.html#ExtendedKalmanFilter.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extended Kalman Filter for ODE and DAE systems implementation based on (1)</p>
+<p>(1) Mandela, R. K., Narasimhan, S., &amp; Rengaswamy, R. (2009).
+Nonlinear State Estimation of Differential Algebraic Systems. Proceedings of the 2009 ADCHEM (Vol. 42). IFAC.
+<a class="reference external" href="http://doi.org/10.3182/20090712-4-TR-2008.00129">http://doi.org/10.3182/20090712-4-TR-2008.00129</a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>model</strong> (<a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel" title="yaocptool.modelling.system_model.SystemModel"><em>SystemModel</em></a>) – filter model</li>
+<li><strong>t_s</strong> (<em>float</em>) – sampling time</li>
+<li><strong>t</strong> (<em>float</em>) – current estimator time</li>
+<li><strong>x_mean</strong> (<em>DM</em>) – current state estimation</li>
+<li><strong>p_k</strong> (<em>DM</em>) – current covariance estimation</li>
+<li><strong>r_v</strong> (<em>DM</em>) – process noise covariance matrix</li>
+<li><strong>r_n</strong> (<em>DM</em>) – measurement noise covariance matrix</li>
+<li><strong>y_guess</strong> (<em>DM</em>) – initial guess of the algebraic variables for the model simulation</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.estimate">
+<code class="descname">estimate</code><span class="sig-paren">(</span><em>t_k</em>, <em>y_k</em>, <em>u_k</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/extended_kalman_filter.html#ExtendedKalmanFilter.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate the state given the measurement y_k and the control u_k
+:param DM t_k: time of the measurements
+:param DM y_k: measurement
+:param DM u_k: control</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.n_meas">
+<code class="descname">n_meas</code><a class="headerlink" href="#yaocptool.estimation.extended_kalman_filter.ExtendedKalmanFilter.n_meas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of measurements</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Number of measurements</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.estimation.pce_kalman_filter">
+<span id="yaocptool-estimation-pce-kalman-filter-module"></span><h2>yaocptool.estimation.pce_kalman_filter module<a class="headerlink" href="#module-yaocptool.estimation.pce_kalman_filter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter">
+<em class="property">class </em><code class="descname">PCEKalmanFilter</code><span class="sig-paren">(</span><em>model</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/pce_kalman_filter.html#PCEKalmanFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#yaocptool.estimation.estimator_abstract.EstimatorAbstract" title="yaocptool.estimation.estimator_abstract.EstimatorAbstract"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaocptool.estimation.estimator_abstract.EstimatorAbstract</span></code></a></p>
+<dl class="method">
+<dt id="yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>model</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/pce_kalman_filter.html#PCEKalmanFilter.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>model</strong> (<a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel" title="yaocptool.modelling.system_model.SystemModel"><em>SystemModel</em></a>) – estimator model</li>
+<li><strong>x_mean</strong> – a initial guess for the mean</li>
+<li><strong>p_k</strong> – a initial guess for the covariance of the estimator</li>
+<li><strong>h_function</strong> – a function that receives 3 parameters (x, y_algebraic, u) and returns an measurement.</li>
+<li><strong>c_matrix</strong> – if h_function is not give, c_matrix is “C” from the measurement equation:
+y_meas = C*[x y_alg] + D*u. note that it has to have n_x + n_y (algebraic) columns.</li>
+<li><strong>r_v</strong> (<em>DM</em>) – process noise matrix</li>
+<li><strong>r_n</strong> (<em>DM</em>) – measurement noise matrix</li>
+<li><strong>pc_order</strong> (<em>int</em>) – Polynomial chaos order</li>
+<li><strong>n_samples</strong> (<em>int</em>) – Number of samples to be used</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter.estimate">
+<code class="descname">estimate</code><span class="sig-paren">(</span><em>t_k</em>, <em>y_k</em>, <em>u_k</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/pce_kalman_filter.html#PCEKalmanFilter.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate the state given the measurement y_k and the control u_k
+:param DM t_k: time of the measurements
+:param DM y_k: measurement
+:param DM u_k: control</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter.n_pol_parameters">
+<code class="descname">n_pol_parameters</code><a class="headerlink" href="#yaocptool.estimation.pce_kalman_filter.PCEKalmanFilter.n_pol_parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.estimation.unscented_kalman_filter">
+<span id="yaocptool-estimation-unscented-kalman-filter-module"></span><h2>yaocptool.estimation.unscented_kalman_filter module<a class="headerlink" href="#module-yaocptool.estimation.unscented_kalman_filter" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter">
+<em class="property">class </em><code class="descname">UnscentedKalmanFilter</code><span class="sig-paren">(</span><em>model</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/unscented_kalman_filter.html#UnscentedKalmanFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#yaocptool.estimation.estimator_abstract.EstimatorAbstract" title="yaocptool.estimation.estimator_abstract.EstimatorAbstract"><code class="xref py py-class docutils literal notranslate"><span class="pre">yaocptool.estimation.estimator_abstract.EstimatorAbstract</span></code></a></p>
+<dl class="method">
+<dt id="yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>model</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/unscented_kalman_filter.html#UnscentedKalmanFilter.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Unscented Kalman Filter. Two versions are implemented standard and square-root.
+Implemented based on [1] and [2].</div></blockquote>
+<p>References:</p>
+<p>[1] Wan, E. A., &amp; Van Der Merwe, R. (2000). The unscented Kalman filter for nonlinear estimation.
+In Proceedings of the IEEE 2000 Adaptive Systems for Signal Processing, Communications, and Control Symposium
+(Cat. No.00EX373) (Vol. v, pp. 153–158). IEEE. <a class="reference external" href="http://doi.org/10.1109/ASSPCC.2000.882463">http://doi.org/10.1109/ASSPCC.2000.882463</a></p>
+<p>[2] Merwe, R. Van Der, &amp; Wan, E. a. (2001). The square-root unscented Kalman filter for state and
+parameter-estimation. 2001 IEEE International Conference on Acoustics, Speech, and Signal Processing.
+Proceedings (Cat. No.01CH37221), 6, 1–4. <a class="reference external" href="http://doi.org/10.1109/ICASSP.2001.940586">http://doi.org/10.1109/ICASSP.2001.940586</a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>model</strong> (<a class="reference internal" href="yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel" title="yaocptool.modelling.system_model.SystemModel"><em>SystemModel</em></a>) – estimator model</li>
+<li><strong>x_mean</strong> – a initial guess for the mean</li>
+<li><strong>p_k</strong> – a initial guess for the covariance of the estimator</li>
+<li><strong>h_function</strong> – a function that receives 3 parameters (x, y_algebraic, u) and returns an measurement.</li>
+<li><strong>c_matrix</strong> – if h_function is not give, c_matrix is “C” from the measurement equation:
+y_meas = C*[x y_alg] + D*u. note that it has to have n_x + n_y (algebraic) columns.</li>
+<li><strong>r_v</strong> (<em>DM</em>) – process noise matrix</li>
+<li><strong>r_n</strong> (<em>DM</em>) – measurement noise matrix</li>
+<li><strong>implementation</strong> – options: ‘standard’ or ‘square-root’. (default: ‘standard’)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.cholupdate">
+<em class="property">static </em><code class="descname">cholupdate</code><span class="sig-paren">(</span><em>r_matrix</em>, <em>x</em>, <em>sign</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/unscented_kalman_filter.html#UnscentedKalmanFilter.cholupdate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.cholupdate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.estimate">
+<code class="descname">estimate</code><span class="sig-paren">(</span><em>t_k</em>, <em>y_k</em>, <em>u_k</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/estimation/unscented_kalman_filter.html#UnscentedKalmanFilter.estimate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate the state given the measurement y_k and the control u_k
+:param DM t_k: time of the measurements
+:param DM y_k: measurement
+:param DM u_k: control</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.n_meas">
+<code class="descname">n_meas</code><a class="headerlink" href="#yaocptool.estimation.unscented_kalman_filter.UnscentedKalmanFilter.n_meas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of measurements</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Number of measurements</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.estimation">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-yaocptool.estimation" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="yaocptool.methods.html" class="btn btn-neutral float-right" title="yaocptool.methods package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="yaocptool.html" class="btn btn-neutral float-left" title="yaocptool package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

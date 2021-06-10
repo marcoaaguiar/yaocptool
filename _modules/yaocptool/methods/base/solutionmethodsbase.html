@@ -1,0 +1,595 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.methods.base.solutionmethodsbase &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.methods.base.solutionmethodsbase</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.methods.base.solutionmethodsbase</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">SX</span><span class="p">,</span> <span class="n">MX</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">collocation_points</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">reshape</span><span class="p">,</span> <span class="n">DM</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="kn">import</span> <span class="n">config</span><span class="p">,</span> <span class="n">create_constant_theta</span><span class="p">,</span> <span class="n">find_variables_indices_in_vector</span>
+<span class="kn">from</span> <span class="nn">yaocptool.methods</span> <span class="kn">import</span> <span class="n">SolutionMethodInterface</span>
+<span class="kn">from</span> <span class="nn">yaocptool.methods.base.discretizationschemebase</span> <span class="kn">import</span> <span class="n">DiscretizationSchemeBase</span>
+<span class="kn">from</span> <span class="nn">yaocptool.methods.base.optimizationresult</span> <span class="kn">import</span> <span class="n">OptimizationResult</span>
+<span class="kn">from</span> <span class="nn">yaocptool.methods.classic.collocationscheme</span> <span class="kn">import</span> <span class="n">CollocationScheme</span>
+<span class="kn">from</span> <span class="nn">yaocptool.methods.classic.multipleshooting</span> <span class="kn">import</span> <span class="n">MultipleShootingScheme</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling</span> <span class="kn">import</span> <span class="n">OptimalControlProblem</span>
+<span class="kn">from</span> <span class="nn">yaocptool.optimization.abstract_optimization_problem</span> <span class="kn">import</span> <span class="n">AbstractOptimizationProblem</span>
+
+
+<div class="viewcode-block" id="SolutionMethodsBase"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase">[docs]</a><span class="k">class</span> <span class="nc">SolutionMethodsBase</span><span class="p">(</span><span class="n">SolutionMethodInterface</span><span class="p">):</span>
+<div class="viewcode-block" id="SolutionMethodsBase.__init__"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param OptimalControlProblem problem:</span>
+<span class="sd">        :param str integrator_type: str</span>
+<span class="sd">        :param str solution_method: str</span>
+<span class="sd">        :param int degree: discretization polynomial degree</span>
+<span class="sd">        :param int degree_control:</span>
+<span class="sd">        :param str discretization_scheme: (&#39;multiple-shooting&#39; | &#39;collocation&#39;)</span>
+<span class="sd">        :param str initial_guess_heuristic: &#39;simulation&#39; or &#39;problem_info&#39;</span>
+<span class="sd">        :param bool last_control_as_parameter: Default: False, if set to True, the last control will be an</span>
+<span class="sd">            parameter for the NLP generated from the OCP. This is useful for MPCs, where the initial condition changes</span>
+<span class="sd">            every iteration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_problem</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: AbstractOptimizationProblem</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span> <span class="o">=</span> <span class="n">problem</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solution_class</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepared</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">discretizer</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: DiscretizationSchemeBase</span>
+
+        <span class="c1"># Options</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degree</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">degree_control</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">integrator_type</span> <span class="o">=</span> <span class="s1">&#39;implicit&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">discretization_scheme</span> <span class="o">=</span> <span class="s1">&#39;collocation&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_condition_as_parameter</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nlpsol_opts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_guess_heuristic</span> <span class="o">=</span> <span class="s1">&#39;simulation&#39;</span>  <span class="c1"># &#39;problem_info&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_control_as_parameter</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Internal variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parametrized_control</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">SOLVER_OPTIONS</span><span class="p">[</span><span class="s1">&#39;nlpsol_options&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nlpsol_opts</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nlpsol_opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">SOLVER_OPTIONS</span><span class="p">[</span><span class="s1">&#39;nlpsol_options&#39;</span><span class="p">][</span>
+                    <span class="n">k</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_control_as_parameter</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">discretization_scheme</span> <span class="o">==</span> <span class="s1">&#39;multiple-shooting&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">discretizer</span> <span class="o">=</span> <span class="n">MultipleShootingScheme</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">discretization_scheme</span> <span class="o">==</span> <span class="s1">&#39;collocation&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">discretizer</span> <span class="o">=</span> <span class="n">CollocationScheme</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;Discretization scheme not recognized: &#39;</span><span class="si">{}</span><span class="s2">&#39;. Available options: &#39;multiple-shooting&#39;&quot;</span>
+                <span class="s2">&quot; and &#39;collocation&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">discretization_scheme</span><span class="p">))</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">delta_t</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">t_f</span> <span class="o">-</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">t_0</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">time_breakpoints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_t</span> <span class="o">*</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+
+<div class="viewcode-block" id="SolutionMethodsBase.collocation_points"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.collocation_points">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">collocation_points</span><span class="p">(</span><span class="n">degree</span><span class="p">,</span> <span class="n">cp</span><span class="o">=</span><span class="s1">&#39;radau&#39;</span><span class="p">,</span> <span class="n">with_zero</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">with_zero</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">collocation_points</span><span class="p">(</span><span class="n">degree</span><span class="p">,</span>
+                                            <span class="n">cp</span><span class="p">)</span>  <span class="c1"># All collocation time points</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">collocation_points</span><span class="p">(</span><span class="n">degree</span><span class="p">,</span>
+                                      <span class="n">cp</span><span class="p">)</span>  <span class="c1"># All collocation time points</span></div>
+
+    <span class="k">def</span> <span class="nf">_create_lagrangian_polynomial_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                            <span class="n">degree</span><span class="p">,</span>
+                                            <span class="n">starting_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                            <span class="n">tau</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">tau</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tau</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">tau</span>  <span class="c1"># symbolic variable</span>
+
+        <span class="n">tau_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">collocation_points</span><span class="p">(</span>
+            <span class="n">degree</span><span class="p">,</span> <span class="n">with_zero</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># All collocation time points</span>
+
+        <span class="c1"># For all collocation points: eq 10.4 or 10.17 in Biegler&#39;s book</span>
+        <span class="c1"># Construct Lagrange polynomials to get the polynomial basis at the collocation point</span>
+        <span class="n">l_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">starting_index</span><span class="p">,</span> <span class="n">degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">ell</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">j2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">starting_index</span><span class="p">,</span> <span class="n">degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">j2</span> <span class="o">!=</span> <span class="n">j</span><span class="p">:</span>
+                    <span class="n">ell</span> <span class="o">*=</span> <span class="p">(</span><span class="n">tau</span> <span class="o">-</span> <span class="n">tau_root</span><span class="p">[</span><span class="n">j2</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">tau_root</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">tau_root</span><span class="p">[</span><span class="n">j2</span><span class="p">])</span>
+            <span class="n">l_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ell</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">tau</span><span class="p">,</span> <span class="n">l_list</span>
+
+<div class="viewcode-block" id="SolutionMethodsBase.create_variable_polynomial_approximation"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_variable_polynomial_approximation">[docs]</a>    <span class="k">def</span> <span class="nf">create_variable_polynomial_approximation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                                 <span class="n">size</span><span class="p">,</span>
+                                                 <span class="n">degree</span><span class="p">,</span>
+                                                 <span class="n">name</span><span class="o">=</span><span class="s1">&#39;var_appr&#39;</span><span class="p">,</span>
+                                                 <span class="n">tau</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                                 <span class="n">point_at_t0</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="n">tau</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tau</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">tau</span>  <span class="c1"># Collocation point</span>
+
+        <span class="k">if</span> <span class="n">degree</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">points</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+                    <span class="o">*</span><span class="p">[</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">degree</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">)])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">points</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;empty_sx&#39;</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">degree</span><span class="p">)</span>
+            <span class="n">par</span> <span class="o">=</span> <span class="n">vec</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+            <span class="n">u_pol</span> <span class="o">=</span> <span class="n">points</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">point_at_t0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">points</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+                        <span class="o">*</span><span class="p">[</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">)])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">points</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;empty_sx&#39;</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">degree</span><span class="p">)</span>
+                <span class="n">tau</span><span class="p">,</span> <span class="n">ell_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_lagrangian_polynomial_basis</span><span class="p">(</span>
+                    <span class="n">degree</span><span class="p">,</span> <span class="n">starting_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">)</span>
+                <span class="n">u_pol</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">ell_list</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">points</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">points</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+                        <span class="o">*</span><span class="p">[</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">degree</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">)])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">points</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;empty_sx&#39;</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">degree</span><span class="p">)</span>
+                <span class="n">tau</span><span class="p">,</span> <span class="n">ell_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_lagrangian_polynomial_basis</span><span class="p">(</span>
+                    <span class="n">degree</span><span class="p">,</span> <span class="n">starting_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">)</span>
+                <span class="n">u_pol</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">ell_list</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">points</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">degree</span><span class="p">)])</span>
+            <span class="n">par</span> <span class="o">=</span> <span class="n">vec</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">u_pol</span><span class="p">,</span> <span class="n">par</span></div>
+
+<div class="viewcode-block" id="SolutionMethodsBase.create_control_approximation"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_control_approximation">[docs]</a>    <span class="k">def</span> <span class="nf">create_control_approximation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parametrize the control variable, accordingly to the &#39;degree_control&#39; attribute.</span>
+<span class="sd">        If degree_control == 1, then a piecewise constant control will be used (most common).</span>
+<span class="sd">        If degree_control &gt; 1, then a piecewise polynomial approximation will be used with order &#39;degree_control&#39;.</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">degree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree_control</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">parametrized_control</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">degree</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Not implemented&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">u_pol</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_variable_polynomial_approximation</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">,</span> <span class="n">degree</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_names</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="n">u_pol</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">u_pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u_expr</span>
+
+        <span class="k">return</span> <span class="n">u_pol</span></div>
+
+<div class="viewcode-block" id="SolutionMethodsBase.unvec"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.unvec">[docs]</a>    <span class="k">def</span> <span class="nf">unvec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vector</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Unvectorize &#39;vector&#39; a vectorized matrix, assuming that it was a matrix with &#39;degree&#39; number of columns</span>
+<span class="sd">        :type vector: DM a vector (flattened matrix)</span>
+<span class="sd">        :type degree: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">degree</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">degree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">degree</span>
+        <span class="n">n_lines</span> <span class="o">=</span> <span class="n">vector</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">//</span> <span class="n">degree</span>
+        <span class="k">return</span> <span class="n">reshape</span><span class="p">(</span><span class="n">vector</span><span class="p">,</span> <span class="n">n_lines</span><span class="p">,</span> <span class="n">degree</span><span class="p">)</span></div>
+
+    <span class="c1"># ==============================================================================</span>
+    <span class="c1"># SOLVE</span>
+    <span class="c1"># ==============================================================================</span>
+
+<div class="viewcode-block" id="SolutionMethodsBase.prepare"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">pre_solve_check</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SolutionMethodsBase.create_optimization_problem"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_optimization_problem">[docs]</a>    <span class="k">def</span> <span class="nf">create_optimization_problem</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepared</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prepared</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">has_parameters</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_p</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_theta</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                          <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_condition_as_parameter</span>
+                          <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># parameters MX</span>
+        <span class="n">p_mx</span> <span class="o">=</span> <span class="n">MX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;mx_p&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_p</span><span class="p">)</span>
+
+        <span class="c1"># theta MX</span>
+        <span class="n">theta_mx</span> <span class="o">=</span> <span class="n">MX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;mx_theta_&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_theta</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">vec</span><span class="p">(</span><span class="n">theta_mx</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]))</span>
+                      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
+
+        <span class="c1"># initial cond MX</span>
+        <span class="n">p_mx_x_0</span> <span class="o">=</span> <span class="n">MX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;mx_x_0_p&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+
+        <span class="c1"># last control MX</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_control_as_parameter</span><span class="p">:</span>
+            <span class="n">p_last_u</span> <span class="o">=</span> <span class="n">MX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s1">&#39;mx_last_u&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p_last_u</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">all_mx</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">p_mx</span><span class="p">,</span> <span class="n">vec</span><span class="p">(</span><span class="n">theta_mx</span><span class="p">),</span> <span class="n">p_mx_x_0</span><span class="p">,</span> <span class="n">p_last_u</span><span class="p">)</span>
+
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;p&#39;</span><span class="p">:</span> <span class="n">p_mx</span><span class="p">,</span> <span class="s1">&#39;x_0&#39;</span><span class="p">:</span> <span class="n">p_mx_x_0</span><span class="p">,</span> <span class="s1">&#39;theta&#39;</span><span class="p">:</span> <span class="n">theta</span><span class="p">,</span> <span class="s1">&#39;last_u&#39;</span><span class="p">:</span> <span class="n">p_last_u</span><span class="p">}</span>
+
+        <span class="c1"># Discretize the problem</span>
+        <span class="n">opt_problem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">discretizer</span><span class="o">.</span><span class="n">discretize</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">has_parameters</span><span class="p">:</span>
+            <span class="n">opt_problem</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="n">all_mx</span><span class="p">)</span>
+
+        <span class="n">opt_problem</span><span class="o">.</span><span class="n">solver_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nlpsol_opts</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">opt_problem</span> <span class="o">=</span> <span class="n">opt_problem</span></div>
+
+<div class="viewcode-block" id="SolutionMethodsBase.call_solver"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.call_solver">[docs]</a>    <span class="k">def</span> <span class="nf">call_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                    <span class="n">initial_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">last_u</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">initial_guess_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt_problem</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">create_optimization_problem</span><span class="p">()</span>
+
+        <span class="c1"># initial conditions</span>
+        <span class="k">if</span> <span class="n">x_0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">x_0</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x_0</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">x_0</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x_0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x_0</span><span class="p">)</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s1">&#39;Size of given x_0 (or obtained from problem.x_0) is different from model.n_x, &#39;</span>
+                <span class="s1">&#39;x_0.numel() = </span><span class="si">{}</span><span class="s1">, model.n_x = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">vertcat</span><span class="p">(</span><span class="n">x_0</span><span class="p">)</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">))</span>
+
+        <span class="c1"># parameters</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_p_opt</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_p</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_p_opt</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_p</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;A parameter &#39;p&#39; of size </span><span class="si">{}</span><span class="s2"> should be given&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_p</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+        <span class="c1"># theta</span>
+        <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_theta_opt</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_theta</span><span class="p">:</span>
+                <span class="n">theta</span> <span class="o">=</span> <span class="n">create_constant_theta</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_theta_opt</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_theta</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;A parameter &#39;theta&#39; of size </span><span class="si">{}</span><span class="s2"> should be given&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_theta</span><span class="p">))</span>
+
+        <span class="c1"># Prepare NLP parameter vector</span>
+        <span class="n">theta_vector</span><span class="p">,</span> <span class="n">par_x_0</span><span class="p">,</span> <span class="n">par_last_u</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">theta_vector</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+                <span class="o">*</span><span class="p">[</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">finite_elements</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_condition_as_parameter</span><span class="p">:</span>
+            <span class="n">par_x_0</span> <span class="o">=</span> <span class="n">x_0</span>
+
+        <span class="c1"># last control</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_control_as_parameter</span> <span class="ow">and</span> <span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s1">&#39;solution_method.last_control_as_parameter is False, but last_u was passed. last_u will&#39;</span>
+                <span class="s1">&#39; be ignored.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">last_u</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">last_u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">last_u</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">last_u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">last_u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">last_u</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_control_as_parameter</span> <span class="ow">and</span> <span class="n">last_u</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s1">&#39;last_control_as_parameter is True, but no &quot;last_u&quot; was passed and the &quot;ocp.last_u&quot; is &#39;</span>
+                    <span class="s1">&#39;None.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_control_as_parameter</span><span class="p">:</span>
+            <span class="n">par_last_u</span> <span class="o">=</span> <span class="n">last_u</span>
+
+        <span class="n">par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">theta_vector</span><span class="p">,</span> <span class="n">par_x_0</span><span class="p">,</span> <span class="n">par_last_u</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">initial_guess_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">initial_guess</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_guess_heuristic</span> <span class="o">==</span> <span class="s1">&#39;simulation&#39;</span><span class="p">:</span>
+                    <span class="n">initial_guess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">discretizer</span><span class="o">.</span><span class="n">create_initial_guess_with_simulation</span><span class="p">(</span>
+                        <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_guess_heuristic</span> <span class="o">==</span> <span class="s1">&#39;problem_info&#39;</span><span class="p">:</span>
+                    <span class="n">initial_guess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">discretizer</span><span class="o">.</span><span class="n">create_initial_guess</span><span class="p">(</span>
+                        <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s1">&#39;initial_guess_heuristic did not recognized, available options: &quot;simulation&quot; and &#39;</span>
+                        <span class="s1">&#39;&quot;problem_info&quot;. Given: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">initial_guess_heuristic</span><span class="p">))</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">initial_guess</span><span class="o">=</span><span class="n">initial_guess</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">initial_guess</span><span class="o">=</span><span class="n">initial_guess_dict</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span>
+                        <span class="n">p</span><span class="o">=</span><span class="n">par</span><span class="p">,</span>
+                        <span class="n">lam_x</span><span class="o">=</span><span class="n">initial_guess_dict</span><span class="p">[</span><span class="s1">&#39;lam_x&#39;</span><span class="p">],</span>
+                        <span class="n">lam_g</span><span class="o">=</span><span class="n">initial_guess_dict</span><span class="p">[</span><span class="s1">&#39;lam_g&#39;</span><span class="p">])</span>
+
+        <span class="n">sol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opt_problem</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sol</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">x_0</span><span class="p">,</span> <span class="n">last_u</span></div>
+
+<div class="viewcode-block" id="SolutionMethodsBase.solve"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+              <span class="n">initial_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">x_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">last_u</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">initial_guess_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param initial_guess: Initial guess</span>
+<span class="sd">        :param p: Parameters values</span>
+<span class="sd">        :param theta: Theta values</span>
+<span class="sd">        :param x_0: Initial condition value</span>
+<span class="sd">        :param last_u: Last control value</span>
+<span class="sd">        :param initial_guess_dict: Initial guess as dict</span>
+<span class="sd">        :rtype: OptimizationResult</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raw_solution_dict</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">x_0</span><span class="p">,</span> <span class="n">last_u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_solver</span><span class="p">(</span>
+            <span class="n">initial_guess</span><span class="o">=</span><span class="n">initial_guess</span><span class="p">,</span>
+            <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span>
+            <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span>
+            <span class="n">x_0</span><span class="o">=</span><span class="n">x_0</span><span class="p">,</span>
+            <span class="n">last_u</span><span class="o">=</span><span class="n">last_u</span><span class="p">,</span>
+            <span class="n">initial_guess_dict</span><span class="o">=</span><span class="n">initial_guess_dict</span><span class="p">)</span>
+
+        <span class="n">optimization_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_optimization_result</span><span class="p">(</span>
+            <span class="n">raw_solution_dict</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">x_0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">optimization_result</span></div>
+
+<div class="viewcode-block" id="SolutionMethodsBase.create_optimization_result"><a class="viewcode-back" href="../../../../yaocptool.methods.base.html#yaocptool.methods.base.solutionmethodsbase.SolutionMethodsBase.create_optimization_result">[docs]</a>    <span class="k">def</span> <span class="nf">create_optimization_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">raw_solution_dict</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">x_0</span><span class="p">):</span>
+        <span class="n">optimization_result</span> <span class="o">=</span> <span class="n">OptimizationResult</span><span class="p">()</span>
+
+        <span class="c1"># From the solution_method</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="s1">&#39;finite_elements&#39;</span><span class="p">,</span> <span class="s1">&#39;degree&#39;</span><span class="p">,</span> <span class="s1">&#39;degree_control&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;time_breakpoints&#39;</span><span class="p">,</span> <span class="s1">&#39;discretization_scheme&#39;</span>
+        <span class="p">]:</span>
+            <span class="n">attr_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">optimization_result</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">attr_value</span><span class="p">)</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">method_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+
+        <span class="c1"># Initial condition, theta, and parameters used</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">x_0</span> <span class="o">=</span> <span class="n">x_0</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">p</span>
+
+        <span class="c1"># From the problem</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;t_0&#39;</span><span class="p">,</span> <span class="s1">&#39;t_f&#39;</span><span class="p">]:</span>
+            <span class="n">attr_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">optimization_result</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">attr_value</span><span class="p">)</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">problem_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="c1"># From model</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">x_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">y_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">u_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">optimization_result</span><span class="o">.</span><span class="n">theta_opt_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">theta_opt</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">n_theta_opt</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">discretizer</span><span class="o">.</span><span class="n">set_data_to_optimization_result_from_raw_data</span><span class="p">(</span>
+            <span class="n">optimization_result</span><span class="p">,</span> <span class="n">raw_solution_dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">x_cost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x_c_index</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">problem</span><span class="o">.</span><span class="n">x_cost</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">optimization_result</span><span class="o">.</span><span class="n">x_c_final</span> <span class="o">=</span> <span class="n">optimization_result</span><span class="o">.</span><span class="n">x_data</span><span class="p">[</span>
+                <span class="s1">&#39;values&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">x_c_index</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">optimization_result</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

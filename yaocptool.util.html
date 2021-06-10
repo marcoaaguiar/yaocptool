@@ -1,0 +1,482 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.util package &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="yaocptool.stochastic package" href="yaocptool.stochastic.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="yaocptool.html">yaocptool package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="yaocptool.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool.config">yaocptool.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="yaocptool.html">yaocptool package</a> &raquo;</li>
+        
+      <li>yaocptool.util package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/yaocptool.util.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="yaocptool-util-package">
+<h1>yaocptool.util package<a class="headerlink" href="#yaocptool-util-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-yaocptool.util.util">
+<span id="yaocptool-util-util-module"></span><h2>yaocptool.util.util module<a class="headerlink" href="#module-yaocptool.util.util" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="yaocptool.util.util.blockdiag">
+<code class="descname">blockdiag</code><span class="sig-paren">(</span><em>*matrices_list</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#blockdiag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.blockdiag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receives a list of matrices and return a block diagonal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>matrices_list</strong> (<em>DM|MX|SX</em>) – list of matrices</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.convert_expr_from_tau_to_time">
+<code class="descname">convert_expr_from_tau_to_time</code><span class="sig-paren">(</span><em>expr</em>, <em>t_sym</em>, <em>tau_sym</em>, <em>t_k</em>, <em>t_kp1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#convert_expr_from_tau_to_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.convert_expr_from_tau_to_time" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>expr</strong> – </li>
+<li><strong>t_sym</strong> – </li>
+<li><strong>tau_sym</strong> – </li>
+<li><strong>t_k</strong> – </li>
+<li><strong>t_kp1</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.create_constant_theta">
+<code class="descname">create_constant_theta</code><span class="sig-paren">(</span><em>constant</em>, <em>dimension</em>, <em>finite_elements</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#create_constant_theta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.create_constant_theta" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Create constant theta</div></blockquote>
+<p>The created theta will be a dictionary with keys = range(finite_element) and each value will be a vector with value
+‘constant’ and number of rows ‘dimension’</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>constant</strong> (<em>float|int|DM</em>) – value of each theta entry .</li>
+<li><strong>dimension</strong> (<em>int</em>) – number of rows of the vector of each theta entry.</li>
+<li><strong>finite_elements</strong> (<em>int</em>) – number of theta entries.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">constant theta</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.create_polynomial_approximation">
+<code class="descname">create_polynomial_approximation</code><span class="sig-paren">(</span><em>tau</em>, <em>size</em>, <em>degree</em>, <em>name='var_appr'</em>, <em>point_at_zero=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#create_polynomial_approximation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.create_polynomial_approximation" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Create a polynomial function.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tau</strong> (<em>casadi.SX</em>) – </li>
+<li><strong>size</strong> (<em>int</em>) – size of the approximated variable (number of rows)</li>
+<li><strong>degree</strong> (<em>int</em>) – approximation degree</li>
+<li><strong>name</strong> (<em>list|str</em>) – name for created parameters</li>
+<li><strong>point_at_zero</strong> (<em>bool</em>) – if the polynomial has an collocation point at tau=0</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(pol, par), returns the polynomial and a vector of parameters</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">tuple</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.expm">
+<code class="descname">expm</code><span class="sig-paren">(</span><em>a_matrix</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#expm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.expm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Since casadi does not have native support for matrix exponential, this is a trick to computing it.
+It can be quite expensive, specially for large matrices.
+THIS ONLY SUPPORT NUMERIC MATRICES AND MX VARIABLES, DOES NOT SUPPORT SX SYMBOLIC VARIABLES.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>a_matrix</strong> (<em>DM</em>) – matrix</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.find_variables_in_vector_by_name">
+<code class="descname">find_variables_in_vector_by_name</code><span class="sig-paren">(</span><em>names</em>, <em>vector</em>, <em>exact=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#find_variables_in_vector_by_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.find_variables_in_vector_by_name" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>of str names</strong> (<em>str|list</em>) – variable names</li>
+<li><strong>vector</strong> (<em>casadi.SX|casadi.MX</em>) – </li>
+<li><strong>exact</strong> (<em>bool</em>) – default: False. If true it will use an exact match otherwise it will use an regex match</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">list of variables found.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.find_variables_indices_in_vector">
+<code class="descname">find_variables_indices_in_vector</code><span class="sig-paren">(</span><em>var</em>, <em>vector</em>, <em>depth=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#find_variables_indices_in_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.find_variables_indices_in_vector" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Given symbolic variables return the indices of the variables in a vector</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>var</strong> (<em>casadi.SX|casadi.MX</em>) – </li>
+<li><strong>vector</strong> (<em>casadi.SX|casadi.MX</em>) – </li>
+<li><strong>depth</strong> (<em>int</em>) – depth for which is_equal will check for equality</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">list of indices</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.is_equality">
+<code class="descname">is_equality</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#is_equality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.is_equality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return true if an expression is an equality (e.g.: x == 2)</p>
+<p>Only supports MX expr.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>expr</strong> (<em>MX</em>) – symbolic expression</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if ‘expr’ is an inequality, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.is_inequality">
+<code class="descname">is_inequality</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#is_inequality"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.is_inequality" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Return true if an expression is an inequality (e.g.: x &lt; 1, x &lt;= 2)</div></blockquote>
+<p>Only supports MX expr.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>expr</strong> (<em>MX</em>) – symbolic expression</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if ‘expr’ is an inequality, False otherwise</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.join_thetas">
+<code class="descname">join_thetas</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#join_thetas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.join_thetas" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Join the passed ‘thetas’</div></blockquote>
+<p>Receives a list of dicts. The dicts are required to have the same keys, with the exception of empty dicts or None,
+those will be skipped. For each key, the values will be concatenated and put in the return dictionary.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>args</strong> (<em>dict|None</em>) – thetas to be joined</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">return a single dictionary containing the information of the input dict</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.remove_variables_from_vector">
+<code class="descname">remove_variables_from_vector</code><span class="sig-paren">(</span><em>var</em>, <em>vector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#remove_variables_from_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.remove_variables_from_vector" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Returns a vector with items removed</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>var</strong> – items to be removed</li>
+<li><strong>vector</strong> – vector which will have items removed</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="yaocptool.util.util.remove_variables_from_vector_by_indices">
+<code class="descname">remove_variables_from_vector_by_indices</code><span class="sig-paren">(</span><em>indices</em>, <em>vector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/util/util.html#remove_variables_from_vector_by_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.util.util.remove_variables_from_vector_by_indices" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Returns a vector with items removed</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>indices</strong> (<em>list</em>) – list of indices for which the variables need to be removed.</li>
+<li><strong>vector</strong> (<em>SX|MX|DM</em>) – vector which will have items removed</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the vector with the variables removed</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">SX|MX|DM</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.util">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-yaocptool.util" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="yaocptool.stochastic.html" class="btn btn-neutral float-left" title="yaocptool.stochastic package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

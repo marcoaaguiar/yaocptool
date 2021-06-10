@@ -1,0 +1,22 @@
+yaocptool.methods.network package
+=================================
+
+Submodules
+----------
+
+yaocptool.methods.network.distributedaugmetedlagrangian module
+--------------------------------------------------------------
+
+.. automodule:: yaocptool.methods.network.distributedaugmetedlagrangian
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: yaocptool.methods.network
+    :members:
+    :undoc-members:
+    :show-inheritance:

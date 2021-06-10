@@ -1,0 +1,241 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.stochastic.util &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.stochastic.util</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.stochastic.util</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sobol_seq</span>
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">DM</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">chol</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">exp</span>
+<span class="kn">from</span> <span class="nn">scipy.stats.distributions</span> <span class="kn">import</span> <span class="n">norm</span>
+
+
+<div class="viewcode-block" id="sample_parameter_normal_distribution_with_sobol"><a class="viewcode-back" href="../../../yaocptool.stochastic.html#yaocptool.stochastic.util.sample_parameter_normal_distribution_with_sobol">[docs]</a><span class="k">def</span> <span class="nf">sample_parameter_normal_distribution_with_sobol</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span>
+                                                    <span class="n">covariance</span><span class="p">,</span>
+                                                    <span class="n">n_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sample parameter using Sobol sampling with a normal distribution.</span>
+
+<span class="sd">    :param mean:</span>
+<span class="sd">    :param covariance:</span>
+<span class="sd">    :param n_samples:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">mean</span><span class="p">)</span>
+
+    <span class="n">n_uncertain</span> <span class="o">=</span> <span class="n">mean</span><span class="o">.</span><span class="n">size1</span><span class="p">()</span>
+
+    <span class="c1"># Uncertain parameter design</span>
+    <span class="n">sobol_design</span> <span class="o">=</span> <span class="n">sobol_seq</span><span class="o">.</span><span class="n">i4_sobol_generate</span><span class="p">(</span><span class="n">n_uncertain</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span>
+                                               <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)))</span>
+    <span class="n">sobol_samples</span> <span class="o">=</span> <span class="n">DM</span><span class="p">(</span><span class="n">sobol_design</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_uncertain</span><span class="p">):</span>
+        <span class="n">sobol_samples</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">norm</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">ppf</span><span class="p">(</span><span class="n">sobol_samples</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:])</span>
+
+    <span class="n">unscaled_sample</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_uncertain</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+        <span class="n">unscaled_sample</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean</span> <span class="o">+</span> <span class="n">mtimes</span><span class="p">(</span>
+            <span class="n">chol</span><span class="p">(</span><span class="n">covariance</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">sobol_samples</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">unscaled_sample</span></div>
+
+
+<div class="viewcode-block" id="sample_parameter_log_normal_distribution_with_sobol"><a class="viewcode-back" href="../../../yaocptool.stochastic.html#yaocptool.stochastic.util.sample_parameter_log_normal_distribution_with_sobol">[docs]</a><span class="k">def</span> <span class="nf">sample_parameter_log_normal_distribution_with_sobol</span><span class="p">(</span>
+        <span class="n">mean</span><span class="p">,</span> <span class="n">covariance</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sample parameter using Sobol sampling with a log-normal distribution.</span>
+
+<span class="sd">    :param mean:</span>
+<span class="sd">    :param covariance:</span>
+<span class="sd">    :param n_samples:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">mean</span><span class="p">)</span>
+
+    <span class="n">mean_log</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span>
+    <span class="n">log_samples</span> <span class="o">=</span> <span class="n">sample_parameter_normal_distribution_with_sobol</span><span class="p">(</span>
+        <span class="n">mean_log</span><span class="p">,</span> <span class="n">covariance</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span>
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span><span class="n">log_samples</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">samples</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

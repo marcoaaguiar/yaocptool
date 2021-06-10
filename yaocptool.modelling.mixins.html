@@ -1,0 +1,588 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.mixins package &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="yaocptool.modelling.network package" href="yaocptool.modelling.network.html" />
+    <link rel="prev" title="yaocptool.modelling package" href="yaocptool.modelling.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="yaocptool.html">yaocptool package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="yaocptool.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool.config">yaocptool.config module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="yaocptool.html#module-yaocptool">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="yaocptool.html">yaocptool package</a> &raquo;</li>
+        
+          <li><a href="yaocptool.modelling.html">yaocptool.modelling package</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.mixins package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/yaocptool.modelling.mixins.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="yaocptool-modelling-mixins-package">
+<h1>yaocptool.modelling.mixins package<a class="headerlink" href="#yaocptool-modelling-mixins-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-yaocptool.modelling.mixins.algebraic_mixin">
+<span id="yaocptool-modelling-mixins-algebraic-mixin-module"></span><h2>yaocptool.modelling.mixins.algebraic_mixin module<a class="headerlink" href="#module-yaocptool.modelling.mixins.algebraic_mixin" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin">
+<em class="property">class </em><code class="descname">AlgebraicMixin</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/algebraic_mixin.html#AlgebraicMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/algebraic_mixin.html#AlgebraicMixin.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.create_algebraic_variable">
+<code class="descname">create_algebraic_variable</code><span class="sig-paren">(</span><em>name='y'</em>, <em>size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/algebraic_mixin.html#AlgebraicMixin.create_algebraic_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.create_algebraic_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new algebraic variable with the name “name” and size “size”.
+Size can be an int or a tuple (e.g. (2,2)). However, the new algebraic variable will be vectorized (casadi.vec)
+to be included in the algebraic vector (model.y).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>str</em>) – </li>
+<li><strong>size</strong> (<em>int||tuple</em>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.find_algebraic_variable">
+<code class="descname">find_algebraic_variable</code><span class="sig-paren">(</span><em>x</em>, <em>u</em>, <em>guess=None</em>, <em>t=0.0</em>, <em>p=None</em>, <em>theta_value=None</em>, <em>rootfinder_options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/algebraic_mixin.html#AlgebraicMixin.find_algebraic_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.find_algebraic_variable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.include_algebraic">
+<code class="descname">include_algebraic</code><span class="sig-paren">(</span><em>var</em>, <em>alg=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/algebraic_mixin.html#AlgebraicMixin.include_algebraic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.include_algebraic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.include_equations">
+<code class="descname">include_equations</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/algebraic_mixin.html#AlgebraicMixin.include_equations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.include_equations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.n_y">
+<code class="descname">n_y</code><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.n_y" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.remove_algebraic">
+<code class="descname">remove_algebraic</code><span class="sig-paren">(</span><em>var</em>, <em>eq=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/algebraic_mixin.html#AlgebraicMixin.remove_algebraic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.remove_algebraic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.replace_variable">
+<code class="descname">replace_variable</code><span class="sig-paren">(</span><em>original</em>, <em>replacement</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/algebraic_mixin.html#AlgebraicMixin.replace_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.replace_variable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.y_names">
+<code class="descname">y_names</code><a class="headerlink" href="#yaocptool.modelling.mixins.algebraic_mixin.AlgebraicMixin.y_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.modelling.mixins.control_mixin">
+<span id="yaocptool-modelling-mixins-control-mixin-module"></span><h2>yaocptool.modelling.mixins.control_mixin module<a class="headerlink" href="#module-yaocptool.modelling.mixins.control_mixin" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin">
+<em class="property">class </em><code class="descname">ControlMixin</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/control_mixin.html#ControlMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/control_mixin.html#ControlMixin.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.control_is_parametrized">
+<code class="descname">control_is_parametrized</code><span class="sig-paren">(</span><em>u</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/control_mixin.html#ControlMixin.control_is_parametrized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.control_is_parametrized" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Check if  the control “u” is parametrized</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<em>casadi.SX</em>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Rtype bool:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.create_control">
+<code class="descname">create_control</code><span class="sig-paren">(</span><em>name='u'</em>, <em>size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/control_mixin.html#ControlMixin.create_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.create_control" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new control variable name “name” and size “size”.
+Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
+to be included in the control vector (model.u).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – str</li>
+<li><strong>size</strong> – int</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.create_input">
+<code class="descname">create_input</code><span class="sig-paren">(</span><em>name='u'</em>, <em>size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/control_mixin.html#ControlMixin.create_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.create_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as the “model.create_control” function.
+Create a new control/input variable name “name” and size “size”.
+Size can be an int or a tuple (e.g. (2,2)). However, the new control variable will be vectorized (casadi.vec)
+to be included in the control vector (model.u).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – str</li>
+<li><strong>size</strong> – int</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.include_control">
+<code class="descname">include_control</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/control_mixin.html#ControlMixin.include_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.include_control" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.n_u">
+<code class="descname">n_u</code><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.n_u" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.n_u_par">
+<code class="descname">n_u_par</code><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.n_u_par" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.parametrize_control">
+<code class="descname">parametrize_control</code><span class="sig-paren">(</span><em>u</em>, <em>expr</em>, <em>u_par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/control_mixin.html#ControlMixin.parametrize_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.parametrize_control" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Parametrize a control variables so it is a function of a set of parameters or other model variables.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>u</strong> (<em>list|casadi.SX</em>) – </li>
+<li><strong>expr</strong> (<em>list|casadi.SX</em>) – </li>
+<li><strong>u_par</strong> (<em>list|casadi.SX</em>) – </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.remove_control">
+<code class="descname">remove_control</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/control_mixin.html#ControlMixin.remove_control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.remove_control" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.replace_variable">
+<code class="descname">replace_variable</code><span class="sig-paren">(</span><em>original</em>, <em>replacement</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/control_mixin.html#ControlMixin.replace_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.replace_variable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.control_mixin.ControlMixin.u_names">
+<code class="descname">u_names</code><a class="headerlink" href="#yaocptool.modelling.mixins.control_mixin.ControlMixin.u_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.modelling.mixins.parameter_mixin">
+<span id="yaocptool-modelling-mixins-parameter-mixin-module"></span><h2>yaocptool.modelling.mixins.parameter_mixin module<a class="headerlink" href="#module-yaocptool.modelling.mixins.parameter_mixin" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin">
+<em class="property">class </em><code class="descname">ParameterMixin</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/parameter_mixin.html#ParameterMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/parameter_mixin.html#ParameterMixin.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.create_parameter">
+<code class="descname">create_parameter</code><span class="sig-paren">(</span><em>name='p'</em>, <em>size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/parameter_mixin.html#ParameterMixin.create_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.create_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new parameter name “name” and size “size”</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – str</li>
+<li><strong>size</strong> – int</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.create_theta">
+<code class="descname">create_theta</code><span class="sig-paren">(</span><em>name='theta'</em>, <em>size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/parameter_mixin.html#ParameterMixin.create_theta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.create_theta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new parameter name “name” and size “size”</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – str</li>
+<li><strong>size</strong> – int</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.include_parameter">
+<code class="descname">include_parameter</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/parameter_mixin.html#ParameterMixin.include_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.include_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.include_theta">
+<code class="descname">include_theta</code><span class="sig-paren">(</span><em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/parameter_mixin.html#ParameterMixin.include_theta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.include_theta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.n_p">
+<code class="descname">n_p</code><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.n_p" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.n_theta">
+<code class="descname">n_theta</code><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.n_theta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.p_names">
+<code class="descname">p_names</code><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.p_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.remove_parameter">
+<code class="descname">remove_parameter</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/parameter_mixin.html#ParameterMixin.remove_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.remove_parameter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.remove_theta">
+<code class="descname">remove_theta</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/parameter_mixin.html#ParameterMixin.remove_theta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.remove_theta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.theta_names">
+<code class="descname">theta_names</code><a class="headerlink" href="#yaocptool.modelling.mixins.parameter_mixin.ParameterMixin.theta_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.modelling.mixins.state_mixin">
+<span id="yaocptool-modelling-mixins-state-mixin-module"></span><h2>yaocptool.modelling.mixins.state_mixin module<a class="headerlink" href="#module-yaocptool.modelling.mixins.state_mixin" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin">
+<em class="property">class </em><code class="descname">StateMixin</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/state_mixin.html#StateMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/state_mixin.html#StateMixin.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin.create_state">
+<code class="descname">create_state</code><span class="sig-paren">(</span><em>name='x'</em>, <em>size=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/state_mixin.html#StateMixin.create_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin.create_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new state with the name “name” and size “size”.
+Size can be an int or a tuple (e.g. (2,2)). However, the new state will be vectorized (casadi.vec) to be
+included in the state vector (model.x).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – str</li>
+<li><strong>size</strong> – int|tuple</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin.include_equations">
+<code class="descname">include_equations</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/state_mixin.html#StateMixin.include_equations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin.include_equations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin.include_state">
+<code class="descname">include_state</code><span class="sig-paren">(</span><em>var</em>, <em>ode=None</em>, <em>x_0=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/state_mixin.html#StateMixin.include_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin.include_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin.n_x">
+<code class="descname">n_x</code><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin.n_x" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin.ode">
+<code class="descname">ode</code><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin.ode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin.remove_state">
+<code class="descname">remove_state</code><span class="sig-paren">(</span><em>var</em>, <em>eq=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/state_mixin.html#StateMixin.remove_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin.remove_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin.replace_variable">
+<code class="descname">replace_variable</code><span class="sig-paren">(</span><em>original</em>, <em>replacement</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/yaocptool/modelling/mixins/state_mixin.html#StateMixin.replace_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin.replace_variable" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="yaocptool.modelling.mixins.state_mixin.StateMixin.x_names">
+<code class="descname">x_names</code><a class="headerlink" href="#yaocptool.modelling.mixins.state_mixin.StateMixin.x_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-yaocptool.modelling.mixins">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-yaocptool.modelling.mixins" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="yaocptool.modelling.network.html" class="btn btn-neutral float-right" title="yaocptool.modelling.network package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="yaocptool.modelling.html" class="btn btn-neutral float-left" title="yaocptool.modelling package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

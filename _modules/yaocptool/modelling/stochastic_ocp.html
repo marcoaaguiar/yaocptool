@@ -1,0 +1,370 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.stochastic_ocp &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.stochastic_ocp</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.modelling.stochastic_ocp</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">DM</span><span class="p">,</span> <span class="n">diagcat</span>
+
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="kn">import</span> <span class="n">find_variables_indices_in_vector</span><span class="p">,</span> <span class="n">remove_variables_from_vector_by_indices</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling</span> <span class="kn">import</span> <span class="n">OptimalControlProblem</span>
+
+
+<div class="viewcode-block" id="StochasticOCP"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP">[docs]</a><span class="k">class</span> <span class="nc">StochasticOCP</span><span class="p">(</span><span class="n">OptimalControlProblem</span><span class="p">):</span>
+<div class="viewcode-block" id="StochasticOCP.__init__"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_ineq</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_rhs</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_prob</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_unc</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_unc_mean</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_unc_cov</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_unc_dist</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_mean</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_cov</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_distribution</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">OptimalControlProblem</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_p_unc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_unc</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_g_stochastic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_ineq</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n_uncertain_initial_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+
+<div class="viewcode-block" id="StochasticOCP.create_uncertain_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.create_uncertain_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">create_uncertain_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                   <span class="n">name</span><span class="p">,</span>
+                                   <span class="n">mean</span><span class="p">,</span>
+                                   <span class="n">var</span><span class="p">,</span>
+                                   <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                   <span class="n">distribution</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
+        <span class="n">par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">create_parameter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter_as_uncertain_parameter</span><span class="p">(</span><span class="n">par</span><span class="p">,</span>
+                                                  <span class="n">mean</span><span class="p">,</span>
+                                                  <span class="n">var</span><span class="p">,</span>
+                                                  <span class="n">distribution</span><span class="o">=</span><span class="n">distribution</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">par</span></div>
+
+<div class="viewcode-block" id="StochasticOCP.include_uncertain_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.include_uncertain_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">include_uncertain_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                    <span class="n">par</span><span class="p">,</span>
+                                    <span class="n">mean</span><span class="p">,</span>
+                                    <span class="n">cov</span><span class="p">,</span>
+                                    <span class="n">distribution</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter_as_uncertain_parameter</span><span class="p">(</span><span class="n">par</span><span class="p">,</span>
+                                                  <span class="n">mean</span><span class="p">,</span>
+                                                  <span class="n">cov</span><span class="p">,</span>
+                                                  <span class="n">distribution</span><span class="o">=</span><span class="n">distribution</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StochasticOCP.set_parameter_as_uncertain_parameter"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.set_parameter_as_uncertain_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">set_parameter_as_uncertain_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                             <span class="n">par</span><span class="p">,</span>
+                                             <span class="n">mean</span><span class="p">,</span>
+                                             <span class="n">cov</span><span class="p">,</span>
+                                             <span class="n">distribution</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
+        <span class="n">par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span>
+        <span class="n">cov</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">par</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Size of &quot;par&quot; and &quot;mean&quot; differ. par.numel()=</span><span class="si">{}</span><span class="s1"> &#39;</span>
+                             <span class="s1">&#39;and mean.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                 <span class="n">par</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cov</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">()):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;The input &quot;cov&quot; is not a square matrix of same size as &quot;mean&quot;. &#39;</span>
+                <span class="s1">&#39;cov.shape=</span><span class="si">{}</span><span class="s1"> and mean.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_unc</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_unc</span><span class="p">,</span> <span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_unc_mean</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_unc_mean</span><span class="p">,</span> <span class="n">mean</span><span class="p">)</span>
+        <span class="c1"># TODO: Work around for casadi diagcat bug, remove when patched.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_unc_cov</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p_unc_cov</span> <span class="o">=</span> <span class="n">cov</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p_unc_cov</span> <span class="o">=</span> <span class="n">diagcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_unc_cov</span><span class="p">,</span> <span class="n">cov</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_unc_dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_unc_dist</span> <span class="o">+</span> <span class="p">[</span><span class="n">distribution</span><span class="p">]</span> <span class="o">*</span> <span class="n">par</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="StochasticOCP.set_initial_condition_as_uncertain"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.set_initial_condition_as_uncertain">[docs]</a>    <span class="k">def</span> <span class="nf">set_initial_condition_as_uncertain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                           <span class="n">par</span><span class="p">,</span>
+                                           <span class="n">mean</span><span class="p">,</span>
+                                           <span class="n">cov</span><span class="p">,</span>
+                                           <span class="n">distribution</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
+        <span class="n">par</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">mean</span><span class="p">)</span>
+        <span class="n">cov</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">par</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Size of &quot;par&quot; and &quot;mean&quot; differ. par.numel()=</span><span class="si">{}</span><span class="s1"> &#39;</span>
+                             <span class="s1">&#39;and mean.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                 <span class="n">par</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cov</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">()):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;The input &quot;cov&quot; is not a square matrix of same size as &quot;mean&quot;. &#39;</span>
+                <span class="s1">&#39;cov.shape=</span><span class="si">{}</span><span class="s1"> and mean.numel()=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">mean</span><span class="o">.</span><span class="n">numel</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions</span><span class="p">,</span> <span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_mean</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_mean</span><span class="p">,</span> <span class="n">mean</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_distribution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_distribution</span> <span class="o">+</span> <span class="p">[</span>
+            <span class="n">distribution</span>
+        <span class="p">]</span> <span class="o">*</span> <span class="n">par</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cov</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_cov</span><span class="o">.</span><span class="n">numel</span><span class="p">(</span>
+        <span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_cov</span> <span class="o">=</span> <span class="n">diagcat</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_cov</span><span class="p">,</span> <span class="n">cov</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">cov</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_cov</span> <span class="o">=</span> <span class="n">cov</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions_cov</span></div>
+
+<div class="viewcode-block" id="StochasticOCP.get_p_without_p_unc"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.get_p_without_p_unc">[docs]</a>    <span class="k">def</span> <span class="nf">get_p_without_p_unc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_p_unc_indices</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">p_sym</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StochasticOCP.get_p_unc_indices"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.get_p_unc_indices">[docs]</a>    <span class="k">def</span> <span class="nf">get_p_unc_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_unc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">p_sym</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StochasticOCP.get_uncertain_initial_cond_indices"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.get_uncertain_initial_cond_indices">[docs]</a>    <span class="k">def</span> <span class="nf">get_uncertain_initial_cond_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncertain_initial_conditions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">x_0_sym</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StochasticOCP.include_time_chance_inequality"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.stochastic_ocp.StochasticOCP.include_time_chance_inequality">[docs]</a>    <span class="k">def</span> <span class="nf">include_time_chance_inequality</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                       <span class="n">ineq</span><span class="p">,</span>
+                                       <span class="n">prob</span><span class="p">,</span>
+                                       <span class="n">rhs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                       <span class="n">when</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Include time dependent chance inequality.</span>
+<span class="sd">        Prob[ineq(..., t) &lt;= rhs] &lt;= prob, for t \in [t_0, t_f]</span>
+
+<span class="sd">        The inequality is concatenated to &quot;g_stochastic_ineq&quot;</span>
+
+<span class="sd">        :param ineq: inequality</span>
+<span class="sd">        :param list|DM rhs: Right-hand size of the inequality</span>
+<span class="sd">        :param list|DM prob: Chance/probability of the constraint being satisfied</span>
+<span class="sd">        :param str when: Can be &#39;default&#39;, &#39;end&#39;, &#39;start&#39;.</span>
+<span class="sd">            &#39;start&#39; - the constraint will be evaluated at the start of every finite element</span>
+<span class="sd">            &#39;end&#39; - the constraint will be evaluated at the end of every finite element</span>
+<span class="sd">            &#39;default&#39; - will be evaluated at each collocation point of every finite element.</span>
+<span class="sd">            For the multiple shooting, the constraint will be evaluated at the end of each</span>
+<span class="sd">            finite element</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ineq</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">ineq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">ineq</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">rhs</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">rhs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">prob</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">prob</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">rhs</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">rhs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="n">prob</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">prob</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">rhs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rhs</span> <span class="o">=</span> <span class="n">DM</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ineq</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ineq</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Given inequality does not have the same dimensions of the provided &quot;rhs&quot;. &#39;</span>
+                <span class="s1">&#39;Size of ineq: </span><span class="si">{}</span><span class="s1">, size of rhs: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">ineq</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">rhs</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ineq</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Given inequality does not have the same dimensions of the provided &quot;prob&quot;. &#39;</span>
+                <span class="s1">&#39;Size of ineq: </span><span class="si">{}</span><span class="s1">, size of prob: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">ineq</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">prob</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_ineq</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_ineq</span><span class="p">,</span> <span class="n">ineq</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_rhs</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_rhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_prob</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g_stochastic_prob</span><span class="p">,</span> <span class="n">prob</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

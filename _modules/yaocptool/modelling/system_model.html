@@ -1,0 +1,896 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>yaocptool.modelling.system_model &mdash; YAOCPTool 0.3.8 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> YAOCPTool
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../yaocptool.html">yaocptool package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">YAOCPTool</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>yaocptool.modelling.system_model</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for yaocptool.modelling.system_model</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Thu Jun 09 10:50:48 2016</span>
+
+<span class="sd">@author: marco</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">from</span> <span class="nn">casadi</span> <span class="kn">import</span> <span class="n">SX</span><span class="p">,</span> <span class="n">vertcat</span><span class="p">,</span> <span class="n">substitute</span><span class="p">,</span> <span class="n">Function</span><span class="p">,</span> <span class="n">jacobian</span><span class="p">,</span> <span class="n">mtimes</span><span class="p">,</span> <span class="n">rootfinder</span><span class="p">,</span> <span class="n">vec</span><span class="p">,</span> <span class="n">horzcat</span><span class="p">,</span> <span class="n">is_equal</span><span class="p">,</span> <span class="n">DM</span>
+<span class="kn">from</span> <span class="nn">yaocptool</span> <span class="kn">import</span> <span class="n">remove_variables_from_vector</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">find_variables_indices_in_vector</span><span class="p">,</span> <span class="n">remove_variables_from_vector_by_indices</span><span class="p">,</span> <span class="n">find_variables_in_vector_by_name</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling</span> <span class="kn">import</span> <span class="n">DAESystem</span><span class="p">,</span> <span class="n">SimulationResult</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling.utils</span> <span class="kn">import</span> <span class="n">EqualityEquation</span><span class="p">,</span> <span class="n">Derivative</span>
+<span class="kn">from</span> <span class="nn">yaocptool.modelling.mixins</span> <span class="kn">import</span> <span class="n">StateMixin</span><span class="p">,</span> <span class="n">AlgebraicMixin</span><span class="p">,</span> <span class="n">ControlMixin</span><span class="p">,</span> <span class="n">ParameterMixin</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">islice</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
+
+
+<div class="viewcode-block" id="SystemModel"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel">[docs]</a><span class="k">class</span> <span class="nc">SystemModel</span><span class="p">(</span><span class="n">StateMixin</span><span class="p">,</span> <span class="n">AlgebraicMixin</span><span class="p">,</span> <span class="n">ControlMixin</span><span class="p">,</span> <span class="n">ParameterMixin</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s2">&quot;t&quot;</span><span class="p">)</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="s2">&quot;tau&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SystemModel.__init__"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">model_name_as_prefix</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Continuous-time Dynamic System Model</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \dot{x} = f(x,y,u,t,p,\\theta) \\\\</span>
+<span class="sd">            g(x,y,u,t,p,\\theta) = 0\\\\</span>
+
+<span class="sd">        x - states</span>
+<span class="sd">        y - algebraic</span>
+<span class="sd">        u - control</span>
+<span class="sd">        p - constant parameters</span>
+<span class="sd">        theta - parameters dependent of the finite_elements (e.g.: disturbances)</span>
+
+<span class="sd">        Note: when vectorizing the parameters order is [ p; theta; u_par]</span>
+
+<span class="sd">        :param name: model name</span>
+<span class="sd">        :param bool model_name_as_prefix: if true all variables create will have the model name as prefix</span>
+<span class="sd">            e.g.: &#39;tank_h&#39;, where &#39;tank&#39; is model name and &#39;h&#39; is the state created</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_name_as_prefix</span> <span class="o">=</span> <span class="n">model_name_as_prefix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbosity</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">system_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return the system type.</span>
+
+<span class="sd">        :return: &#39;ode&#39;  if an ODE system and &#39;dae&#39; if an DAE system</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="ne">AttributeError</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;dae&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;ode&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">x_sys_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[:</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">lamb_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SX</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">all_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">t_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+
+    <span class="nd">@t_sym</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">t_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tau_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span>
+
+    <span class="nd">@tau_sym</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">tau_sym</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tau</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">(&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&quot;)&#39;</span>
+
+<div class="viewcode-block" id="SystemModel.print_summary"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.print_summary">[docs]</a>    <span class="k">def</span> <span class="nf">print_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Print model summary when using print(model)</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;Model Name: </span><span class="si">{:&gt;23}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;| System type:                            </span><span class="si">{:&gt;3}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">system_type</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;Number of states (x):         </span><span class="si">{:4}</span><span class="s2"> | Number of algebraic (y):               </span><span class="si">{:4}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;Number of controls (u):       </span><span class="si">{:4}</span><span class="s2"> |&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;Number of parameters (p):     </span><span class="si">{:4}</span><span class="s2"> | Number of finite elem. param. (theta): </span><span class="si">{:4}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_theta</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;Number of ODE:                </span><span class="si">{:4}</span><span class="s2"> | Number of algebraic eq.:               </span><span class="si">{:4}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="o">.</span><span class="n">numel</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="o">.</span><span class="n">numel</span><span class="p">())</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+
+<div class="viewcode-block" id="SystemModel.print_variables"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.print_variables">[docs]</a>    <span class="k">def</span> <span class="nf">print_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Print list of variable in the model (x, y, u, p, theta)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">var_name_space</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="n">column_size</span> <span class="o">=</span> <span class="n">var_name_space</span> <span class="o">+</span> <span class="mi">4</span>
+
+        <span class="n">n_lines</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_u</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_theta</span><span class="p">)</span>
+        <span class="n">x_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_names</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_lines</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+        <span class="n">y_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_names</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_lines</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+        <span class="n">u_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_names</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_lines</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="n">p_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_names</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_lines</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_p</span><span class="p">)</span>
+        <span class="n">theta_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_names</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_lines</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_theta</span><span class="p">)</span>
+
+        <span class="n">header_separator</span> <span class="o">=</span> <span class="s2">&quot;=|=&quot;</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">header</span> <span class="o">+=</span> <span class="s2">&quot; states (x) &quot;</span><span class="o">.</span><span class="n">center</span><span class="p">(</span><span class="n">column_size</span><span class="p">,</span> <span class="s2">&quot;=&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="n">header_separator</span>
+        <span class="n">header</span> <span class="o">+=</span> <span class="s2">&quot; algebraic (y) &quot;</span><span class="o">.</span><span class="n">center</span><span class="p">(</span><span class="n">column_size</span><span class="p">,</span> <span class="s2">&quot;=&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="n">header_separator</span>
+        <span class="n">header</span> <span class="o">+=</span> <span class="s2">&quot; input (u) &quot;</span><span class="o">.</span><span class="n">center</span><span class="p">(</span><span class="n">column_size</span><span class="p">,</span> <span class="s2">&quot;=&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="n">header_separator</span>
+        <span class="n">header</span> <span class="o">+=</span> <span class="s2">&quot; parameter (p) &quot;</span><span class="o">.</span><span class="n">center</span><span class="p">(</span><span class="n">column_size</span><span class="p">,</span> <span class="s2">&quot;=&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="n">header_separator</span>
+        <span class="n">header</span> <span class="o">+=</span> <span class="s2">&quot; theta param (theta) &quot;</span><span class="o">.</span><span class="n">center</span><span class="p">(</span><span class="n">column_size</span><span class="p">,</span>
+                                                 <span class="s2">&quot;=&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="n">header_separator</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_lines</span><span class="p">):</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{:&gt;2}</span><span class="s2">: {:&lt;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">var_name_space</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">x_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">var_name_space</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{:&gt;2}</span><span class="s2">: {:&lt;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">var_name_space</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">y_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">var_name_space</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_u</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{:&gt;2}</span><span class="s2">: {:&lt;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">var_name_space</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">u_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">var_name_space</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_p</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{:&gt;2}</span><span class="s2">: {:&lt;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">var_name_space</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">p_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">var_name_space</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_theta</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">{:&gt;2}</span><span class="s2">: {:&lt;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">var_name_space</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">theta_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">var_name_space</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; | &quot;</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">((</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="n">column_size</span> <span class="o">+</span> <span class="n">header_separator</span><span class="p">)</span> <span class="o">*</span> <span class="mi">5</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.include_equations"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_equations">[docs]</a>    <span class="k">def</span> <span class="nf">include_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Include model equations, (ordinary) differential equation and algebraic equation (ode and alg)</span>
+
+<span class="sd">        :param list|casadi.SX ode: (ordinary) differential equation</span>
+<span class="sd">        :param list|casadi.SX alg: algebraic equation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.include_variables"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_variables">[docs]</a>    <span class="k">def</span> <span class="nf">include_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Include variables (x, y, u, p, and theta) to the model.</span>
+
+<span class="sd">        :param SX|list|None x: state variable</span>
+<span class="sd">        :param SX|list|None y: algebraic variable</span>
+<span class="sd">        :param SX|list|None u: control/input variable</span>
+<span class="sd">        :param SX|list|None p: parameter variable</span>
+<span class="sd">        :param SX|list|None theta: element dependent variable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">u</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">theta</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">theta</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.replace_variable"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.replace_variable">[docs]</a>    <span class="k">def</span> <span class="nf">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Replace a variable or parameter by an variable or expression.</span>
+
+<span class="sd">            :param SX|list replacement:</span>
+<span class="sd">            :param SX|list original: and replacement, and also variable type which</span>
+<span class="sd">                describes which type of variable is being remove to it from the</span>
+<span class="sd">                counters. Types: &#39;x&#39;, &#39;y&#39;, &#39;u&#39;, &#39;p&#39;, &#39;ignore&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.get_variable_by_name"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_variable_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_variable_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">var_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Return a variable with a specified name (Regex accepted).</span>
+
+<span class="sd">        If no or multiple variables are found with the specified &#39;name&#39; an ValueError exception is raised.</span>
+<span class="sd">        To specify the search in a single variable type (x/y/u/p/theta) use the &#39;var_type&#39;</span>
+
+<span class="sd">        :param str name: variable name/regex</span>
+<span class="sd">        :param str var_type: variable type (optional)</span>
+<span class="sd">        :return: variable</span>
+<span class="sd">        :rtype: SX</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_variables_by_names</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">var_type</span><span class="p">)</span>
+        <span class="c1"># if only one is found return it</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># if multiple where found raise exception</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Multiple variables where found with the name: </span><span class="si">{}</span><span class="s2">. Found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span>
+                <span class="nb">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">result</span><span class="p">))</span>
+        <span class="c1"># if none was found raise exception</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No variable was found with name: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="SystemModel.get_variables_by_names"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_variables_by_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_variables_by_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">var_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param str|list of str names: list of variables names</span>
+<span class="sd">        :param str var_type:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if only one name is passed</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">names</span><span class="p">]</span>
+        <span class="c1"># if no specific type is passed, look into all</span>
+        <span class="k">if</span> <span class="n">var_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">var_type</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;u&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;theta&quot;</span><span class="p">]</span>
+        <span class="c1"># make the passed one into a list so we can iterate over</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">var_type</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">var_type</span> <span class="o">=</span> <span class="p">[</span><span class="n">var_type</span><span class="p">]</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">var_t</span> <span class="ow">in</span> <span class="n">var_type</span><span class="p">:</span>
+            <span class="n">var</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_t</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">find_variables_in_vector_by_name</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">var</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="SystemModel.has_variable"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.has_variable">[docs]</a>    <span class="k">def</span> <span class="nf">has_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param casadi.SX var: variable to be checked if it is in the SystemModel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">find_variables_indices_in_vector</span><span class="p">(</span>
+            <span class="n">var</span><span class="p">,</span>
+            <span class="n">vertcat</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="SystemModel.is_parametrized"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.is_parametrized">[docs]</a>    <span class="k">def</span> <span class="nf">is_parametrized</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Check if the model is parametrized.</span>
+
+<span class="sd">        :rtype bool:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if no u is provided (checking if the model is parametrized)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parametrized_controls</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="SystemModel.include_models"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.include_models">[docs]</a>    <span class="k">def</span> <span class="nf">include_models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Include model or list of models into this model. All the variables and functions will be included.</span>
+
+<span class="sd">        :param list|SystemModel models: models to be included</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">models</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+            <span class="c1"># include variables</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_state</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">x_0</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">x_0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_control</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_parameter</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">p</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_theta</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span>
+
+            <span class="c1"># include equations</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">alg</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
+
+            <span class="c1"># replace model time variables with this model time variables</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.merge"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models_list</span><span class="p">,</span> <span class="n">connecting_equations</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">models_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">models_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">models_list</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_models</span><span class="p">(</span><span class="n">models_list</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="n">alg</span><span class="o">=</span><span class="n">connecting_equations</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.connect"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.connect">[docs]</a>    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Connect an input &#39;u&#39; to a algebraic variable &#39;y&#39;, u = y.</span>
+<span class="sd">        The function will perform the following actions:</span>
+<span class="sd">        - include an algebraic equation u - y = 0</span>
+<span class="sd">        - remove &#39;u&#39; from the input vector (since it is not a free variable anymore)</span>
+<span class="sd">        - include &#39;u&#39; into the algebraic vector, since it is an algebraic variable now.</span>
+
+<span class="sd">        :param u: input variable</span>
+<span class="sd">        :param y: algebraic variable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># fix types</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">u</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="c1"># check if same size</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Size of &quot;u&quot; and &quot;y&quot; are not the same, &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;u=</span><span class="si">{</span><span class="n">u</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="si">}</span><span class="s1"> and y=</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="n">alg</span><span class="o">=</span><span class="p">[</span><span class="n">u</span> <span class="o">-</span> <span class="n">y</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove_control</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_algebraic</span><span class="p">(</span><span class="n">u</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.put_values_in_all_sym_format"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.put_values_in_all_sym_format">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">put_values_in_all_sym_format</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                     <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                     <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                     <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                     <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                     <span class="n">u_par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">u_par</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">u_par</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">u_par</span></div>
+
+<div class="viewcode-block" id="SystemModel.all_sym_names"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.all_sym_names">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">all_sym_names</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s2">&quot;t&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">,</span> <span class="s2">&quot;theta&quot;</span><span class="p">,</span> <span class="s2">&quot;u_par&quot;</span></div>
+
+<div class="viewcode-block" id="SystemModel.convert_expr_from_time_to_tau"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.convert_expr_from_time_to_tau">[docs]</a>    <span class="k">def</span> <span class="nf">convert_expr_from_time_to_tau</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">t_kp1</span><span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+        <span class="n">tau</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">t_kp1</span> <span class="o">-</span> <span class="n">t_k</span>
+        <span class="k">return</span> <span class="n">substitute</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">tau</span> <span class="o">*</span> <span class="n">h</span> <span class="o">+</span> <span class="n">t_k</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.convert_expr_from_tau_to_time"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.convert_expr_from_tau_to_time">[docs]</a>    <span class="k">def</span> <span class="nf">convert_expr_from_tau_to_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">t_k</span><span class="p">,</span> <span class="n">t_kp1</span><span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+        <span class="n">tau</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">t_kp1</span> <span class="o">-</span> <span class="n">t_k</span>
+        <span class="k">return</span> <span class="n">substitute</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">t_k</span><span class="p">)</span> <span class="o">/</span> <span class="n">h</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.get_copy"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_copy">[docs]</a>    <span class="k">def</span> <span class="nf">get_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get a copy of this model.</span>
+
+<span class="sd">        Uses copy.copy to get copy of this object.</span>
+
+<span class="sd">        :rtype: SystemModel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.get_deepcopy"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_deepcopy">[docs]</a>    <span class="k">def</span> <span class="nf">get_deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Get a deep copy of this model, differently from &quot;get_copy&quot;, the variables of the original copy and the</span>
+<span class="sd">            hard copy will not be the same, i.e. model.x != copy.x</span>
+
+<span class="sd">        :rtype: SystemModel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_copy</span> <span class="o">=</span> <span class="n">SystemModel</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">x_copy</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="n">y_copy</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="n">u_copy</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="n">p_copy</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="n">theta_copy</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="n">u_par_copy</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+        <span class="n">u_par_copy</span> <span class="o">=</span> <span class="n">DM</span><span class="p">([])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x_copy</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span>
+                <span class="n">model_copy</span><span class="o">.</span><span class="n">create_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">)</span>
+            <span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">y_copy</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span>
+                <span class="n">model_copy</span><span class="o">.</span><span class="n">create_algebraic_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_y</span><span class="p">)</span>
+            <span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_u</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">u_copy</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span>
+                <span class="n">model_copy</span><span class="o">.</span><span class="n">create_control</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+            <span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_p</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">p_copy</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span>
+                <span class="n">model_copy</span><span class="o">.</span><span class="n">create_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_p</span><span class="p">)</span>
+            <span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_theta</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">theta_copy</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="p">[</span>
+                <span class="n">model_copy</span><span class="o">.</span><span class="n">create_theta</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_theta</span><span class="p">)</span>
+            <span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_u_par</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">u_par_copy</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span>
+                <span class="o">*</span><span class="p">[</span><span class="n">SX</span><span class="o">.</span><span class="n">sym</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_u_par</span><span class="p">)])</span>
+
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="n">alg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">)</span>
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">u_par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span>
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">u_expr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span>
+
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">x_copy</span><span class="p">)</span>
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">y_copy</span><span class="p">)</span>
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">,</span> <span class="n">u_copy</span><span class="p">)</span>
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="n">p_copy</span><span class="p">)</span>
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">theta_copy</span><span class="p">)</span>
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">replace_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">,</span> <span class="n">u_par_copy</span><span class="p">)</span>
+
+        <span class="n">model_copy</span><span class="o">.</span><span class="n">has_adjoint_variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_adjoint_variables</span>
+
+        <span class="k">return</span> <span class="n">model_copy</span></div>
+
+<div class="viewcode-block" id="SystemModel.get_dae_system"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.get_dae_system">[docs]</a>    <span class="k">def</span> <span class="nf">get_dae_system</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Return a DAESystem object with the model equations.</span>
+
+<span class="sd">        :return: DAESystem</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_type</span> <span class="o">==</span> <span class="s2">&quot;ode&quot;</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                <span class="s2">&quot;ode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span>
+                <span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span>
+                <span class="s2">&quot;tau&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                <span class="s2">&quot;ode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span>
+                <span class="s2">&quot;alg&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span>
+                <span class="s2">&quot;t&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span>
+                <span class="s2">&quot;tau&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_p</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_theta</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_par</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">DAESystem</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SystemModel.simulate"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.simulate">[docs]</a>    <span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">x_0</span><span class="p">,</span>
+        <span class="n">t_f</span><span class="p">,</span>
+        <span class="n">t_0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">u</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">y_0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">integrator_type</span><span class="o">=</span><span class="s2">&quot;implicit&quot;</span><span class="p">,</span>
+        <span class="n">integrator_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Simulate model.</span>
+<span class="sd">            If t_f is a float, then only one simulation will be done. If t_f is a list of times, then a sequence of</span>
+<span class="sd">            simulations will be done, that each t_f is the end of a finite element.</span>
+
+<span class="sd">        :param list||DM x_0: Initial condition</span>
+<span class="sd">        :param float||list t_f: Final time of the simulation, can be a list of final times for sequential simulation</span>
+<span class="sd">        :param float t_0: Initial time</span>
+<span class="sd">        :param list||DM u: Controls of the system to be simulated</span>
+<span class="sd">        :param DM||SX||list p: Simulation parameters</span>
+<span class="sd">        :param dict theta: Parameters theta, which varies for each simulation for sequential simulations.</span>
+<span class="sd">                           If t_f is a list then theta has to have one entry for each k in [0,...,len(t_f)]</span>
+<span class="sd">        :param y_0: Initial guess for the algebraic variables</span>
+<span class="sd">        :param str integrator_type: &#39;implicit&#39; or &#39;explicit&#39;</span>
+<span class="sd">        :param dict integrator_options: options to be passed to the integrator</span>
+
+<span class="sd">        :rtype: SimulationResult</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x_0</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="n">x_0</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">x_0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t_f</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="n">t_f</span> <span class="o">=</span> <span class="p">[</span><span class="n">t_f</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="p">[])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">))])</span>
+        <span class="k">if</span> <span class="n">integrator_options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">integrator_options</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># if control is not given</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="p">[[]]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">u</span><span class="p">,</span>
+            <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>  <span class="c1"># if control is given as number or a casadi object</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">u</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;If &quot;t_f&quot; is a list, the parameter &quot;u&quot; should be a list with same length of &quot;t_f&quot;.&#39;</span>
+                <span class="s2">&quot;len(t_f) = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">)))</span>
+
+        <span class="n">dae_sys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dae_system</span><span class="p">()</span>
+
+        <span class="n">t_x_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">t_0</span><span class="p">]</span>
+        <span class="n">t_yu_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">x_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">x_0</span><span class="p">]</span>
+        <span class="n">y_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">u_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">t_k</span> <span class="o">=</span> <span class="n">t_0</span>
+        <span class="n">x_k</span> <span class="o">=</span> <span class="n">x_0</span>
+        <span class="n">y_k</span> <span class="o">=</span> <span class="n">y_0</span>
+        <span class="n">f_u</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s2">&quot;f_u&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_sym</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">u_expr</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">t_kpp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">t_f</span><span class="p">):</span>
+            <span class="n">p_k</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">dae_sys</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span>
+                <span class="n">x_0</span><span class="o">=</span><span class="n">x_k</span><span class="p">,</span>
+                <span class="n">t_f</span><span class="o">=</span><span class="n">t_kpp</span><span class="p">,</span>
+                <span class="n">t_0</span><span class="o">=</span><span class="n">t_k</span><span class="p">,</span>
+                <span class="n">p</span><span class="o">=</span><span class="n">p_k</span><span class="p">,</span>
+                <span class="n">y_0</span><span class="o">=</span><span class="n">y_k</span><span class="p">,</span>
+                <span class="n">integrator_type</span><span class="o">=</span><span class="n">integrator_type</span><span class="p">,</span>
+                <span class="n">integrator_options</span><span class="o">=</span><span class="n">integrator_options</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">t_x_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_kpp</span><span class="p">)</span>
+            <span class="n">t_yu_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_kpp</span><span class="p">)</span>
+
+            <span class="n">t_k</span> <span class="o">=</span> <span class="n">t_kpp</span>
+            <span class="n">x_k</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;xf&quot;</span><span class="p">]</span>
+            <span class="n">y_k</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;zf&quot;</span><span class="p">]</span>
+            <span class="n">u_k</span> <span class="o">=</span> <span class="n">f_u</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">put_values_in_all_sym_format</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">=</span><span class="n">t_kpp</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x_k</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_k</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">u_par</span><span class="o">=</span><span class="n">u</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+
+            <span class="n">x_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;xf&quot;</span><span class="p">])</span>
+            <span class="n">y_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;zf&quot;</span><span class="p">])</span>
+            <span class="n">u_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">u_k</span><span class="p">)</span>
+
+        <span class="n">t_x_list</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">t_x_list</span><span class="p">)</span>
+        <span class="n">t_yu_list</span> <span class="o">=</span> <span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">t_yu_list</span><span class="p">)</span>
+
+        <span class="n">simulation_result</span> <span class="o">=</span> <span class="n">SimulationResult</span><span class="p">(</span>
+            <span class="n">model_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">n_x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">,</span>
+            <span class="n">n_y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_y</span><span class="p">,</span>
+            <span class="n">n_u</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_u</span><span class="p">,</span>
+            <span class="n">x_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_names</span><span class="p">,</span>
+            <span class="n">y_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_names</span><span class="p">,</span>
+            <span class="n">u_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">u_names</span><span class="p">,</span>
+            <span class="n">t_0</span><span class="o">=</span><span class="n">t_0</span><span class="p">,</span>
+            <span class="n">t_f</span><span class="o">=</span><span class="n">t_f</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">finite_elements</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">t_f</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="n">simulation_result</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
+                                      <span class="n">time</span><span class="o">=</span><span class="n">t_x_list</span><span class="p">,</span>
+                                      <span class="n">value</span><span class="o">=</span><span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">x_list</span><span class="p">))</span>
+        <span class="n">simulation_result</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span>
+                                      <span class="n">time</span><span class="o">=</span><span class="n">t_yu_list</span><span class="p">,</span>
+                                      <span class="n">value</span><span class="o">=</span><span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">y_list</span><span class="p">))</span>
+        <span class="n">simulation_result</span><span class="o">.</span><span class="n">insert_data</span><span class="p">(</span><span class="s2">&quot;u&quot;</span><span class="p">,</span>
+                                      <span class="n">time</span><span class="o">=</span><span class="n">t_yu_list</span><span class="p">,</span>
+                                      <span class="n">value</span><span class="o">=</span><span class="n">horzcat</span><span class="p">(</span><span class="o">*</span><span class="n">u_list</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">simulation_result</span></div>
+
+<div class="viewcode-block" id="SystemModel.linearize"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.linearize">[docs]</a>    <span class="k">def</span> <span class="nf">linearize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_bar</span><span class="p">,</span> <span class="n">u_bar</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a linearized model at a given points (X_BAR, U_BAR)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">a_matrix</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s2">&quot;a_matrix&quot;</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">],</span>
+                            <span class="p">[</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)])(</span><span class="n">x_bar</span><span class="p">,</span> <span class="n">u_bar</span><span class="p">)</span>
+        <span class="n">b_matrix</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s2">&quot;b_matrix&quot;</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">],</span>
+                            <span class="p">[</span><span class="n">jacobian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">)])(</span><span class="n">x_bar</span><span class="p">,</span> <span class="n">u_bar</span><span class="p">)</span>
+
+        <span class="n">linear_model</span> <span class="o">=</span> <span class="n">SystemModel</span><span class="p">(</span><span class="n">n_x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">,</span> <span class="n">n_u</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="n">linear_model</span><span class="o">.</span><span class="n">include_equations</span><span class="p">(</span><span class="n">ode</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">mtimes</span><span class="p">(</span><span class="n">a_matrix</span><span class="p">,</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">mtimes</span><span class="p">(</span><span class="n">b_matrix</span><span class="p">,</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
+        <span class="p">])</span>
+        <span class="n">linear_model</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;linearized_&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="n">linear_model</span><span class="o">.</span><span class="n">a_matrix</span> <span class="o">=</span> <span class="n">a_matrix</span>
+        <span class="n">linear_model</span><span class="o">.</span><span class="n">b_matrix</span> <span class="o">=</span> <span class="n">b_matrix</span>
+
+        <span class="k">return</span> <span class="n">linear_model</span></div>
+
+<div class="viewcode-block" id="SystemModel.find_equilibrium"><a class="viewcode-back" href="../../../yaocptool.modelling.html#yaocptool.modelling.system_model.SystemModel.find_equilibrium">[docs]</a>    <span class="k">def</span> <span class="nf">find_equilibrium</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                         <span class="n">additional_eqs</span><span class="p">,</span>
+                         <span class="n">guess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                         <span class="n">t_0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                         <span class="n">rootfinder_options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find a equilibrium point for the model.</span>
+<span class="sd">        This method solves the root finding problem:</span>
+
+<span class="sd">            f(x,y,u,t_0) = 0</span>
+<span class="sd">            g(x,y,u,t_0) = 0</span>
+<span class="sd">            additional_eqs (x,y,u,t_0) = 0</span>
+
+<span class="sd">        Use additional_eqs to specify the additional conditions remembering that dim(additional_eqs) = n_u,</span>
+<span class="sd">        so the system can be well defined.</span>
+<span class="sd">        If no initial guess is provided (&quot;guess&quot; parameter) a guess of ones will be used (not zero to avoid problems</span>
+<span class="sd">        with singularities.</span>
+
+<span class="sd">        Returns x_0, y_0, u_0</span>
+
+<span class="sd">        :param dict rootfinder_options: options to be passed to rootfinder</span>
+<span class="sd">        :param additional_eqs: SX</span>
+<span class="sd">        :param guess: DM</span>
+<span class="sd">        :param t_0: float</span>
+<span class="sd">        :return: (DM, DM, DM)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">rootfinder_options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rootfinder_options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">nlpsol</span><span class="o">=</span><span class="s2">&quot;ipopt&quot;</span><span class="p">,</span>
+                <span class="n">nlpsol_options</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">SOLVER_OPTIONS</span><span class="p">[</span><span class="s2">&quot;nlpsol_options&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">guess</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">guess</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_u</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">additional_eqs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">additional_eqs</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="n">additional_eqs</span><span class="p">)</span>
+
+        <span class="n">eqs</span> <span class="o">=</span> <span class="n">vertcat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alg</span><span class="p">,</span> <span class="n">additional_eqs</span><span class="p">)</span>
+        <span class="n">eqs</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="n">eqs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">t_0</span><span class="p">)</span>
+        <span class="n">eqs</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="n">eqs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">f_eqs</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="s2">&quot;f_equilibrium&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">vertcat</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">all_sym</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])],</span>
+                         <span class="p">[</span><span class="n">eqs</span><span class="p">])</span>
+
+        <span class="n">rf</span> <span class="o">=</span> <span class="n">rootfinder</span><span class="p">(</span><span class="s2">&quot;rf_equilibrium&quot;</span><span class="p">,</span> <span class="s2">&quot;nlpsol&quot;</span><span class="p">,</span> <span class="n">f_eqs</span><span class="p">,</span> <span class="n">rootfinder_options</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">rf</span><span class="p">(</span><span class="n">guess</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">res</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">],</span>
+            <span class="n">res</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span><span class="p">],</span>
+            <span class="n">res</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_y</span><span class="p">:],</span>
+        <span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Marco Aurelio S. de Aguiar
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
