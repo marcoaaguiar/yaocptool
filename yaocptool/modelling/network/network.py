@@ -4,17 +4,22 @@ Created on Fri Jul 07 16:05:50 2017
 
 @author: marco
 """
-from typing import Any, List, Optional, Union
+from typing import Any, List, Mapping, Optional, Tuple, TypedDict, Union
 
 import matplotlib.pyplot as plt
 import networkx
-from casadi import vertcat
-from networkx.classes.reportviews import NodeView, OutEdgeView
+from casadi import SX, vertcat
+from networkx.classes.reportviews import NodeView
 
 from yaocptool import DM, find_variables_indices_in_vector
+from yaocptool.modelling.network.node import Node
 from yaocptool.modelling.ocp import OptimalControlProblem
 from yaocptool.modelling.system_model import SystemModel
-from yaocptool.modelling.network.node import Node
+
+
+class ConnectionData(TypedDict):
+    y: SX
+    u: SX
 
 
 class Network:
@@ -62,7 +67,7 @@ class Network:
         return self.graph.nodes
 
     @property
-    def connections(self) -> OutEdgeView:
+    def connections(self) -> Mapping[Tuple[Node, Node], ConnectionData]:
         """
             All connections (edges) from the self.graph
 
@@ -138,7 +143,7 @@ class Network:
         """
         self.graph.remove_edge(node1, node2)
 
-    def connect(self, y, u, node1, node2):
+    def connect(self, y: SX, u: SX, node1: Node, node2: Node):
         """
             Connect the variables of two subsystems (nodes) by creating an edge
 
@@ -161,7 +166,7 @@ class Network:
         else:
             self.insert_intermediary_node(y, u, node1, node2)
 
-    def _connect(self, y, u, node1, node2):
+    def _connect(self, y: SX, u: SX, node1: Node, node2: Node):
         if (node1, node2) not in self.graph.edges:
             self.graph.add_edge(node1, node2, y=DM(), u=DM())
 
@@ -172,7 +177,7 @@ class Network:
             self.graph.edges[node1, node2]["u"], u
         )
 
-    def get_model(self):
+    def get_model(self) -> SystemModel:
         """
             Create a single model which is the composition of all models and the connections
 
@@ -300,7 +305,6 @@ class Network:
             problem=new_problem,
             color=0.75,
         )
-        print(new_node.problem.name)
 
         self._connect(y, dummy_u, node1, new_node)
         self._connect(dummy_y, u, new_node, node2)

@@ -1,11 +1,4 @@
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Optional,
-    TypedDict,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, Optional, TypedDict, Union
 
 from casadi import DM, MX, SX, Function, depends_on, integrator, substitute, vertcat
 

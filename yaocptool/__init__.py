@@ -3,6 +3,6 @@ import logging
 from .util import *
 
 logging.basicConfig(
-    format="%(asctime)s | %(filename)-30s : %(levelname)s : %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    format="%(asctime)s | %(filename)-20s : %(levelname)s : %(message)s",
+    #  datefmt="%H:%M:%S",
 )

@@ -1,4 +1,6 @@
 import signal
+from types import TracebackType
+from typing import Type
 
 
 class timeout:
@@ -12,8 +14,8 @@ class timeout:
 
     @property
     def timedout(self):
-        if self._timedout is None:
-            raise ValueError("timeout hasn't finished yet")
+        #  if self._timedout is None:
+        #      raise ValueError("timeout hasn't finished yet")
         return self._timedout
 
     def handle_timeout(self, signum, frame):
@@ -25,9 +27,24 @@ class timeout:
         signal.alarm(self.seconds)
         return self
 
-    def __exit__(self, exc_type, value, traceback):
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        value: BaseException,
+        traceback: TracebackType,
+    ):
         signal.alarm(0)
-        if exc_type is not TimeoutError:
+        if exc_type is None:
+            return True
+
+        max_depth = 20
+        cause = value
+        for _ in range(max_depth):
+            if cause.__cause__ is None:
+                break
+            cause = cause.__cause__
+
+        if type(cause) is not TimeoutError:
             self._timedout = False
             return
 

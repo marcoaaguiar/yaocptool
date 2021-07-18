@@ -26,13 +26,13 @@ from yaocptool import (
     find_variables_indices_in_vector,
 )
 from yaocptool.modelling.dae_system import DAESystem
-from yaocptool.modelling.simulation_result import SimulationResult
 from yaocptool.modelling.mixins import (
     AlgebraicMixin,
     ContinuousStateMixin,
     ControlMixin,
     ParameterMixin,
 )
+from yaocptool.modelling.simulation_result import SimulationResult
 
 
 class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterMixin):

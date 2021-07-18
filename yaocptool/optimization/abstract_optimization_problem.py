@@ -1,15 +1,6 @@
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
-from casadi import (
-    DM,
-    MX,
-    Function,
-    depends_on,
-    inf,
-    is_equal,
-    repmat,
-    vertcat,
-)
+from casadi import DM, MX, Function, depends_on, inf, is_equal, repmat, vertcat
 
 from yaocptool import is_equality, is_inequality
 

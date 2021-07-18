@@ -261,7 +261,7 @@ class DataSet:
 
     def plot(
         self,
-        *plot_list: Dict[str, Union[Literal["all"], List[Union[int, str]]]],
+        *plot_list: Dict[str, Union[Literal["all"], Union[List[int], Union[str]]]],
         figures: Optional[List[plt.Figure]] = None,
         show: bool = True,
         exact: bool = False,

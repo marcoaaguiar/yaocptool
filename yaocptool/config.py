@@ -11,8 +11,8 @@ SOLVER_OPTIONS: Dict[str, Any] = {
     "nlpsol_options": {
         "ipopt.print_level": 0,
         "print_time": False,
-        #  "ipopt.linear_solver": "ma27",
-        #  "expand": True,
+        "ipopt.linear_solver": "ma27",
+        "expand": True,
         #  "jit": True,
         # 'ipopt.mumps_pivtol': 1e-8,
         # "ipopt.ma27_liw_init_factor": 15,

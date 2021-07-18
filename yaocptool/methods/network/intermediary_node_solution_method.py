@@ -1,3 +1,5 @@
+from typing import Dict
+
 from casadi.casadi import (
     DM,
     MX,
@@ -12,6 +14,9 @@ from casadi.casadi import (
 
 from yaocptool.methods.augmented_lagrangian import AugmentedLagrangian
 from yaocptool.methods.base.optimizationresult import OptimizationResult
+from yaocptool.optimization.abstract_optimization_problem import (
+    ExtendedOptiResultDictType,
+)
 
 
 class IntermediaryNodeSolutionMethod(AugmentedLagrangian):
@@ -33,19 +38,19 @@ class IntermediaryNodeSolutionMethod(AugmentedLagrangian):
         mu_k, y_p1, u_p2, nu_p1_c, nu_c_p2 = self._get_symb_variables()
 
         vectorize = lambda var: horzcat(
-            *[horzcat(*var[el]) for el in range(self.finite_elements)]
+            *[horzcat(*var[el]) for el in range(self.options.finite_elements)]
         )
 
         u_c = vectorize(
             [
-                [MX.sym("u_c_{el}_{deg}") for deg in range(self.degree)]
-                for el in range(self.finite_elements)
+                [MX.sym(f"u_c_{el}_{deg}") for deg in range(self.options.degree)]
+                for el in range(self.options.finite_elements)
             ]
         )
         y_c = vectorize(
             [
-                [MX.sym("y_c_{el}_{deg}") for deg in range(self.degree)]
-                for el in range(self.finite_elements)
+                [MX.sym(f"y_c_{el}_{deg}") for deg in range(self.options.degree)]
+                for el in range(self.options.finite_elements)
             ]
         )
 
@@ -65,25 +70,25 @@ class IntermediaryNodeSolutionMethod(AugmentedLagrangian):
         mu_k = MX.sym("mu_k")
 
         y_p1 = [
-            [MX.sym("y_p1_{el}_{deg}") for deg in range(self.degree)]
-            for el in range(self.finite_elements)
+            [MX.sym("y_p1_{el}_{deg}") for deg in range(self.options.degree)]
+            for el in range(self.options.finite_elements)
         ]
         u_p2 = [
-            [MX.sym("u_p2_{el}_{deg}") for deg in range(self.degree)]
-            for el in range(self.finite_elements)
+            [MX.sym("u_p2_{el}_{deg}") for deg in range(self.options.degree)]
+            for el in range(self.options.finite_elements)
         ]
 
         nu_p1_c = [
-            [MX.sym("nu_p1_{el}_{deg}") for deg in range(self.degree)]
-            for el in range(self.finite_elements)
+            [MX.sym("nu_p1_{el}_{deg}") for deg in range(self.options.degree)]
+            for el in range(self.options.finite_elements)
         ]
         nu_c_p2 = [
-            [MX.sym("nu_p2_{el}_{deg}") for deg in range(self.degree)]
-            for el in range(self.finite_elements)
+            [MX.sym("nu_p2_{el}_{deg}") for deg in range(self.options.degree)]
+            for el in range(self.options.finite_elements)
         ]
 
         vectorize = lambda var: horzcat(
-            *[horzcat(*var[el]) for el in range(self.finite_elements)]
+            *[horzcat(*var[el]) for el in range(self.options.finite_elements)]
         )
         y_p1, u_p2, nu_p1_c, nu_c_p2 = (
             vectorize(y_p1),
@@ -94,76 +99,71 @@ class IntermediaryNodeSolutionMethod(AugmentedLagrangian):
         return mu_k, y_p1, u_p2, nu_p1_c, nu_c_p2
 
     def _compute_new_nu_and_error(
-        self, p=None, theta=None, raw_solution_dict=None
+        self,
+        p: DM,
+        theta: Dict[int, DM],
+        raw_solution_dict: ExtendedOptiResultDictType,
     ) -> DM:
-        if raw_solution_dict is None:
-            raw_solution_dict = {}
-        if theta is None:
-            theta = {}
-        if p is None:
-            p = []
-
         if self.new_nu_func is None:
             self.new_nu_func = self._create_nu_update_func()
 
         errors = DM(0)
 
-        if not self.options.debug_skip_compute_nu_and_error:
-            split_vector = lambda ind: horzcat(
-                *[
-                    vertsplit(theta[el], self.degree)[ind].T
-                    for el in range(self.options.finite_elements)
-                ]
-            )
-            y_p1, u_p2, nu_p1_c, nu_c_p2 = (split_vector(i) for i in range(4))
-            u_c = raw_solution_dict["x"]
-            y_c = u_c
-
-            (nu_p1_c_next, nu_c_p2_next, rel_alg, rel_eq) = self.new_nu_func(
-                p[0], y_p1, u_p2, nu_p1_c, nu_c_p2, u_c, y_c
-            )
-
-            errors = DM(
-                [mmax(fabs(row)) for row in vertsplit(vertcat(rel_alg, rel_eq), 1)]
-            )
-
-            nu_tilde = {
-                el: vertcat(nu_p1_c_next_el, nu_c_p2_next_el)
-                for el, (nu_p1_c_next_el, nu_c_p2_next_el) in enumerate(
-                    zip(
-                        horzsplit(nu_p1_c_next, self.degree),
-                        horzsplit(nu_c_p2_next, self.degree),
-                    )
-                )
-            }
-
-            if not self.options.debug_skip_update_nu:
-                if (
-                    self.options.only_update_if_improve
-                    and any((errors > 0).nz)
-                    and self.last_violation_error is not None
-                ):
-                    for ind, (error, last_error) in enumerate(
-                        zip(errors.nz, self.last_violation_error.nz)
-                    ):
-                        if (error - last_error) < 0:
-                            self.last_violation_error[ind] = error
-                            for el in self.nu_tilde:
-                                self.nu_tilde[el][ind] = nu_tilde[el][ind]
-                        else:
-                            print("Error is greater than zero")
-                else:
-                    self.nu_tilde = nu_tilde
-        return errors
-
-    def solve(self, theta, p=None, *args, **kwargs):
-        print(self.mu)
-        theta_k = self.join_nu_to_theta(theta, self.nu)
-        p_k = vertcat(p, self.mu) if p else self.mu
+        if self.options.debug_skip_compute_nu_and_error:
+            return errors
 
         split_vector = lambda ind: horzcat(
             *[
-                vertsplit(theta_k[el], self.degree)[ind].T
+                vertsplit(theta[el], self.options.degree)[ind].T
+                for el in range(self.options.finite_elements)
+            ]
+        )
+        y_p1, u_p2, nu_p1_c, nu_c_p2 = (split_vector(i) for i in range(4))
+        u_c = raw_solution_dict["x"]
+        y_c = u_c
+
+        (nu_p1_c_next, nu_c_p2_next, rel_alg, rel_eq) = self.new_nu_func(
+            p[0], y_p1, u_p2, nu_p1_c, nu_c_p2, u_c, y_c
+        )
+
+        errors = DM([mmax(fabs(row)) for row in vertsplit(vertcat(rel_alg, rel_eq), 1)])
+
+        nu_tilde = {
+            el: vertcat(nu_p1_c_next_el, nu_c_p2_next_el)
+            for el, (nu_p1_c_next_el, nu_c_p2_next_el) in enumerate(
+                zip(
+                    horzsplit(nu_p1_c_next, self.options.degree),
+                    horzsplit(nu_c_p2_next, self.options.degree),
+                )
+            )
+        }
+
+        if not self.options.debug_skip_update_nu:
+            if (
+                self.options.only_update_if_improve
+                and any((errors > 0).nz)
+                and self.last_violation_error is not None
+            ):
+                for ind, (error, last_error) in enumerate(
+                    zip(errors.nz, self.last_violation_error.nz)
+                ):
+                    if (error - last_error) < 0:
+                        self.last_violation_error[ind] = error
+                        for el in self.nu_tilde:
+                            self.nu_tilde[el][ind] = nu_tilde[el][ind]
+                    else:
+                        print("Error is greater than zero")
+            else:
+                self.nu_tilde = nu_tilde
+        return errors
+
+    def solve(self, theta, p=None, *args, **kwargs):
+        theta_k = self.join_nu_to_theta(theta, self.nu)
+        p_k = vertcat(p, self.mu) if p is not None else self.mu
+
+        split_vector = lambda ind: horzcat(
+            *[
+                vertsplit(theta_k[el], self.options.degree)[ind].T
                 for el in range(self.options.finite_elements)
             ]
         )
@@ -178,16 +178,9 @@ class IntermediaryNodeSolutionMethod(AugmentedLagrangian):
         optimization_result = OptimizationResult()
         optimization_result.method_name = self.__class__.__name__
 
-        # From the solution_method
-        for attr in [
-            "finite_elements",
-            "degree",
-            "degree_control",
-            "time_breakpoints",
-            "discretization_scheme",
-        ]:
-            attr_value = getattr(self, attr)
-            setattr(optimization_result, attr, attr_value)
+        optimization_result.degree = self.options.degree
+        optimization_result.degree_control = self.options.degree
+        optimization_result.finite_elements = self.options.finite_elements
 
         optimization_result.x_0 = None
         optimization_result.theta = theta
@@ -208,16 +201,16 @@ class IntermediaryNodeSolutionMethod(AugmentedLagrangian):
             self.problem.theta_opt[i].name() for i in range(self.problem.n_theta_opt)
         ]
 
-        optimization_result.u_data["time"] = self.time_interpolation_controls
+        optimization_result.u_data["time"] = self.time_interpolation_nu
         optimization_result.u_data["values"] = [
             horzsplit(element_values, 1)
-            for element_values in horzsplit(raw_solution_dict["x"], self.degree)
+            for element_values in horzsplit(raw_solution_dict["x"], self.options.degree)
         ]
 
-        optimization_result.y_data["time"] = self.time_interpolation_controls
+        optimization_result.y_data["time"] = self.time_interpolation_nu
         optimization_result.y_data["values"] = [
             horzsplit(element_values, 1)
-            for element_values in horzsplit(raw_solution_dict["x"], self.degree)
+            for element_values in horzsplit(raw_solution_dict["x"], self.options.degree)
         ]
         optimization_result.objective_opt_problem = 0.0
 

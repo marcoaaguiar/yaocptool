@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Uni
 from casadi import DM, MX, SX, collocation_points, reshape, vec, vertcat
 
 from yaocptool import config, create_constant_theta, find_variables_indices_in_vector
-from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
 from yaocptool.methods.base.optimizationresult import OptimizationResult
+from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
 from yaocptool.methods.classic.collocationscheme import CollocationScheme
 from yaocptool.methods.classic.multipleshooting import MultipleShootingScheme
 from yaocptool.modelling.ocp import OptimalControlProblem

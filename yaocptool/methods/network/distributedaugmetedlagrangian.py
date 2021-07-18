@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 
+Created on
 
 @author: Marco Aurelio Schmitz de Aguiar
 """
@@ -10,19 +10,19 @@ import random
 import time
 from collections import defaultdict
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Literal, Optional, Type, Union
+from typing import Dict, List, Literal, Optional, Tuple, Type, Union, cast
 
 import matplotlib.pyplot as plt
 import networkx.algorithms.coloring
-from casadi import DM, SX, inf, vertcat
+from casadi import DM, SX, horzcat, inf, inv, mmax, vertcat
 from erised import Proxy
 
-from yaocptool import (
-    create_polynomial_approximation,
-    find_variables_indices_in_vector,
-)
+from yaocptool import create_polynomial_approximation, find_variables_indices_in_vector
 from yaocptool.methods import AugmentedLagrangian, SolutionMethodInterface
-from yaocptool.methods.augmented_lagrangian import AugmentedLagrangianOptions
+from yaocptool.methods.augmented_lagrangian import (
+    ALExogeunousData,
+    AugmentedLagrangianOptions,
+)
 from yaocptool.methods.base.distributed_optimization_result import (
     DistibutedOptimizationResult,
 )
@@ -36,6 +36,7 @@ from yaocptool.modelling.network.node import Node
 from yaocptool.util.util import Timer
 
 LOGGER = logging.getLogger(__name__)
+#  LOGGER.setLevel(logging.INFO)
 
 
 @dataclass
@@ -94,7 +95,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         self.nodes_proxies: Dict[Node, Proxy] = {}
 
         self.relax_dict = {}
-        self._last_result = {}
+        self._last_result: Dict[Node, OptimizationResult] = {}
 
     def _include_exogenous_variables(self):
         self.relax_dict = {
@@ -162,7 +163,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 node.problem.include_time_equality(eq)
                 node.problem.include_theta(u_appr_par)
 
-    def _create_variable_approx(self, var: SX, tau: SX):
+    def _create_variable_approx(self, var: SX, tau: SX) -> Tuple[SX, SX]:
         approx_name = [var[i].name() + "_appr" for i in range(var.numel())]
         return create_polynomial_approximation(
             tau,
@@ -171,42 +172,77 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             name=approx_name,
         )
 
-    def _get_variable_last_result(self, node, variable_type, var_indices):
+    def _get_variable_last_result(
+        self,
+        node: Node,
+        variable_type: Union[Literal["y"], Literal["u"]],
+        var_indices: Union[List[int], int],
+    ) -> List[List[DM]]:
         """
 
-        :param yaocptool.modelling.Node node:
-        :param str variable_type:
-        :param int|list of int var_indices:
-        :return:
+        :param  node:
+        :param  variable_type:
+        :param  of int var_indices:
         """
         if not isinstance(var_indices, list):
             var_indices = [var_indices]
 
-        # If no result is available
-        if self._last_result.get(node) is None:
-            if variable_type == "y" and node.problem.y_guess is not None:
-                return [
-                    [
-                        node.problem.y_guess[var_indices]
-                        for _ in range(self.options.degree)
-                    ]
-                    for _ in range(self.options.finite_elements)
-                ]
-            elif variable_type == "u" and node.problem.u_guess is not None:
-                return [
-                    [
-                        node.problem.u_guess[var_indices]
-                        for _ in range(self.options.degree)
-                    ]
-                    for _ in range(self.options.finite_elements)
-                ]
+        # if there is result
+        if self._last_result.get(node) is not None:
+            result = self._last_result[node]
+            return result.get_variable(variable_type, var_indices)
+
+        if variable_type == "y" and node.problem.y_guess is not None:
             return [
-                [DM.zeros(len(var_indices)) for _ in range(self.options.degree)]
+                [node.problem.y_guess[var_indices] for _ in range(self.options.degree)]
                 for _ in range(self.options.finite_elements)
             ]
+        elif variable_type == "u" and node.problem.u_guess is not None:
+            return [
+                [node.problem.u_guess[var_indices] for _ in range(self.options.degree)]
+                for _ in range(self.options.finite_elements)
+            ]
+        return [
+            [DM.zeros(len(var_indices)) for _ in range(self.options.degree)]
+            for _ in range(self.options.finite_elements)
+        ]
 
-        result = self._last_result[node]
-        return result.get_variable(variable_type, var_indices)
+    def _get_block_number(self, node: Node) -> int:
+        for block_id, nodes in self.blocks.items():
+            if node in nodes:
+                return block_id
+        raise ValueError("Node not found in any block")
+
+    def _get_node_exogenous(self, node: Node) -> Dict[str, Dict[str, ALExogeunousData]]:
+        data: Dict[str, Dict[str, ALExogeunousData]] = {"in": {}, "out": {}}
+        for p in self.network.graph.pred[node]:
+            block_number = self._get_block_number(p)
+            connections = self.network.connections[p, node]
+            y = connections["y"]  # external
+            _ = connections["u"]  # model variable
+
+            indices = find_variables_indices_in_vector(y, p.model.y)
+
+            for ind in indices:
+                data["in"][p.model.y[ind].name()] = {
+                    "data": self._get_variable_last_result(p, "y", ind),
+                    "block_number": block_number,
+                }
+
+        for s in self.network.graph.succ[node]:
+            block_number = self._get_block_number(s)
+            connections = self.network.connections[node, s]
+            _ = connections["y"]  # model variable
+            u = connections["u"]  # external
+
+            indices = find_variables_indices_in_vector(u, s.model.u)
+            for ind in indices:
+                data["out"][s.model.u[ind].name()] = {
+                    "data": self._get_variable_last_result(s, "u", ind),
+                    "block_number": block_number,
+                }
+
+        return data
 
     def _get_node_theta(self, node: Node) -> Dict[int, DM]:
         data: Dict[int, DM] = defaultdict(DM)
@@ -258,16 +294,11 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             )
 
             # solve node problem
+            #  if node.name.lower().startswith("dummy"):
+            #      __import__('ipdb').set_trace()
             result = node.solution_method.solve(
                 theta=node_theta, initial_guess=initial_guess
             )
-            #  if "return_status" in result.stats and result.stats[
-            #      "return_status"
-            #  ] not in {
-            #      "Search_Direction_Becomes_Too_Small",
-            #      "Solved_To_Acceptable_Level",
-            #      "Solve_Succeeded",
-            #  }:
             result_dict[node] = self._last_result[node] = result
         return result_dict
 
@@ -300,22 +331,11 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             }
             block_results = {node: future.result() for node, future in futures.items()}
 
-            #  for node in block:
-            #      result = block_results[node]
-            #  if "return_status" in result.stats and result.stats[
-            #      "return_status"
-            #  ] not in {
-            #      "Search_Direction_Becomes_Too_Small",
-            #      "Solved_To_Acceptable_Level",
-            #      "Solve_Succeeded",
-            #  }:
-
             result_dict.update(block_results)
             self._last_result.update(block_results)
         return result_dict
 
     def solve(self) -> DistibutedOptimizationResult:
-        print("starting solving")
         self._include_exogenous_variables()
         self.prepare()
 
@@ -442,79 +462,218 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             return self._update_parameters_distributed(result_dict)
         return self._update_parameters_serial(result_dict)
 
+    def _compute_primal_dual_mu(self, mu: DM, r_k_list: List[DM], s_k_list: List[DM]):
+        r_k_1 = max(*r_k_list)
+        s_k_1 = max(*s_k_list)
+        logging.info(f"Primal: {r_k_1}, Dual: {s_k_1}")
+
+        if r_k_1 > self.options.al_options.gamma * s_k_1:
+            old_mu = mu
+            mu = self.options.al_options.beta * mu
+            logging.info(f"Increasing mu {old_mu} -> {mu[0]}")
+        elif s_k_1 > self.options.al_options.gamma * r_k_1:
+            old_mu = mu
+            mu = inv(self.options.al_options.beta_decrease) * mu
+            logging.info(f"Decreasing mu {old_mu} -> {mu[0]}")
+        else:
+            logging.info(f"Same mu {mu[0]}")
+        return mu
+
     def _update_parameters_distributed(
         self, result_dict: Dict[Node, OptimizationResult]
     ) -> Dict[Node, DM]:
         node_error_future = {}
-        for node, result in result_dict.items():
-            node_theta = self._get_node_theta(node)
-            raw_solution_dict = result.raw_solution_dict
+        node_errors = {}
 
-            node_error_future[node] = self.nodes_proxies[
-                node
-            ].solution_method.update_parameters(
-                p=None, theta=node_theta, raw_solution_dict=raw_solution_dict
-            )
-        return {node: future.result() for node, future in node_error_future.items()}
+        if self.options.al_options.mu_update_rule == "primal-dual":
+            mu_by_node = {
+                node: self.nodes_proxies[node].solution_method.mu.retrieve().result()
+                for node in self.network.nodes
+            }
+            mu_set = {float(mu[0]) for mu in mu_by_node.values()}
+            r_s_by_node_futures = {
+                node: self.nodes_proxies[node].solution_method.compute_primal_dual(
+                    #  node: dict(
+                    p=None,
+                    theta=self._get_node_theta(node),
+                    raw_solution_dict=result.raw_solution_dict,
+                    exogenous_data=self._get_node_exogenous(node),
+                )
+                for node, result in result_dict.items()  # if not node.name.lower().startswith("dummy")
+            }
+            r_s_by_node = {
+                node: future.result() for node, future in r_s_by_node_futures.items()
+            }
+
+            if len(mu_set) > 1:
+                raise ValueError("all mu should have the same value")
+            mu = DM(mu_set.pop())
+            r_k_list = [r_s["primal"] for r_s in r_s_by_node.values()]
+            s_k_list = [r_s["dual"] for r_s in r_s_by_node.values()]
+            node_errors = {node: r_s["error"] for (node, r_s) in r_s_by_node.items()}
+
+            mu = self._compute_primal_dual_mu(mu, r_k_list, s_k_list)
+            for node in result_dict:
+                self.nodes_proxies[node].solution_method.set_mu(mu).result()
+        else:
+            for node, result in result_dict.items():
+                node_theta = self._get_node_theta(node)
+                node_exog = self._get_node_exogenous(node)
+                raw_solution_dict = result.raw_solution_dict
+
+                node_error_future[node] = self.nodes_proxies[
+                    node
+                ].solution_method.update_parameters(
+                    p=None,
+                    theta=node_theta,
+                    raw_solution_dict=raw_solution_dict,
+                    exogenous_data=node_exog,
+                )
+                if self.options.al_options.mu_update_rule == "primal-dual":
+                    mu_by_node = {
+                        node: cast(
+                            DM,
+                            self.nodes_proxies[node]
+                            .solution_method.mu.retrieve()
+                            .result(),
+                        )
+                        for node in self.nodes_proxies
+                    }
+                    mu_set = {float(mu[0]) for mu in mu_by_node.values()}
+                    r_s_by_node = {
+                        node: cast(
+                            Dict[str, DM],
+                            self.nodes_proxies[node]
+                            .solution_method.compute_primal_dual(
+                                p=None,
+                                theta=node_theta,
+                                raw_solution_dict=raw_solution_dict,
+                                exogenous_data=node_exog,
+                            )
+                            .result(),
+                        )
+                        for node in self.nodes_proxies
+                        if not node.name.lower().startswith("dummy")
+                    }
+
+                    if len(mu_set) > 1:
+                        raise ValueError("all mu should have the same value")
+                    mu = mu_set.pop()
+                    r_k_list = [r_s["primal"] for r_s in r_s_by_node.values()]
+                    s_k_list = [r_s["dual"] for r_s in r_s_by_node.values()]
+
+                    mu = self._compute_primal_dual_mu(mu, r_k_list, s_k_list)
+
+                node_errors = {
+                    node: future.result() for node, future in node_error_future.items()
+                }
+
+            # sync mu
+            nodes_mu_max = {
+                node: cast(
+                    DM, self.nodes_proxies[node].solution_method.mu.retrieve().result()
+                )
+                for node in self.nodes_proxies
+            }
+
+            max_mu = mmax(horzcat(*nodes_mu_max.values()))
+
+            for node, mu in nodes_mu_max.items():
+                self.nodes_proxies[node].solution_method.mu = max_mu * DM.ones(mu.shape)
+
+            for node, mu in nodes_mu_max.items():
+                self.nodes_proxies[node].wait_all_futures()
+
+        return node_errors
 
     def _update_parameters_serial(
         self, result_dict: Dict[Node, OptimizationResult]
     ) -> Dict[Node, DM]:
-        node_error = {}
-        for node, result in sorted(
-            result_dict.items(), key=(lambda item: item[0].node_id)
-        ):
-            node_theta = self._get_node_theta(node)
-            #  theta_k = join_thetas(node_theta, node.solution_method.nu)
-            #  p_k = node.solution_method.mu  # TODO: allow for models with parameters!
-            raw_solution_dict = result.raw_solution_dict
+        node_errors = {}
 
-            node_error[node] = node.solution_method.update_parameters(  # type: ignore
-                p=None, theta=node_theta, raw_solution_dict=raw_solution_dict
-            )
-        return node_error
+        if self.options.al_options.mu_update_rule == "primal-dual":
+            mu_by_node = {node: node.solution_method.mu for node in self.network.nodes}
+            mu_set = {float(mu[0]) for mu in mu_by_node.values()}
+            r_s_by_node = {
+                node: node.solution_method.compute_primal_dual(
+                    p=None,
+                    theta=self._get_node_theta(node),
+                    raw_solution_dict=result.raw_solution_dict,
+                    exogenous_data=self._get_node_exogenous(node),
+                )
+                for node, result in result_dict.items()
+            }
+
+            if len(mu_set) > 1:
+                raise ValueError("all mu should have the same value")
+            mu = DM(mu_set.pop())
+            r_k_list = [r_s["primal"] for r_s in r_s_by_node.values()]
+            s_k_list = [r_s["dual"] for r_s in r_s_by_node.values()]
+            node_errors = {node: r_s["error"] for (node, r_s) in r_s_by_node.items()}
+
+            mu = self._compute_primal_dual_mu(mu, r_k_list, s_k_list)
+            for node in result_dict:
+                node.solution_method.set_mu(mu)
+        else:
+            for node, result in sorted(
+                result_dict.items(), key=(lambda item: item[0].node_id)
+            ):
+                node_theta = self._get_node_theta(node)
+                node_exog = self._get_node_exogenous(node)
+                raw_solution_dict = result.raw_solution_dict
+
+                node_errors[node] = node.solution_method.update_parameters(
+                    p=None,
+                    theta=node_theta,
+                    raw_solution_dict=raw_solution_dict,
+                    exogenous_data=node_exog,
+                )  # type: ignore
+        return node_errors
 
     def _create_solution_methods(self):
-        for node in self.network.nodes:
-            if node.name.startswith("Dummy") or node.name.startswith("dummy"):
-                node.solution_method = IntermediaryNodeSolutionMethod(
-                    node.problem,
-                    self.solution_method_class,
-                    solver_options=self.solution_method_options,
-                    relax_algebraic_index=self.relax_dict[node]["alg_relax_ind"],
-                    relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
-                    relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
-                    no_update_after_solving=True,
-                    options={
-                        **asdict(self.options.al_options),
-                        **{
-                            "degree": self.options.degree,
-                            "finite_elements": self.options.finite_elements,
-                            "max_iter": 1,
-                            "verbose": 0,
+        for block, nodes in self.blocks.items():
+            for node in nodes:
+                if node.name.startswith("Dummy") or node.name.startswith("dummy"):
+                    node.solution_method = IntermediaryNodeSolutionMethod(
+                        node.problem,
+                        self.solution_method_class,
+                        solver_options=self.solution_method_options,
+                        relax_algebraic_index=self.relax_dict[node]["alg_relax_ind"],
+                        relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
+                        relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
+                        no_update_after_solving=True,
+                        block_number=block,
+                        options={
+                            **asdict(self.options.al_options),
+                            **{
+                                "degree": self.options.degree,
+                                "finite_elements": self.options.finite_elements,
+                                "max_iter": 1,
+                                "verbose": 0,
+                            },
                         },
-                    },
-                )
-            else:
-                node.solution_method = AugmentedLagrangian(
-                    node.problem,
-                    self.solution_method_class,
-                    solver_options=self.solution_method_options,
-                    relax_algebraic_index=self.relax_dict[node]["alg_relax_ind"],
-                    relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
-                    relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
-                    no_update_after_solving=True,
-                    options={
-                        **asdict(self.options.al_options),
-                        **{
-                            "degree": self.options.degree,
-                            "finite_elements": self.options.finite_elements,
-                            "max_iter": 1,
-                            "verbose": 0,
+                    )
+                else:
+                    node.solution_method = AugmentedLagrangian(
+                        node.problem,
+                        self.solution_method_class,
+                        solver_options=self.solution_method_options,
+                        relax_algebraic_index=self.relax_dict[node]["alg_relax_ind"],
+                        relax_algebraic_var_index=self.relax_dict[node]["y_relax"],
+                        relax_time_equality_index=self.relax_dict[node]["eq_relax_ind"],
+                        no_update_after_solving=True,
+                        block_number=block,
+                        options={
+                            **asdict(self.options.al_options),
+                            **{
+                                "degree": self.options.degree,
+                                "finite_elements": self.options.finite_elements,
+                                "max_iter": 1,
+                                "verbose": 0,
+                            },
                         },
-                    },
-                )
-                node.solution_method.create_optimization_problem()
+                    )
+                    node.solution_method.create_optimization_problem()
 
     def _print_nodes_errors(
         self,

@@ -1,11 +1,13 @@
 from dataclasses import InitVar, dataclass, field
 from typing import Dict, Union
 
+import matplotlib.pyplot as plt
 import pandas as pd
 from casadi import DM
 
 from yaocptool.methods.base.optimizationresult import OptimizationResult
 from yaocptool.modelling.network.node import Node
+from yaocptool.util.util import find_variables_indices_in_vector
 
 
 @dataclass
@@ -45,3 +47,15 @@ class DistibutedOptimizationResult:
         if df is None:
             raise ValueError("No results to make a dataframe")
         return df
+
+    def plot_all_relaxations(self, network):
+        for k, edge in enumerate(network.graph.edges):
+            fig = plt.figure(k)
+            y_index = find_variables_indices_in_vector(
+                network.graph.edges[edge]["y"], edge[0].problem.model.y
+            )
+            u_index = find_variables_indices_in_vector(
+                network.graph.edges[edge]["u"], edge[1].problem.model.u
+            )
+            self.results[edge[0]].plot({"y": y_index}, figures=[fig], show=False)
+            self.results[edge[1]].plot({"u": u_index}, figures=[fig])

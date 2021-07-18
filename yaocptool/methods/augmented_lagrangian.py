@@ -9,7 +9,7 @@ import logging
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Type, TypedDict, Union
 
 from casadi import (
     DM,
@@ -20,6 +20,7 @@ from casadi import (
     diag,
     dot,
     fabs,
+    fmax,
     fmin,
     horzcat,
     inf,
@@ -61,13 +62,15 @@ class AugmentedLagrangianOptions:
     mu_0: DM = DM(1.0)
     mu_max: DM = DM(1e4)
     beta: DM = DM(4.0)
+    beta_decrease: DM = DM(3.0)
 
     only_update_if_improve: bool = False
-    #  mu_update_rule: str = "simple"
+    #  mu_update_rule: str = "constant"
     mu_update_rule: Union[
-        Literal["error_dependent"], Literal["simple"]
-    ] = "error_dependent"
+        Literal["primal"], Literal["constant"], Literal["bounded-increase"]
+    ] = "bounded-increase"
     mu_min_error_decrease: float = 0.5
+    gamma: float = 1.2
 
     verbose: int = 2
     debug_skip_parametrize: bool = False
@@ -80,6 +83,12 @@ class AugmentedLagrangianOptions:
         self.mu_0 = DM(self.mu_0)
         self.mu_max = DM(self.mu_max)
         self.beta = DM(self.beta)
+        self.beta_decrease = DM(self.beta_decrease)
+
+
+class ALExogeunousData(TypedDict):
+    data: List[List[DM]]
+    block_number: int
 
 
 class OptionsOverride(type):
@@ -90,7 +99,7 @@ class OptionsOverride(type):
     def __new__(cls, clsname, bases, attrs):
         def generate_getter_setter(attr):
             def _getter(self):
-                LOGGER.error(f"getting {attr} = {getattr(self.options, attr)}")
+                LOGGER.info(f"getting {attr} = {getattr(self.options, attr)}")
                 return getattr(self.options, attr)
 
             def _setter(self, val: Any):
@@ -120,6 +129,7 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
         relax_time_equality_var_index: List[int] = None,
         relax_state_bounds: bool = False,
         no_update_after_solving: bool = True,
+        block_number: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -149,18 +159,6 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
         self.nu_par = SX()
         self.nu_pol = SX()
 
-        #  for key, val in [*kwargs.items()]:
-        #      print(key, val)
-        #      if hasattr(AugmentedLagrangianOptions, key):
-        #          if isinstance(options, dict):
-        #              options[key] = kwargs.pop(key)
-        #          else:
-        #              setattr(options, key, val)
-        #          warnings.warn(
-        #              f"Pass options as a dict in options keyword argument, {key}={val}",
-        #              Warning,
-        #          )
-
         self.options = (
             AugmentedLagrangianOptions(**options)
             if isinstance(options, dict)
@@ -172,12 +170,17 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
             ]
         )
 
+        self.block_number = block_number
+
         self.nu_tilde = None
         self.last_violation_error = None
         self.new_nu_func = None
         self.opt_problem = None
 
         self.last_solution = ()
+        self.last_exogenous_data: Optional[
+            Dict[str, Dict[str, ALExogeunousData]]
+        ] = None
 
         self.solver = None
         self.ocp_solver: Optional[SolutionMethodsBase] = None
@@ -279,11 +282,6 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
             ]
             for el in range(self.options.finite_elements)
         ]
-
-    # endregion
-
-    # ==============================================================================
-    # region RELAX
 
     def _include_relax_in_objective(self, relaxed_eqs: SX):
         n_alg_relax = relaxed_eqs.numel()
@@ -405,8 +403,8 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
             y_var,
             u_var,
             _,
-            p_opt,
-            theta_opt,
+            _,
+            _,
         ) = self.ocp_solver.discretizer.unpack_decision_variables(v)
         par = MX.sym("par", self.model.n_p)
         theta = {
@@ -618,37 +616,98 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
         p: Optional[DM],
         theta: Optional[Dict[int, DM]],
         raw_solution_dict: ExtendedOptiResultDictType,
+        exogenous_data: Dict[str, Dict[str, ALExogeunousData]] = None,
     ) -> DM:
         theta_k = join_thetas(theta, self.nu)
         p_k = vertcat(p, self.mu) if p is not None else self.mu
         error = self._compute_new_nu_and_error(
             p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict
         )
-        self._update_mu(error, self.last_violation_error)
+        self._update_mu(error, self.last_violation_error, exogenous_data=exogenous_data)
         self.last_violation_error = error
 
         return error
 
-    def _update_mu(self, error: DM, last_error: Optional[DM]):
+    def _update_mu(
+        self,
+        error: DM,
+        last_error: Optional[DM],
+        exogenous_data: Dict[str, Dict[str, ALExogeunousData]] = None,
+    ):
         if self.options.debug_skip_update_mu:
             return
-        if self.options.mu_update_rule == "error_dependent" and last_error is not None:
-            for ind, (mu, err, last_err) in enumerate(
-                zip(self.mu.nz, error.nz, last_error.nz)
-            ):
-                if err <= self.options.mu_min_error_decrease * last_err:
-                    LOGGER.info(
-                        f"{self.problem.name} {ind}: same mu {mu}: {err} <= {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
-                    )
-                    self.mu[ind] = DM(mu)
-                else:
-                    LOGGER.info(
-                        f"{self.problem.name} {ind}: increasing mu {mu}: {err} > {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
-                    )
-                    self.mu[ind] = DM(fmin(self.options.mu_max, mu * self.options.beta))
-        elif self.options.mu_update_rule == "simple":
+
+        if self.options.mu_update_rule == "constant":
+            return
+        elif self.options.mu_update_rule == "primal":
+            if last_error is not None:
+                self._update_mu_primal(error, last_error)
+        elif self.options.mu_update_rule == "primal-dual":
+            pass
+        elif self.options.mu_update_rule == "bounded-increase":
             self.mu = fmin(self.options.mu_max, self.mu * self.options.beta)
             LOGGER.debug(f"{self.problem.name}: mu {self.mu}")
+        else:
+            raise ValueError(f"Unkwon `mu_update_rule`: {self.options.mu_update_rule}")
+
+    def _update_mu_primal(self, error: DM, last_error: Optional[DM]):
+        for ind, (mu, err, last_err) in enumerate(
+            zip(self.mu.nz, error.nz, last_error.nz)
+        ):
+            if err <= self.options.mu_min_error_decrease * last_err:
+                logging.info(
+                    f"{self.problem.name} {ind}: same mu {mu}: {err} <= {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
+                )
+                self.mu[ind] = DM(mu)
+            else:
+                logging.info(
+                    f"{self.problem.name} {ind}: increasing mu {mu}: {err} > {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
+                )
+                self.mu[ind] = DM(fmin(self.options.mu_max, mu * self.options.beta))
+
+    def set_mu(self, mu: DM):
+        if mu.numel() == self.mu.numel():
+            self.mu = mu
+        elif mu.numel() == 1:
+            self.mu = DM.ones(self.mu.shape) * mu
+        else:
+            raise ValueError(
+                "mu not scalar and size does not match solution_method's mu"
+            )
+
+    def compute_primal_dual(
+        self,
+        p: Optional[DM],
+        theta: Optional[Dict[int, DM]],
+        raw_solution_dict: ExtendedOptiResultDictType,
+        exogenous_data: Dict[str, Dict[str, ALExogeunousData]] = None,
+    ) -> Dict[str, DM]:
+        if self.block_number is None:
+            raise ValueError("Need to set block_number to use this method")
+
+        theta_k = join_thetas(theta, self.nu)
+        p_k = vertcat(p, self.mu) if p is not None else self.mu
+        error = self._compute_new_nu_and_error(
+            p=p_k, theta=theta_k, raw_solution_dict=raw_solution_dict
+        )
+        r_k_1 = mmax(fabs(error))
+        s_k_1 = -DM.inf()
+
+        if exogenous_data is not None and self.last_exogenous_data is not None:
+            for var_name, data in exogenous_data["in"].items():
+                if data["block_number"] < self.block_number:
+                    continue
+                prev_data = self.last_exogenous_data["in"][var_name]
+                diff = vertcat(
+                    *[val for f_element in data["data"] for val in f_element]
+                ) - vertcat(
+                    *[val for f_element in prev_data["data"] for val in f_element]
+                )
+                s_k_1 = fmax(s_k_1, float(mmax(fabs(diff))))
+
+        self.last_exogenous_data = exogenous_data
+
+        return {"primal": r_k_1, "dual": s_k_1, "error": error}
 
     def _compute_new_nu_and_error(
         self,

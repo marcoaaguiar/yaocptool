@@ -1,6 +1,6 @@
 import re
 from timeit import default_timer
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
 from casadi import (
     DM,
@@ -19,12 +19,10 @@ from casadi import (
     vertcat,
 )
 
-if TYPE_CHECKING:
-    from casadi import FunctionCallArgT, NumericMT, SymbolicMT
-else:
-    FunctionCallArgT = "FunctionCallArgT"
-    NumericMT = "NumericMT"
-    SymbolicMT = "SymbolicMT"
+FunctionCallArgT = TypeVar("FunctionCallArgT", DM, MX)
+NumericMT = TypeVar("NumericMT", DM, SX, MX)
+MixedNumericMT = TypeVar("MixedNumericMT", bound=Union[DM, SX, MX])
+SymbolicMT = TypeVar("SymbolicMT", SX, MX)
 
 
 def find_variables_indices_in_vector(
@@ -33,9 +31,9 @@ def find_variables_indices_in_vector(
     """
         Given symbolic variables return the indices of the variables in a vector
 
-    :param list|casadi.SX|casadi.MX var:
-    :param casadi.SX|casadi.MX vector:
-    :param int depth: depth for which is_equal will check for equality
+    :param var:
+    :param vector:
+    :param depth: depth for which is_equal will check for equality
     :return: list of indices
     :rtype: list
     """

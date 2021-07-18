@@ -5,7 +5,7 @@ Created on Mon Apr 03 11:15:03 2017
 @author: marco
 """
 
-from typing import  Dict, Iterable, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union
 
 from casadi import (
     DM,
@@ -27,6 +27,7 @@ from yaocptool import (
 )
 from yaocptool.modelling.simulation_result import SimulationResult
 from yaocptool.modelling.system_model import SystemModel
+
 
 class OptimalControlProblem(object):
     r"""Optimal Control Problem class, used to define a optimal control problem based on a model (SystemModel)

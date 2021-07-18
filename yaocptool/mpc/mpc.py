@@ -1,11 +1,11 @@
 import itertools
 import time
 from typing import Optional
-from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
 
 from casadi import DM, vertcat
 
 from yaocptool.estimation.estimator_abstract import EstimatorAbstract
+from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
 from yaocptool.mpc.plant import PlantInterface
 
 

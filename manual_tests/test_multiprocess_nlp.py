@@ -1,11 +1,7 @@
-import asyncio
 import concurrent.futures
-from multiprocessing import Pipe, Pool, Process
-from multiprocessing.connection import Connection
 from typing import List
 
-import ray
-from casadi import DM, Function
+from casadi import DM
 
 from yaocptool import Timer
 from yaocptool.optimization import NonlinearOptimizationProblem
@@ -67,39 +63,7 @@ if __name__ == "__main__":
                 sols = [executor.submit(nlp.solve, None) for nlp in nlps]
                 result = [sol.result() for sol in sols]
 
-    # ray
-    #  ray.init()
-    #  nlps = make_nlps()
-    #  for nlp in nlps:
-    #      nlp.get_solver()
-    #  remote_nlp = [ray.put(nlp) for nlp in nlps]
-    #
-    #  with Timer(verbose=True) as ray_timer:
-    #      for _ in range(loops):
-    #          futures = [ray_solve_nlp.remote(nlp) for nlp in remote_nlp]
-    #          result = ray.get(futures)
-
-    #  nlps = make_nlps()
-    #  for nlp in nlps:
-    #      nlp.get_solver()
-    #
-    #
-    #  async def main(nlps):
-    #      loop = asyncio.get_running_loop()
-    #      result = None
-    #      with concurrent.futures.ProcessPoolExecutor() as pool:
-    #          for _ in range(loops):
-    #              result = await asyncio.gather(
-    #                  *[loop.run_in_executor(pool, nlp.solve, None) for nlp in nlps]
-    #              )
-    #      return result
-
-    #  with Timer(verbose=True) as asyn_timer:
-    #      asyncio.run(main(nlps))
-
     print("seria", serial_timer.elapsed)
     print("mp", mp_timer.elapsed)
     print("concurrent", conc_timer.elapsed)
     print("concurrent pre init", conc_timer_pre_init.elapsed)
-    #  print("ray", ray_timer.elapsed)
-    #  print("async", asyn_timer.elapsed)
