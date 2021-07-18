@@ -661,7 +661,7 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             y_k = result["zf"]
             u_k = f_u(
                 *self.put_values_in_all_sym_format(
-                    t=t_kpp, x=x_k, y=y_k, p=p, theta=theta[k], u_par=u[k]
+                    t=t_kpp, x=x_k, y=y_k, p=p, theta=theta[k], u_par=u_sim[k]
                 )
             )
 

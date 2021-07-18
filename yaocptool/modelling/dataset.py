@@ -316,7 +316,7 @@ class DataSet:
                     indexes_or_names = list(range(self.data[entry].size))
 
                 var_names = self.get_entry_names(entry)
-                only_indices = []
+                only_indices = [ind for ind in indexes_or_names if isinstance(ind, int)]
                 regex_matced_names: List[str] = []
                 # identify variables with regex
                 if not exact:

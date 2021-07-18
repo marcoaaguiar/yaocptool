@@ -9,8 +9,8 @@ from typing import Any, Dict
 
 SOLVER_OPTIONS: Dict[str, Any] = {
     "nlpsol_options": {
-        "ipopt.print_level": 0,
-        "print_time": False,
+        #  "ipopt.print_level": 0,
+        #  "print_time": False,
         "ipopt.linear_solver": "ma27",
         "expand": True,
         #  "jit": True,
@@ -30,4 +30,4 @@ INTEGRATOR_OPTIONS: Dict[str, Any] = {
     # 'reltol': 1e-10  # rel. tolerance
 }
 
-PLOT_INTERACTIVE: bool = True
+PLOT_INTERACTIVE: bool = False

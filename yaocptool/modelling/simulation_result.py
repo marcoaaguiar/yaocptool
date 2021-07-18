@@ -14,12 +14,17 @@ class SimulationResult(DataSet):
         x_names: List[str] = None,
         y_names: List[str] = None,
         u_names: List[str] = None,
+        model_name="",
+        t_0: float = 0.0,
+        t_f: float = 1.0,
+        delta_t: float = 1.0,
+        finite_elements: int = 0,
         **kwargs
     ):
-        self.model_name = ""
-        self.delta_t = 1
-        self.t_0 = 0
-        self.t_f = 1
+        self.model_name = model_name
+        self.delta_t = (delta_t,)
+        self.t_0 = t_0
+        self.t_f = t_f
         self.finite_elements = 0
 
         DataSet.__init__(self, **kwargs)

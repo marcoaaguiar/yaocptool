@@ -8,10 +8,10 @@ from typing import Any, List, Mapping, Optional, Tuple, TypedDict, Union
 
 import matplotlib.pyplot as plt
 import networkx
-from casadi import SX, vertcat
+from casadi import DM, SX, vertcat
 from networkx.classes.reportviews import NodeView
 
-from yaocptool import DM, find_variables_indices_in_vector
+from yaocptool import find_variables_indices_in_vector
 from yaocptool.modelling.network.node import Node
 from yaocptool.modelling.ocp import OptimalControlProblem
 from yaocptool.modelling.system_model import SystemModel
@@ -206,7 +206,9 @@ class Network:
         problem.merge(self.problems)
         for edge in self.graph.edges:
             problem.connect(
-                u=self.graph.edges[edge]["u"], y=self.graph.edges[edge]["y"]
+                u=self.graph.edges[edge]["u"],
+                y=self.graph.edges[edge]["y"],
+                replace=True,
             )
 
         return problem
