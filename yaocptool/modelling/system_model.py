@@ -587,18 +587,16 @@ class SystemModel(ContinuousStateMixin, AlgebraicMixin, ControlMixin, ParameterM
             If t_f is a float, then only one simulation will be done. If t_f is a list of times, then a sequence of
             simulations will be done, that each t_f is the end of a finite element.
 
-        :param list||DM x_0: Initial condition
-        :param float||list t_f: Final time of the simulation, can be a list of final times for sequential simulation
-        :param float t_0: Initial time
-        :param list||DM u: Controls of the system to be simulated
-        :param DM||SX||list p: Simulation parameters
-        :param dict theta: Parameters theta, which varies for each simulation for sequential simulations.
+        :param x_0: Initial condition
+        :param t_f: Final time of the simulation, can be a list of final times for sequential simulation
+        :param t_0: Initial time
+        :param u: Controls of the system to be simulated
+        :param p: Simulation parameters
+        :param theta: Parameters theta, which varies for each simulation for sequential simulations.
                            If t_f is a list then theta has to have one entry for each k in [0,...,len(t_f)]
         :param y_0: Initial guess for the algebraic variables
-        :param str integrator_type: 'implicit' or 'explicit'
-        :param dict integrator_options: options to be passed to the integrator
-
-        :rtype: SimulationResult
+        :param integrator_type: 'implicit' or 'explicit'
+        :param integrator_options: options to be passed to the integrator
         """
         if integrator_type is None:
             integrator_type = "implicit"

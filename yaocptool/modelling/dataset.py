@@ -81,7 +81,11 @@ class DataSet:
         return df
 
     def create_entry(
-        self, entry: str, size: int, names: List[str] = None, plot_style: str = None
+        self,
+        entry: str,
+        size: int,
+        names: List[str] = None,
+        plot_style: Union[Literal["plot"], Literal["step"]] = "plot",
     ):
         """
             Create an entry in the dataset
@@ -95,7 +99,7 @@ class DataSet:
         """
         if names is None:
             names = [entry + "_" + str(i) for i in range(size)]
-        self.data[entry] = Entry(size=size, names=names)
+        self.data[entry] = Entry(size=size, names=names, plot_style=plot_style)
 
     def get_entry(self, entry: str) -> Tuple[DM, DM]:
         """
@@ -125,7 +129,7 @@ class DataSet:
         """
         return self.data[entry].size
 
-    def insert_data(self, entry: str, time: Union[List[float], DM], value: DM):
+    def insert_data(self, entry: str, time: Union[List[float], DM, float], value: DM):
         """Insert data on the dataset
 
         :param str entry: entry name ('x', 'y', 'u', ...)

@@ -100,6 +100,10 @@ class OptimizationResult:
         """
         return self.u_data["values"][0][0]
 
+    def first_control_parameters(self):
+        """Return the first group of the control vector"""
+        return self.u_data["values"][0]
+
     def get_variable(
         self, var_type: str, indices: Union[int, List[int]]
     ) -> List[List[DM]]:

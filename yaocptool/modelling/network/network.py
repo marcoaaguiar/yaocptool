@@ -208,7 +208,7 @@ class Network:
             problem.connect(
                 u=self.graph.edges[edge]["u"],
                 y=self.graph.edges[edge]["y"],
-                replace=True,
+                replace=False,
             )
 
         return problem

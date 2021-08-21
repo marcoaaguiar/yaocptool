@@ -1,12 +1,20 @@
 import itertools
 import time
-from typing import Optional
+from functools import wraps
+from typing import List, Optional, Tuple
 
-from casadi import DM, vertcat
+import numpy
+from casadi import DM, Function, substitute, vertcat
 
 from yaocptool.estimation.estimator_abstract import EstimatorAbstract
+from yaocptool.estimation.ideal_estimator import IdealEstimator
+from yaocptool.methods import CollocationScheme
 from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
 from yaocptool.mpc.plant import PlantInterface
+from yaocptool.util.util import (
+    convert_expr_from_tau_to_time,
+    create_polynomial_approximation,
+)
 
 
 class MPC:
@@ -14,10 +22,12 @@ class MPC:
         self,
         plant: PlantInterface,
         solution_method: SolutionMethodInterface,
-        estimator: Optional[EstimatorAbstract],
+        estimator: Optional[EstimatorAbstract] = None,
+        initial_guess: DM = None,
         **kwargs
     ):
-        """Model Predictive control class. Requires a plant and a solution_method.
+        """
+        Model Predictive control class. Requires a plant and a solution_method.
 
         :param Plant|PlantSimulation plant:
         :param SolutionMethodsBase solution_method:
@@ -43,7 +53,15 @@ class MPC:
         """
         self.plant = plant
         self.solution_method = solution_method
-        self.estimator = estimator
+        self.estimator = (
+            estimator
+            if estimator is not None
+            else IdealEstimator(
+                t_s=self.plant.t_s, t_0=self.plant.t, n_x=self.plant.model.n_x
+            )
+        )
+
+        self.initial_guess = initial_guess
 
         self.last_solutions = None
         self.solution_method_initial_guess = None
@@ -70,15 +88,17 @@ class MPC:
             setattr(self, k, v)
 
         # set last_control_as_parameter to True, so the optimization problem can take last_u
-        self.solution_method.last_control_as_parameter = True
+        # FIXME: uncomment next line
+        #  self.solution_method.last_control_as_parameter = True
 
+    @wraps(PlantInterface.get_measurement)
     def get_measurement(self):
-        """Get measurements from the plant. It will return a tuple with the current measurement and the current control
-
-        :rtype: tuple
         """
+        Get measurements from the plant. It will return a tuple with the current measurement and the current control
+        """
+        t_k, meas_k, u_k = self.plant.get_measurement()
 
-        return self.plant.get_measurement()
+        return self.post_process_measurement(t_k, meas_k, u_k)
 
     def get_states(self, t_k, y_k, u_k):
         """Get states out of a measurement.
@@ -88,16 +108,13 @@ class MPC:
         :param DM u_k: controls
         :return: DM
         """
-        if self.estimator is None:
-            x_k = y_k[: self.solution_method.model.n_x]
-            cov_x_k = DM.zeros(x_k.shape)
-        else:
-            x_k, cov_x_k = self.estimator.estimate(t_k, y_k, u_k)
+        x_k, cov_x_k = self.estimator.estimate(t_k, y_k, u_k)
 
         if self.include_cost_in_state_vector:
             x_k = vertcat(x_k, 0)
 
-        return x_k, cov_x_k
+        # post process estimator result
+        return self.post_process_states(x_k, cov_x_k)
 
     def get_new_control(self, x_k, u_k, p=None):
         """Use solution_method to obtain new controls
@@ -107,17 +124,17 @@ class MPC:
         :param p:
         """
         start_time = time.time()
-        initial_guess_dict = None
-        if self.last_solutions is not None:
-            initial_guess_dict = [
-                solution.raw_solution_dict for solution in self.last_solutions
-            ]
-            if len(initial_guess_dict) == 1:
-                initial_guess_dict = initial_guess_dict[0]
+        #  if self.last_solutions is not None:
+        #      initial_guess_dict = [
+        #          solution.raw_solution_dict for solution in self.last_solutions
+        #      ]
+        #      if len(initial_guess_dict) == 1:
+        #          initial_guess_dict = initial_guess_dict[0]
 
         solutions = self.solution_method.solve(
-            x_0=x_k, initial_guess_dict=initial_guess_dict, p=p, last_u=u_k
+            x_0=x_k, initial_guess=self.initial_guess, p=p, last_u=u_k
         )
+        self.initial_guess = self.step(solutions.raw_decision_variables)
 
         if not isinstance(solutions, list):
             solutions = [solutions]
@@ -125,19 +142,50 @@ class MPC:
 
         control = [solution.first_control() for solution in solutions]
         self.statistics["iteration_time"].append(time.time() - start_time)
+
+        control = self.post_process_get_new_control(control)
         return vertcat(*control)
+
+    def _make_control_function(self, control_parameters):
+        u_pol, u_par = create_polynomial_approximation(
+            self.plant.model.tau, self.plant.model.n_u, self.solution_method.degree, "u"
+        )
+
+        u_pol = substitute(u_pol, u_par, control_parameters)
+
+        return Function(
+            "u_function",
+            [self.plant.model.t],
+            [
+                convert_expr_from_tau_to_time(
+                    u_pol,
+                    self.plant.model.t,
+                    self.plant.model.tau,
+                    self.plant.t,
+                    self.plant.t + self.plant.t_s,
+                )
+            ],
+        )
 
     def send_control(self, u):
         """Sent controls to the plant.
 
         :param u: DM
         """
-        self.plant.set_control(u)
+        #  self.plant.set_control(u)
+
+        self.plant.set_control_function(
+            self._make_control_function(
+                self._get_solution_parameters(
+                    self.last_solutions[0].first_control_parameters()
+                )
+            )
+        )  # this advances the simulation
 
     def post_process_measurement(self, t, meas, u):
         return t, meas, u
 
-    def post_process_states(self, x_k, cov_x_k):
+    def post_process_states(self, x_k, cov_x_k) -> Tuple[DM, DM]:
         return x_k, cov_x_k
 
     def post_process_get_new_control(self, u):
@@ -145,6 +193,9 @@ class MPC:
 
     def post_process_send_control(self):
         return
+
+    def _get_solution_parameters(self, parameters: List[DM]) -> DM:
+        return vertcat(*parameters)
 
     def run(self, iterations=0):
         """Starts computing control and sending it to the plant.
@@ -159,29 +210,23 @@ class MPC:
 
             # get new measurement from the plant
             t_k, meas_k, u_k = self.get_measurement()
-            # post process measurements
-            t_k, meas_k, u_k = self.post_process_measurement(t_k, meas_k, u_k)
-
-            if self.verbosity >= 1:
-                print("Time: {}".format(t_k))
 
             # estimate the states out of the measurement
             x_k, p_k = self.get_states(t_k, meas_k, u_k)
-            # post process estimator result
-            x_k, p_k = self.post_process_states(x_k, p_k)
 
             if self.verbosity >= 1:
                 print("Estimated state: {}".format(x_k))
+
+            # get new control using the solution_method
+            time_start_new_control = time.time()
+            p = self._get_parameter(x_k, p_k)
 
             x_k_ocp = x_k
             if self.state_rearrangement_function is not None:
                 x_k_ocp = self.state_rearrangement_function(x_k)
 
-            # get new control using the solution_method
-            time_start_new_control = time.time()
-            p = self._get_parameter(x_k, p_k)
             new_u = self.get_new_control(x_k=x_k_ocp, u_k=u_k, p=p)
-            new_u = self.post_process_get_new_control(new_u)
+
             if self.verbosity >= 1:
                 print("Control calculated: {}".format(new_u))
                 print(
@@ -189,12 +234,98 @@ class MPC:
                         time.time() - time_start_new_control
                     )
                 )
-            self.send_control(new_u)
-            new_u = self.send_control(new_u)
+
+            # FIXME: Trying with function
+            self.send_control(new_u)  # this advances the simulation
 
             if k >= iterations - 1:
                 print("End of MPC.un".center(30, "="))
                 break
+
+    def run_fixed_control(self, u, iterations):
+        """
+        Run the plant with a fixed control, can be used for initialization purposes.
+
+        :param list|DM|float|int u: control value
+        :param int iterations: the number of iterations that the MPC will run.
+        """
+        if isinstance(u, list):
+            u = vertcat(u)
+
+        for k in range(iterations):
+            self.iteration += 1
+
+            if self.verbosity >= 1:
+                print(" Iteration {} ({}) ".format(k, self.iteration).center(30, "="))
+
+            # get new measurement from the plant
+            t_k, y_k, u_k = self.get_measurement()
+
+            if self.verbosity:
+                print("Measurement: {}".format(y_k))
+
+            self.send_control(u)  # this advances the simulation
+
+    def run_fixed_control_with_estimator(self, u, iterations):
+        """
+        Run the plant with a fixed control, can be used for initialization purposes.
+
+        :param list|DM|float|int u: control value
+        :param int iterations: the number of iterations that the MPC will run.
+        """
+        if isinstance(u, list):
+            u = vertcat(u)
+
+        for k in range(iterations):
+            self.iteration += 1
+
+            if self.verbosity:
+                print(" Iteration {} ({}) ".format(k, self.iteration).center(30, "="))
+
+            # get new measurement from the plant
+            t_k, y_k, u_k = self.get_measurement()
+
+            # estimate the states out of the measurement
+            x_k, _ = self.get_states(t_k, y_k, u_k)
+
+            if self.verbosity:
+                print("Measurement: {}".format(y_k))
+                print("Estimated state: {}".format(x_k))
+
+            self.send_control(u)  # this advances the simulation
+
+    def step(self, decision_variables):
+        collocation_scheme: CollocationScheme = self.solution_method.discretizer  # type: ignore
+
+        perturbation_percentage = 0.0
+        decision_variables *= 1 + perturbation_percentage * (
+            numpy.random.rand(*decision_variables.shape) - 0.5
+        )
+        x, y, u, eta, p_opt, theta_opt = collocation_scheme.unpack_decision_variables(
+            decision_variables
+        )
+
+        next_initial_guess = collocation_scheme.repack_decision_variables(
+            x, y, u, eta, p_opt, theta_opt
+        )
+        x.pop(0)  # remove first
+        x.pop()  # remove last, which has single collocation equal to the previous
+        x.append(x[-1])
+        x.append([x[-1][-1]])
+
+        y.pop(0)
+        y.append(y[-1])
+
+        u.pop(0)
+        u.append(u[-1])
+
+        next_initial_guess = collocation_scheme.repack_decision_variables(
+            x, y, u, eta, p_opt, theta_opt
+        )
+
+        assert decision_variables.shape == next_initial_guess.shape
+
+        return next_initial_guess * 1.1
 
     def _get_parameter(self, x_k, p_k):
         p = self.p
@@ -207,54 +338,3 @@ class MPC:
                 p[p_index] = p_k[cov_index]
 
         return p
-
-    def run_fixed_control(self, u, iterations):
-        """
-        Run the plant with a fixed control, can be used for initialization purposes.
-
-        :param list|DM|float|int u: control value
-        :param int iterations: the number of iterations that the MPC will run.
-        """
-        if isinstance(u, list):
-            u = vertcat(u)
-
-        self.send_control(u)
-
-        for k in range(iterations):
-            self.iteration += 1
-
-            if self.verbosity >= 1:
-                print(" Iteration {} ({}) ".format(k, self.iteration).center(30, "="))
-
-            # get new measurement from the plant
-            t_k, y_k, u_k = self.get_measurement()
-
-            if self.verbosity:
-                print("Measurement: {}".format(y_k))
-
-    def run_fixed_control_with_estimator(self, u, iterations):
-        """
-        Run the plant with a fixed control, can be used for initialization purposes.
-
-        :param list|DM|float|int u: control value
-        :param int iterations: the number of iterations that the MPC will run.
-        """
-        if isinstance(u, list):
-            u = vertcat(u)
-
-        self.send_control(u)
-
-        for k in range(iterations):
-            self.iteration += 1
-
-            if self.verbosity:
-                print(" Iteration {} ({}) ".format(k, self.iteration).center(30, "="))
-
-            # get new measurement from the plant
-            t_k, y_k, u_k = self.get_measurement()
-
-            # estimate the states out of the measurement
-            x_k, p_k = self.get_states(t_k, y_k, u_k)
-            if self.verbosity:
-                print("Measurement: {}".format(y_k))
-                print("Estimated state: {}".format(x_k))

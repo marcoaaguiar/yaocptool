@@ -50,6 +50,7 @@ from yaocptool.optimization.abstract_optimization_problem import (
 from yaocptool.util.util import create_polynomial_approximation
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.INFO)
 
 
 @dataclass
@@ -164,11 +165,11 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
             if isinstance(options, dict)
             else options
         )
-        LOGGER.setLevel(
-            {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}[
-                self.options.verbose
-            ]
-        )
+        #  LOGGER.setLevel(
+        #      {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}[
+        #          self.options.verbose
+        #      ]
+        #  )
 
         self.block_number = block_number
 
@@ -539,7 +540,6 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
 
         # initialize variables
         t_0 = time.time()
-        n_it = raw_solution_dict = p_k = theta_k = x_0 = last_u = error = None
         for n_it in range(self.options.max_iter):
             t_1 = time.time()
             if self.nu_tilde is not None:
@@ -586,7 +586,11 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
                 )
 
             # Exit condition: error < tol
-            if error is not None and all((error < self.options.tol).nz):
+            if (
+                error is not None
+                and not self.no_update_after_solving
+                and all((error < self.options.tol).nz)
+            ):
                 LOGGER.info(
                     "=== Exiting: {} | Viol. Error: {} | Total time: {} ===".format(
                         "Tolerance met", error, time.time() - t_0
@@ -603,10 +607,10 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
         ):
             raise ValueError("Solver was never called make sure that max_iter > 0")
         # Exit condition: max_iter
-        if n_it == self.options.max_iter:
+        if n_it == self.options.max_iter - 1:
             LOGGER.info(
-                "=== Exiting: {} | Viol. Error: {} | Total time: {} ===".format(
-                    "Max iteration reached", error, time.time() - t_0
+                "=== Exiting: {} | Problem: {} | Viol. Error: {} | Total time: {:.03} ===".format(
+                    "Max iteration reached", self.problem.name, error, time.time() - t_0
                 )
             )
         return raw_solution_dict, p_k, theta_k, x_0, last_u
@@ -646,7 +650,7 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
             pass
         elif self.options.mu_update_rule == "bounded-increase":
             self.mu = fmin(self.options.mu_max, self.mu * self.options.beta)
-            LOGGER.debug(f"{self.problem.name}: mu {self.mu}")
+            LOGGER.info(f"{self.problem.name}: mu {self.mu}")
         else:
             raise ValueError(f"Unkwon `mu_update_rule`: {self.options.mu_update_rule}")
 
@@ -655,12 +659,12 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
             zip(self.mu.nz, error.nz, last_error.nz)
         ):
             if err <= self.options.mu_min_error_decrease * last_err:
-                logging.info(
+                LOGGER.info(
                     f"{self.problem.name} {ind}: same mu {mu}: {err} <= {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
                 )
                 self.mu[ind] = DM(mu)
             else:
-                logging.info(
+                LOGGER.info(
                     f"{self.problem.name} {ind}: increasing mu {mu}: {err} > {self.options.mu_min_error_decrease} * {last_err} = {self.options.mu_min_error_decrease * last_err}"
                 )
                 self.mu[ind] = DM(fmin(self.options.mu_max, mu * self.options.beta))

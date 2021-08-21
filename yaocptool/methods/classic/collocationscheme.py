@@ -129,6 +129,39 @@ class CollocationScheme(DiscretizationSchemeBase):
 
         return v, x, y, u, eta, p_opt, theta_opt
 
+    def repack_decision_variables(
+        self,
+        x: List[List[MX]],
+        y: List[List[MX]],
+        u: List[List[MX]],
+        eta: MX,
+        p_opt: MX,
+        theta_opt: List[MX],
+    ) -> Tuple[List[List[MX]], List[List[MX]], List[List[MX]], MX, MX, List[MX]]:
+        """
+
+        :param decision_variables: DM
+        :param all_subinterval: bool
+        :return: tuple
+        """
+        decision_variables_list: List[MX] = []
+
+        for x_k in x[:-1]:
+            decision_variables_list.extend(x_k)
+
+        for y_k in y:
+            decision_variables_list.extend(y_k)
+
+        for u_k in u:
+            decision_variables_list.extend(u_k)
+
+        decision_variables_list.append(eta)
+        decision_variables_list.append(p_opt)
+
+        decision_variables_list.extend(theta_opt)
+
+        return vertcat(*decision_variables_list)
+
     def unpack_decision_variables(
         self, decision_variables: MX, all_subinterval: bool = True
     ) -> Tuple[List[List[MX]], List[List[MX]], List[List[MX]], MX, MX, List[MX]]:
@@ -150,12 +183,14 @@ class CollocationScheme(DiscretizationSchemeBase):
         for _ in range(self.finite_elements):
             x_k = []
             for _ in range(self.degree + 1):
-                x_k.append(decision_variables[v_offset : v_offset + self.model.n_x])
-                v_offset += self.model.n_x
+                next_offset = v_offset + self.model.n_x
+                x_k.append(decision_variables[v_offset:next_offset])
+                v_offset = next_offset
             if all_subinterval:
                 x.append(x_k)
             else:
                 x.append(x_k[0])
+        # repeat the last x
         x.append([x_k[-1]])
 
         for _ in range(self.finite_elements):

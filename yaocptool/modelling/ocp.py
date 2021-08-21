@@ -653,11 +653,7 @@ class OptimalControlProblem(object):
 
     def parametrize_control(self, u: SX, expr: SX, u_par: Optional[SX] = None):
         """
-            Parametrize the control variable
-
-        :param u:
-        :param expr:
-        :param u_par:
+        Parametrize the control variable
         """
         # parametrize on the model
         self.model.parametrize_control(u=u, expr=expr, u_par=u_par)
