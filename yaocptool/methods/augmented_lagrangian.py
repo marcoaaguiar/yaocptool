@@ -538,6 +538,7 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
         #  if self.opt_problem is None:
         #  self.create_optimization_problem()
 
+        raw_solution_dict = None
         # initialize variables
         t_0 = time.time()
         for n_it in range(self.options.max_iter):
@@ -593,7 +594,7 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
             ):
                 LOGGER.info(
                     "=== Exiting: {} | Viol. Error: {} | Total time: {} ===".format(
-                        "Tolerance met", error, time.time() - t_0
+                        "Tol. met", error, time.time() - t_0
                     )
                 )
                 return raw_solution_dict, p_k, theta_k, x_0, last_u
@@ -608,9 +609,10 @@ class AugmentedLagrangian(SolutionMethodInterface, metaclass=OptionsOverride):
             raise ValueError("Solver was never called make sure that max_iter > 0")
         # Exit condition: max_iter
         if n_it == self.options.max_iter - 1:
+            status = "✔️" if raw_solution_dict["stats"]["success"] else "❌"
             LOGGER.info(
-                "=== Exiting: {} | Problem: {} | Viol. Error: {} | Total time: {:.03} ===".format(
-                    "Max iteration reached", self.problem.name, error, time.time() - t_0
+                "=== Exiting: {} {} | Problem: {} | Viol. Error: {} | Total time: {:.03} ===".format(
+                    "Max iter", status, self.problem.name, error, time.time() - t_0
                 )
             )
         return raw_solution_dict, p_k, theta_k, x_0, last_u

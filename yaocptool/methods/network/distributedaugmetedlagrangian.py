@@ -92,6 +92,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     coloring.items(), key=lambda item: item[1]
                 )
             }
+
         self.nodes_proxies: Dict[Node, Proxy] = {}
 
         self.relax_dict = {}
@@ -117,9 +118,17 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                 u = connection["u"]
 
                 # create an approximation
-                y_appr, y_appr_par = self._create_variable_approx(
-                    y, node.problem.model.tau
-                )
+                #  y_appr, y_appr_par = self._create_variable_approx(
+                #      y, node.problem.model.tau
+                #  )
+                y_appr = SX()
+                y_appr_par = SX()
+                for el in range(y.numel()):
+                    y_appr_el, y_appr_par_el = self._create_variable_approx(
+                        y[el], node.problem.model.tau
+                    )
+                    y_appr = vertcat(y_appr, y_appr_el)
+                    y_appr_par = vertcat(y_appr_par, y_appr_par_el)
 
                 # register the added connection to the list of algebraic equations to be relaxed
                 self.relax_dict[node]["alg_relax_ind"].extend(
@@ -134,6 +143,7 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     node.problem.connect(u, y)
 
                 node.problem.include_theta(y_appr_par)
+
                 self.relax_dict[node]["y_relax"].extend(
                     find_variables_indices_in_vector(u, node.problem.model.y)
                 )
@@ -141,12 +151,17 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             for s in self.network.graph.succ[node]:
                 # bind `node` output (y)
                 connection = self.network.graph.edges[node, s]
-                y = connection["y"]
-                u = connection["u"]
+                y: SX = connection["y"]
+                u: SX = connection["u"]
 
-                u_appr, u_appr_par = self._create_variable_approx(
-                    u, node.problem.model.tau
-                )
+                u_appr = SX()
+                u_appr_par = SX()
+                for el in range(u.numel()):
+                    u_appr_el, u_appr_par_el = self._create_variable_approx(
+                        u[el], node.problem.model.tau
+                    )
+                    u_appr = vertcat(u_appr, u_appr_el)
+                    u_appr_par = vertcat(u_appr_par, u_appr_par_el)
 
                 self.relax_dict[node]["eq_relax_ind"].extend(
                     range(
@@ -216,10 +231,10 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             y = connections["y"]  # external
             _ = connections["u"]  # model variable
 
-            indices = find_variables_indices_in_vector(y, p.model.y)
+            indices = find_variables_indices_in_vector(y, p.problem.model.y)
 
             for ind in indices:
-                data["in"][p.model.y[ind].name()] = {
+                data["in"][p.problem.model.y[ind].name()] = {
                     "data": self._get_variable_last_result(p, "y", ind),
                     "block_number": block_number,
                 }
@@ -230,9 +245,9 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             _ = connections["y"]  # model variable
             u = connections["u"]  # external
 
-            indices = find_variables_indices_in_vector(u, s.model.u)
+            indices = find_variables_indices_in_vector(u, s.problem.model.u)
             for ind in indices:
-                data["out"][s.model.u[ind].name()] = {
+                data["out"][s.problem.model.u[ind].name()] = {
                     "data": self._get_variable_last_result(s, "u", ind),
                     "block_number": block_number,
                 }
@@ -245,30 +260,23 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             connections = self.network.graph.edges[p, node]
             y = connections["y"]
             u = connections["u"]
-            print(p, y, node, u)
 
-            indices = find_variables_indices_in_vector(y, p.model.y)
+            indices = find_variables_indices_in_vector(y, p.problem.model.y)
             for ind in indices:
                 y_data = self._get_variable_last_result(p, "y", ind)
                 for i in range(self.options.finite_elements):
                     data[i] = vertcat(data[i], *y_data[i])
 
-        print(data)
-        __import__("ipdb").set_trace()
         for s in self.network.graph.succ[node]:
             connections = self.network.graph.edges[node, s]
             y = connections["y"]
             u = connections["u"]
-            print(node, y, s, u)
 
-            indices = find_variables_indices_in_vector(u, s.model.u)
+            indices = find_variables_indices_in_vector(u, s.problem.model.u)
             for ind in indices:
                 u_data = self._get_variable_last_result(s, "u", ind)
                 for i in range(self.options.finite_elements):
                     data[i] = vertcat(data[i], *u_data[i])
-
-                print(data)
-                __import__("ipdb").set_trace()
 
         return dict(data)
 
@@ -288,7 +296,6 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
         for node in itertools.chain(*blocks):
             # get node theta
             node_theta = self._get_node_theta(node)
-            print(node_theta)
             # warm start
             initial_guess = (
                 self._last_result[node].raw_solution_dict["x"]
@@ -301,9 +308,8 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             result = node.solution_method.solve(
                 theta=node_theta, initial_guess=initial_guess
             )
-            print(result)
-            # FIXME: Undo
-            #  result_dict[node] = self._last_result[node] = result
+            if result.success:
+                result_dict[node] = self._last_result[node] = result
         return result_dict
 
     def _solve_node_problems_distributed(
@@ -335,8 +341,14 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
             }
             block_results = {node: future.result() for node, future in futures.items()}
 
-            result_dict.update(block_results)
-            self._last_result.update(block_results)
+            result_dict.update(
+                {
+                    node: result
+                    for node, result in block_results.items()
+                    if result.success
+                }
+            )
+
         return result_dict
 
     def _number_of_inner_iterations(self, outer_iteration: int) -> int:
@@ -394,9 +406,18 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                         blocks_iterator = self._block_iterator()
 
                         # solve all blocks
-                        result_dict.update(self._solve_node_problems(blocks_iterator))
+                        nodes_results = self._solve_node_problems(blocks_iterator)
+                        result_dict.update(
+                            {
+                                node: result
+                                for node, result in nodes_results.items()
+                                if result.success
+                            }
+                        )
                         total_block_iterations += len(self.blocks)
                         total_inner_iterations += 1
+
+                        self._last_result = result_dict
 
                         objective: DM = sum(
                             result.objective_opt_problem
@@ -405,7 +426,6 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                         LOGGER.info(
                             f"Objective: {objective} {str(len(result_dict))+'/'+ str(len(self.network.nodes)) if len(result_dict)< len(self.network.nodes) else ''}"
                         )
-
                         if (
                             objective
                             > (1 - self.options.inner_loop_tol) * last_objective
@@ -433,10 +453,11 @@ class DistributedAugmentedLagrangian(SolutionMethodInterface):
                     )
                     if max_error < self.options.abs_tol:
                         LOGGER.info(
-                            "=== Exiting: {} | Viol. Error: {} | Total time: {} ===",
-                            "Tolerance met",
-                            max_error,
-                            time.time() - start_time,
+                            "=== Exiting: {} | Viol. Error: {:e} | Total time: {} ===".format(
+                                "Tolerance met",
+                                float(max_error),
+                                time.time() - start_time,
+                            )
                         )
                         break
                 else:

@@ -23,11 +23,11 @@ class Node:
     ):
         self.name = name
         self.node_id = node_id
-        self.problem = problem
+        self.problem: OptimalControlProblem = problem  # type: ignore
         self.solution_method = solution_method
         self.color = color
 
-        self.model = problem.model if model is None and problem is not None else model
+        self.model: SystemModel = problem.model if model is None and problem is not None else model  # type: ignore
 
         if name is None and self.model is not None:
             self.name = self.model.name

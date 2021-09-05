@@ -8,8 +8,8 @@ from casadi import DM, Function, substitute, vertcat
 
 from yaocptool.estimation.estimator_abstract import EstimatorAbstract
 from yaocptool.estimation.ideal_estimator import IdealEstimator
-from yaocptool.methods import CollocationScheme
 from yaocptool.methods.base.solutionmethodinterface import SolutionMethodInterface
+from yaocptool.methods.classic.collocationscheme import CollocationScheme
 from yaocptool.mpc.plant import PlantInterface
 from yaocptool.util.util import (
     convert_expr_from_tau_to_time,
@@ -131,6 +131,7 @@ class MPC:
         #      if len(initial_guess_dict) == 1:
         #          initial_guess_dict = initial_guess_dict[0]
 
+        __import__("ipdb").set_trace()
         solutions = self.solution_method.solve(
             x_0=x_k, initial_guess=self.initial_guess, p=p, last_u=u_k
         )
